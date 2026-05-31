@@ -1,0 +1,194 @@
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateLinkDto } from "./dto/create-link.dto";
+
+@Injectable()
+export class LinksService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createLinkDto: CreateLinkDto) {
+    const slug = await this.createUniqueSlug(
+      createLinkDto.customAlias || createLinkDto.title,
+    );
+    const background = createLinkDto.backgroundSettings;
+    const effects = background?.effects;
+
+    try {
+      const link = await this.prisma.link.create({
+        data: {
+          slug,
+          destinationUrl: createLinkDto.destinationUrl,
+          title: createLinkDto.title.trim(),
+          inputType: createLinkDto.inputType,
+          selectedSnippet: this.emptyToNull(createLinkDto.selectedSnippet),
+          selectedFile: this.emptyToNull(createLinkDto.selectedFile),
+          subtitle: this.emptyToNull(createLinkDto.subtitle),
+          customAlias: this.emptyToNull(createLinkDto.customAlias),
+          coverImageUrl: this.emptyToNull(createLinkDto.coverImageUrl),
+          expiryEnabled: createLinkDto.expiryEnabled ?? false,
+          expiryType: this.emptyToNull(createLinkDto.expiryType),
+          expiryDate: this.buildExpiryDate(createLinkDto),
+          expiryTime: this.emptyToNull(createLinkDto.expiryTime),
+          maxClicks: createLinkDto.maxClicks ?? null,
+          selectedBackgroundId: this.emptyToNull(background?.selectedBackgroundId),
+          selectedBackgroundName: this.emptyToNull(
+            background?.selectedBackgroundName,
+          ),
+          sameAsCoverImage: background?.sameAsCoverImage ?? false,
+          opacity: effects?.opacity ?? 100,
+          blur: effects?.blur ?? 0,
+          saturation: effects?.saturation ?? 100,
+          contrast: effects?.contrast ?? 100,
+          grayscale: effects?.grayscale ?? 0,
+          actions: {
+            create: createLinkDto.actions.map((action) => ({
+              platform: action.platform,
+              action: action.action,
+              url: action.url,
+            })),
+          },
+        },
+        include: {
+          actions: true,
+        },
+      });
+
+      return this.toResponse(link);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException("Slug hoặc custom alias đã tồn tại.");
+      }
+
+      throw error;
+    }
+  }
+
+  async findAll() {
+    const links = await this.prisma.link.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        actions: true,
+      },
+    });
+
+    return links.map((link) => this.toResponse(link));
+  }
+
+  async findOne(slug: string) {
+    const link = await this.prisma.link.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        actions: true,
+      },
+    });
+
+    if (!link) {
+      throw new NotFoundException("Không tìm thấy link.");
+    }
+
+    return this.toResponse(link);
+  }
+
+  private async createUniqueSlug(source: string) {
+    const baseSlug = this.slugify(source) || `link-${Date.now()}`;
+    let slug = baseSlug;
+    let suffix = 1;
+
+    while (await this.prisma.link.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    return slug;
+  }
+
+  private slugify(value: string) {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  private emptyToNull(value?: string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private buildExpiryDate(createLinkDto: CreateLinkDto) {
+    if (!createLinkDto.expiryEnabled || createLinkDto.expiryType !== "date") {
+      return null;
+    }
+
+    if (!createLinkDto.expiryDate) {
+      return null;
+    }
+
+    const time = createLinkDto.expiryTime || "00:00";
+    return new Date(`${createLinkDto.expiryDate}T${time}:00`);
+  }
+
+  private toResponse(
+    link: Prisma.LinkGetPayload<{
+      include: {
+        actions: true;
+      };
+    }>,
+  ) {
+    return {
+      id: link.id,
+      slug: link.slug,
+      shortUrl: `/l/${link.slug}`,
+      destinationUrl: link.destinationUrl,
+      title: link.title,
+      inputType: link.inputType,
+      selectedSnippet: link.selectedSnippet,
+      selectedFile: link.selectedFile,
+      subtitle: link.subtitle,
+      customAlias: link.customAlias,
+      coverImageUrl: link.coverImageUrl,
+      expiryEnabled: link.expiryEnabled,
+      expiryType: link.expiryType,
+      expiryDate: link.expiryDate,
+      expiryTime: link.expiryTime,
+      maxClicks: link.maxClicks,
+      clicks: link.clicks,
+      status: link.status,
+      actions: link.actions.map((action) => ({
+        id: action.id,
+        platform: action.platform,
+        action: action.action,
+        url: action.url,
+      })),
+      backgroundSettings: {
+        selectedBackgroundId: link.selectedBackgroundId,
+        selectedBackgroundName: link.selectedBackgroundName,
+        sameAsCoverImage: link.sameAsCoverImage,
+        effects: {
+          opacity: link.opacity,
+          blur: link.blur,
+          saturation: link.saturation,
+          contrast: link.contrast,
+          grayscale: link.grayscale,
+        },
+      },
+      createdAt: link.createdAt,
+      updatedAt: link.updatedAt,
+    };
+  }
+}

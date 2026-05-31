@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Link {
+  id                     String       @id @default(cuid())
+  slug                   String       @unique
+  destinationUrl         String
+  title                  String
+  inputType              String       @default("url")
+  selectedSnippet        String?
+  selectedFile           String?
+  subtitle               String?
+  customAlias            String?      @unique
+  coverImageUrl          String?
+  expiryEnabled          Boolean      @default(false)
+  expiryType             String?
+  expiryDate             DateTime?
+  expiryTime             String?
+  maxClicks              Int?
+  selectedBackgroundId   String?
+  selectedBackgroundName String?
+  sameAsCoverImage       Boolean      @default(false)
+  opacity                Int          @default(100)
+  blur                   Int          @default(0)
+  saturation             Int          @default(100)
+  contrast               Int          @default(100)
+  grayscale              Int          @default(0)
+  clicks                 Int          @default(0)
+  status                 String       @default("active")
+  actions                LinkAction[]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+}
+
+model LinkAction {
+  id        String   @id @default(cuid())
+  linkId    String
+  platform  String
+  action    String
+  url       String
+  createdAt DateTime @default(now())
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+}
