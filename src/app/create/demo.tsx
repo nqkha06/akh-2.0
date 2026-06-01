@@ -1,14 +1,13 @@
 "use client"
 
-/* eslint-disable @next/next/no-img-element */
-
-import { useRef, useState } from "react"
+import { useRef, useState, type ChangeEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { createLink, type LinkDto } from "@/lib/api-client"
 import {
   Link,
   FileImage,
@@ -17,6 +16,13 @@ import {
   Music,
   Plus,
   Trash2,
+  UploadCloud,
+  ImageIcon,
+  ArrowDown,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
   ChevronDown,
   ChevronUp,
   Settings,
@@ -102,6 +108,13 @@ interface SocialAction {
   isValid: boolean
 }
 
+interface SelectableFile {
+  id: string
+  name: string
+  size: string
+  uploadedAt: string
+}
+
 const backgroundImages = [
   { id: "1", name: "Mint Fresh", gradient: "linear-gradient(135deg, #a8e6cf 0%, #7fcdcd 100%)" },
   { id: "2", name: "Warm Earth", gradient: "linear-gradient(135deg, #d4a574 0%, #8b4513 100%)" },
@@ -132,6 +145,15 @@ const snippets = [
   { id: "6", name: "Special Thanks", content: "Thank you for your support" },
 ]
 
+const availableFiles: SelectableFile[] = [
+  {
+    id: "file-1",
+    name: "z5980644724748_4b35713e28e6e92f5904e6349705d8a4.jpg",
+    size: "221.72 KB",
+    uploadedAt: "Nov 9, 2024",
+  },
+]
+
 export default function SocialLinksGenerator({
   embedded = false,
 }: {
@@ -141,10 +163,13 @@ export default function SocialLinksGenerator({
   const [destinationUrl, setDestinationUrl] = useState("")
   const [title, setTitle] = useState("")
   const [inputType, setInputType] = useState<"url" | "file" | "snippet">("url")
-  const [selectedFile] = useState<string>("")
+  const [selectedFile, setSelectedFile] = useState<string>("")
+  const [selectedFileName, setSelectedFileName] = useState("")
+  const [selectedFileSize, setSelectedFileSize] = useState("")
   const [selectedSnippet, setSelectedSnippet] = useState<string>("")
   const [actions, setActions] = useState<SocialAction[]>([])
   const [isActionModalOpen, setIsActionModalOpen] = useState(false)
+  const [isFileDialogOpen, setIsFileDialogOpen] = useState(false)
   const [expandedPlatforms, setExpandedPlatforms] = useState<Set<string>>(new Set(["youtube"]))
   const [layoutOpen, setLayoutOpen] = useState(false)
   const [extraOptionsOpen, setExtraOptionsOpen] = useState(false)
@@ -175,6 +200,9 @@ export default function SocialLinksGenerator({
   const [expiryDate, setExpiryDate] = useState("")
   const [maxClicks, setMaxClicks] = useState("")
   const [expiryTime, setExpiryTime] = useState("00:00")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
+  const [createdLink, setCreatedLink] = useState<LinkDto | null>(null)
 
   const addAction = (platform: keyof typeof socialPlatforms, actionId: string) => {
     actionIdRef.current += 1
@@ -234,6 +262,45 @@ export default function SocialLinksGenerator({
     }
   }
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) {
+      return `${bytes} B`
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(2)} KB`
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+  }
+
+  const selectStoredFile = (file: SelectableFile) => {
+    setSelectedFile(file.id)
+    setSelectedFileName(file.name)
+    setSelectedFileSize(file.size)
+    setIsFileDialogOpen(false)
+  }
+
+  const handleUploadFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    setSelectedFile(`upload:${file.name}`)
+    setSelectedFileName(file.name)
+    setSelectedFileSize(formatFileSize(file.size))
+    setIsFileDialogOpen(false)
+    event.target.value = ""
+  }
+
+  const clearSelectedFile = () => {
+    setSelectedFile("")
+    setSelectedFileName("")
+    setSelectedFileSize("")
+  }
+
   const resetEffects = () => {
     setOpacity(100)
     setBlur(0)
@@ -280,13 +347,68 @@ export default function SocialLinksGenerator({
   const isTitleValid = title.length > 0
   const completedActions = actions.filter((a) => a.isValid).length
   const totalActions = actions.length
-  const allActionsCompleted = totalActions > 0 && completedActions === totalActions
-  const canUnlock = isDestinationUrlValid && isTitleValid && allActionsCompleted
+  const allActionUrlsValid = totalActions > 0 && completedActions === totalActions
+  const canCreateLink = isDestinationUrlValid && isTitleValid && allActionUrlsValid
+
+  const buildCreatePayload = () => ({
+    title,
+    destinationUrl,
+    inputType,
+    selectedSnippet: selectedSnippet || undefined,
+    selectedFile: selectedFile || undefined,
+    subtitle: subtitle || undefined,
+    customAlias: customAlias || undefined,
+    coverImageUrl: coverImageUrl || undefined,
+    expiryEnabled,
+    expiryType: expiryEnabled ? expiryType : undefined,
+    expiryDate: expiryEnabled && expiryType === "date" ? expiryDate || undefined : undefined,
+    expiryTime: expiryEnabled && expiryType === "date" ? expiryTime || undefined : undefined,
+    maxClicks: expiryEnabled && expiryType === "clicks" && maxClicks ? Number(maxClicks) : undefined,
+    actions: actions.map(a => ({
+      platform: a.platform,
+      action: a.action,
+      url: a.url
+    })),
+    backgroundSettings: {
+      selectedBackgroundId: selectedBackgroundId || undefined,
+      selectedBackgroundName: backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.name,
+      sameAsCoverImage,
+      effects: {
+        opacity,
+        blur,
+        saturation,
+        contrast,
+        grayscale
+      }
+    }
+  })
+
+  const handleCreateLink = async () => {
+    if (!canCreateLink || isSubmitting) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setSubmitError("")
+    setCreatedLink(null)
+
+    try {
+      const link = await createLink(buildCreatePayload())
+      setCreatedLink(link)
+      window.dispatchEvent(
+        new CustomEvent("Rekonise:link-created", {
+          detail: link,
+        }),
+      )
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Create link failed")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
-    <div
-      className={`${embedded ? "" : "min-h-screen"} bg-gray-50 text-gray-900 p-4`}
-    >
+  
       <div
         className={`${embedded ? "w-full" : "max-w-6xl mx-auto"} grid grid-cols-1 lg:grid-cols-2 gap-6`}
       >
@@ -317,9 +439,8 @@ export default function SocialLinksGenerator({
                       placeholder="Enter a destination URL*"
                       value={destinationUrl}
                       onChange={(e) => setDestinationUrl(e.target.value)}
-                      className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
-                        destinationUrl.length > 0 && !isDestinationUrlValid ? "border-red-500" : ""
-                      }`}
+                      className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${destinationUrl.length > 0 && !isDestinationUrlValid ? "border-red-500" : ""
+                        }`}
                     />
                     {destinationUrl.length > 0 && !isDestinationUrlValid && (
                       <p className="text-red-500 text-sm mt-1">Please enter a valid URL</p>
@@ -337,10 +458,37 @@ export default function SocialLinksGenerator({
 
                 {/* File Tab */}
                 <TabsContent value="file" className="space-y-4 mt-4">
-                  <button className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsFileDialogOpen(true)}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100"
+                  >
                     <FileImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <span className="text-gray-600 font-medium">Select file</span>
+                    <span className="text-gray-600 font-medium">
+                      {selectedFileName ? "Change file" : "Select file"}
+                    </span>
                   </button>
+                  {selectedFileName && (
+                    <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-green-700 ring-1 ring-green-200">
+                        <FileImage className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-green-900">{selectedFileName}</p>
+                        <p className="text-xs text-green-700">{selectedFileSize}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={clearSelectedFile}
+                        className="text-green-700 hover:bg-green-100 hover:text-green-900"
+                        aria-label="Clear selected file"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   <div>
                     <Input
                       placeholder="Enter a title*"
@@ -375,11 +523,10 @@ export default function SocialLinksGenerator({
                         <button
                           key={snippet.id}
                           onClick={() => setSelectedSnippet(snippet.id)}
-                          className={`p-3 rounded-lg text-left transition-colors ${
-                            selectedSnippet === snippet.id
-                              ? "bg-green-100 border-2 border-green-500 text-green-900"
-                              : "bg-gray-50 border border-gray-200 text-gray-900 hover:border-gray-300"
-                          }`}
+                          className={`p-3 rounded-lg text-left transition-colors ${selectedSnippet === snippet.id
+                            ? "bg-green-100 border-2 border-green-500 text-green-900"
+                            : "bg-gray-50 border border-gray-200 text-gray-900 hover:border-gray-300"
+                            }`}
                         >
                           <p className="font-medium text-sm">{snippet.name}</p>
                           <p className="text-xs text-gray-600 mt-1">{snippet.content}</p>
@@ -400,6 +547,123 @@ export default function SocialLinksGenerator({
               </Tabs>
             </CardHeader>
           </Card>
+
+          <Dialog open={isFileDialogOpen} onOpenChange={setIsFileDialogOpen}>
+            <DialogContent
+              overlayClassName="z-[200] bg-black/35 backdrop-blur-sm"
+              className="z-[210] max-h-[calc(100vh-2rem)] w-[min(960px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border-gray-200 bg-white p-0 text-gray-900 shadow-[0_24px_80px_rgba(15,23,42,0.24)] sm:max-w-none"
+            >
+              <DialogHeader className="border-b border-gray-200 px-6 py-5">
+                <DialogTitle className="text-2xl font-semibold text-gray-900">
+                  Select or upload file
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-5 overflow-y-auto px-6 py-5">
+                <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gray-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 focus-within:ring-2 focus-within:ring-green-500 focus-within:ring-offset-2">
+                  <UploadCloud className="h-4 w-4" />
+                  Upload file
+                  <input
+                    type="file"
+                    className="sr-only"
+                    onChange={handleUploadFile}
+                  />
+                </label>
+
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[680px] text-left text-sm">
+                      <thead className="bg-gray-50 text-gray-600">
+                        <tr className="border-b border-gray-200">
+                          <th className="w-20 px-5 py-3 font-semibold">Type</th>
+                          <th className="px-5 py-3 font-semibold">Name</th>
+                          <th className="w-36 px-5 py-3 font-semibold">Size</th>
+                          <th className="w-44 px-5 py-3 font-semibold">
+                            <span className="inline-flex items-center gap-1">
+                              Uploaded
+                              <ArrowDown className="h-4 w-4" />
+                            </span>
+                          </th>
+                          <th className="w-28 px-5 py-3 text-right font-semibold">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {availableFiles.map((file) => (
+                          <tr
+                            key={file.id}
+                            className={`border-b border-gray-100 transition-colors last:border-b-0 ${selectedFile === file.id ? "bg-green-50" : "hover:bg-gray-50"
+                              }`}
+                          >
+                            <td className="px-5 py-4">
+                              <div className="flex h-9 w-12 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-500">
+                                <ImageIcon className="h-5 w-5" />
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="max-w-[420px] truncate font-medium text-gray-900">
+                                {file.name}
+                              </p>
+                            </td>
+                            <td className="px-5 py-4 text-gray-600">{file.size}</td>
+                            <td className="px-5 py-4 text-gray-600">{file.uploadedAt}</td>
+                            <td className="px-5 py-4 text-right">
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => selectStoredFile(file)}
+                                className="bg-green-600 text-white hover:bg-green-700"
+                              >
+                                Select
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-end">
+                    <div className="flex items-center gap-2">
+                      <span>Items per page:</span>
+                      <button
+                        type="button"
+                        className="flex h-9 min-w-16 items-center justify-between rounded-md border border-gray-200 bg-white px-3 text-gray-900"
+                      >
+                        10
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      </button>
+                    </div>
+                    <span className="sm:ml-6">1 - 1 of 1</span>
+                    <div className="flex items-center gap-1 text-gray-400">
+                      <Button type="button" variant="ghost" size="icon-sm" disabled>
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon-sm" disabled>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon-sm" disabled>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon-sm" disabled>
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsFileDialogOpen(false)}
+                    className="h-10 px-4 font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Actions Section */}
           <Card className="bg-white border-gray-200 shadow-sm">
@@ -440,9 +704,8 @@ export default function SocialLinksGenerator({
                         placeholder={`Enter a ${platform.name.toLowerCase()} URL`}
                         value={action.url}
                         onChange={(e) => updateActionUrl(action.id, e.target.value)}
-                        className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
-                          action.url.length > 0 && !action.isValid ? "border-red-500" : ""
-                        }`}
+                        className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${action.url.length > 0 && !action.isValid ? "border-red-500" : ""
+                          }`}
                       />
                       {action.url.length > 0 && !action.isValid && (
                         <p className="text-red-500 text-sm mt-1">This input is invalid</p>
@@ -461,9 +724,9 @@ export default function SocialLinksGenerator({
                   <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                       Change action
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-gray-500 hover:text-gray-700"
                         onClick={toggleExpandAllPlatforms}
                       >
@@ -528,9 +791,9 @@ export default function SocialLinksGenerator({
                   <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                       Select your action
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-gray-500 hover:text-gray-700"
                         onClick={toggleExpandAllPlatforms}
                       >
@@ -622,14 +885,12 @@ export default function SocialLinksGenerator({
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => setSameAsCoverImage(!sameAsCoverImage)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        sameAsCoverImage ? "bg-green-600" : "bg-gray-300"
-                      }`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sameAsCoverImage ? "bg-green-600" : "bg-gray-300"
+                        }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          sameAsCoverImage ? "translate-x-6" : "translate-x-1"
-                        }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${sameAsCoverImage ? "translate-x-6" : "translate-x-1"
+                          }`}
                       />
                     </button>
                     <span className="text-gray-600">Same as cover image</span>
@@ -645,11 +906,10 @@ export default function SocialLinksGenerator({
                         <button
                           key={bg.id}
                           onClick={() => setSelectedBackgroundId(bg.id)}
-                          className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                            selectedBackgroundId === bg.id
-                              ? "border-green-500 ring-2 ring-green-200"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
+                          className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${selectedBackgroundId === bg.id
+                            ? "border-green-500 ring-2 ring-green-200"
+                            : "border-gray-200 hover:border-gray-300"
+                            }`}
                           title={bg.name}
                         >
                           <div
@@ -670,9 +930,9 @@ export default function SocialLinksGenerator({
                 <div className="border-t border-gray-200 pt-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-gray-700 font-medium">Effects</h4>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-green-600 hover:text-green-700 text-xs h-6"
                       onClick={resetEffects}
                     >
@@ -887,14 +1147,12 @@ export default function SocialLinksGenerator({
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => setExpiryEnabled(!expiryEnabled)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      expiryEnabled ? "bg-green-600" : "bg-gray-300"
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${expiryEnabled ? "bg-green-600" : "bg-gray-300"
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        expiryEnabled ? "translate-x-6" : "translate-x-1"
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${expiryEnabled ? "translate-x-6" : "translate-x-1"
+                        }`}
                     />
                   </button>
                   <span className="text-gray-600">Enable link expiration</span>
@@ -908,21 +1166,19 @@ export default function SocialLinksGenerator({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setExpiryType("date")}
-                          className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
-                            expiryType === "date"
-                              ? "bg-blue-50 border-blue-300 text-blue-700"
-                              : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                          }`}
+                          className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${expiryType === "date"
+                            ? "bg-blue-50 border-blue-300 text-blue-700"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                            }`}
                         >
                           By Date
                         </button>
                         <button
                           onClick={() => setExpiryType("clicks")}
-                          className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
-                            expiryType === "clicks"
-                              ? "bg-blue-50 border-blue-300 text-blue-700"
-                              : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-                          }`}
+                          className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${expiryType === "clicks"
+                            ? "bg-blue-50 border-blue-300 text-blue-700"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                            }`}
                         >
                           By Clicks
                         </button>
@@ -995,140 +1251,135 @@ export default function SocialLinksGenerator({
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-700">PREVIEW</h2>
-            <Button className="h-11 bg-gray-900 text-white hover:bg-gray-800">Create</Button>
+            <Button
+              className={`h-11 text-white ${canCreateLink ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-300"
+                }`}
+              disabled={!canCreateLink || isSubmitting}
+              onClick={handleCreateLink}
+            >
+              {isSubmitting ? "Creating..." : "Create"}
+            </Button>
           </div>
+          <Card className="p-7">
 
-          <Card
-            className="bg-white border-gray-200 shadow-sm p-6 relative overflow-hidden"
-          >
-            {/* Background with effects */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: sameAsCoverImage
-                  ? "linear-gradient(135deg, #f8f9fa, #e9ecef)"
-                  : selectedBackgroundId
-                    ? backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.gradient || "white"
-                    : "white",
-                filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
-                pointerEvents: "none",
-              }}
-            />
-            <div className="relative z-10">
-              <div className="text-center space-y-4">
-                {/* Cover Image */}
-                {coverImageUrl && (
-                  <div className="w-full h-40 rounded-lg overflow-hidden mb-2">
-                    <img
-                      src={coverImageUrl}
-                      alt="Cover"
-                      className="w-full h-full object-cover"
+
+            <Card
+              className="bg-white border-gray-200 shadow-sm p-6 relative overflow-hidden"
+            >
+              {/* Background with effects */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: sameAsCoverImage
+                    ? "linear-gradient(135deg, #f8f9fa, #e9ecef)"
+                    : selectedBackgroundId
+                      ? backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.gradient || "white"
+                      : "white",
+                  filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
+                  pointerEvents: "none",
+                }}
+              />
+              <div className="relative z-10">
+                <div className="text-center space-y-4">
+                  {/* Cover Image */}
+                  {coverImageUrl && (
+                    <div className="w-full h-40 rounded-lg overflow-hidden mb-2">
+                      <img
+                        src={coverImageUrl}
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  {title ? (
+                    <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+                  ) : (
+                    <h3 className="text-gray-500">Enter a title to see preview</h3>
+                  )}
+
+                  {subtitle && (
+                    <p className="text-sm text-gray-600">{subtitle}</p>
+                  )}
+
+                  <p className="text-gray-600">Complete the actions to unlock</p>
+
+                  {actions.length > 0 && (
+                    <div className="space-y-3">
+                      {actions.map((action) => {
+                        const platform = socialPlatforms[action.platform]
+                        const Icon = platform.icon
+                        return (
+                          <Button
+                            key={action.id}
+                            className={`w-full ${platform.color} hover:opacity-80 text-white`}
+                            disabled={!action.isValid}
+                          >
+                            <Icon className="w-4 h-4 mr-2" />
+                            {getActionLabel(action.platform, action.action)}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  <div className="text-gray-500 text-sm">
+                    unlock progress {completedActions}/{totalActions}
+                  </div>
+
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: totalActions > 0 ? `${(completedActions / totalActions) * 100}%` : "0%",
+                      }}
                     />
                   </div>
-                )}
 
-                {title ? (
-                  <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-                ) : (
-                  <h3 className="text-gray-500">Enter a title to see preview</h3>
-                )}
-
-                {subtitle && (
-                  <p className="text-sm text-gray-600">{subtitle}</p>
-                )}
-
-                {destinationUrl && isDestinationUrlValid && (
-                  <p className="text-xs text-gray-500 break-all">Destination: {destinationUrl}</p>
-                )}
-
-                <p className="text-gray-600">Complete the actions to unlock</p>
-
-                {actions.length > 0 && (
-                  <div className="space-y-3">
-                    {actions.map((action) => {
-                      const platform = socialPlatforms[action.platform]
-                      const Icon = platform.icon
-                      return (
-                        <Button
-                          key={action.id}
-                          className={`w-full ${platform.color} hover:opacity-80 text-white`}
-                          disabled={!action.isValid}
-                        >
-                          <Icon className="w-4 h-4 mr-2" />
-                          {getActionLabel(action.platform, action.action)}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <div className="text-gray-500 text-sm">
-                  unlock progress {completedActions}/{totalActions}
-                </div>
-
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: totalActions > 0 ? `${(completedActions / totalActions) * 100}%` : "0%",
-                    }}
-                  />
-                </div>
-
-                <Button
-                  className={`h-11 w-full ${canUnlock ? "bg-green-600 hover:bg-green-700" : "bg-gray-300"} text-white`}
-                  disabled={!canUnlock}
-                  onClick={() => {
-                    console.log("[v0] Creating social link with data:", {
-                      title,
-                      destinationUrl,
-                      inputType,
-                      selectedSnippet,
-                      selectedFile,
-                      subtitle,
-                      customAlias,
-                      coverImageUrl,
-                      expiryEnabled,
-                      expiryType,
-                      expiryDate,
-                      expiryTime,
-                      maxClicks,
-                      actions: actions.map(a => ({
-                        platform: a.platform,
-                        action: a.action,
-                        url: a.url
-                      })),
-                      backgroundSettings: {
-                        selectedBackgroundId,
-                        selectedBackgroundName: backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.name,
-                        sameAsCoverImage,
-                        effects: {
-                          opacity,
-                          blur,
-                          saturation,
-                          contrast,
-                          grayscale
-                        }
+                  <Button
+                    className={`h-11 w-full ${isDestinationUrlValid ? "bg-green-600 hover:bg-green-700" : "bg-gray-300"} text-white`}
+                    disabled={!isDestinationUrlValid}
+                    onClick={() => {
+                      if (isDestinationUrlValid) {
+                        window.open(destinationUrl, "_blank", "noopener,noreferrer")
                       }
-                    })
-                  }}
-                >
-                  🔓 Unlock link
-                </Button>
+                    }}
+                  >
+                    Unlock link
+                  </Button>
 
-                {!canUnlock && (
-                  <div className="text-sm text-gray-500 space-y-1">
-                    {!isTitleValid && <p>• Title is required</p>}
-                    {!isDestinationUrlValid && <p>• Valid destination URL is required</p>}
-                    {totalActions === 0 && <p>• At least one action is required</p>}
-                    {totalActions > 0 && completedActions < totalActions && <p>• Complete all actions</p>}
-                  </div>
-                )}
+                  {submitError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                      {submitError}
+                    </div>
+                  )}
+
+                  {createdLink && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-left text-sm text-green-800">
+                      <p className="font-semibold">Link created successfully</p>
+                      <a
+                        href={`/l/${createdLink.slug}`}
+                        className="mt-1 block break-all font-medium text-green-700 underline underline-offset-4"
+                      >
+                        /l/{createdLink.slug}
+                      </a>
+                    </div>
+                  )}
+
+                  {!canCreateLink && (
+                    <div className="text-sm text-gray-500 space-y-1">
+                      {!isTitleValid && <p>• Title is required</p>}
+                      {!isDestinationUrlValid && <p>• Valid destination URL is required</p>}
+                      {totalActions === 0 && <p>• At least one action is required</p>}
+                      {totalActions > 0 && completedActions < totalActions && <p>• Complete all actions</p>}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </Card>
           </Card>
         </div>
       </div>
-    </div>
+  
   )
 }

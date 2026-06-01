@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
-import { Bell, ChevronDown, Filter, Search, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, Search, Sparkles } from "lucide-react";
+
+import {
+  ToolbarFilterDrawer,
+  type ToolbarFilterField,
+} from "@/components/dashboard/filter-drawer";
 
 export function PageHeader({
   title,
-  description,
-  action,
-  eyebrow,
 }: {
   title: string;
   description: string;
@@ -13,23 +15,43 @@ export function PageHeader({
   eyebrow?: string;
 }) {
   return (
-    <div className="mb-6 border-b border-slate-200/80 pb-5">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-blue-700">
-            <Sparkles size={13} />
-            {eyebrow ?? "Link4Sub"}
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-            {title}
-          </h1>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 sm:text-base">
-            {description}
-          </p>
-        </div>
-        {action}
-      </div>
+     <div className="mb-4 pb-4">
+      <nav className="mb-3 flex items-center gap-1 text-xs font-semibold text-slate-400">
+        <span className="hover:text-slate-600">Home</span>
+        <ChevronRight size={14} className="text-slate-300" />
+        <span className="text-slate-600">Social links</span>
+      </nav>
+
+      {/* <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-blue-600">
+        <Sparkles size={12} />
+        Affiliate Links
+      </div> */}
+
+      <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+        {title}
+      </h1>
+
+      {/* <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-500">
+        Theo dõi hiệu suất từng link, tạo URL rút gọn và tối ưu chiến dịch kiếm tiền.
+      </p> */}
     </div>
+    // <div className="mb-4 border-b border-slate-200 pb-4">
+    //   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    //     <div className="max-w-2xl">
+    //       <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-blue-600">
+    //         <Sparkles size={12} />
+    //         {eyebrow ?? "Rekonise"}
+    //       </div>
+    //       <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+    //         {title}
+    //       </h1>
+    //       <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-500">
+    //         {description}
+    //       </p>
+    //     </div>
+    //     {action ? <div className="shrink-0">{action}</div> : null}
+    //   </div>
+    // </div>
   );
 }
 
@@ -42,7 +64,7 @@ export function SoftCard({
 }) {
   return (
     <article
-      className={`rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_14px_28px_rgba(15,23,42,0.08)] ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white shadow-[0_6px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.07)] ${className}`}
     >
       {children}
     </article>
@@ -63,19 +85,19 @@ export function StatCard({
   tone?: "blue" | "emerald" | "violet" | "amber" | "rose";
 }) {
   const tones = {
-    blue: "from-blue-500 to-indigo-500",
-    emerald: "from-emerald-500 to-teal-500",
-    violet: "from-violet-500 to-fuchsia-500",
-    amber: "from-amber-400 to-orange-500",
-    rose: "from-rose-500 to-pink-500",
+    blue: "bg-blue-50 text-blue-700 ring-blue-100",
+    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    violet: "bg-violet-50 text-violet-700 ring-violet-100",
+    amber: "bg-amber-50 text-amber-700 ring-amber-100",
+    rose: "bg-rose-50 text-rose-700 ring-rose-100",
   };
 
   return (
-    <SoftCard className="relative overflow-hidden p-5">
+    <SoftCard className="relative overflow-hidden p-4">
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-[1.7rem]">
             {value}
           </p>
           {detail ? (
@@ -84,7 +106,7 @@ export function StatCard({
         </div>
         {icon ? (
           <span
-            className={`grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${tones[tone]} text-white shadow-[0_10px_20px_rgba(15,23,42,0.14)]`}
+            className={`grid size-9 shrink-0 place-items-center rounded-lg ring-1 ${tones[tone]}`}
           >
             {icon}
           </span>
@@ -130,12 +152,12 @@ export function AppButton({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-[0_6px_16px_rgba(37,99,235,0.18)] hover:shadow-[0_8px_20px_rgba(37,99,235,0.22)]",
+      "bg-blue-600 text-white shadow-[0_6px_16px_rgba(37,99,235,0.16)] hover:bg-blue-700 hover:shadow-[0_8px_20px_rgba(37,99,235,0.18)]",
     secondary:
       "border border-slate-200 bg-white text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-white",
     ghost: "text-slate-600 hover:bg-white hover:text-slate-950",
     danger:
-      "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-[0_6px_16px_rgba(244,63,94,0.18)]",
+      "bg-rose-600 text-white shadow-[0_6px_16px_rgba(244,63,94,0.16)] hover:bg-rose-700",
   };
 
   return (
@@ -149,8 +171,16 @@ export function AppButton({
 
 export function Toolbar({
   placeholder = "Tìm kiếm...",
+  filterFields,
+  filterTitle,
+  filterDescription,
+  filterButtonLabel,
 }: {
   placeholder?: string;
+  filterFields?: ToolbarFilterField[];
+  filterTitle?: string;
+  filterDescription?: string;
+  filterButtonLabel?: string;
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
@@ -161,10 +191,12 @@ export function Toolbar({
           placeholder={placeholder}
         />
       </div>
-      <AppButton variant="secondary">
-        <Filter size={16} />
-        Bộ lọc
-      </AppButton>
+      <ToolbarFilterDrawer
+        fields={filterFields}
+        title={filterTitle}
+        description={filterDescription}
+        buttonLabel={filterButtonLabel}
+      />
     </div>
   );
 }
@@ -210,7 +242,7 @@ export function EmptyState({
   return (
     <SoftCard className="grid min-h-64 place-items-center p-8 text-center">
       <div className="max-w-sm">
-        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 text-blue-700">
+        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
           <Sparkles size={24} />
         </div>
         <h3 className="text-lg font-bold text-slate-950">{title}</h3>
@@ -231,16 +263,16 @@ export function ProgressBar({
   tone?: "blue" | "emerald" | "violet" | "amber";
 }) {
   const tones = {
-    blue: "from-blue-500 to-indigo-500",
-    emerald: "from-emerald-500 to-teal-500",
-    violet: "from-violet-500 to-fuchsia-500",
-    amber: "from-amber-400 to-orange-500",
+    blue: "bg-blue-600",
+    emerald: "bg-emerald-600",
+    violet: "bg-violet-600",
+    amber: "bg-amber-500",
   };
 
   return (
     <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${tones[tone]}`}
+        className={`h-full rounded-full ${tones[tone]}`}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
@@ -286,7 +318,7 @@ export function DataTable({
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-lg bg-gradient-to-r from-slate-100 via-white to-slate-100 ${className}`}
+      className={`animate-pulse rounded-lg bg-slate-100 ${className}`}
     />
   );
 }

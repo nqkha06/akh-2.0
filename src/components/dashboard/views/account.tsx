@@ -12,12 +12,12 @@ export function AccountView() {
       />
       <section className="grid gap-5 xl:grid-cols-[360px_1fr]">
         <SoftCard className="p-6">
-          <div className="grid size-20 place-items-center rounded-lg bg-gradient-to-br from-amber-200 to-orange-300 text-3xl font-bold text-slate-900">
+          <div className="grid size-20 place-items-center rounded-lg bg-amber-100 text-3xl font-bold text-amber-800 ring-1 ring-amber-200">
             Q
           </div>
           <h2 className="mt-5 text-2xl font-bold text-slate-950">qkha</h2>
           <p className="text-sm font-semibold text-slate-500">
-            creator@link4sub.local
+            creator@Rekonise.local
           </p>
           <div className="mt-4">
             <Badge tone="emerald">Đã xác minh</Badge>

@@ -27,21 +27,21 @@ export function LoyaltyView() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <SoftCard className="overflow-hidden p-6">
-          <div className="rounded-lg bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-6 text-white">
+          <div className="rounded-lg border border-amber-100 bg-amber-50 p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/65">
+                <p className="text-sm font-bold uppercase tracking-[0.14em] text-amber-700">
                   Hạng hiện tại
                 </p>
-                <h2 className="mt-2 text-3xl font-bold">Đồng Creator</h2>
-                <p className="mt-2 text-sm font-semibold text-white/75">
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">Đồng Creator</h2>
+                <p className="mt-2 text-sm font-semibold text-slate-600">
                   Còn 6,000 điểm để lên Bạc.
                 </p>
               </div>
-              <Trophy size={36} className="text-white/85" />
+              <Trophy size={36} className="text-amber-700" />
             </div>
             <div className="mt-8">
-              <div className="mb-2 flex justify-between text-sm font-bold text-white/78">
+              <div className="mb-2 flex justify-between text-sm font-bold text-slate-600">
                 <span>4,000 điểm</span>
                 <span>10,000 điểm</span>
               </div>

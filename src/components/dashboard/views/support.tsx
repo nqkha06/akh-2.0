@@ -138,7 +138,7 @@ export function SupportView() {
               <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3">
                 <Mail size={18} className="text-blue-600" />
                 <div>
-                  <p className="text-sm font-bold text-slate-800">support@link4sub.com</p>
+                  <p className="text-sm font-bold text-slate-800">support@Rekonise.com</p>
                   <p className="text-xs font-semibold text-slate-500">Phản hồi trong 12h</p>
                 </div>
               </div>

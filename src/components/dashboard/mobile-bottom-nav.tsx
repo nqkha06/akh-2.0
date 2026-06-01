@@ -32,7 +32,7 @@ export function MobileBottomNav() {
             <div className="flex flex-1 flex-col items-center">
               <button
                 onClick={() => setOpen(true)}
-                className="group -mt-7 flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 text-white shadow-[0_12px_25px_rgba(16,185,129,0.45)] ring-1 ring-white/70 transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                className="group -mt-7 flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_12px_25px_rgba(37,99,235,0.28)] ring-1 ring-white/70 transition-transform hover:-translate-y-1 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
               >
                 <PlusCircle className="h-6 w-6" />
               </button>

@@ -52,21 +52,21 @@ export function LevelsView() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <SoftCard className="overflow-hidden p-6">
-          <div className="rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-emerald-500 p-6 text-white">
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/60">
+                <p className="text-sm font-bold uppercase tracking-[0.14em] text-blue-700">
                   Cấp độ hiện tại
                 </p>
-                <h2 className="mt-2 text-3xl font-bold">Silver Partner</h2>
-                <p className="mt-2 text-sm font-semibold text-white/70">
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">Silver Partner</h2>
+                <p className="mt-2 text-sm font-semibold text-slate-600">
                   Cần thêm 3,200 điểm để mở khóa Gold.
                 </p>
               </div>
-              <Crown size={34} className="text-amber-200" />
+              <Crown size={34} className="text-amber-600" />
             </div>
             <div className="mt-8">
-              <div className="mb-2 flex items-center justify-between text-sm font-bold text-white/78">
+              <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-600">
                 <span>6,800 điểm</span>
                 <span>10,000 điểm</span>
               </div>
@@ -97,7 +97,7 @@ export function LevelsView() {
         {tiers.map((tier) => (
           <SoftCard key={tier.name} className="p-5">
             <div className="flex items-start justify-between">
-              <span className="grid size-11 place-items-center rounded-lg bg-gradient-to-br from-slate-100 to-white text-slate-600 shadow-sm">
+              <span className="grid size-11 place-items-center rounded-lg bg-slate-100 text-slate-600 ring-1 ring-slate-200">
                 {tier.unlocked ? <Rocket size={20} /> : <LockKeyhole size={20} />}
               </span>
               <Badge tone={tier.unlocked ? "emerald" : "slate"}>

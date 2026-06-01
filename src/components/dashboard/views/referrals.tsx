@@ -22,7 +22,7 @@ export function ReferralsView() {
       <PageHeader
         eyebrow="Referral"
         title="Giới thiệu"
-        description="Mời bạn bè tham gia Link4Sub và nhận hoa hồng từ hoạt động kiếm tiền của họ."
+        description="Mời bạn bè tham gia Rekonise và nhận hoa hồng từ hoạt động kiếm tiền của họ."
         action={
           <AppButton>
             <Share2 size={16} />
@@ -33,16 +33,16 @@ export function ReferralsView() {
 
       <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <SoftCard className="overflow-hidden p-6">
-          <div className="rounded-lg bg-gradient-to-br from-blue-600 via-violet-600 to-fuchsia-500 p-6 text-white">
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-6">
             <Badge tone="emerald">Reward campaign</Badge>
-            <h2 className="mt-5 max-w-xl text-3xl font-bold tracking-tight">
+            <h2 className="mt-5 max-w-xl text-3xl font-bold tracking-tight text-slate-950">
               Mời creator mới, nhận hoa hồng trọn đời từ doanh thu giới thiệu.
             </h2>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <div className="flex min-h-12 flex-1 items-center rounded-lg bg-white/14 px-4 font-bold">
-                link4sub.com/ref/qkha
+              <div className="flex min-h-12 flex-1 items-center rounded-lg border border-blue-100 bg-white px-4 font-bold text-slate-700">
+                Rekonise.com/ref/qkha
               </div>
-              <button className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-4 font-bold text-slate-950 transition">
+              <button className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 font-bold text-white transition hover:bg-blue-700">
                 <Copy size={17} />
                 Copy
               </button>

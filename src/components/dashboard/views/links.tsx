@@ -1,124 +1,417 @@
-import { Copy, ExternalLink, Link2, MousePointerClick, Plus, TrendingUp } from "lucide-react";
+"use client";
+import { useEffect, useState } from "react";
+import { Home, Link2, Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-import { CreateLinkDialog } from "@/components/create-link-dialog";
+import SocialLinksGenerator from "@/app/create/demo";
+import { LinkCard } from "@/components/dashboard/views/link-card";
 import {
   AppButton,
-  Badge,
-  DropdownFilter,
   EmptyState,
   PageHeader,
-  StatCard,
-  TabPills,
-  TableShell,
+  SoftCard,
   Toolbar,
 } from "@/components/dashboard/ui";
-import { linkRows } from "@/lib/dashboard-data";
+import { getLinks, type LinkDto } from "@/lib/api-client";
+
+type LinksTab = "overview" | "create" | "shortened";
+
+const linksTabs: Array<{
+  id: LinksTab;
+  label: string;
+  mobileLabel?: string;
+  icon: LucideIcon;
+}> = [
+    { id: "overview", label: "Overview", icon: Home },
+    { id: "create", label: "Create", icon: Plus },
+    {
+      id: "shortened",
+      label: "Shortened links",
+      mobileLabel: "Links",
+      icon: Link2,
+    },
+  ];
+function LinksTabs({
+  activeTab,
+  onChange,
+}: {
+  activeTab: LinksTab;
+  onChange: (tab: LinksTab) => void;
+}) {
+  return (
+    <div className="mb-5 flex">
+      <div className="inline-flex w-full rounded-2xl bg-slate-100/70 p-1 ring-1 ring-slate-200/70 sm:w-auto">
+        {linksTabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onChange(tab.id)}
+              className={`inline-flex h-10 flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition-all duration-200 sm:flex-none sm:px-4 ${active
+                ? "border-slate-200 bg-white text-slate-950 shadow-sm"
+                : "border-transparent text-slate-500 hover:bg-white/60 hover:text-slate-900"
+                }`}
+            >
+              <Icon size={16} />
+              {tab.mobileLabel ? (
+                <>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.mobileLabel}</span>
+                </>
+              ) : (
+                tab.label
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function LinksView() {
+  const [links, setLinks] = useState<LinkDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<LinksTab>("overview");
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadLinks() {
+      try {
+        const data = await getLinks();
+        if (mounted) {
+          setLinks(data);
+          setError("");
+        }
+      } catch (loadError) {
+        if (mounted) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Không tải được danh sách link.",
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadLinks();
+    window.addEventListener("Rekonise:link-created", loadLinks);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("Rekonise:link-created", loadLinks);
+    };
+  }, []);
+
   return (
     <>
       <PageHeader
-        eyebrow="Affiliate links"
-        title="Quản lí liên kết"
-        description="Theo dõi hiệu suất từng link, copy nhanh URL rút gọn và tối ưu chiến dịch có doanh thu cao."
-        action={<CreateLinkDialog />}
+        eyebrow="Links management"
+        title="Social links"
+        description="Tạo và quản lý các liên kết rút gọn để theo dõi hiệu suất và tối ưu thu nhập."
       />
 
-      <section className="mb-5 grid gap-4 md:grid-cols-3">
-        <StatCard
-          label="Tổng liên kết"
-          value="128"
-          detail="+12 link mới"
-          icon={<Link2 size={20} />}
-          tone="blue"
-        />
-        <StatCard
-          label="Click tháng này"
-          value="42.8K"
-          detail="+8.1%"
-          icon={<MousePointerClick size={20} />}
-          tone="emerald"
-        />
-        <StatCard
-          label="Tỉ lệ chuyển đổi"
-          value="12.6%"
-          detail="Top 15% nền tảng"
-          icon={<TrendingUp size={20} />}
-          tone="violet"
-        />
-      </section>
+      <LinksTabs activeTab={activeTab} onChange={setActiveTab} />
 
-      <div className="mb-5">
-        <Toolbar placeholder="Tìm chiến dịch, URL rút gọn..." />
-      </div>
+      {activeTab === "overview" ? (
+        <div className="space-y-5">
+          {/* <Toolbar
+            placeholder="Tìm chiến dịch, URL rút gọn..."
+            filterTitle="Lọc liên kết"
+            filterDescription="Chọn điều kiện để thu hẹp danh sách liên kết."
+            filterFields={[
+              {
+                id: "status",
+                label: "Trạng thái",
+                type: "select",
+                placeholder: "Tất cả trạng thái",
+                options: [
+                  { label: "Đang hoạt động", value: "active" },
+                  { label: "Nháp", value: "draft" },
+                  { label: "Tạm dừng", value: "paused" },
+                ],
+              },
+              {
+                id: "createdAt",
+                label: "Ngày tạo",
+                type: "date",
+              },
+              {
+                id: "minClicks",
+                label: "Click tối thiểu",
+                type: "number",
+                placeholder: "Ví dụ: 100",
+              },
+              {
+                id: "highPerformance",
+                label: "Chỉ hiện link hiệu suất cao",
+                type: "checkbox",
+                description: "Ưu tiên link có lượt click và chuyển đổi tốt.",
+              },
+            ]}
+          /> */}
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <TabPills items={["Tất cả", "Đang chạy", "Nháp", "Tạm dừng"]} active={0} />
-        <DropdownFilter label="Trạng thái" />
-        <DropdownFilter label="Ngày tạo" />
-        <DropdownFilter label="Hiệu suất" />
-      </div>
+          {error ? (
+            <EmptyState
+              title="Không tải được liên kết"
+              description={error}
+              action={
+                <AppButton>
+                  <Plus size={16} />
+                  Thử lại
+                </AppButton>
+              }
+            />
+          ) : loading ? (
+            <div className="space-y-5">
+              <Toolbar
+                placeholder="Tìm chiến dịch, URL rút gọn..."
+                filterTitle="Lọc liên kết"
+                filterDescription="Chọn điều kiện để thu hẹp danh sách liên kết."
+                filterFields={[
+                  {
+                    id: "status",
+                    label: "Trạng thái",
+                    type: "select",
+                    placeholder: "Tất cả trạng thái",
+                    options: [
+                      { label: "Đang hoạt động", value: "active" },
+                      { label: "Nháp", value: "draft" },
+                      { label: "Tạm dừng", value: "paused" },
+                    ],
+                  },
+                  {
+                    id: "createdAt",
+                    label: "Ngày tạo",
+                    type: "date",
+                  },
+                  {
+                    id: "minClicks",
+                    label: "Click tối thiểu",
+                    type: "number",
+                    placeholder: "Ví dụ: 100",
+                  },
+                  {
+                    id: "highPerformance",
+                    label: "Chỉ hiện link hiệu suất cao",
+                    type: "checkbox",
+                    description:
+                      "Ưu tiên link có lượt click và chuyển đổi tốt.",
+                  },
+                ]}
+              />
 
-      {linkRows.length === 0 ? (
-        <EmptyState
-          title="Chưa có liên kết nào"
-          description="Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu."
-          action={
-            <AppButton>
-              <Plus size={16} />
-              Tạo liên kết mới
-            </AppButton>
-          }
-        />
-      ) : (
-        <TableShell
-          headers={[
-            "Tên chiến dịch",
-            "URL rút gọn",
-            "Click",
-            "Chuyển đổi",
-            "Doanh thu",
-            "Trạng thái",
-            "",
-          ]}
-          rows={linkRows.map((row, index) => (
-            <tr key={row.name} className="transition hover:bg-blue-50/35">
-              <td className="px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 text-sm font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <div className="font-bold text-slate-900">{row.name}</div>
-                    <div className="mt-1 text-xs font-semibold text-slate-400">
-                      {row.type}
+              {error ? (
+                <EmptyState
+                  title="Không tải được liên kết"
+                  description={error}
+                  action={
+                    <AppButton>
+                      <Plus size={16} />
+                      Thử lại
+                    </AppButton>
+                  }
+                />
+              ) : loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((row) => (
+                    <div
+                      key={row}
+                      className="rounded-3xl border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-3">
+                          <div className="h-7 w-40 animate-pulse rounded-lg bg-slate-100" />
+                          <div className="h-5 w-96 animate-pulse rounded-lg bg-slate-100" />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <div className="h-8 w-20 animate-pulse rounded-full bg-slate-100" />
+                          <div className="h-8 w-36 animate-pulse rounded-full bg-slate-100" />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex gap-3">
+                            <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-11 w-24 animate-pulse rounded-xl bg-slate-100" />
+                          </div>
+
+                          <div className="h-11 w-52 animate-pulse rounded-xl bg-slate-100" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </td>
-              <td className="px-5 py-4">
-                <button className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
-                  link4sub.com/{row.name.toLowerCase().replaceAll(" ", "-")}
-                  <Copy size={13} />
+              ) : links.length === 0 ? (
+                <EmptyState
+                  title="Chưa có liên kết nào"
+                  description="Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("create")}
+                      className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16)] transition hover:bg-blue-700"
+                    >
+                      <Plus size={16} />
+                      Tạo liên kết mới
+                    </button>
+                  }
+                />
+              ) : (
+                <section className="space-y-4">
+                  <div className="space-y-4">
+                    {links.map((link) => (
+                      <LinkCard key={link.id} link={link} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          ) : links.length === 0 ? (
+            <EmptyState
+              title="Chưa có liên kết nào"
+              description="Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu."
+              action={
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("create")}
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16)] transition hover:bg-blue-700"
+                >
+                  <Plus size={16} />
+                  Tạo liên kết mới
                 </button>
-              </td>
-              <td className="px-5 py-4">{row.views}</td>
-              <td className="px-5 py-4">{index === 0 ? "18.4%" : "9.8%"}</td>
-              <td className="px-5 py-4">{row.revenue}</td>
-              <td className="px-5 py-4">
-                <Badge tone={row.status === "Nháp" ? "slate" : "emerald"}>
-                  {row.status}
-                </Badge>
-              </td>
-              <td className="px-5 py-4 text-right">
-                <button className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:text-blue-600 hover:shadow-[0_2px_6px_rgba(15,23,42,0.08)]">
-                  <ExternalLink size={16} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        />
-      )}
+              }
+            />
+          ) : (
+            <div className="space-y-5">
+              <Toolbar
+                placeholder="Tìm chiến dịch, URL rút gọn..."
+                filterTitle="Lọc liên kết"
+                filterDescription="Chọn điều kiện để thu hẹp danh sách liên kết."
+                filterFields={[
+                  {
+                    id: "status",
+                    label: "Trạng thái",
+                    type: "select",
+                    placeholder: "Tất cả trạng thái",
+                    options: [
+                      { label: "Đang hoạt động", value: "active" },
+                      { label: "Nháp", value: "draft" },
+                      { label: "Tạm dừng", value: "paused" },
+                    ],
+                  },
+                  {
+                    id: "createdAt",
+                    label: "Ngày tạo",
+                    type: "date",
+                  },
+                  {
+                    id: "minClicks",
+                    label: "Click tối thiểu",
+                    type: "number",
+                    placeholder: "Ví dụ: 100",
+                  },
+                  {
+                    id: "highPerformance",
+                    label: "Chỉ hiện link hiệu suất cao",
+                    type: "checkbox",
+                    description:
+                      "Ưu tiên link có lượt click và chuyển đổi tốt.",
+                  },
+                ]}
+              />
+
+              {error ? (
+                <EmptyState
+                  title="Không tải được liên kết"
+                  description={error}
+                  action={
+                    <AppButton>
+                      <Plus size={16} />
+                      Thử lại
+                    </AppButton>
+                  }
+                />
+              ) : loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((row) => (
+                    <div
+                      key={row}
+                      className="rounded-3xl border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-3">
+                          <div className="h-7 w-40 animate-pulse rounded-lg bg-slate-100" />
+                          <div className="h-5 w-96 animate-pulse rounded-lg bg-slate-100" />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <div className="h-8 w-20 animate-pulse rounded-full bg-slate-100" />
+                          <div className="h-8 w-36 animate-pulse rounded-full bg-slate-100" />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex gap-3">
+                            <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-11 w-24 animate-pulse rounded-xl bg-slate-100" />
+                          </div>
+
+                          <div className="h-11 w-52 animate-pulse rounded-xl bg-slate-100" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : links.length === 0 ? (
+                <EmptyState
+                  title="Chưa có liên kết nào"
+                  description="Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("create")}
+                      className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16)] transition hover:bg-blue-700"
+                    >
+                      <Plus size={16} />
+                      Tạo liên kết mới
+                    </button>
+                  }
+                />
+              ) : (
+                <section className="space-y-4">
+                  <div className="space-y-4">
+                    {links.map((link) => (
+                      <LinkCard key={link.id} link={link} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {activeTab === "create" ? (
+        <SocialLinksGenerator embedded />
+      ) : null}
+
+      {activeTab === "shortened" ? (
+        <div className="space-y-5">No section yet, coming soon! 🚀</div>
+      ) : null}
     </>
   );
 }

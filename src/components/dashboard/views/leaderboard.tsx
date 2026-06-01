@@ -34,10 +34,10 @@ export function LeaderboardView() {
             <div
               className={`mx-auto grid size-16 place-items-center rounded-lg text-white ${
                 index === 0
-                  ? "bg-gradient-to-br from-amber-300 to-orange-500"
+                  ? "bg-amber-500"
                   : index === 1
-                    ? "bg-gradient-to-br from-slate-300 to-slate-500"
-                    : "bg-gradient-to-br from-orange-300 to-amber-700"
+                    ? "bg-slate-500"
+                    : "bg-orange-600"
               }`}
             >
               {index === 0 ? <Crown size={28} /> : <Medal size={28} />}

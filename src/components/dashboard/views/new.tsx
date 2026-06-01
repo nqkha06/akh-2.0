@@ -39,19 +39,19 @@ export function NewView() {
       />
 
       <SoftCard className="mb-5 overflow-hidden p-6">
-        <div className="grid gap-5 rounded-lg bg-gradient-to-br from-blue-600 via-violet-600 to-fuchsia-500 p-6 text-white md:grid-cols-[1fr_260px] md:items-center">
+        <div className="grid gap-5 rounded-lg border border-blue-100 bg-blue-50 p-6 md:grid-cols-[1fr_260px] md:items-center">
           <div>
             <Badge tone="emerald">Mới nhất</Badge>
-            <h2 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight">
+            <h2 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-slate-950">
               Bộ giao diện Light UI premium cho toàn bộ affiliate dashboard.
             </h2>
-            <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-white/72">
+            <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-slate-600">
               Sidebar grouping, header search, card depth, table nâng cấp và các
               route riêng cho từng tính năng.
             </p>
           </div>
-          <div className="grid aspect-square place-items-center rounded-lg bg-white/14">
-            <Sparkles size={72} className="text-white" />
+          <div className="grid aspect-square place-items-center rounded-lg bg-white text-blue-700 ring-1 ring-blue-100">
+            <Sparkles size={72} />
           </div>
         </div>
       </SoftCard>
