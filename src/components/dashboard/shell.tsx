@@ -300,7 +300,7 @@ function Topbar() {
 function DashboardFooter() {
   return (
     <footer className="border-t border-slate-200/80 px-4 py-5 text-sm font-semibold text-slate-500 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row items-center md:justify-between">
         <p>© 2026 Rekonise.</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Link href="/support" className="transition hover:text-slate-950">

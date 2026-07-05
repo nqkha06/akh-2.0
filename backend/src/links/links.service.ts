@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -9,6 +14,8 @@ export class LinksService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createLinkDto: CreateLinkDto) {
+    await this.validateDestination(createLinkDto);
+
     const slug = await this.createUniqueSlug(
       createLinkDto.customAlias || createLinkDto.title,
     );
@@ -109,6 +116,27 @@ export class LinksService {
     }
 
     return slug;
+  }
+
+  private async validateDestination(createLinkDto: CreateLinkDto) {
+    if (createLinkDto.inputType !== "file") {
+      return;
+    }
+
+    if (!createLinkDto.selectedFile) {
+      throw new BadRequestException("Vui lòng chọn file destination.");
+    }
+
+    const file = await this.prisma.managedFile.findFirst({
+      where: {
+        id: createLinkDto.selectedFile,
+        deletedAt: null,
+      },
+    });
+
+    if (!file) {
+      throw new BadRequestException("File destination không tồn tại.");
+    }
   }
 
   private slugify(value: string) {

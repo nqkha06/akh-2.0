@@ -14,7 +14,7 @@ import {
 } from "@/components/dashboard/ui";
 import { getLinks, type LinkDto } from "@/lib/api-client";
 
-type LinksTab = "overview" | "create" | "shortened";
+type LinksTab = "overview" | "create" | "monetization";
 
 const linksTabs: Array<{
   id: LinksTab;
@@ -25,8 +25,8 @@ const linksTabs: Array<{
     { id: "overview", label: "Overview", icon: Home },
     { id: "create", label: "Create", icon: Plus },
     {
-      id: "shortened",
-      label: "Shortened links",
+      id: "monetization",
+      label: "Monetization",
       mobileLabel: "Links",
       icon: Link2,
     },
@@ -409,7 +409,7 @@ export function LinksView() {
         <SocialLinksGenerator embedded />
       ) : null}
 
-      {activeTab === "shortened" ? (
+      {activeTab === "monetization" ? (
         <div className="space-y-5">No section yet, coming soon! 🚀</div>
       ) : null}
     </>

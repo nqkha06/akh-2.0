@@ -45,6 +45,30 @@ export type LinkDto = {
   updatedAt: string;
 };
 
+export type ManagedFileDto = {
+  id: string;
+  alias: string;
+  name: string;
+  originalName: string;
+  extension: string | null;
+  mimeType: string;
+  size: number;
+  sizeLabel: string;
+  isPublic: boolean;
+  downloadCount: number;
+  status: string;
+  downloadUrl: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type FilesResponseDto = {
+  items: ManagedFileDto[];
+  total: number;
+  totalSize: number;
+};
+
 export type CreateLinkPayload = {
   destinationUrl: string;
   title: string;
@@ -73,6 +97,10 @@ export type CreateLinkPayload = {
     };
   };
 };
+
+function absoluteApiUrl(path: string) {
+  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 export async function createLink(payload: CreateLinkPayload) {
   const response = await fetch(`${API_URL}/links`, {
@@ -112,6 +140,96 @@ export async function getLink(slug: string) {
   }
 
   return (await response.json()) as LinkDto;
+}
+
+export async function getFiles(params?: {
+  q?: string;
+  sort?: "date" | "name" | "size" | "downloads";
+  direction?: "asc" | "desc";
+  status?: "active" | "trash";
+}) {
+  const searchParams = new URLSearchParams();
+
+  if (params?.q) {
+    searchParams.set("q", params.q);
+  }
+
+  if (params?.sort) {
+    searchParams.set("sort", params.sort);
+  }
+
+  if (params?.direction) {
+    searchParams.set("direction", params.direction);
+  }
+
+  if (params?.status) {
+    searchParams.set("status", params.status);
+  }
+
+  const query = searchParams.toString();
+  const response = await fetch(`${API_URL}/files${query ? `?${query}` : ""}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as FilesResponseDto;
+}
+
+export async function uploadFile(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/files`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as ManagedFileDto;
+}
+
+export async function updateFile(
+  id: string,
+  payload: {
+    name?: string;
+    isPublic?: boolean;
+  },
+) {
+  const response = await fetch(`${API_URL}/files/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as ManagedFileDto;
+}
+
+export async function deleteFile(id: string) {
+  const response = await fetch(`${API_URL}/files/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as ManagedFileDto;
+}
+
+export function getFileDownloadUrl(file: Pick<ManagedFileDto, "id">) {
+  return absoluteApiUrl(`/files/${file.id}/download`);
 }
 
 async function getApiError(response: Response) {

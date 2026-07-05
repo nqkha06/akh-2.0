@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
+import { FilesModule } from "./files/files.module";
 import { LinksModule } from "./links/links.module";
 import { PrismaModule } from "./prisma/prisma.module";
 
@@ -10,6 +11,7 @@ import { PrismaModule } from "./prisma/prisma.module";
       isGlobal: true,
     }),
     PrismaModule,
+    FilesModule,
     LinksModule,
   ],
 })
