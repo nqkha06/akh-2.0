@@ -52,6 +52,17 @@ model LinkAction {
   @@index([linkId])
 }
 
+model Snippet {
+  id        String   @id @default(cuid())
+  name      String
+  content   String
+  copies    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
 model ManagedFile {
   id            String    @id @default(cuid())
   alias         String    @unique

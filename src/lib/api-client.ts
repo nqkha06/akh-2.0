@@ -65,6 +65,15 @@ export type ManagedFileDto = {
   deletedAt: string | null;
 };
 
+export type SnippetDto = {
+  id: string;
+  name: string;
+  content: string;
+  copies: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type FilesResponseDto = {
   items: ManagedFileDto[];
   total: number;
@@ -222,6 +231,59 @@ export async function checkLinkAliasAvailability(alias: string) {
     alias: string;
     available: boolean;
   };
+}
+
+export async function getSnippets() {
+  const response = await fetch(`${API_URL}/snippets`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as SnippetDto[];
+}
+
+export async function createSnippet(payload: { name?: string; content: string }) {
+  const response = await fetch(`${API_URL}/snippets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as SnippetDto;
+}
+
+export async function updateSnippet(
+  id: string,
+  payload: { name?: string; content?: string },
+) {
+  const response = await fetch(`${API_URL}/snippets/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as SnippetDto;
+}
+
+export async function deleteSnippet(id: string) {
+  const response = await fetch(`${API_URL}/snippets/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
 }
 
 export async function getLink(slug: string) {

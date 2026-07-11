@@ -5,6 +5,7 @@ import { BioPagesModule } from "./bio-pages/bio-pages.module";
 import { FilesModule } from "./files/files.module";
 import { LinksModule } from "./links/links.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { SnippetsModule } from "./snippets/snippets.module";
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     BioPagesModule,
     FilesModule,
     LinksModule,
+    SnippetsModule,
   ],
 })
 export class AppModule {}

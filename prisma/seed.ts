@@ -2,6 +2,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const demoSnippets = [
+  {
+    id: "demo-snippet-welcome",
+    name: "Welcome Message",
+    content: "Welcome to our exclusive content!",
+  },
+  {
+    id: "demo-snippet-coupon",
+    name: "Limited Offer",
+    content: "Get 50% off on your first purchase",
+  },
+  {
+    id: "demo-snippet-newsletter",
+    name: "Newsletter Signup",
+    content: "Subscribe to our newsletter for updates",
+  },
+];
+
 const demoLinks = [
   {
     slug: "music-drop",
@@ -145,6 +163,14 @@ const demoLinks = [
 ];
 
 async function main() {
+  for (const snippet of demoSnippets) {
+    await prisma.snippet.upsert({
+      where: { id: snippet.id },
+      update: snippet,
+      create: snippet,
+    });
+  }
+
   for (const link of demoLinks) {
     const { actions, ...data } = link;
 

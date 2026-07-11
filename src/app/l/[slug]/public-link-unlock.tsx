@@ -546,11 +546,7 @@ export function PublicLinkUnlock({ link }: { link: LinkDto }) {
                 className="h-full w-full object-cover"
               />
             </div>
-          ) : backgroundMediaUrl ? null : (
-            <div className="mb-3 grid h-20 place-items-center rounded-lg bg-linear-to-br from-slate-900 to-slate-700 text-white">
-              <LockKeyhole size={34} />
-            </div>
-          )}
+          ) : null}
 
           <div className="text-center">
 

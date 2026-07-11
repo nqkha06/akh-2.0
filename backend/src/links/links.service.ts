@@ -14,7 +14,7 @@ export class LinksService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createLinkDto: CreateLinkDto) {
-    await this.validateDestination(createLinkDto);
+    const destinationUrl = await this.resolveDestination(createLinkDto);
 
     const customAlias = this.normalizeAlias(createLinkDto.customAlias);
     const slug = customAlias || await this.createUniqueSlug(createLinkDto.title);
@@ -30,7 +30,7 @@ export class LinksService {
       const link = await this.prisma.link.create({
         data: {
           slug,
-          destinationUrl: createLinkDto.destinationUrl,
+          destinationUrl,
           title: createLinkDto.title.trim(),
           inputType: createLinkDto.inputType,
           selectedSnippet: this.emptyToNull(createLinkDto.selectedSnippet),
@@ -127,7 +127,7 @@ export class LinksService {
   }
 
   async update(id: string, updateLinkDto: CreateLinkDto) {
-    await this.validateDestination(updateLinkDto);
+    const destinationUrl = await this.resolveDestination(updateLinkDto);
 
     const existing = await this.prisma.link.findUnique({
       where: {
@@ -154,7 +154,7 @@ export class LinksService {
           id,
         },
         data: {
-          destinationUrl: updateLinkDto.destinationUrl,
+          destinationUrl,
           title: updateLinkDto.title.trim(),
           inputType: updateLinkDto.inputType,
           selectedSnippet: this.emptyToNull(updateLinkDto.selectedSnippet),
@@ -242,9 +242,25 @@ export class LinksService {
     }
   }
 
-  private async validateDestination(createLinkDto: CreateLinkDto) {
+  private async resolveDestination(createLinkDto: CreateLinkDto) {
+    if (createLinkDto.inputType === "snippet") {
+      if (!createLinkDto.selectedSnippet) {
+        throw new BadRequestException("Vui lòng chọn snippet.");
+      }
+
+      const snippet = await this.prisma.snippet.findUnique({
+        where: { id: createLinkDto.selectedSnippet },
+      });
+
+      if (!snippet) {
+        throw new BadRequestException("Snippet không tồn tại.");
+      }
+
+      return snippet.content;
+    }
+
     if (createLinkDto.inputType !== "file") {
-      return;
+      return createLinkDto.destinationUrl;
     }
 
     if (!createLinkDto.selectedFile) {
@@ -261,6 +277,8 @@ export class LinksService {
     if (!file) {
       throw new BadRequestException("File destination không tồn tại.");
     }
+
+    return createLinkDto.destinationUrl;
   }
 
   private slugify(value: string) {

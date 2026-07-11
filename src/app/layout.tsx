@@ -34,7 +34,6 @@ export default async function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <LanguageSwitcher />
             <div className="pb-24 lg:pb-0">{children}</div>
             <Toaster position="top-right" />
             <MobileBottomNav />
