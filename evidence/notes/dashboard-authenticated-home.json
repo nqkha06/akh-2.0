@@ -1,0 +1,168 @@
+{
+  "url": "https://rekonise.com/dashboard/links",
+  "title": "Links - Rekonise",
+  "headings": [],
+  "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com lock_open Links home Overview add Create link Shortened links 0 link selected Select all 1 edit Edit Actions Clear Title lock_open visibility calendar_month Unlock 0 4 local_fire_department Apr 4, 2026 task_alt more_vert Items per page: 10 1 – 1 of 1",
+  "links": [
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "Links",
+      "href": "https://rekonise.com/dashboard/links"
+    },
+    {
+      "text": "Link-in-bio",
+      "href": "https://rekonise.com/dashboard/link-in-bio"
+    },
+    {
+      "text": "Email lists",
+      "href": "https://rekonise.com/dashboard/email-lists"
+    },
+    {
+      "text": "Files",
+      "href": "https://rekonise.com/dashboard/storage"
+    },
+    {
+      "text": "Settings",
+      "href": "https://rekonise.com/dashboard/settings"
+    },
+    {
+      "text": "Analytics",
+      "href": "https://rekonise.com/dashboard/analytics"
+    },
+    {
+      "text": "Audience",
+      "href": "https://rekonise.com/dashboard/audience"
+    },
+    {
+      "text": "",
+      "href": "https://discord.gg/BArWfjznXM"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/getrekonise"
+    },
+    {
+      "text": "Links",
+      "href": "https://rekonise.com/dashboard"
+    },
+    {
+      "text": "home Overview",
+      "href": "https://rekonise.com/dashboard/links"
+    },
+    {
+      "text": "add Create",
+      "href": "https://rekonise.com/dashboard/links/create"
+    },
+    {
+      "text": "link Shortened links",
+      "href": "https://rekonise.com/dashboard/links/short"
+    }
+  ],
+  "buttons": [
+    {
+      "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+      "disabled": false,
+      "type": "button",
+      "aria": ""
+    },
+    {
+      "text": "khatg79@gmail.com",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "Select all 1",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "edit Edit Actions",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "Clear",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "lock_open",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "visibility",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "calendar_month",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "more_vert",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "type": "button",
+      "aria": "First page"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "type": "button",
+      "aria": "Previous page"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "type": "button",
+      "aria": "Next page"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "type": "button",
+      "aria": "Last page"
+    }
+  ],
+  "inputs": [
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "placeholder": "",
+      "required": false,
+      "autocomplete": "",
+      "valueState": "<filled>"
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "placeholder": "",
+      "required": false,
+      "autocomplete": "",
+      "valueState": "<filled>"
+    }
+  ]
+}

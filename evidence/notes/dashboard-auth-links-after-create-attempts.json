@@ -1,0 +1,141 @@
+{
+  "url": "https://rekonise.com/dashboard/links",
+  "title": "Links - Rekonise",
+  "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience khatg79@gmail.com lock_open Links home Overview add Create link Shortened links Shortened links",
+  "inputs": [
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "placeholder": "",
+      "required": false,
+      "valueState": "<filled>",
+      "formControlName": ""
+    }
+  ],
+  "buttons": [
+    {
+      "text": "khatg79@gmail.com",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "edit Edit Actions",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "Clear",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "lock_open",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "visibility",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "calendar_month",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "aria": "First page",
+      "type": "button"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "aria": "Previous page",
+      "type": "button"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "aria": "Next page",
+      "type": "button"
+    },
+    {
+      "text": "",
+      "disabled": true,
+      "aria": "Last page",
+      "type": "button"
+    }
+  ],
+  "links": [
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "Links",
+      "href": "https://rekonise.com/dashboard/links"
+    },
+    {
+      "text": "Link-in-bio",
+      "href": "https://rekonise.com/dashboard/link-in-bio"
+    },
+    {
+      "text": "Email lists",
+      "href": "https://rekonise.com/dashboard/email-lists"
+    },
+    {
+      "text": "Files",
+      "href": "https://rekonise.com/dashboard/storage"
+    },
+    {
+      "text": "Settings",
+      "href": "https://rekonise.com/dashboard/settings"
+    },
+    {
+      "text": "Analytics",
+      "href": "https://rekonise.com/dashboard/analytics"
+    },
+    {
+      "text": "Audience",
+      "href": "https://rekonise.com/dashboard/audience"
+    },
+    {
+      "text": "",
+      "href": "https://discord.gg/BArWfjznXM"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/getrekonise"
+    },
+    {
+      "text": "Links",
+      "href": "https://rekonise.com/dashboard"
+    },
+    {
+      "text": "home Overview",
+      "href": "https://rekonise.com/dashboard/links"
+    },
+    {
+      "text": "add Create",
+      "href": "https://rekonise.com/dashboard/links/create"
+    },
+    {
+      "text": "link Shortened links",
+      "href": "https://rekonise.com/dashboard/links/short"
+    }
+  ]
+}

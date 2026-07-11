@@ -1,0 +1,99 @@
+{
+  "url": "https://rekonise.com/dashboard/email-lists",
+  "title": "Email lists - Rekonise",
+  "headings": [
+    "12"
+  ],
+  "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com mail_outline Email lists home Overview add Create mail_outline 12 Dec 19, 2023 people_outline 0 subscribers edit delete",
+  "links": [
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "Links",
+      "href": "https://rekonise.com/dashboard/links"
+    },
+    {
+      "text": "Link-in-bio",
+      "href": "https://rekonise.com/dashboard/link-in-bio"
+    },
+    {
+      "text": "Email lists",
+      "href": "https://rekonise.com/dashboard/email-lists"
+    },
+    {
+      "text": "Files",
+      "href": "https://rekonise.com/dashboard/storage"
+    },
+    {
+      "text": "Settings",
+      "href": "https://rekonise.com/dashboard/settings"
+    },
+    {
+      "text": "Analytics",
+      "href": "https://rekonise.com/dashboard/analytics"
+    },
+    {
+      "text": "Audience",
+      "href": "https://rekonise.com/dashboard/audience"
+    },
+    {
+      "text": "",
+      "href": "https://discord.gg/BArWfjznXM"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/getrekonise"
+    },
+    {
+      "text": "Email lists",
+      "href": "https://rekonise.com/dashboard/email-lists"
+    },
+    {
+      "text": "home Overview",
+      "href": "https://rekonise.com/dashboard/email-lists"
+    },
+    {
+      "text": "add Create",
+      "href": ""
+    },
+    {
+      "text": "mail_outline 12 Dec 19, 2023 people_outline 0 subscribers edit delete",
+      "href": "https://rekonise.com/dashboard/email-lists/4829/emails"
+    }
+  ],
+  "buttons": [
+    {
+      "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+      "disabled": false,
+      "type": "button",
+      "aria": ""
+    },
+    {
+      "text": "khatg79@gmail.com",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "edit",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    },
+    {
+      "text": "delete",
+      "disabled": false,
+      "type": "",
+      "aria": ""
+    }
+  ],
+  "inputs": []
+}

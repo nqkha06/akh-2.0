@@ -1,0 +1,553 @@
+{
+  "publicUrl": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+  "visitor": {
+    "initial": {
+      "url": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+      "title": "Codex URL Demo 1783760537194 - Rekonise",
+      "textSample": "more_horiz Discover more Video Sharing Computer Drives & Storage EMAIL Networking How-To, DIY & Expert Content Codex URL Demo 1783760537194 Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock link More from this user Internet& Telecom Unlock Create your own link Online Video",
+      "inputs": [],
+      "buttons": [
+        {
+          "text": "more_horiz",
+          "disabled": false,
+          "aria": "Share",
+          "type": ""
+        },
+        {
+          "text": "Subscribe to channel",
+          "disabled": false,
+          "aria": "Subscribe to channel",
+          "type": "button"
+        },
+        {
+          "text": "lock Unlock link",
+          "disabled": true,
+          "aria": "Unlock link. 0 of 1 required steps completed",
+          "type": ""
+        },
+        {
+          "text": "",
+          "disabled": false,
+          "aria": "Close shopping anchor",
+          "type": ""
+        }
+      ],
+      "links": [
+        {
+          "text": "Unlock",
+          "href": "https://rekonise.com/unlock-4pbde"
+        }
+      ]
+    },
+    "afterAction": {
+      "url": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+      "title": "Codex URL Demo 1783760537194 - Rekonise",
+      "textSample": "more_horiz Discover more Video Sharing Computer Drives & Storage EMAIL Networking How-To, DIY & Expert Content Codex URL Demo 1783760537194 Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock link More from this user Internet& Telecom Unlock Create your own link Online Video",
+      "inputs": [],
+      "buttons": [
+        {
+          "text": "more_horiz",
+          "disabled": false,
+          "aria": "Share",
+          "type": ""
+        },
+        {
+          "text": "Subscribe to channel",
+          "disabled": true,
+          "aria": "Subscribe to channel",
+          "type": "button"
+        },
+        {
+          "text": "lock Unlock link",
+          "disabled": true,
+          "aria": "Unlock link. 0 of 1 required steps completed",
+          "type": ""
+        },
+        {
+          "text": "",
+          "disabled": false,
+          "aria": "Close shopping anchor",
+          "type": ""
+        }
+      ],
+      "links": [
+        {
+          "text": "Unlock",
+          "href": "https://rekonise.com/unlock-4pbde"
+        }
+      ]
+    }
+  },
+  "creatorInspections": [
+    {
+      "type": "file-toggle-exact",
+      "info": {
+        "url": "https://rekonise.com/dashboard/links/create",
+        "title": "Create new link - Rekonise",
+        "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com lock_open Links - Create new link home Overview add Create link Shortened links link URL folder_open File text_snippet Snippet cloud_upload Select file Enter a title handshake ACTIONS history Most used add @pnhlong88 Subscribe to channel add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video 1. Select action delete add Add action expand_more Show advanced options tune Customization expand_more Cover Image add_photo_alternate Cover image Subtitle close Custom URL info You have to set a username before you can set a custom URL path. Choose a username brush Background expand_more mail_outline Email capturing expand_more Email lists add Create email list widgets Widgets / Previews expand_more bolt Upgrade to PRO to unlock alarm Expire link expand_more bolt Upgrade to PRO to unlock PREVIEW save Create Complete the actions to unlock Progress update: 0/0 done Unlock progress 0/0 done lock Unlock file",
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a title",
+            "required": true,
+            "valueState": "",
+            "formControlName": "title"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a subtitle",
+            "required": false,
+            "valueState": "",
+            "formControlName": "subtitle"
+          }
+        ],
+        "buttons": [
+          {
+            "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "khatg79@gmail.com",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "link URL",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "folder_open File",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Snippet",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "cloud_upload Select file",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "add @pnhlong88 Subscribe to channel",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "Select action",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "delete",
+            "disabled": true,
+            "aria": "Remove action",
+            "type": ""
+          },
+          {
+            "text": "expand_more Show advanced options",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "tune Customization expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add_photo_alternate Cover image",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "close",
+            "disabled": false,
+            "aria": "Clear",
+            "type": ""
+          },
+          {
+            "text": "Choose a username",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "brush Background expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "mail_outline Email capturing expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "widgets Widgets / Previews expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "alarm Expire link expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "save Create",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "lock Unlock file",
+            "disabled": false,
+            "aria": "Unlock file. 0 of 0 required steps completed",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Rekonise",
+            "href": "https://rekonise.com/"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "Link-in-bio",
+            "href": "https://rekonise.com/dashboard/link-in-bio"
+          },
+          {
+            "text": "Email lists",
+            "href": "https://rekonise.com/dashboard/email-lists"
+          },
+          {
+            "text": "Files",
+            "href": "https://rekonise.com/dashboard/storage"
+          },
+          {
+            "text": "Settings",
+            "href": "https://rekonise.com/dashboard/settings"
+          },
+          {
+            "text": "Analytics",
+            "href": "https://rekonise.com/dashboard/analytics"
+          },
+          {
+            "text": "Audience",
+            "href": "https://rekonise.com/dashboard/audience"
+          },
+          {
+            "text": "",
+            "href": "https://discord.gg/BArWfjznXM"
+          },
+          {
+            "text": "",
+            "href": "https://x.com/getrekonise"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard"
+          },
+          {
+            "text": "home Overview",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "add Create",
+            "href": "https://rekonise.com/dashboard/links/create"
+          },
+          {
+            "text": "link Shortened links",
+            "href": "https://rekonise.com/dashboard/links/short"
+          }
+        ]
+      }
+    },
+    {
+      "type": "snippet-toggle-exact",
+      "info": {
+        "url": "https://rekonise.com/dashboard/links/create",
+        "title": "Create new link - Rekonise",
+        "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com lock_open Links - Create new link home Overview add Create link Shortened links link URL folder_open File text_snippet Snippet text_snippet Select snippet Enter a title handshake ACTIONS history Most used add @pnhlong88 Subscribe to channel add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video 1. Select action delete add Add action expand_more Show advanced options tune Customization expand_more Cover Image add_photo_alternate Cover image Subtitle close Custom URL info You have to set a username before you can set a custom URL path. Choose a username brush Background expand_more mail_outline Email capturing expand_more Email lists add Create email list widgets Widgets / Previews expand_more bolt Upgrade to PRO to unlock alarm Expire link expand_more bolt Upgrade to PRO to unlock PREVIEW save Create Complete the actions to unlock Progress update: 0/0 done Unlock progress 0/0 done lock Unlock snippet",
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a title",
+            "required": true,
+            "valueState": "",
+            "formControlName": "title"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a subtitle",
+            "required": false,
+            "valueState": "",
+            "formControlName": "subtitle"
+          }
+        ],
+        "buttons": [
+          {
+            "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "khatg79@gmail.com",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "link URL",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "folder_open File",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Snippet",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Select snippet",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "add @pnhlong88 Subscribe to channel",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "Select action",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "delete",
+            "disabled": true,
+            "aria": "Remove action",
+            "type": ""
+          },
+          {
+            "text": "expand_more Show advanced options",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "tune Customization expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add_photo_alternate Cover image",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "close",
+            "disabled": false,
+            "aria": "Clear",
+            "type": ""
+          },
+          {
+            "text": "Choose a username",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "brush Background expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "mail_outline Email capturing expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "widgets Widgets / Previews expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "alarm Expire link expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "save Create",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "lock Unlock snippet",
+            "disabled": false,
+            "aria": "Unlock snippet. 0 of 0 required steps completed",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Rekonise",
+            "href": "https://rekonise.com/"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "Link-in-bio",
+            "href": "https://rekonise.com/dashboard/link-in-bio"
+          },
+          {
+            "text": "Email lists",
+            "href": "https://rekonise.com/dashboard/email-lists"
+          },
+          {
+            "text": "Files",
+            "href": "https://rekonise.com/dashboard/storage"
+          },
+          {
+            "text": "Settings",
+            "href": "https://rekonise.com/dashboard/settings"
+          },
+          {
+            "text": "Analytics",
+            "href": "https://rekonise.com/dashboard/analytics"
+          },
+          {
+            "text": "Audience",
+            "href": "https://rekonise.com/dashboard/audience"
+          },
+          {
+            "text": "",
+            "href": "https://discord.gg/BArWfjznXM"
+          },
+          {
+            "text": "",
+            "href": "https://x.com/getrekonise"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard"
+          },
+          {
+            "text": "home Overview",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "add Create",
+            "href": "https://rekonise.com/dashboard/links/create"
+          },
+          {
+            "text": "link Shortened links",
+            "href": "https://rekonise.com/dashboard/links/short"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "phase": "email capture inspect",
+      "error": "TimeoutError: locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button').filter({ hasText: 'Email capturing' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" class=\"w-full flex items-center justify-between py-3 text-muted hover:text-white transition-colors\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <button type=\"button\" class=\"w-full text-sm text-muted hover:text-white transition-colors flex items-center gap-1 py-2\">…</button> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    3 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button type=\"button\" class=\"w-full text-sm text-muted hover:text-white transition-colors flex items-center gap-1 py-2\">…</button> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <button type=\"button\" class=\"w-full text-sm text-muted hover:text-white transition-colors flex items-center gap-1 py-2\">…</button> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"w-full flex flex-col gap-4 min-w-0 lg:pb-8 lg:flex-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+    }
+  ],
+  "visitorPopup": {
+    "url": "https://www.youtube.com/@pnhlong88?sub_confirmation=1",
+    "title": "Long Phan - YouTube"
+  }
+}

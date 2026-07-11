@@ -1,0 +1,10 @@
+[
+  {
+    "method": "POST",
+    "path": "/g/collect?<query>",
+    "status": 204,
+    "resourceType": "fetch",
+    "responseShape": "text/plain",
+    "when": "createSnippetLink error"
+  }
+]

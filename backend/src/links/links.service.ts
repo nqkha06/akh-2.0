@@ -105,6 +105,74 @@ export class LinksService {
     return this.toResponse(link);
   }
 
+  async update(id: string, updateLinkDto: CreateLinkDto) {
+    await this.validateDestination(updateLinkDto);
+
+    const existing = await this.prisma.link.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException("Không tìm thấy link.");
+    }
+
+    const background = updateLinkDto.backgroundSettings;
+    const effects = background?.effects;
+
+    const link = await this.prisma.$transaction(async (prisma) => {
+      await prisma.linkAction.deleteMany({
+        where: {
+          linkId: id,
+        },
+      });
+
+      return prisma.link.update({
+        where: {
+          id,
+        },
+        data: {
+          destinationUrl: updateLinkDto.destinationUrl,
+          title: updateLinkDto.title.trim(),
+          inputType: updateLinkDto.inputType,
+          selectedSnippet: this.emptyToNull(updateLinkDto.selectedSnippet),
+          selectedFile: this.emptyToNull(updateLinkDto.selectedFile),
+          subtitle: this.emptyToNull(updateLinkDto.subtitle),
+          customAlias: this.emptyToNull(updateLinkDto.customAlias),
+          coverImageUrl: this.emptyToNull(updateLinkDto.coverImageUrl),
+          expiryEnabled: updateLinkDto.expiryEnabled ?? false,
+          expiryType: this.emptyToNull(updateLinkDto.expiryType),
+          expiryDate: this.buildExpiryDate(updateLinkDto),
+          expiryTime: this.emptyToNull(updateLinkDto.expiryTime),
+          maxClicks: updateLinkDto.maxClicks ?? null,
+          selectedBackgroundId: this.emptyToNull(background?.selectedBackgroundId),
+          selectedBackgroundName: this.emptyToNull(
+            background?.selectedBackgroundName,
+          ),
+          sameAsCoverImage: background?.sameAsCoverImage ?? false,
+          opacity: effects?.opacity ?? 100,
+          blur: effects?.blur ?? 0,
+          saturation: effects?.saturation ?? 100,
+          contrast: effects?.contrast ?? 100,
+          grayscale: effects?.grayscale ?? 0,
+          actions: {
+            create: updateLinkDto.actions.map((action) => ({
+              platform: action.platform,
+              action: action.action,
+              url: action.url,
+            })),
+          },
+        },
+        include: {
+          actions: true,
+        },
+      });
+    });
+
+    return this.toResponse(link);
+  }
+
   private async createUniqueSlug(source: string) {
     const baseSlug = this.slugify(source) || `link-${Date.now()}`;
     let slug = baseSlug;

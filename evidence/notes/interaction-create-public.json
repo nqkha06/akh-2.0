@@ -1,0 +1,595 @@
+{
+  "createInitial": {
+    "url": "https://rekonise.com/",
+    "title": "Control Access to Your Content and Grow Your Audience | Rekonise - Rekonise",
+    "visibleText": "Rekonise How it works Sign in Sign up free Build your first link Add a destination, pick what visitors do to unlock it, and we'll save it to your account when you sign up. Link title Destination URL handshake ACTIONS Pick one or more steps your audience must complete to unlock the destination. 1. Select action delete add Add action Create Rekonise How it works Sign in Sign up free Control access to your content and grow your audience Create links that unlock only after an action. Increase your followers, subscribers, or email list automatically. No account required for viewers. Create my first link Free forever · No card required Exclusive Discord Server Complete the actions to unlock Follow streamer Subscribe to channel Follow user Follow user Join server Progress update: 0/5 done Unlock progress 0/5 done lock Unlock link Free Sample Pack Vol. 3 Complete the actions to unlock Subscribe to channel Join server Follow user Follow artist Progress update: 0/4 done Unlock progress 0/4 done lock Unlock file SOCIAL ACTIONS Grow while people unlock your content Pick the actions you want: YouTube subscribe, Discord join, X follow, and more. People complete them to unlock your content. Get started for free folder_zip Free Beat Pack Vol. 2 Complete the actions below to unlock Subscribe Join Server Follow Follow Unlock progress 0/4 done lock Unlock file Unlocks 0 Views 0 Conversion 0.0% Mon Tue Wed Thu Fri Sat Sun AUDIENCE INSIGHTS See what is working Track clicks, unlocks, and conversion rate in real time. Double down on the links that actually grow your audience. Get started for free mail Email Subscribers 4,995 Newsletter 2,847 VIP 943 Beat Buyers 1,205 EMAIL CAPTURING Build an audience you own Collect emails during unlock and keep your best fans in one place. Segment lists by campaign and send updates when your next drop is ready. Get started for free INTEGRATIONS 70+ platforms, one dashboard From YouTube and TikTok to Spotify, Discord, and beyond. Set growth actions across 70+ social platforms, all managed from a single dashboard. ANALYTICS Real-time audience intelligence See exactly where your audience comes from, what devices they use, and which links perform best. Live traffic updates show your growth as it happens. LINK-IN-BIO Link-in-Bio, built in Create a beautiful profile page with all your links and social accounts in one place. No extra tools needed. apps PLATFORMS 40+ apps PLATFORMS 40+ CUSTOM URLS Branded links that look pro Use clean, recognizable URLs for your campaigns so fans trust and click faster. AD-FREE LINKS No distractions before unlock Keep your pages focused on your content and actions without ad clutter. EXPIRING CONTENT Time-limited drops that convert Add urgency with expiring content so fans act now instead of later. Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 818 clicks rekonise.com/your-name/live-set-files /your",
+    "inputs": [
+      {
+        "tag": "input",
+        "type": "",
+        "placeholder": "e.g. Free script pack",
+        "required": true,
+        "value": ""
+      },
+      {
+        "tag": "input",
+        "type": "",
+        "placeholder": "https://...",
+        "required": true,
+        "value": ""
+      }
+    ],
+    "buttons": [
+      {
+        "text": "Open main menu",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Sign up free",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Select action",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "delete",
+        "disabled": true,
+        "role": ""
+      },
+      {
+        "text": "Create",
+        "disabled": true,
+        "role": ""
+      },
+      {
+        "text": "Open main menu",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Sign up free",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Join server",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow user",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "locklock_openUnlock file",
+        "disabled": true,
+        "role": ""
+      },
+      {
+        "text": "Follow streamer",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow user",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow user",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Join server",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "lock Unlock link",
+        "disabled": true,
+        "role": ""
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Join server",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow user",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow artist",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "lock Unlock file",
+        "disabled": true,
+        "role": ""
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Subscribe",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Join Server",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Follow",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "lock Unlock file",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false,
+        "role": ""
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false,
+        "role": ""
+      }
+    ]
+  },
+  "afterMenu": {
+    "visibleText": "Rekonise How it works Sign in Sign up free Build your first link Add a destination, pick what visitors do to unlock it, and we'll save it to your account when you sign up. Link title Destination URL handshake ACTIONS Pick one or more steps your audience must complete to unlock the destination. 1. Select action delete add Add action Create Rekonise How it works Sign in Sign up free Control access to your content and grow your audience Create links that unlock only after an action. Increase your followers, subscribers, or email list automatically. No account required for viewers. Create my first link Free forever · No card required Exclusive Discord Server Complete the actions to unlock Follow streamer Subscribe to channel Follow user Follow user Join server Progress update: 0/5 done Unlock progress 0/5 done lock Unlock link Free Sample Pack Vol. 3 Complete the actions to unlock Subscribe to channel Join server Follow user Follow artist Progress update: 0/4 done Unlock progress 0/4 done lock Unlock file Trusted by 92K+ content creators who gained 637M+ followers SOCIAL ACTIONS Grow while people unlock your content Pick the actions you want: YouTube subscribe, Discord join, X follow, and more. People complete them to unlock your content. Get started for free folder_zip Free Beat Pack Vol. 2 Complete the actions below to unlock Subscribe Join Server Follow Follow Unlock progress 0/4 done lock Unlock file Unlocks 0 Views 0 Conversion 0.0% Mon Tue Wed Thu Fri Sat Sun AUDIENCE INSIGHTS See what is working Track clicks, unlocks, and conversion rate in real time. Double down on the links that actually grow your audience. Get started for free mail Email Subscribers 4,995 Newsletter 2,847 VIP 943 Beat Buyers 1,205 EMAIL CAPTURING Build an audience you own Collect emails during unlock and keep your best fans in one place. Segment lists by campaign and send updates when your next drop is ready. Get started for free INTEGRATIONS 70+ platforms, one dashboard From YouTube and TikTok to Spotify, Discord, and beyond. Set growth actions across 70+ social platforms, all managed from a single dashboard. ANALYTICS Real-time audience intelligence See exactly where your audience comes from, what devices they use, and which links perform best. Live traffic updates show your growth as it happens. LINK-IN-BIO Link-in-Bio, built in Create a beautiful profile page with all your links and social accounts in one place. No extra tools needed. apps PLATFORMS 70+ apps PLATFORMS 70+ CUSTOM URLS Branded links that look pro Use clean, recognizable URLs for your campaigns so fans trust and click faster. AD-FREE LINKS No distractions before unlock Keep your pages focused on your content and actions without ad clutter. EXPIRING CONTENT Time-limited drops that convert Add urgency with expiring content so fans act now instead of later. Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 823 clicks Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 823 clicks Trusted by creators See how people are using Rekonise to grow faster. I've been using Rekonise since my channel was just starting with zero subscribers, and it's honestly made things a lot easier. The platform is super simple to use, both for me and my viewers, and it's really helped my videos blow up and my channel grow steadily. Now I'm at 270k subscribers, and I can honestly say it's been really helpful. Alex Scripter @alexscripter992 360k+ actions & 200k discord members Rekonise was a game changer for Velosofy. By turning our audience into engaged followers across multiple channels, we hit 1 million subscribers faster than we imagined. Rekonise directly fueled that growth — it actually delivers. Velosofy.com @velosofy Gained 1M+ YouTube subscribers I've been using Rekonise since I started my channel, and it has been a huge help in gaining subscribers. The platform is simple and easy to use for both me and my audience. It also boosted my views by encouraging interaction with the channel. Without a doubt, it's an excellent tool. naishiros @naishiros 5.4M+ actions completed Using Rekonise has really changed everything. I've gotten most of my Discord members from people completing my links. It's one of the best growth tools I've used. Ronix Studios @ronixstudios 530k+ actions completed Before Rekonise, growing Soundwrld felt like an uphill battle with lots of promotion but little payoff. After using their social marketing tools, casual viewers quickly became loyal subscribers and our numbers doubled in just months. Rekonise makes growth simple so I can focus on creating. For any creator serious about scaling, it's a game-changer. ",
+    "menuButtons": [
+      {
+        "text": "Open main menu",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign up free",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Select action",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "delete",
+        "role": "",
+        "disabled": true
+      },
+      {
+        "text": "Create",
+        "role": "",
+        "disabled": true
+      },
+      {
+        "text": "Open main menu",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign up free",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe to channel",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "locklock_openUnlock file",
+        "role": "",
+        "disabled": true
+      },
+      {
+        "text": "Follow streamer",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe to channel",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock link",
+        "role": "",
+        "disabled": true
+      },
+      {
+        "text": "Subscribe to channel",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow artist",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock file",
+        "role": "",
+        "disabled": true
+      },
+      {
+        "text": "Get started for free",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Join Server",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Follow",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock file",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "role": "",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "role": "",
+        "disabled": false
+      }
+    ]
+  },
+  "afterAction": {
+    "note": "Action selection was not clicked because visible menu text duplicated hidden/demo page text in automation.",
+    "visibleText": "Rekonise How it works Sign in Sign up free Build your first link Add a destination, pick what visitors do to unlock it, and we'll save it to your account when you sign up. Link title Destination URL handshake ACTIONS Pick one or more steps your audience must complete to unlock the destination. 1. Select action delete add Add action Create Rekonise How it works Sign in Sign up free Control access to your content and grow your audience Create links that unlock only after an action. Increase your followers, subscribers, or email list automatically. No account required for viewers. Create my first link Free forever · No card required Exclusive Discord Server Complete the actions to unlock Follow streamer Subscribe to channel Follow user Follow user Join server Progress update: 0/5 done Unlock progress 0/5 done lock Unlock link Free Sample Pack Vol. 3 Complete the actions to unlock Subscribe to channel Join server Follow user Follow artist Progress update: 0/4 done Unlock progress 0/4 done lock Unlock file Trusted by 92K+ content creators who gained 637M+ followers SOCIAL ACTIONS Grow while people unlock your content Pick the actions you want: YouTube subscribe, Discord join, X follow, and more. People complete them to unlock your content. Get started for free folder_zip Free Beat Pack Vol. 2 Complete the actions below to unlock Subscribe Join Server Follow Follow Unlock progress 0/4 done lock Unlock file Unlocks 0 Views 0 Conversion 0.0% Mon Tue Wed Thu Fri Sat Sun AUDIENCE INSIGHTS See what is working Track clicks, unlocks, and conversion rate in real time. Double down on the links that actually grow your audience. Get started for free mail Email Subscribers 4,995 Newsletter 2,847 VIP 943 Beat Buyers 1,205 EMAIL CAPTURING Build an audience you own Collect emails during unlock and keep your best fans in one place. Segment lists by campaign and send updates when your next drop is ready. Get started for free INTEGRATIONS 70+ platforms, one dashboard From YouTube and TikTok to Spotify, Discord, and beyond. Set growth actions across 70+ social platforms, all managed from a single dashboard. ANALYTICS Real-time audience intelligence See exactly where your audience comes from, what devices they use, and which links perform best. Live traffic updates show your growth as it happens. LINK-IN-BIO Link-in-Bio, built in Create a beautiful profile page with all your links and social accounts in one place. No extra tools needed. apps PLATFORMS 70+ apps PLATFORMS 70+ CUSTOM URLS Branded links that look pro Use clean, recognizable URLs for your campaigns so fans trust and click faster. AD-FREE LINKS No distractions before unlock Keep your pages focused on your content and actions without ad clutter. EXPIRING CONTENT Time-limited drops that convert Add urgency with expiring content so fans act now instead of later. Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 823 clicks Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 823 clicks Trusted by creators See how people are using Rekonise to grow faster. I've been using Rekonise since my channel was just starting with zero subscribers, and it's honestly made things a lot easier. The platform is super simple to use, both for me and my viewers, and it's really helped my videos blow up and my channel grow steadily. Now I'm at 270k subscribers, and I can honestly say it's been really helpful. Alex Scripter @alexscripter992 360k+ actions & 200k discord members Rekonise was a game changer for Velosofy. By turning our audience into engaged followers across multiple channels, we hit 1 million subscribers faster than we imagined. Rekonise directly fueled that growth — it actually delivers. Velosofy.com @velosofy Gained 1M+ YouTube subscribers I've been using Rekonise since I started my channel, and it has been a huge help in gaining subscribers. The platform is simple and easy to use for both me and my audience. It also boosted my views by encouraging interaction with the channel. Without a doubt, it's an excellent tool. naishiros @naishiros 5.4M+ actions completed Using Rekonise has really changed everything. I've gotten most of my Discord members from people completing my links. It's one of the best growth tools I've used. Ronix Studios @ronixstudios 530k+ actions completed Before Rekonise, growing Soundwrld felt like an uphill battle with lots of promotion but little payoff. After using their social marketing tools, casual viewers quickly became loyal subscribers and our numbers doubled in just months. Rekonise makes growth simple so I can focus on creating. For any creator serious about scaling, it's a game-changer. ",
+    "inputs": [
+      {
+        "tag": "input",
+        "type": "",
+        "placeholder": "e.g. Free script pack",
+        "required": true,
+        "value": "Codex Test Resource"
+      },
+      {
+        "tag": "input",
+        "type": "",
+        "placeholder": "https://...",
+        "required": true,
+        "value": "https://example.com/codex-test"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "Open main menu",
+        "disabled": false
+      },
+      {
+        "text": "Sign up free",
+        "disabled": false
+      },
+      {
+        "text": "Select action",
+        "disabled": false
+      },
+      {
+        "text": "delete",
+        "disabled": true
+      },
+      {
+        "text": "Create",
+        "disabled": true
+      },
+      {
+        "text": "Open main menu",
+        "disabled": false
+      },
+      {
+        "text": "Sign up free",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "disabled": false
+      },
+      {
+        "text": "locklock_openUnlock file",
+        "disabled": true
+      },
+      {
+        "text": "Follow streamer",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock link",
+        "disabled": true
+      },
+      {
+        "text": "Subscribe to channel",
+        "disabled": false
+      },
+      {
+        "text": "Join server",
+        "disabled": false
+      },
+      {
+        "text": "Follow user",
+        "disabled": false
+      },
+      {
+        "text": "Follow artist",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock file",
+        "disabled": true
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false
+      },
+      {
+        "text": "Subscribe",
+        "disabled": false
+      },
+      {
+        "text": "Join Server",
+        "disabled": false
+      },
+      {
+        "text": "Follow",
+        "disabled": false
+      },
+      {
+        "text": "Follow",
+        "disabled": false
+      },
+      {
+        "text": "lock Unlock file",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false
+      },
+      {
+        "text": "Get started for free",
+        "disabled": false
+      }
+    ]
+  },
+  "invalidLogin": {
+    "url": "https://rekonise.com/login",
+    "visibleText": "Rekonise Sign in to your account Continue with Google Continue with Discord Or continue with email Enter your email Enter your password visibility_off Forgot password? Sign in Not a member? Create a free account"
+  },
+  "forgotResult": {
+    "url": "https://rekonise.com/password-reset",
+    "title": "Reset Password - Rekonise",
+    "visibleText": "Rekonise How it works Sign in Sign up free Reset your password Enter your email Reset"
+  },
+  "invalidPublic": {
+    "url": "https://rekonise.com/this-link-should-not-exist-codex-test",
+    "title": "Link Not Found | Rekonise - Rekonise",
+    "visibleText": "Rekonise How it works Sign in Sign up free link_off This link is no longer active The creator may have removed or moved this content. Create your own link What is Rekonise? Gate any link behind a social action. Grow followers, subscribers, and email lists from every share. email PRODUCT How it works Pricing Create a link COMPANY Contact Community LEGAL Terms Privacy Cookies © 2026 Rekonise. All rights reserved. Built for creators who want to grow on their own terms."
+  },
+  "design": {
+    "body": {
+      "selector": "body",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "color": "rgb(0, 0, 0)",
+      "backgroundColor": "rgb(20, 17, 15)",
+      "borderColor": "rgb(229, 231, 235)",
+      "borderRadius": "0px",
+      "width": 1440,
+      "height": 1000
+    },
+    "h1": {
+      "selector": "h1",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "72px",
+      "fontWeight": "800",
+      "lineHeight": "72px",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderColor": "rgb(229, 231, 235)",
+      "borderRadius": "0px",
+      "width": 662,
+      "height": 288
+    },
+    "primaryLink": {
+      "selector": "a[href=\"/create\"], a[href$=\"/create\"]",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "500",
+      "lineHeight": "24px",
+      "color": "rgb(10, 10, 10)",
+      "backgroundColor": "rgb(0, 199, 106)",
+      "borderColor": "rgb(229, 231, 235)",
+      "borderRadius": "9999px",
+      "width": 234,
+      "height": 56
+    },
+    "button": {
+      "selector": "button",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "color": "rgb(212, 212, 216)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderColor": "rgb(229, 231, 235)",
+      "borderRadius": "6px",
+      "width": 0,
+      "height": 0
+    },
+    "input": null,
+    "surface": {
+      "selector": ".card, [class*=\"card\"], form",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "color": "rgb(0, 0, 0)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderColor": "rgb(229, 231, 235)",
+      "borderRadius": "0px",
+      "width": 442,
+      "height": 600
+    }
+  }
+}

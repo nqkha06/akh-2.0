@@ -69,6 +69,62 @@ export type FilesResponseDto = {
   totalSize: number;
 };
 
+export type BioSocialLinkDto = {
+  id: string;
+  platform: string;
+  url: string;
+};
+
+export type BioCustomLinkDto = {
+  id: string;
+  title: string;
+  url: string;
+};
+
+export type BioWidgetDto = {
+  id: string;
+  type: string;
+  title: string;
+  url: string;
+  description?: string;
+};
+
+export type BioAppearanceDto = {
+  buttonStyle: string;
+  backgroundColor: string;
+  backgroundImage?: string | null;
+};
+
+export type BioPageDto = {
+  id: string;
+  slug: string;
+  publicUrl: string;
+  name: string;
+  title: string | null;
+  status: string;
+  views: number;
+  clicks: number;
+  socialLinks: BioSocialLinkDto[];
+  customLinks: BioCustomLinkDto[];
+  widgets: BioWidgetDto[];
+  hiddenLinks: string[];
+  appearance: BioAppearanceDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateBioPagePayload = {
+  name: string;
+  title?: string;
+  customSlug?: string;
+  status?: "published" | "draft";
+  socialLinks: BioSocialLinkDto[];
+  customLinks: BioCustomLinkDto[];
+  widgets: BioWidgetDto[];
+  hiddenLinks: string[];
+  appearance: BioAppearanceDto;
+};
+
 export type CreateLinkPayload = {
   destinationUrl: string;
   title: string;
@@ -105,6 +161,22 @@ function absoluteApiUrl(path: string) {
 export async function createLink(payload: CreateLinkPayload) {
   const response = await fetch(`${API_URL}/links`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as LinkDto;
+}
+
+export async function updateLink(id: string, payload: CreateLinkPayload) {
+  const response = await fetch(`${API_URL}/links/${id}`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
@@ -230,6 +302,58 @@ export async function deleteFile(id: string) {
 
 export function getFileDownloadUrl(file: Pick<ManagedFileDto, "id">) {
   return absoluteApiUrl(`/files/${file.id}/download`);
+}
+
+export async function createBioPage(payload: CreateBioPagePayload) {
+  const response = await fetch(`${API_URL}/bio-pages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as BioPageDto;
+}
+
+export async function getBioPages() {
+  const response = await fetch(`${API_URL}/bio-pages`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as BioPageDto[];
+}
+
+export async function getBioPage(slug: string) {
+  const response = await fetch(`${API_URL}/bio-pages/${slug}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as BioPageDto;
+}
+
+export async function trackBioClick(slug: string) {
+  const response = await fetch(`${API_URL}/bio-pages/${slug}/click`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as { clicks: number };
 }
 
 async function getApiError(response: Response) {

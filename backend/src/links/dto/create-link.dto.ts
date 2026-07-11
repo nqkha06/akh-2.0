@@ -12,6 +12,7 @@ import {
   IsUrl,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 
@@ -85,6 +86,7 @@ class BackgroundSettingsDto {
 }
 
 export class CreateLinkDto {
+  @ValidateIf((payload: CreateLinkDto) => payload.inputType !== "snippet")
   @IsUrl({ require_protocol: true })
   destinationUrl: string;
 

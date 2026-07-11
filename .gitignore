@@ -5,3 +5,8 @@ node_modules
 dist
 prisma/dev.db
 prisma/dev.db-journal
+.auth
+storageState*.json
+browser-profile/
+playwright-profile/
+user-data-dir/

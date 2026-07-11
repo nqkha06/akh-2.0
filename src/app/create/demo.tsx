@@ -13,6 +13,7 @@ import {
   getFileDownloadUrl,
   getFiles,
   uploadFile,
+  updateLink,
   type LinkDto,
   type ManagedFileDto,
 } from "@/lib/api-client"
@@ -511,6 +512,12 @@ interface SocialAction {
   isValid: boolean
 }
 
+function toPlatformKey(platform: string): keyof typeof socialPlatforms {
+  return platform in socialPlatforms
+    ? (platform as keyof typeof socialPlatforms)
+    : "other"
+}
+
 const backgroundImages = [
   {
     id: "1",
@@ -611,8 +618,12 @@ const snippets = [
 
 export default function SocialLinksGenerator({
   embedded = false,
+  initialLink,
+  onSaved,
 }: {
   embedded?: boolean
+  initialLink?: LinkDto
+  onSaved?: (link: LinkDto) => void
 } = {}) {
   const actionIdRef = useRef(0)
   const [destinationUrl, setDestinationUrl] = useState("")

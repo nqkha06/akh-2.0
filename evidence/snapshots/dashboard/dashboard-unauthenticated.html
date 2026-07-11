@@ -1,0 +1,17 @@
+<body class="bg-background"><!--nghm-->
+    <script>
+      // Redirect authenticated users away from landing/auth pages before Angular loads
+      (function() {
+        var user = localStorage.getItem('_user');
+        var path = window.location.pathname;
+        var authPages = ['/', '/login', '/register', '/password-reset'];
+        if (user && authPages.indexOf(path) !== -1) {
+          window.location.replace('/dashboard');
+        }
+      })();
+    </script>
+    <app-root ng-version="19.1.7" ng-server-context="ssr"><ngx-loading-bar color="#00e676" height="2px" _nghost-ng-c394107437="" fixed="true" style="color: #00e676;"><!----><div _ngcontent-ng-c394107437="" class="ngx-bar" style="background: rgb(0, 230, 118); height: 2px; width: 30.4604%;"></div><!----><!----><!----></ngx-loading-bar><router-outlet></router-outlet><!----></app-root>
+  <link rel="modulepreload" href="chunk-6BFV2TD3.js"><link rel="modulepreload" href="chunk-Q4ZP6UZC.js"><link rel="modulepreload" href="chunk-WRETF7CI.js"><link rel="modulepreload" href="chunk-U5UQSX56.js"><link rel="modulepreload" href="chunk-J5MIVLJ5.js"><link rel="modulepreload" href="chunk-EPTQAMIH.js"><link rel="modulepreload" href="chunk-ITXQ64Y3.js"><link rel="modulepreload" href="chunk-2PPFUFFT.js"><link rel="modulepreload" href="chunk-JLLE6OCM.js"><link rel="modulepreload" href="chunk-UIYLUXTG.js"><script src="polyfills-FFHMD2TL.js" type="module"></script><script src="main-Z46QTSME.js" type="module"></script>
+
+<script id="ng-state" type="application/json">{"__nghData__":[{"t":{"0":"t0"},"c":{"0":[]}},{"c":{"1":[]}}]}</script><script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;25ad11e84a314436ba233956180f05e3&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+</body>

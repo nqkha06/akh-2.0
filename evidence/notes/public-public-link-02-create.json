@@ -1,0 +1,313 @@
+{
+  "requestedUrl": "https://rekonise.com/create",
+  "finalUrl": "https://rekonise.com/",
+  "title": "Control Access to Your Content and Grow Your Audience | Rekonise - Rekonise",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "links": [
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "How it works",
+      "href": "https://rekonise.com/how-it-works"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://rekonise.com/login"
+    },
+    {
+      "text": "How it works",
+      "href": "https://rekonise.com/how-it-works"
+    },
+    {
+      "text": "Sign up free",
+      "href": "https://rekonise.com/register"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://rekonise.com/login"
+    },
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "How it works",
+      "href": "https://rekonise.com/how-it-works"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://rekonise.com/login"
+    },
+    {
+      "text": "How it works",
+      "href": "https://rekonise.com/how-it-works"
+    },
+    {
+      "text": "Sign up free",
+      "href": "https://rekonise.com/register"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://rekonise.com/login"
+    },
+    {
+      "text": "Create my first link",
+      "href": "https://rekonise.com/create"
+    },
+    {
+      "text": "",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "",
+      "href": "https://discord.gg/BArWfjznXM"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/getrekonise"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/channel/UCiH5jh3xEZfD3lbJQdah06g"
+    },
+    {
+      "text": "email",
+      "href": "mailto:contact@rekonise.com"
+    },
+    {
+      "text": "How it works",
+      "href": "https://rekonise.com/how-it-works"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://rekonise.com/pricing"
+    },
+    {
+      "text": "Create a link",
+      "href": "https://rekonise.com/create"
+    },
+    {
+      "text": "Contact",
+      "href": "https://rekonise.com/contact"
+    },
+    {
+      "text": "Community",
+      "href": "https://discord.gg/BArWfjznXM"
+    },
+    {
+      "text": "Terms",
+      "href": "https://rekonise.com/terms"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://rekonise.com/privacy"
+    },
+    {
+      "text": "Cookies",
+      "href": "https://rekonise.com/cookies"
+    }
+  ],
+  "forms": [
+    {
+      "action": "",
+      "method": "get",
+      "fields": [
+        {
+          "tag": "input",
+          "type": "",
+          "name": "",
+          "placeholder": "e.g. Free script pack",
+          "required": true,
+          "autocomplete": "off"
+        },
+        {
+          "tag": "input",
+          "type": "",
+          "name": "",
+          "placeholder": "https://...",
+          "required": true,
+          "autocomplete": "off"
+        }
+      ]
+    }
+  ],
+  "buttons": [
+    {
+      "text": "Open main menu",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Sign up free",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Select action",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "delete",
+      "type": "",
+      "disabled": true
+    },
+    {
+      "text": "Create",
+      "type": "submit",
+      "disabled": true
+    },
+    {
+      "text": "Open main menu",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Sign up free",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Subscribe to channel",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Join server",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Follow user",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "locklock_openUnlock file",
+      "type": "",
+      "disabled": true
+    },
+    {
+      "text": "Follow streamer",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Subscribe to channel",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Follow user",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Follow user",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Join server",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "lock Unlock link",
+      "type": "",
+      "disabled": true
+    },
+    {
+      "text": "Subscribe to channel",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Join server",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Follow user",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "Follow artist",
+      "type": "button",
+      "disabled": false
+    },
+    {
+      "text": "lock Unlock file",
+      "type": "",
+      "disabled": true
+    },
+    {
+      "text": "Get started for free",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Subscribe",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Join Server",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Follow",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Follow",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "lock Unlock file",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Get started for free",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Get started for free",
+      "type": "",
+      "disabled": false
+    },
+    {
+      "text": "Get started for free",
+      "type": "",
+      "disabled": false
+    }
+  ],
+  "textSample": "Rekonise How it works Sign in Sign up free Build your first link Add a destination, pick what visitors do to unlock it, and we'll save it to your account when you sign up. Link title Destination URL handshake ACTIONS Pick one or more steps your audience must complete to unlock the destination. 1. Select action delete add Add action Create Rekonise How it works Sign in Sign up free Control access to your content and grow your audience Create links that unlock only after an action. Increase your followers, subscribers, or email list automatically. No account required for viewers. Create my first link Free forever · No card required Exclusive Discord Server Complete the actions to unlock Follow streamer Subscribe to channel Follow user Follow user Join server Progress update: 0/5 done Unlock progress 0/5 done lock Unlock link Free Sample Pack Vol. 3 Complete the actions to unlock Subscribe to channel Join server Follow user Follow artist Progress update: 0/4 done Unlock progress 0/4 done lock Unlock file Trusted by 92K+ content creators who gained 637M+ followers SOCIAL ACTIONS Grow while people unlock your content Pick the actions you want: YouTube subscribe, Discord join, X follow, and more. People complete them to unlock your content. Get started for free folder_zip Free Beat Pack Vol. 2 Complete the actions below to unlock Subscribe Join Server Follow Follow Unlock progress 0/4 done lock Unlock file Unlocks 0 Views 0 Conversion 0.0% Mon Tue Wed Thu Fri Sat Sun AUDIENCE INSIGHTS See what is working Track clicks, unlocks, and conversion rate in real time. Double down on the links that actually grow your audience. Get started for free mail Email Subscribers 4,995 Newsletter 2,847 VIP 943 Beat Buyers 1,205 EMAIL CAPTURING Build an audience you own Collect emails during unlock and keep your best fans in one place. Segment lists by campaign and send updates when your next drop is ready. Get started for free INTEGRATIONS 70+ platforms, one dashboard From YouTube and TikTok to Spotify, Discord, and beyond. Set growth actions across 70+ social platforms, all managed from a single dashboard. ANALYTICS Real-time audience intelligence See exactly where your audience comes from, what devices they use, and which links perform best. Live traffic updates show your growth as it happens. LINK-IN-BIO Link-in-Bio, built in Create a beautiful profile page with all your links and social accounts in one place. No extra tools needed. apps PLATFORMS 55+ apps PLATFORMS 55+ CUSTOM URLS Branded links that look pro Use clean, recognizable URLs for your campaigns so fans trust and click faster. AD-FREE LINKS No distractions before unlock Keep your pages focused on your content and actions without ad clutter. EXPIRING CONTENT Time-limited drops that convert Add urgency with expiring content so fans act now instead of later. Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 549 clicks Custom URL Manager Branded rekonise.com/your-name/midnight-kit /your-name/midnight-kit 1,482 clicks rekonise.com/your-name/drum-drop-v4 /your-name/drum-drop-v4 1,091 clicks rekonise.com/your-name/live-set-files /your-name/live-set-files 549 clicks Trusted by creators See how people are using Rekonise to grow faster. I've been using Rekonise since my channel was just starting with zero subscribers, and it's honestly made things a lot easier. The platform is super simple to use, both for me and my viewers, and it's really helped my videos blow up and my channel grow steadily. Now I'm at 270k subscribers, and I can honestly say it's been really helpful. Alex Scripter @alexscripter992 360k+ actions & 200k discord members Rekonise was a game changer for Velosofy. By turning our audience into engaged followers across multiple channels, we hit 1 million subscribers faster than we imagined. Rekonise d",
+  "error": null
+}

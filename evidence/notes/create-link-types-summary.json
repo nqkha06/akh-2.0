@@ -1,0 +1,772 @@
+{
+  "created": [
+    {
+      "type": "URL social gated",
+      "createClicked": true,
+      "action": "recent Subscribe to channel",
+      "finalUrl": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+      "info": {
+        "url": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+        "title": "Codex URL Demo 1783760537194 - Rekonise",
+        "textSample": "more_horiz Codex URL Demo 1783760537194 Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock link More from this user Unlock Successfully created Dismiss Upgrade to Pro Your link is live! Free links show Rekonise branding and ads. Upgrade to Pro to remove them and unlock detailed analytics. WHY CREATORS UPGRADE visibility_off Remove ads & Rekonise branding Make your links feel fully professional. insights See complete audience insights Track clicks, countries, devices, and trends over time. all_inclusive Run campaigns without limits Unlimited actions and deeper customization. rocket_launch Scale without friction Embed anywhere, host larger files, and track audience growth. INCLUDED WITH PRO done Ad-free links done Unlimited actions done Full analytics done Advanced customization done Embedding options done Increased storage done Verified badge done And more... Weekly Monthly Save 31% Lifetime Best value $29.99 per month Upgrade to Pro",
+        "inputs": [],
+        "buttons": [
+          {
+            "text": "more_horiz",
+            "disabled": false,
+            "aria": "Share",
+            "type": ""
+          },
+          {
+            "text": "Subscribe to channel",
+            "disabled": false,
+            "aria": "Subscribe to channel",
+            "type": "button"
+          },
+          {
+            "text": "lock Unlock link",
+            "disabled": true,
+            "aria": "Unlock link. 0 of 1 required steps completed",
+            "type": ""
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Weekly",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Monthly Save 31%",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Lifetime Best value",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Upgrade to Pro",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Unlock",
+            "href": "https://rekonise.com/unlock-4pbde"
+          }
+        ]
+      }
+    },
+    {
+      "type": "File",
+      "createClicked": false,
+      "note": "Inspected file link creation UI only; did not publish a file link to avoid exposing existing account files.",
+      "finalUrl": "https://rekonise.com/dashboard/links/create",
+      "info": {
+        "url": "https://rekonise.com/dashboard/links/create",
+        "title": "Create new link - Rekonise",
+        "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com lock_open Links - Create new link home Overview add Create link Shortened links link URL folder_open File text_snippet Snippet Enter a destination URL Enter a title handshake ACTIONS 1. Subscribe to channel delete Enter a channel URL add Add action expand_more Show advanced options tune Customization expand_more Cover Image add_photo_alternate Cover image Subtitle close Custom URL info You have to set a username before you can set a custom URL path. Choose a username brush Background expand_more mail_outline Email capturing expand_more widgets Widgets / Previews expand_more bolt Upgrade to PRO to unlock alarm Expire link expand_more bolt Upgrade to PRO to unlock PREVIEW save Create Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock link Shortened links",
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a destination URL",
+            "required": true,
+            "valueState": "",
+            "formControlName": "url"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a title",
+            "required": true,
+            "valueState": "",
+            "formControlName": "title"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "",
+            "required": false,
+            "valueState": "<filled>",
+            "formControlName": "input"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a subtitle",
+            "required": false,
+            "valueState": "",
+            "formControlName": "subtitle"
+          }
+        ],
+        "buttons": [
+          {
+            "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "khatg79@gmail.com",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "link URL",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "folder_open File",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Snippet",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "Subscribe to channel",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "delete",
+            "disabled": true,
+            "aria": "Remove action",
+            "type": ""
+          },
+          {
+            "text": "expand_more Show advanced options",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "tune Customization expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add_photo_alternate Cover image",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "close",
+            "disabled": false,
+            "aria": "Clear",
+            "type": ""
+          },
+          {
+            "text": "Choose a username",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "brush Background expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "mail_outline Email capturing expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "widgets Widgets / Previews expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "alarm Expire link expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "save Create",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Subscribe to channel",
+            "disabled": false,
+            "aria": "Subscribe to channel",
+            "type": "button"
+          },
+          {
+            "text": "lock Unlock link",
+            "disabled": true,
+            "aria": "Unlock link. 0 of 1 required steps completed",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Rekonise",
+            "href": "https://rekonise.com/"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "Link-in-bio",
+            "href": "https://rekonise.com/dashboard/link-in-bio"
+          },
+          {
+            "text": "Email lists",
+            "href": "https://rekonise.com/dashboard/email-lists"
+          },
+          {
+            "text": "Files",
+            "href": "https://rekonise.com/dashboard/storage"
+          },
+          {
+            "text": "Settings",
+            "href": "https://rekonise.com/dashboard/settings"
+          },
+          {
+            "text": "Analytics",
+            "href": "https://rekonise.com/dashboard/analytics"
+          },
+          {
+            "text": "Audience",
+            "href": "https://rekonise.com/dashboard/audience"
+          },
+          {
+            "text": "",
+            "href": "https://discord.gg/BArWfjznXM"
+          },
+          {
+            "text": "",
+            "href": "https://x.com/getrekonise"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard"
+          },
+          {
+            "text": "home Overview",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "add Create",
+            "href": "https://rekonise.com/dashboard/links/create"
+          },
+          {
+            "text": "link Shortened links",
+            "href": "https://rekonise.com/dashboard/links/short"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Shortened/direct link",
+      "createClicked": false,
+      "note": "Inspected page; creation controls not visible in captured free UI.",
+      "finalUrl": "https://rekonise.com/dashboard/links/short",
+      "info": {
+        "url": "https://rekonise.com/dashboard/links/short",
+        "title": "Shortened links - Rekonise",
+        "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+        "inputs": [],
+        "buttons": [
+          {
+            "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Rekonise",
+            "href": "https://rekonise.com/"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "Link-in-bio",
+            "href": "https://rekonise.com/dashboard/link-in-bio"
+          },
+          {
+            "text": "Email lists",
+            "href": "https://rekonise.com/dashboard/email-lists"
+          },
+          {
+            "text": "Files",
+            "href": "https://rekonise.com/dashboard/storage"
+          },
+          {
+            "text": "Settings",
+            "href": "https://rekonise.com/dashboard/settings"
+          },
+          {
+            "text": "Analytics",
+            "href": "https://rekonise.com/dashboard/analytics"
+          },
+          {
+            "text": "Audience",
+            "href": "https://rekonise.com/dashboard/audience"
+          },
+          {
+            "text": "",
+            "href": "https://discord.gg/BArWfjznXM"
+          },
+          {
+            "text": "",
+            "href": "https://x.com/getrekonise"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "task": "createSnippetLink",
+      "error": "TimeoutError: locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button').filter({ hasText: 'Subscribe to channel' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\" class=\"group relative flex flex-col pl-3 pr-3 py-2 rounded-lg bg-[#252525] transition-all text-left text-sm overflow-hidden duration-200 opacity-40 cursor-not-allowed ng-star-inserted\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    15 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "currentUrl": "https://rekonise.com/dashboard/links/create",
+      "page": {
+        "url": "https://rekonise.com/dashboard/links/create",
+        "title": "Create new link - Rekonise",
+        "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience bolt Upgrade to Pro Unlock full analytics and no ads PRO khatg79@gmail.com lock_open Links - Create new link home Overview add Create link Shortened links link URL folder_open File text_snippet Snippet text_snippet Select snippet Enter a title handshake ACTIONS history Most used add @pnhlong88 Subscribe to channel add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video 1. Subscribe to channel delete Enter a channel URL add Add action expand_more Show advanced options tune Customization expand_more Cover Image add_photo_alternate Cover image Subtitle close Custom URL info You have to set a username before you can set a custom URL path. Choose a username brush Background expand_more mail_outline Email capturing expand_more Email lists add Create email list widgets Widgets / Previews expand_more bolt Upgrade to PRO to unlock alarm Expire link expand_more bolt Upgrade to PRO to unlock PREVIEW save Create Codex Snippet Demo 1783760549190 Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock snippet",
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a title",
+            "required": true,
+            "valueState": "<filled>",
+            "formControlName": "title"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "",
+            "required": false,
+            "valueState": "<filled>",
+            "formControlName": "input"
+          },
+          {
+            "tag": "input",
+            "type": "",
+            "placeholder": "Enter a subtitle",
+            "required": false,
+            "valueState": "",
+            "formControlName": "subtitle"
+          }
+        ],
+        "buttons": [
+          {
+            "text": "bolt Upgrade to Pro Unlock full analytics and no ads PRO",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "khatg79@gmail.com",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "link URL",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "folder_open File",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Snippet",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "text_snippet Select snippet",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "add @pnhlong88 Subscribe to channel",
+            "disabled": true,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add SGP vs FPT | GIAI ĐOẠN 1 - LƯỢT VỀ | ĐTDV MÙA XUÂN 2026 (NGÀY 04/04) Like a video",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "Subscribe to channel",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "delete",
+            "disabled": true,
+            "aria": "Remove action",
+            "type": ""
+          },
+          {
+            "text": "expand_more Show advanced options",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "tune Customization expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "add_photo_alternate Cover image",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "close",
+            "disabled": false,
+            "aria": "Clear",
+            "type": ""
+          },
+          {
+            "text": "Choose a username",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "brush Background expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "mail_outline Email capturing expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "widgets Widgets / Previews expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "alarm Expire link expand_more",
+            "disabled": false,
+            "aria": "",
+            "type": "button"
+          },
+          {
+            "text": "bolt Upgrade to PRO to unlock",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "save Create",
+            "disabled": false,
+            "aria": "",
+            "type": ""
+          },
+          {
+            "text": "Subscribe to channel",
+            "disabled": false,
+            "aria": "Subscribe to channel",
+            "type": "button"
+          },
+          {
+            "text": "lock Unlock snippet",
+            "disabled": true,
+            "aria": "Unlock snippet. 0 of 1 required steps completed",
+            "type": ""
+          }
+        ],
+        "links": [
+          {
+            "text": "Rekonise",
+            "href": "https://rekonise.com/"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "Link-in-bio",
+            "href": "https://rekonise.com/dashboard/link-in-bio"
+          },
+          {
+            "text": "Email lists",
+            "href": "https://rekonise.com/dashboard/email-lists"
+          },
+          {
+            "text": "Files",
+            "href": "https://rekonise.com/dashboard/storage"
+          },
+          {
+            "text": "Settings",
+            "href": "https://rekonise.com/dashboard/settings"
+          },
+          {
+            "text": "Analytics",
+            "href": "https://rekonise.com/dashboard/analytics"
+          },
+          {
+            "text": "Audience",
+            "href": "https://rekonise.com/dashboard/audience"
+          },
+          {
+            "text": "",
+            "href": "https://discord.gg/BArWfjznXM"
+          },
+          {
+            "text": "",
+            "href": "https://x.com/getrekonise"
+          },
+          {
+            "text": "Links",
+            "href": "https://rekonise.com/dashboard"
+          },
+          {
+            "text": "home Overview",
+            "href": "https://rekonise.com/dashboard/links"
+          },
+          {
+            "text": "add Create",
+            "href": "https://rekonise.com/dashboard/links/create"
+          },
+          {
+            "text": "link Shortened links",
+            "href": "https://rekonise.com/dashboard/links/short"
+          }
+        ]
+      }
+    }
+  ],
+  "linksAfter": {
+    "url": "https://rekonise.com/dashboard/links",
+    "title": "Links - Rekonise",
+    "textSample": "Rekonise Links Link-in-bio Email lists Files Settings Insights Analytics Audience khatg79@gmail.com lock_open Links home Overview add Create link Shortened links Shortened links",
+    "inputs": [
+      {
+        "tag": "input",
+        "type": "checkbox",
+        "placeholder": "",
+        "required": false,
+        "valueState": "<filled>",
+        "formControlName": ""
+      }
+    ],
+    "buttons": [
+      {
+        "text": "khatg79@gmail.com",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "edit Edit Actions",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "Clear",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "lock_open",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "visibility",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "calendar_month",
+        "disabled": false,
+        "aria": "",
+        "type": ""
+      },
+      {
+        "text": "",
+        "disabled": true,
+        "aria": "First page",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "disabled": true,
+        "aria": "Previous page",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "disabled": true,
+        "aria": "Next page",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "disabled": true,
+        "aria": "Last page",
+        "type": "button"
+      }
+    ],
+    "links": [
+      {
+        "text": "Rekonise",
+        "href": "https://rekonise.com/"
+      },
+      {
+        "text": "Links",
+        "href": "https://rekonise.com/dashboard/links"
+      },
+      {
+        "text": "Link-in-bio",
+        "href": "https://rekonise.com/dashboard/link-in-bio"
+      },
+      {
+        "text": "Email lists",
+        "href": "https://rekonise.com/dashboard/email-lists"
+      },
+      {
+        "text": "Files",
+        "href": "https://rekonise.com/dashboard/storage"
+      },
+      {
+        "text": "Settings",
+        "href": "https://rekonise.com/dashboard/settings"
+      },
+      {
+        "text": "Analytics",
+        "href": "https://rekonise.com/dashboard/analytics"
+      },
+      {
+        "text": "Audience",
+        "href": "https://rekonise.com/dashboard/audience"
+      },
+      {
+        "text": "",
+        "href": "https://discord.gg/BArWfjznXM"
+      },
+      {
+        "text": "",
+        "href": "https://x.com/getrekonise"
+      },
+      {
+        "text": "Links",
+        "href": "https://rekonise.com/dashboard"
+      },
+      {
+        "text": "home Overview",
+        "href": "https://rekonise.com/dashboard/links"
+      },
+      {
+        "text": "add Create",
+        "href": "https://rekonise.com/dashboard/links/create"
+      },
+      {
+        "text": "link Shortened links",
+        "href": "https://rekonise.com/dashboard/links/short"
+      }
+    ]
+  }
+}

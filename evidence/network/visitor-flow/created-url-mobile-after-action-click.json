@@ -1,0 +1,50 @@
+[
+  {
+    "method": "GET",
+    "path": "<external:ep2.adtrafficquality.google>",
+    "status": 200,
+    "resourceType": "document",
+    "responseShape": "text/html",
+    "when": "created public after action click"
+  },
+  {
+    "method": "GET",
+    "path": "<external:pagead2.googlesyndication.com>",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "text/javascript",
+    "when": "created public after action click"
+  },
+  {
+    "method": "GET",
+    "path": "<external:www.google.com>",
+    "status": 200,
+    "resourceType": "document",
+    "responseShape": "text/html",
+    "when": "created public after action click"
+  },
+  {
+    "method": "GET",
+    "path": "<external:ep2.adtrafficquality.google>",
+    "status": 204,
+    "resourceType": "image",
+    "responseShape": "unknown",
+    "when": "created public after action click"
+  },
+  {
+    "method": "GET",
+    "path": "<external:pagead2.googlesyndication.com>",
+    "status": 204,
+    "resourceType": "image",
+    "responseShape": "image/",
+    "when": "created public after action click"
+  },
+  {
+    "method": "GET",
+    "path": "<external:ep1.adtrafficquality.google>",
+    "status": 204,
+    "resourceType": "image",
+    "responseShape": "image/",
+    "when": "created public after action click"
+  }
+]

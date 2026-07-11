@@ -1,0 +1,59 @@
+{
+  "url": "https://rekonise.com/login?returnUrl=%2Fdashboard%2Flinks%2Fcreate",
+  "title": "Login - Rekonise",
+  "textSample": "Rekonise Sign in to your account Continue with Google Continue with Discord Or continue with email Enter your email Enter your password visibility_off Forgot password? Sign in Not a member? Create a free account",
+  "inputs": [
+    {
+      "tag": "input",
+      "type": "",
+      "placeholder": "your@email.com",
+      "required": true,
+      "valueState": "",
+      "formControlName": "email"
+    },
+    {
+      "tag": "input",
+      "type": "password",
+      "placeholder": "",
+      "required": true,
+      "valueState": "",
+      "formControlName": "password"
+    }
+  ],
+  "buttons": [
+    {
+      "text": "Continue with Google",
+      "disabled": false,
+      "aria": "",
+      "type": "button"
+    },
+    {
+      "text": "Continue with Discord",
+      "disabled": false,
+      "aria": "",
+      "type": "button"
+    },
+    {
+      "text": "Forgot password?",
+      "disabled": false,
+      "aria": "",
+      "type": "button"
+    },
+    {
+      "text": "Sign in",
+      "disabled": false,
+      "aria": "",
+      "type": "submit"
+    }
+  ],
+  "links": [
+    {
+      "text": "Rekonise",
+      "href": "https://rekonise.com/"
+    },
+    {
+      "text": "Create a free account",
+      "href": "https://rekonise.com/register"
+    }
+  ]
+}

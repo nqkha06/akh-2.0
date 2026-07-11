@@ -1,0 +1,554 @@
+[
+  {
+    "method": "GET",
+    "path": "/new",
+    "status": 404,
+    "resourceType": "document",
+    "responseShape": "html",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/assets/logo/rekonise.svg",
+    "status": 200,
+    "resourceType": "image",
+    "responseShape": "image",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/styles-FPDC43CQ.css",
+    "status": 200,
+    "resourceType": "stylesheet",
+    "responseShape": "css",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-6BFV2TD3.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-Q4ZP6UZC.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-WRETF7CI.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-U5UQSX56.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-J5MIVLJ5.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-EPTQAMIH.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-ITXQ64Y3.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-2PPFUFFT.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-JLLE6OCM.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-UIYLUXTG.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/polyfills-FFHMD2TL.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/main-Z46QTSME.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/assets/images/signature.png",
+    "status": 200,
+    "resourceType": "image",
+    "responseShape": "image",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/assets/logo/rekonise.svg",
+    "status": 200,
+    "resourceType": "image",
+    "responseShape": "image",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-EJ7LPM5N.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-N2IBUPFG.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-EQDQRRRY.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "POST",
+    "path": "/cdn-cgi/rum",
+    "status": 204,
+    "resourceType": "xhr",
+    "responseShape": "text/plain",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/refresh-token",
+    "status": 200,
+    "resourceType": "fetch",
+    "responseShape": "json",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/users",
+    "status": 200,
+    "resourceType": "fetch",
+    "responseShape": "json",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/social-unlocks/new",
+    "status": 404,
+    "resourceType": "fetch",
+    "responseShape": "json",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-CETGU76K.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-RSAQVGXD.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-75P4NSQ3.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-PY7MCCXU.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-PPMP5WUZ.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-RQUEMXYW.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-Q7MYX67Z.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-QMRVNOK4.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-634UZBKV.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-TIYBUGAA.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-HXRO4X4T.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-PPGD5IAA.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-OQA7V3N2.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-QYP6P3NY.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-CWSXLM6F.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-TXZXWH2S.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-6IHCBEW7.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-YN43UDL6.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-GBUGSEA7.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-WAHRPJAR.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-HYJSIZQN.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-YUZKZPPE.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-B3VK4JIT.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-SYYTKOT6.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-UAQCXPRU.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-7CR6WREQ.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-C7DYDN7H.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-7KCJAMF5.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-TQGNAWKW.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-ICBO6QMS.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-GPMKHTEI.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-YNRQRZ5F.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-MRSTTFW3.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-BZ6NYOPS.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-GQO5KCC3.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-ZSYQPDBX.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-ZAI7FBEC.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-F7UBXWKF.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-GP57UOSD.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-XHK5GDEV.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-CH7CEH6T.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-7KUDCTHQ.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/chunk-SKQF57PQ.js",
+    "status": 200,
+    "resourceType": "script",
+    "responseShape": "javascript",
+    "when": "visit https://rekonise.com/new"
+  },
+  {
+    "method": "GET",
+    "path": "/assets/logo/rekonise.svg",
+    "status": 200,
+    "resourceType": "image",
+    "responseShape": "image",
+    "when": "visit https://rekonise.com/new"
+  }
+]

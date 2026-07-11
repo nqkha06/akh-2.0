@@ -1,0 +1,62 @@
+{
+  "url": "https://rekonise.com/codex-url-demo-1783760537194-j2r4b",
+  "title": "Codex URL Demo 1783760537194 - Rekonise",
+  "textSample": "more_horiz Codex URL Demo 1783760537194 Complete the actions to unlock Subscribe to channel Progress update: 0/1 done Unlock progress 0/1 done lock Unlock link More from this user Unlock Successfully created Dismiss Upgrade to Pro Your link is live! Free links show Rekonise branding and ads. Upgrade to Pro to remove them and unlock detailed analytics. WHY CREATORS UPGRADE visibility_off Remove ads & Rekonise branding Make your links feel fully professional. insights See complete audience insights Track clicks, countries, devices, and trends over time. all_inclusive Run campaigns without limits Unlimited actions and deeper customization. rocket_launch Scale without friction Embed anywhere, host larger files, and track audience growth. INCLUDED WITH PRO done Ad-free links done Unlimited actions done Full analytics done Advanced customization done Embedding options done Increased storage done Verified badge done And more... Weekly Monthly Save 31% Lifetime Best value $29.99 per month Upgrade to Pro",
+  "inputs": [],
+  "buttons": [
+    {
+      "text": "more_horiz",
+      "disabled": false,
+      "aria": "Share",
+      "type": ""
+    },
+    {
+      "text": "Subscribe to channel",
+      "disabled": false,
+      "aria": "Subscribe to channel",
+      "type": "button"
+    },
+    {
+      "text": "lock Unlock link",
+      "disabled": true,
+      "aria": "Unlock link. 0 of 1 required steps completed",
+      "type": ""
+    },
+    {
+      "text": "Dismiss",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "Weekly",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "Monthly Save 31%",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "Lifetime Best value",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    },
+    {
+      "text": "Upgrade to Pro",
+      "disabled": false,
+      "aria": "",
+      "type": ""
+    }
+  ],
+  "links": [
+    {
+      "text": "Unlock",
+      "href": "https://rekonise.com/unlock-4pbde"
+    }
+  ]
+}

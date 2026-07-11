@@ -1,10 +1,10 @@
 import { DashboardShell } from "@/components/dashboard/shell";
-import { FilesView } from "@/components/dashboard/views/files";
+import { BioView } from "./bio-view";
 
 export default function BioPage() {
   return (
     <DashboardShell>
-      <FilesView />
+      <BioView />
     </DashboardShell>
   );
 }
