@@ -1,0 +1,202 @@
+{
+  "Common": {
+    "language": "Language",
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "search": "Search",
+    "filter": "Filter",
+    "apply": "Apply",
+    "reset": "Reset",
+    "close": "Close",
+    "copy": "Copy",
+    "edit": "Edit",
+    "delete": "Delete",
+    "active": "Active",
+    "inactive": "Inactive",
+    "paused": "Paused",
+    "comingSoon": "No section yet, coming soon!",
+    "home": "Home"
+  },
+  "Dashboard": {
+    "groups": {
+      "overview": "Overview",
+      "monetization": "Monetization",
+      "community": "Community",
+      "accountSupport": "Account & support",
+      "partners": "Partners"
+    },
+    "nav": {
+      "overview": "Dashboard",
+      "links": "Sub to Unlock",
+      "files": "Files",
+      "bio": "Link-in-bio",
+      "levels": "Earnings",
+      "withdraw": "Withdraw",
+      "referrals": "Referrals",
+      "new": "New",
+      "loyalty": "Loyalty",
+      "leaderboard": "Leaderboard",
+      "account": "Account",
+      "support": "Support"
+    },
+    "topbar": {
+      "notifications": "Notifications",
+      "toggleDarkMode": "Toggle dark mode",
+      "theme": "Theme",
+      "dark": "Dark",
+      "light": "Light",
+      "editProfile": "Edit profile",
+      "subscription": "Subscription",
+      "accountSettings": "Account settings",
+      "logout": "Log out"
+    }
+  },
+  "Links": {
+    "management": "Links management",
+    "socialLinks": "Social links",
+    "description": "Create and manage shortened links to track performance and optimize revenue.",
+    "tabs": {
+      "overview": "Overview",
+      "create": "Create",
+      "monetization": "Monetization",
+      "mobileMonetization": "Links"
+    },
+    "searchPlaceholder": "Search title, slug, URL, platform...",
+    "filter": "Filter",
+    "filterDescription": "Choose conditions to narrow the link list.",
+    "apply": "Apply",
+    "reset": "Reset",
+    "resetFilters": "Reset filters",
+    "status": "Status",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "statusPaused": "Paused",
+    "type": "Link type",
+    "typeUrl": "URL",
+    "typeFile": "File",
+    "typeSnippet": "Snippet",
+    "platform": "Platform",
+    "allStatus": "All status",
+    "allTypes": "All types",
+    "allPlatforms": "All platforms",
+    "fromDate": "From",
+    "toDate": "To",
+    "minClicks": "Min clicks",
+    "minClicksPlaceholder": "e.g. 100",
+    "highPerformance": "Only high-performance links",
+    "highPerformanceDescription": "Links with at least 500 clicks.",
+    "demoData": "Demo data",
+    "rows": "Rows",
+    "showing": "Showing {first}-{last} of {total} links",
+    "createNew": "Create new link",
+    "loadErrorTitle": "Could not load links",
+    "loadErrorFallback": "Could not load the link list.",
+    "tryAgain": "Try again",
+    "emptyTitle": "No links yet",
+    "emptyDescription": "Create your first link to start tracking clicks, conversions, and revenue.",
+    "notFound": "No matching links found",
+    "notFoundDescription": "Try changing your keyword, status, type, or reset filters.",
+    "sort": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "clicksDesc": "Most clicks",
+      "titleAsc": "Title A-Z",
+      "actionsDesc": "Most actions"
+    }
+  },
+  "LinkCard": {
+    "active": "Active",
+    "monetizationOn": "Monetization on",
+    "to": "to",
+    "copied": "Copied!",
+    "copyLink": "Copy link",
+    "qrCode": "QR Code",
+    "qrDescription": "Scan the QR code to access the link.",
+    "qrSize": "QR size",
+    "qrMargin": "QR margin",
+    "errorCorrection": "Error correction",
+    "foregroundColor": "Foreground color",
+    "backgroundColor": "Background color",
+    "generating": "Generating...",
+    "qrUnavailable": "Unable to generate QR code",
+    "copyRedirectUrl": "Copy redirect URL",
+    "downloadPng": "Download PNG",
+    "stats": "Stats",
+    "statsTitle": "Link statistics",
+    "statsDescription": "Performance snapshot for demo over all time.",
+    "clicks": "Clicks",
+    "visitors": "Visitors",
+    "earnings": "Earnings",
+    "status": "Status",
+    "shortUrl": "Short URL",
+    "destinationUrl": "Destination URL",
+    "created": "Created",
+    "lastUpdated": "Last updated",
+    "monetization": "Monetization",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "delete": "Delete",
+    "editTitle": "Edit social link",
+    "editDescription": "Update destination, actions, appearance, and expiration without changing the public slug.",
+    "qrNotReady": "QR code is not ready"
+  },
+  "Account": {
+    "eyebrow": "Settings",
+    "title": "Account",
+    "description": "Manage your profile, security, payout, notifications, and interface preferences.",
+    "verified": "Verified",
+    "editProfile": "Edit profile",
+    "cards": {
+      "personal": "Personal information",
+      "personalDesc": "Display name, email, avatar",
+      "password": "Change password",
+      "passwordDesc": "Strong password and login history",
+      "payout": "Payout account",
+      "payoutDesc": "Bank, wallet, default method",
+      "notifications": "Notifications",
+      "notificationsDesc": "Email, push, revenue alerts",
+      "preferences": "Preferences",
+      "preferencesDesc": "Language, theme, display density",
+      "verification": "Account verification",
+      "verificationDesc": "KYC, security, and 2FA"
+    }
+  },
+  "SimplePages": {
+    "leaderboard": {
+      "eyebrow": "Competition",
+      "title": "Leaderboard",
+      "description": "Top creators by revenue, points, and referrals across weekly, monthly, or all-time views."
+    },
+    "levels": {
+      "eyebrow": "Commission tier",
+      "title": "Earning levels",
+      "description": "View your current tier, upgrade progress, and commission benefits by tier."
+    },
+    "loyalty": {
+      "eyebrow": "Loyalty",
+      "title": "Loyalty",
+      "description": "Light gamification for tracking loyalty points, missions, and membership benefits."
+    },
+    "new": {
+      "eyebrow": "Product updates",
+      "title": "New",
+      "description": "Track the latest features, improvements, and fixes on the platform."
+    },
+    "referrals": {
+      "eyebrow": "Referral",
+      "title": "Referrals",
+      "description": "Invite friends to join Rekonise and earn commission from their creator activity.",
+      "share": "Share link"
+    },
+    "support": {
+      "eyebrow": "Support center",
+      "title": "Support",
+      "description": "Find quick answers, submit tickets, and track support status."
+    },
+    "withdraw": {
+      "eyebrow": "Payout",
+      "title": "Withdraw",
+      "description": "Track your balance, submit payout requests, and review transaction history."
+    }
+  }
+}

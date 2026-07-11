@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Copy, BarChart3, Edit3, MoreVertical, QrCode, Trash2, Unplug } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { LinkDto } from "@/lib/api-client";
+import SocialLinksGenerator from "@/app/create/demo";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -41,7 +43,16 @@ type LinkCardProps = {
 };
 
 export function LinkCard({ link }: LinkCardProps) {
+    const t = useTranslations("LinkCard");
+    const commonT = useTranslations("Common");
     const isActive = link.status === "active";
+    const statusLabel = isActive
+        ? t("active")
+        : link.status === "inactive"
+            ? commonT("inactive")
+            : link.status === "paused"
+                ? commonT("paused")
+                : link.status;
     const shortUrl = `/l/${link.slug}`;
     const redirectUrl = useMemo(() => {
         if (typeof window === "undefined") {
@@ -57,6 +68,7 @@ export function LinkCard({ link }: LinkCardProps) {
     const [qrBackground, setQrBackground] = useState("#ffffff");
     const [qrImageSrc, setQrImageSrc] = useState("");
     const [isQrLoading, setIsQrLoading] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -96,7 +108,7 @@ export function LinkCard({ link }: LinkCardProps) {
 
     const handleDownloadQr = () => {
         if (!qrImageSrc) {
-            toast.error("QR code chưa sẵn sàng");
+            toast.error(t("qrNotReady"));
             return;
         }
 
@@ -107,6 +119,7 @@ export function LinkCard({ link }: LinkCardProps) {
     };
 
     return (
+        <>
         <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
@@ -121,11 +134,11 @@ export function LinkCard({ link }: LinkCardProps) {
                                 isActive ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500",
                             ].join(" ")}
                         >
-                            {isActive ? "Active" : link.status}
+                            {statusLabel}
                         </span>
 
                         <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-600">
-                            Monetization On
+                            {t("monetizationOn")}
                         </span>
                     </div>
 
@@ -134,14 +147,14 @@ export function LinkCard({ link }: LinkCardProps) {
                             {link.destinationUrl ?? "https://example.com"}
                         </span>
 
-                        <span className="text-slate-400">to</span>
+                        <span className="text-slate-400">{t("to")}</span>
 
                         <button
                             type="button"
-                            onClick={() => void navigator.clipboard.writeText(shortUrl).then(() => toast.success("Sao chép đường dẫn ngắn"))}
+                            onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
                             className="inline-flex items-center rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-black text-slate-950 transition hover:bg-slate-200"
                         >
-                            {shortUrl}
+                            {redirectUrl}
                         </button>
                     </div>
                 </div>
@@ -152,11 +165,11 @@ export function LinkCard({ link }: LinkCardProps) {
                     <div className="flex flex-wrap items-center gap-3">
                         <button
                             type="button"
-                            onClick={() => void navigator.clipboard.writeText(shortUrl).then(() => toast.success("Đã sao chép"))}
+                            onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
                             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
                         >
                             <Copy size={18} />
-                            Copy Link
+                            {t("copyLink")}
                         </button>
 
                         <Dialog>
@@ -166,19 +179,19 @@ export function LinkCard({ link }: LinkCardProps) {
                                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
                                 >
                                     <QrCode size={18} />
-                                    QR Code
+                                    {t("qrCode")}
                                 </button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-xl">
                                 <DialogHeader>
-                                    <DialogTitle>QR Code</DialogTitle>
+                                    <DialogTitle>{t("qrCode")}</DialogTitle>
                                     <DialogDescription>
-                                        Scan the QR code to access the link.
+                                        {t("qrDescription")}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <Field>
-                                        <FieldLabel htmlFor={`qr-size-${link.id}`}>QR size</FieldLabel>
+                                        <FieldLabel htmlFor={`qr-size-${link.id}`}>{t("qrSize")}</FieldLabel>
                                         <Input
                                             id={`qr-size-${link.id}`}
                                             min={120}
@@ -194,7 +207,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel htmlFor={`qr-margin-${link.id}`}>QR margin</FieldLabel>
+                                        <FieldLabel htmlFor={`qr-margin-${link.id}`}>{t("qrMargin")}</FieldLabel>
                                         <Input
                                             id={`qr-margin-${link.id}`}
                                             min={0}
@@ -210,8 +223,11 @@ export function LinkCard({ link }: LinkCardProps) {
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel htmlFor={`qr-error-${link.id}`}>Error correction</FieldLabel>
-                                        <Select defaultValue="L">
+                                        <FieldLabel htmlFor={`qr-error-${link.id}`}>{t("errorCorrection")}</FieldLabel>
+                                        <Select
+                                            value={qrErrorCorrection}
+                                            onValueChange={(value) => setQrErrorCorrection(value as "L" | "M" | "Q" | "H")}
+                                        >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -230,7 +246,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                     </Field>
 
                                     <Field>
-                                        <FieldLabel htmlFor={`qr-fg-${link.id}`}>Foreground Color</FieldLabel>
+                                        <FieldLabel htmlFor={`qr-fg-${link.id}`}>{t("foregroundColor")}</FieldLabel>
                                         <Input
                                             id={`qr-fg-${link.id}`}
                                             value={qrForeground}
@@ -239,7 +255,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                         />
                                     </Field>
                                     <Field>
-                                        <FieldLabel htmlFor={`qr-bg-${link.id}`}>Background Color</FieldLabel>
+                                        <FieldLabel htmlFor={`qr-bg-${link.id}`}>{t("backgroundColor")}</FieldLabel>
                                         <Input
                                             id={`qr-bg-${link.id}`}
                                             value={qrBackground}
@@ -258,27 +274,27 @@ export function LinkCard({ link }: LinkCardProps) {
                                         />
                                     ) : (
                                         <div className="flex h-56 w-56 items-center justify-center text-sm text-slate-500">
-                                            {isQrLoading ? "Generating..." : "Unable to generate QR code"}
+                                            {isQrLoading ? t("generating") : t("qrUnavailable")}
                                         </div>
                                     )}
                                 </div>
                                 <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
+                                        <Button variant="outline">{commonT("close")}</Button>
                                     </DialogClose>
 
                                     <div className="flex flex-col gap-2 sm:flex-row">
                                         <DialogClose asChild>
                                             <Button
                                                 variant="outline"
-                                                onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success("Đã sao chép redirect URL"))}
+                                                onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
                                             >
-                                                Copy Redirect URL
+                                                {t("copyRedirectUrl")}
                                             </Button>
                                         </DialogClose>
 
                                         <Button variant="default" onClick={handleDownloadQr} disabled={!qrImageSrc || isQrLoading}>
-                                            Download PNG
+                                            {t("downloadPng")}
                                         </Button>
                                     </div>
                                 </DialogFooter>
@@ -292,52 +308,52 @@ export function LinkCard({ link }: LinkCardProps) {
                                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
                                 >
                                     <BarChart3 size={18} />
-                                    Stats
+                                    {t("stats")}
                                 </button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-xl">
                                 <DialogHeader>
-                                    <DialogTitle>Link Statistics</DialogTitle>
+                                    <DialogTitle>{t("statsTitle")}</DialogTitle>
                                     <DialogDescription>
-                                        Performance snapshot for demo over All Time.
+                                        {t("statsDescription")}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
                                     <div className="border-border bg-background rounded-xl border p-3">
                                         <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            Clicks
+                                            {t("clicks")}
                                         </p>
                                         <p className="mt-1 text-lg font-semibold">0</p>
                                     </div>
                                     <div className="border-border bg-background rounded-xl border p-3">
                                         <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            Visitors
+                                            {t("visitors")}
                                         </p>
                                         <p className="mt-1 text-lg font-semibold">0</p>
                                     </div>
                                     <div className="border-border bg-background rounded-xl border p-3">
                                         <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            Earnings
+                                            {t("earnings")}
                                         </p>
                                         <p className="mt-1 text-lg font-semibold">$0.0000</p>
                                     </div>
                                     <div className="border-border bg-background rounded-xl border p-3">
                                         <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            Status
+                                            {t("status")}
                                         </p>
-                                        <p className="mt-1 text-lg font-semibold">Active</p>
+                                        <p className="mt-1 text-lg font-semibold">{statusLabel}</p>
                                     </div>
                                 </div>
                                 <div className="border-border bg-background space-y-3 rounded-xl border p-4 text-sm">
                                     <div>
                                         <p className="text-muted-foreground text-xs uppercase">
-                                            Short URL
+                                            {t("shortUrl")}
                                         </p>
-                                        <p className="mt-1 break-all font-medium">{shortUrl}</p>
+                                        <p className="mt-1 break-all font-medium">{redirectUrl}</p>
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground text-xs uppercase">
-                                            Destination URL
+                                            {t("destinationUrl")}
                                         </p>
                                         <p className="mt-1 break-all font-medium">
                                             https://www.youtube.com/watch?v=3EEnvO0yMHY
@@ -346,13 +362,13 @@ export function LinkCard({ link }: LinkCardProps) {
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div>
                                             <p className="text-muted-foreground text-xs uppercase">
-                                                Created
+                                                {t("created")}
                                             </p>
                                             <p className="mt-1 font-medium">5/9/2026, 10:25:54 PM</p>
                                         </div>
                                         <div>
                                             <p className="text-muted-foreground text-xs uppercase">
-                                                Last Updated
+                                                {t("lastUpdated")}
                                             </p>
                                             <p className="mt-1 font-medium">6/1/2026, 12:52:26 AM</p>
                                         </div>
@@ -361,7 +377,7 @@ export function LinkCard({ link }: LinkCardProps) {
 
                                 <DialogFooter>
                                     <DialogClose asChild>
-                                        <Button variant="outline">Close</Button>
+                                        <Button variant="outline">{commonT("close")}</Button>
                                     </DialogClose>
                                 </DialogFooter>
                             </DialogContent>
@@ -372,7 +388,7 @@ export function LinkCard({ link }: LinkCardProps) {
                         <div
                             className="inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-500"
                         >
-                            Monetization
+                            {t("monetization")}
                             <Switch />
                         </div>
 
@@ -389,19 +405,25 @@ export function LinkCard({ link }: LinkCardProps) {
                                 align="end"
                                 className="w-56 rounded-2xl border border-slate-200 bg-white p-0 shadow-[0_18px_45px_rgba(15,23,42,0.16)]"
                             >
-                                <DropdownMenuItem className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-50 focus:bg-slate-50 focus:text-slate-950">
+                                <DropdownMenuItem
+                                    onSelect={(event) => {
+                                        event.preventDefault();
+                                        setEditOpen(true);
+                                    }}
+                                    className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-50 focus:bg-slate-50 focus:text-slate-950"
+                                >
                                     <Edit3 size={19} />
-                                    Edit
+                                    {t("edit")}
                                 </DropdownMenuItem>
                                 <div className="h-px bg-slate-100" />
                                 <DropdownMenuItem className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-orange-600 transition hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-600">
                                     <Unplug size={19} />
-                                    Deactivate
+                                    {t("deactivate")}
                                 </DropdownMenuItem>
                                 <div className="h-px bg-slate-100" />
                                 <DropdownMenuItem className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-red-600 transition hover:bg-red-50 focus:bg-red-50 focus:text-red-600">
                                     <Trash2 size={19} />
-                                    Delete
+                                    {t("delete")}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -409,5 +431,21 @@ export function LinkCard({ link }: LinkCardProps) {
                 </div>
             </div>
         </article>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-h-[92vh] overflow-y-auto p-4 sm:max-w-6xl sm:p-6">
+                <DialogHeader>
+                    <DialogTitle>{t("editTitle")}</DialogTitle>
+                    <DialogDescription>
+                        {t("editDescription")}
+                    </DialogDescription>
+                </DialogHeader>
+                <SocialLinksGenerator
+                    embedded
+                    initialLink={link}
+                    onSaved={() => setEditOpen(false)}
+                />
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }

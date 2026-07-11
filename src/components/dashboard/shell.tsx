@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  ChevronDown,
   CircleHelp,
   CloudUpload,
   Crown,
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 
 import { CreateLinkDialog } from "@/components/create-link-dialog";
 
@@ -44,33 +44,33 @@ import { Switch } from "@/components/ui/switch"
 
 const navGroups = [
   {
-    label: "Tổng quan",
-    items: [{ href: "/", label: "Bảng tổng quan", icon: Gauge }],
+    labelKey: "groups.overview",
+    items: [{ href: "/", labelKey: "nav.overview", icon: Gauge }],
   },
   {
-    label: "Kiếm tiền",
+    labelKey: "groups.monetization",
     items: [
-      { href: "/links", label: "Sub to Unlock", icon: Link2 },
-      { href: "/files", label: "Files", icon: Folder },
-      { href: "/bio", label: "Link-in-bio", icon: Folder },
-      { href: "/levels", label: "Kiếm tiền", icon: Network },
-      { href: "/withdraw", label: "Rút tiền", icon: Wallet },
+      { href: "/links", labelKey: "nav.links", icon: Link2 },
+      { href: "/files", labelKey: "nav.files", icon: Folder },
+      { href: "/bio", labelKey: "nav.bio", icon: Folder },
+      { href: "/levels", labelKey: "nav.levels", icon: Network },
+      { href: "/withdraw", labelKey: "nav.withdraw", icon: Wallet },
     ],
   },
   {
-    label: "Cộng đồng",
+    labelKey: "groups.community",
     items: [
-      { href: "/referrals", label: "Giới thiệu", icon: Gift },
-      { href: "/new", label: "New", icon: Sparkles, badge: "New" },
-      { href: "/loyalty", label: "Thân thiết", icon: Trophy },
-      { href: "/leaderboard", label: "Bảng xếp hạng", icon: Crown },
+      { href: "/referrals", labelKey: "nav.referrals", icon: Gift },
+      { href: "/new", labelKey: "nav.new", icon: Sparkles, badgeKey: "nav.new" },
+      { href: "/loyalty", labelKey: "nav.loyalty", icon: Trophy },
+      { href: "/leaderboard", labelKey: "nav.leaderboard", icon: Crown },
     ],
   },
   {
-    label: "Tài khoản & hỗ trợ",
+    labelKey: "groups.accountSupport",
     items: [
-      { href: "/account", label: "Tài khoản", icon: User },
-      { href: "/support", label: "Hỗ trợ", icon: CircleHelp },
+      { href: "/account", labelKey: "nav.account", icon: User },
+      { href: "/support", labelKey: "nav.support", icon: CircleHelp },
     ],
   },
 ];
@@ -104,6 +104,7 @@ function isActivePath(pathname: string, href: string) {
 
 function NavItem({ item }: { item: NavItemData }) {
   const pathname = usePathname();
+  const t = useTranslations("Dashboard");
   const active = isActivePath(pathname, item.href);
 
   return (
@@ -122,13 +123,13 @@ function NavItem({ item }: { item: NavItemData }) {
       >
         <item.icon size={18} strokeWidth={2} />
       </span>
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-      {item.badge ? (
+      <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
+      {"badgeKey" in item && item.badgeKey ? (
         <span
           className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${active ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
             }`}
         >
-          {item.badge}
+          {t(item.badgeKey)}
         </span>
       ) : null}
     </Link>
@@ -136,6 +137,8 @@ function NavItem({ item }: { item: NavItemData }) {
 }
 
 function Sidebar() {
+  const t = useTranslations("Dashboard");
+
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[288px] border-r border-slate-200 bg-white lg:block">
       <div className="relative flex h-full flex-col overflow-hidden px-4 py-4">
@@ -146,9 +149,9 @@ function Sidebar() {
 
         <nav className="relative mt-6 space-y-4 overflow-y-auto pr-1">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.labelKey}>
               <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                {group.label}
+                {t(group.labelKey)}
               </p>
               <div className="space-y-1">
                 {group.items.map((item) => (
@@ -162,7 +165,7 @@ function Sidebar() {
         <div className="relative mt-auto pt-4">
           <div className="mb-3 border-t border-slate-200/80 pt-3">
             <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              Đối tác
+              {t("groups.partners")}
             </p>
             <div className="space-y-1">
               {partners.map((partner) => (
@@ -190,6 +193,7 @@ function Sidebar() {
 
 function Topbar() {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations("Dashboard");
   const isDark = resolvedTheme === "dark";
 
   return (
@@ -209,7 +213,7 @@ function Topbar() {
 
           <button
             className="relative grid size-10 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-blue-600 hover:shadow-[0_2px_6px_rgba(15,23,42,0.08)]"
-            aria-label="Thông báo"
+            aria-label={t("topbar.notifications")}
           >
             <Bell size={20} strokeWidth={1.9} />
             <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-emerald-500" />
@@ -220,13 +224,11 @@ function Topbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-2 pr-3 text-sm font-bold text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 >
-                  <span className="grid size-8 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  <span className="grid size-10 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">
                     Q
                   </span>
-                  Kha
-                  <ChevronDown size={16} className="text-slate-400" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 border-slate-200 bg-white text-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50">
@@ -254,16 +256,16 @@ function Topbar() {
                 >
                   <div className="flex items-center gap-2">
                     {isDark ? <Moon /> : <Sun />}
-                    Theme
+                    {t("topbar.theme")}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
-                      {isDark ? "Dark" : "Light"}
+                      {isDark ? t("topbar.dark") : t("topbar.light")}
                     </span>
                     <Switch
                       checked={isDark}
                       onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                      aria-label="Toggle dark mode"
+                      aria-label={t("topbar.toggleDarkMode")}
                     />
                   </div>
                 </DropdownMenuItem>
@@ -271,20 +273,20 @@ function Topbar() {
 
                 <DropdownMenuItem>
                   <User />
-                  Edit Profile
+                  {t("topbar.editProfile")}
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <CreditCard />
-                  Subscription
+                  {t("topbar.subscription")}
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings />
-                  Account Settings
+                  {t("topbar.accountSettings")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
                   <LogOut />
-                  Log out
+                  {t("topbar.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -298,19 +300,21 @@ function Topbar() {
 }
 
 function DashboardFooter() {
+  const t = useTranslations("Dashboard");
+
   return (
     <footer className="border-t border-slate-200/80 px-4 py-5 text-sm font-semibold text-slate-500 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-3 md:flex-row items-center md:justify-between">
         <p>© 2026 Rekonise.</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Link href="/support" className="transition hover:text-slate-950">
-            Hỗ trợ
+            {t("nav.support")}
           </Link>
           <Link href="/account" className="transition hover:text-slate-950">
-            Tài khoản
+            {t("nav.account")}
           </Link>
           <Link href="/leaderboard" className="transition hover:text-slate-950">
-            Bảng xếp hạng
+            {t("nav.leaderboard")}
           </Link>
         </div>
       </div>

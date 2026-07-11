@@ -1,0 +1,202 @@
+{
+  "Common": {
+    "language": "Ngôn ngữ",
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "search": "Tìm kiếm",
+    "filter": "Bộ lọc",
+    "apply": "Áp dụng",
+    "reset": "Đặt lại",
+    "close": "Đóng",
+    "copy": "Sao chép",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "active": "Đang hoạt động",
+    "inactive": "Không hoạt động",
+    "paused": "Tạm dừng",
+    "comingSoon": "Chưa có section, sắp ra mắt!",
+    "home": "Trang chủ"
+  },
+  "Dashboard": {
+    "groups": {
+      "overview": "Tổng quan",
+      "monetization": "Kiếm tiền",
+      "community": "Cộng đồng",
+      "accountSupport": "Tài khoản & hỗ trợ",
+      "partners": "Đối tác"
+    },
+    "nav": {
+      "overview": "Bảng tổng quan",
+      "links": "Sub to Unlock",
+      "files": "Files",
+      "bio": "Link-in-bio",
+      "levels": "Kiếm tiền",
+      "withdraw": "Rút tiền",
+      "referrals": "Giới thiệu",
+      "new": "New",
+      "loyalty": "Thân thiết",
+      "leaderboard": "Bảng xếp hạng",
+      "account": "Tài khoản",
+      "support": "Hỗ trợ"
+    },
+    "topbar": {
+      "notifications": "Thông báo",
+      "toggleDarkMode": "Bật/tắt giao diện tối",
+      "theme": "Giao diện",
+      "dark": "Tối",
+      "light": "Sáng",
+      "editProfile": "Chỉnh hồ sơ",
+      "subscription": "Gói dịch vụ",
+      "accountSettings": "Cài đặt tài khoản",
+      "logout": "Đăng xuất"
+    }
+  },
+  "Links": {
+    "management": "Quản lý link",
+    "socialLinks": "Social links",
+    "description": "Tạo và quản lý các liên kết rút gọn để theo dõi hiệu suất và tối ưu thu nhập.",
+    "tabs": {
+      "overview": "Tổng quan",
+      "create": "Tạo",
+      "monetization": "Kiếm tiền",
+      "mobileMonetization": "Links"
+    },
+    "searchPlaceholder": "Tìm title, slug, URL, platform...",
+    "filter": "Bộ lọc",
+    "filterDescription": "Chọn điều kiện để thu hẹp danh sách link.",
+    "apply": "Áp dụng",
+    "reset": "Đặt lại",
+    "resetFilters": "Reset bộ lọc",
+    "status": "Trạng thái",
+    "statusActive": "Đang hoạt động",
+    "statusInactive": "Không hoạt động",
+    "statusPaused": "Tạm dừng",
+    "type": "Loại link",
+    "typeUrl": "URL",
+    "typeFile": "File",
+    "typeSnippet": "Snippet",
+    "platform": "Platform",
+    "allStatus": "Tất cả trạng thái",
+    "allTypes": "Tất cả loại",
+    "allPlatforms": "Tất cả platform",
+    "fromDate": "Từ ngày",
+    "toDate": "Đến ngày",
+    "minClicks": "Click tối thiểu",
+    "minClicksPlaceholder": "Ví dụ: 100",
+    "highPerformance": "Chỉ hiện link hiệu suất cao",
+    "highPerformanceDescription": "Link có từ 500 clicks trở lên.",
+    "demoData": "Dữ liệu demo",
+    "rows": "Dòng",
+    "showing": "Hiển thị {first}-{last} trong {total} link",
+    "createNew": "Tạo liên kết mới",
+    "loadErrorTitle": "Không tải được liên kết",
+    "loadErrorFallback": "Không tải được danh sách link.",
+    "tryAgain": "Thử lại",
+    "emptyTitle": "Chưa có liên kết nào",
+    "emptyDescription": "Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu.",
+    "notFound": "Không tìm thấy link phù hợp",
+    "notFoundDescription": "Thử đổi từ khóa, trạng thái, loại link hoặc reset bộ lọc.",
+    "sort": {
+      "newest": "Mới nhất",
+      "oldest": "Cũ nhất",
+      "clicksDesc": "Nhiều click nhất",
+      "titleAsc": "Title A-Z",
+      "actionsDesc": "Nhiều action nhất"
+    }
+  },
+  "LinkCard": {
+    "active": "Đang hoạt động",
+    "monetizationOn": "Monetization bật",
+    "to": "đến",
+    "copied": "Đã sao chép!",
+    "copyLink": "Copy link",
+    "qrCode": "QR Code",
+    "qrDescription": "Quét QR code để mở link.",
+    "qrSize": "Kích thước QR",
+    "qrMargin": "Viền QR",
+    "errorCorrection": "Sửa lỗi",
+    "foregroundColor": "Màu chính",
+    "backgroundColor": "Màu nền",
+    "generating": "Đang tạo...",
+    "qrUnavailable": "Không thể tạo QR code",
+    "copyRedirectUrl": "Copy redirect URL",
+    "downloadPng": "Tải PNG",
+    "stats": "Thống kê",
+    "statsTitle": "Thống kê link",
+    "statsDescription": "Ảnh chụp hiệu suất demo trong toàn thời gian.",
+    "clicks": "Clicks",
+    "visitors": "Visitors",
+    "earnings": "Thu nhập",
+    "status": "Trạng thái",
+    "shortUrl": "Short URL",
+    "destinationUrl": "Destination URL",
+    "created": "Ngày tạo",
+    "lastUpdated": "Cập nhật cuối",
+    "monetization": "Monetization",
+    "edit": "Chỉnh sửa",
+    "deactivate": "Tắt",
+    "delete": "Xóa",
+    "editTitle": "Chỉnh social link",
+    "editDescription": "Cập nhật destination, actions, giao diện và thời hạn mà không đổi public slug.",
+    "qrNotReady": "QR code chưa sẵn sàng"
+  },
+  "Account": {
+    "eyebrow": "Cài đặt",
+    "title": "Tài khoản",
+    "description": "Quản lý hồ sơ, bảo mật, thanh toán, thông báo và tuỳ chọn giao diện.",
+    "verified": "Đã xác minh",
+    "editProfile": "Chỉnh hồ sơ",
+    "cards": {
+      "personal": "Thông tin cá nhân",
+      "personalDesc": "Tên hiển thị, email, avatar",
+      "password": "Đổi mật khẩu",
+      "passwordDesc": "Mật khẩu mạnh và lịch sử đăng nhập",
+      "payout": "Tài khoản nhận tiền",
+      "payoutDesc": "Ngân hàng, ví điện tử, mặc định",
+      "notifications": "Thông báo",
+      "notificationsDesc": "Email, push, cảnh báo doanh thu",
+      "preferences": "Preferences",
+      "preferencesDesc": "Ngôn ngữ, giao diện, mật độ hiển thị",
+      "verification": "Xác minh tài khoản",
+      "verificationDesc": "KYC, bảo mật và 2FA"
+    }
+  },
+  "SimplePages": {
+    "leaderboard": {
+      "eyebrow": "Competition",
+      "title": "Bảng xếp hạng",
+      "description": "Top creator theo thu nhập, điểm và lượt giới thiệu trong tuần, tháng hoặc toàn thời gian."
+    },
+    "levels": {
+      "eyebrow": "Commission tier",
+      "title": "Quản lí cấp độ kiếm tiền",
+      "description": "Xem cấp hiện tại, tiến độ thăng cấp và quyền lợi hoa hồng theo từng tier."
+    },
+    "loyalty": {
+      "eyebrow": "Loyalty",
+      "title": "Thân thiết",
+      "description": "Gamification nhẹ giúp bạn theo dõi điểm thân thiết, nhiệm vụ và quyền lợi theo hạng thành viên."
+    },
+    "new": {
+      "eyebrow": "Product updates",
+      "title": "New",
+      "description": "Theo dõi các tính năng mới, cải tiến và bản sửa lỗi mới nhất của nền tảng."
+    },
+    "referrals": {
+      "eyebrow": "Referral",
+      "title": "Giới thiệu",
+      "description": "Mời bạn bè tham gia Rekonise và nhận hoa hồng từ hoạt động kiếm tiền của họ.",
+      "share": "Chia sẻ link"
+    },
+    "support": {
+      "eyebrow": "Support center",
+      "title": "Hỗ trợ",
+      "description": "Tìm câu trả lời nhanh, gửi ticket và theo dõi trạng thái xử lý hỗ trợ."
+    },
+    "withdraw": {
+      "eyebrow": "Payout",
+      "title": "Rút tiền",
+      "description": "Theo dõi số dư, gửi yêu cầu rút tiền và kiểm tra lịch sử giao dịch minh bạch."
+    }
+  }
+}

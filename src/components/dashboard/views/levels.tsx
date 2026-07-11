@@ -1,4 +1,5 @@
 import { CheckCircle2, Crown, LockKeyhole, Rocket, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   Badge,
@@ -42,12 +43,14 @@ const tiers = [
 ];
 
 export function LevelsView() {
+  const t = useTranslations("SimplePages.levels");
+
   return (
     <>
       <PageHeader
-        eyebrow="Commission tier"
-        title="Quản lí cấp độ kiếm tiền"
-        description="Xem cấp hiện tại, tiến độ thăng cấp và quyền lợi hoa hồng theo từng tier."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <section className="grid gap-5 xl:grid-cols-[1fr_360px]">

@@ -5,12 +5,16 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { toast } from "sonner"
 import {
+  checkLinkAliasAvailability,
   createLink,
   getFileDownloadUrl,
+  getFilePreviewUrl,
   getFiles,
   uploadFile,
   updateLink,
@@ -43,6 +47,7 @@ import {
   Settings,
   Clock,
   X,
+  Check,
   Loader2,
   Lock,
   Heart,
@@ -512,10 +517,21 @@ interface SocialAction {
   isValid: boolean
 }
 
+type AliasCheckStatus = "idle" | "checking" | "available" | "taken" | "invalid" | "error"
+
 function toPlatformKey(platform: string): keyof typeof socialPlatforms {
   return platform in socialPlatforms
     ? (platform as keyof typeof socialPlatforms)
     : "other"
+}
+
+function isValidUrl(value: string) {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
 }
 
 const backgroundImages = [
@@ -604,17 +620,188 @@ const backgroundImages = [
     name: "Tropical Echo",
     imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
   },
+  {
+    id: "18",
+    name: "Creator Desk",
+    imageUrl: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: "19",
+    name: "Glass Geometry",
+    imageUrl: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: "20",
+    name: "Aurora Gradient",
+    imageUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: "21",
+    name: "Minimal Studio",
+    imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: "22",
+    name: "Digital Workspace",
+    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+  },
 ]
 
-// Sample snippets data
-const snippets = [
-  { id: "1", name: "Welcome Message", content: "Welcome to our exclusive content!" },
-  { id: "2", name: "Limited Offer", content: "Get 50% off on your first purchase" },
-  { id: "3", name: "Newsletter Signup", content: "Subscribe to our newsletter for updates" },
-  { id: "4", name: "Event Invitation", content: "You are invited to our upcoming event" },
-  { id: "5", name: "Product Launch", content: "Check out our new product launch" },
-  { id: "6", name: "Special Thanks", content: "Thank you for your support" },
+type BackgroundMediaType = "image" | "video" | "youtube"
+
+const backgroundImageCategoryMap: Record<string, string[]> = {
+  "1": ["Abstract", "Gradient"],
+  "2": ["Gradient", "Nature"],
+  "3": ["Abstract", "Tech"],
+  "4": ["Abstract", "Gradient"],
+  "5": ["Texture", "Abstract"],
+  "6": ["Gradient", "Abstract"],
+  "7": ["Abstract", "Geometric"],
+  "8": ["Gradient", "Tech"],
+  "9": ["Texture", "Abstract"],
+  "10": ["Gradient", "Minimal"],
+  "11": ["Abstract", "Texture"],
+  "12": ["Abstract", "Gradient"],
+  "13": ["Gradient", "Texture"],
+  "14": ["Nature", "Texture"],
+  "15": ["Nature", "Abstract"],
+  "16": ["Nature", "Minimal"],
+  "17": ["Nature"],
+  "18": ["Creator", "Workspace"],
+  "19": ["Geometric", "Professional"],
+  "20": ["Gradient", "Abstract"],
+  "21": ["Workspace", "Professional"],
+  "22": ["Tech", "Workspace"],
+}
+
+const backgroundVideos = [
+  {
+    id: "coverr-ai-gradient",
+    name: "Soft AI Gradient",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/abstract",
+    videoUrl: "https://cdn.coverr.co/videos/user-ai-generation-kv9zE4fNgqFS/1080p.mp4",
+    categories: ["Abstract", "Gradient"],
+  },
+  {
+    id: "coverr-luminous-flow",
+    name: "Luminous Flow",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/abstract",
+    videoUrl: "https://cdn.coverr.co/videos/user-ai-generation-VlzTMEbjgVkr/1080p.mp4",
+    categories: ["Abstract", "Gradient"],
+  },
+  {
+    id: "coverr-mountain-focus",
+    name: "Creator Journey",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/background",
+    videoUrl: "https://cdn.coverr.co/videos/coverr-walking-to-the-mountain-top-8360/1080p.mp4",
+    categories: ["Creator", "Nature"],
+  },
+  {
+    id: "coverr-water-calm",
+    name: "Calm Reflection",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/background",
+    videoUrl: "https://cdn.coverr.co/videos/coverr-tree-reflection-in-the-water-8825/360p.mp4",
+    categories: ["Nature", "Minimal"],
+  },
+  {
+    id: "coverr-phone-focus",
+    name: "Mobile Creator",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/technology",
+    videoUrl: "https://cdn.coverr.co/videos/coverr-close-up-of-man-using-iphone-15/360p.mp4",
+    categories: ["Tech", "Creator"],
+  },
+  {
+    id: "coverr-industrial-grid",
+    name: "Grid Reflection",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/industrial",
+    videoUrl: "https://cdn.coverr.co/videos/coverr-river-viewed-through-a-square-grid-6554/1080p.mp4",
+    categories: ["Geometric", "Texture"],
+  },
+  {
+    id: "coverr-studio-phone",
+    name: "Studio Tech",
+    source: "Coverr",
+    sourceUrl: "https://coverr.co/stock-video-footage/technology",
+    videoUrl: "https://cdn.coverr.co/videos/coverr-close-up-of-iphone-15/360p.mp4",
+    categories: ["Tech", "Professional"],
+  },
 ]
+
+type SnippetItem = {
+  id: string
+  name: string
+  content: string
+  copies: number
+  createdAt: string
+}
+
+const COVER_IMAGE_MAX_SIZE = 10 * 1024 * 1024
+const COVER_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "avif", "bmp", "svg"]
+
+const initialSnippets: SnippetItem[] = [
+  { id: "1", name: "Welcome Message", content: "Welcome to our exclusive content!", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+  { id: "2", name: "Limited Offer", content: "Get 50% off on your first purchase", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+  { id: "3", name: "Newsletter Signup", content: "Subscribe to our newsletter for updates", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+  { id: "4", name: "Event Invitation", content: "You are invited to our upcoming event", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+  { id: "5", name: "Product Launch", content: "Check out our new product launch", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+  { id: "6", name: "Special Thanks", content: "Thank you for your support", copies: 0, createdAt: "2026-07-11T00:00:00.000Z" },
+]
+
+function formatSnippetSize(content: string) {
+  const bytes = new TextEncoder().encode(content).length
+
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+
+  return `${(bytes / 1024).toFixed(1)} KB`
+}
+
+function isImageFile(file: Pick<ManagedFileDto, "mimeType" | "extension">) {
+  const mimeType = file.mimeType.toLowerCase()
+  const extension = (file.extension || "").toLowerCase()
+
+  return mimeType.startsWith("image/") || COVER_IMAGE_EXTENSIONS.includes(extension)
+}
+
+function isVideoFile(file: Pick<ManagedFileDto, "mimeType" | "extension">) {
+  const mimeType = file.mimeType.toLowerCase()
+  const extension = (file.extension || "").toLowerCase()
+
+  return mimeType.startsWith("video/") || ["mp4", "webm", "mov", "m4v"].includes(extension)
+}
+
+function getYouTubeEmbedUrl(value: string) {
+  try {
+    const url = new URL(value.trim())
+    const host = url.hostname.replace(/^www\./, "")
+    let id = ""
+
+    if (host === "youtu.be") {
+      id = url.pathname.split("/").filter(Boolean)[0] || ""
+    } else if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")) {
+        id = url.pathname.split("/").filter(Boolean)[1] || ""
+      } else {
+        id = url.searchParams.get("v") || ""
+      }
+    }
+
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+      return ""
+    }
+
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&modestbranding=1&rel=0`
+  } catch {
+    return ""
+  }
+}
 
 export default function SocialLinksGenerator({
   embedded = false,
@@ -625,20 +812,41 @@ export default function SocialLinksGenerator({
   initialLink?: LinkDto
   onSaved?: (link: LinkDto) => void
 } = {}) {
-  const actionIdRef = useRef(0)
-  const [destinationUrl, setDestinationUrl] = useState("")
-  const [title, setTitle] = useState("")
-  const [inputType, setInputType] = useState<"url" | "file" | "snippet">("url")
-  const [selectedFile, setSelectedFile] = useState<string>("")
-  const [selectedFileName, setSelectedFileName] = useState("")
-  const [selectedFileSize, setSelectedFileSize] = useState("")
-  const [selectedFileUrl, setSelectedFileUrl] = useState("")
+  const initialInputType =
+    initialLink?.inputType === "file" || initialLink?.inputType === "snippet"
+      ? initialLink.inputType
+      : "url"
+  const initialActions = initialLink?.actions.map((action, index) => ({
+    id: action.id || `action-${index + 1}`,
+    platform: toPlatformKey(action.platform),
+    action: action.action,
+    url: action.url,
+    isValid: isValidUrl(action.url),
+  })) ?? []
+
+  const actionIdRef = useRef(initialActions.length)
+  const [destinationUrl, setDestinationUrl] = useState(initialInputType === "url" ? initialLink?.destinationUrl || "" : "")
+  const [title, setTitle] = useState(initialLink?.title || "")
+  const [inputType, setInputType] = useState<"url" | "file" | "snippet">(initialInputType)
+  const [selectedFile, setSelectedFile] = useState<string>(initialLink?.selectedFile || "")
+  const [selectedFileName, setSelectedFileName] = useState(initialLink?.selectedFile || "")
+  const [selectedFileUrl, setSelectedFileUrl] = useState(initialInputType === "file" ? initialLink?.destinationUrl || "" : "")
   const [availableFiles, setAvailableFiles] = useState<ManagedFileDto[]>([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [fileUploading, setFileUploading] = useState(false)
+  const [coverImageUploading, setCoverImageUploading] = useState(false)
   const [fileError, setFileError] = useState("")
-  const [selectedSnippet, setSelectedSnippet] = useState<string>("")
-  const [actions, setActions] = useState<SocialAction[]>([])
+  const [coverFileError, setCoverFileError] = useState("")
+  const [snippets, setSnippets] = useState<SnippetItem[]>(initialSnippets)
+  const [selectedSnippet, setSelectedSnippet] = useState<string>(initialLink?.selectedSnippet || "")
+  const [snippetDraftId, setSnippetDraftId] = useState<string>(initialLink?.selectedSnippet || "")
+  const [isSnippetDialogOpen, setIsSnippetDialogOpen] = useState(false)
+  const [isCoverImageDialogOpen, setIsCoverImageDialogOpen] = useState(false)
+  const [coverImageDialogTab, setCoverImageDialogTab] = useState<"library" | "upload">("library")
+  const [snippetDialogTab, setSnippetDialogTab] = useState<"existing" | "create">("existing")
+  const [newSnippetName, setNewSnippetName] = useState("")
+  const [newSnippetContent, setNewSnippetContent] = useState("")
+  const [actions, setActions] = useState<SocialAction[]>(initialActions)
   const [isActionModalOpen, setIsActionModalOpen] = useState(false)
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false)
   const [expandedPlatforms, setExpandedPlatforms] = useState<Set<string>>(new Set(["youtube"]))
@@ -646,15 +854,26 @@ export default function SocialLinksGenerator({
   const [extraOptionsOpen, setExtraOptionsOpen] = useState(false)
   const [expiresOpen, setExpiresOpen] = useState(false)
 
-  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string>("")
-  const [sameAsCoverImage, setSameAsCoverImage] = useState(false)
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string>(initialLink?.backgroundSettings.selectedBackgroundId || "")
+  const [sameAsCoverImage, setSameAsCoverImage] = useState(initialLink?.backgroundSettings.sameAsCoverImage || false)
+  const [backgroundMediaType, setBackgroundMediaType] = useState<BackgroundMediaType | null>(
+    initialLink?.backgroundSettings.backgroundMediaType || null,
+  )
+  const [backgroundMediaUrl, setBackgroundMediaUrl] = useState(initialLink?.backgroundSettings.backgroundMediaUrl || "")
+  const [youtubeBackgroundUrl, setYoutubeBackgroundUrl] = useState(
+    initialLink?.backgroundSettings.backgroundMediaType === "youtube"
+      ? initialLink.backgroundSettings.backgroundMediaUrl || ""
+      : "",
+  )
+  const [backgroundImageCategory, setBackgroundImageCategory] = useState("All")
+  const [backgroundVideoCategory, setBackgroundVideoCategory] = useState("All")
 
   // Effects state
-  const [opacity, setOpacity] = useState(100)
-  const [blur, setBlur] = useState(0)
-  const [saturation, setSaturation] = useState(100)
-  const [contrast, setContrast] = useState(100)
-  const [grayscale, setGrayscale] = useState(0)
+  const [opacity, setOpacity] = useState(initialLink?.backgroundSettings.effects.opacity ?? 100)
+  const [blur, setBlur] = useState(initialLink?.backgroundSettings.effects.blur ?? 0)
+  const [saturation, setSaturation] = useState(initialLink?.backgroundSettings.effects.saturation ?? 100)
+  const [contrast, setContrast] = useState(initialLink?.backgroundSettings.effects.contrast ?? 100)
+  const [grayscale, setGrayscale] = useState(initialLink?.backgroundSettings.effects.grayscale ?? 0)
 
   // Edit action state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -665,19 +884,22 @@ export default function SocialLinksGenerator({
   const [actionCategory, setActionCategory] = useState<string>("all")
 
   // Extra options state
-  const [subtitle, setSubtitle] = useState("")
-  const [coverImageUrl, setCoverImageUrl] = useState("")
-  const [customAlias, setCustomAlias] = useState("")
+  const [subtitle, setSubtitle] = useState(initialLink?.subtitle || "")
+  const [coverImageUrl, setCoverImageUrl] = useState(initialLink?.coverImageUrl || "")
+  const [customAlias, setCustomAlias] = useState(initialLink?.customAlias || "")
+  const [aliasCheckStatus, setAliasCheckStatus] = useState<AliasCheckStatus>("idle")
+  const [aliasCheckMessage, setAliasCheckMessage] = useState("")
 
   // Expires state
-  const [expiryEnabled, setExpiryEnabled] = useState(false)
-  const [expiryType, setExpiryType] = useState<"date" | "clicks">("date")
-  const [expiryDate, setExpiryDate] = useState("")
-  const [maxClicks, setMaxClicks] = useState("")
-  const [expiryTime, setExpiryTime] = useState("00:00")
+  const [expiryEnabled, setExpiryEnabled] = useState(initialLink?.expiryEnabled || false)
+  const [expiryType, setExpiryType] = useState<"date" | "clicks">(initialLink?.expiryType === "clicks" ? "clicks" : "date")
+  const [expiryDate, setExpiryDate] = useState(initialLink?.expiryDate ? initialLink.expiryDate.slice(0, 10) : "")
+  const [maxClicks, setMaxClicks] = useState(initialLink?.maxClicks ? String(initialLink.maxClicks) : "")
+  const [expiryTime, setExpiryTime] = useState(initialLink?.expiryTime || "00:00")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [createdLink, setCreatedLink] = useState<LinkDto | null>(null)
+  const isEditing = Boolean(initialLink)
 
   const loadAvailableFiles = useCallback(async () => {
     try {
@@ -702,6 +924,49 @@ export default function SocialLinksGenerator({
       window.removeEventListener("STU:file-created", handleFileCreated)
     }
   }, [loadAvailableFiles])
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      const alias = customAlias.trim()
+
+      if (isEditing) {
+        setAliasCheckStatus("idle")
+        setAliasCheckMessage("Custom alias cannot be changed while editing.")
+        return
+      }
+
+      if (!alias) {
+        setAliasCheckStatus("idle")
+        setAliasCheckMessage("")
+        return
+      }
+
+      if (alias.length < 3) {
+        setAliasCheckStatus("invalid")
+        setAliasCheckMessage("Alias must be at least 3 characters.")
+        return
+      }
+
+      setAliasCheckStatus("checking")
+      setAliasCheckMessage("Checking alias...")
+
+      void checkLinkAliasAvailability(alias)
+        .then((result) => {
+          setAliasCheckStatus(result.available ? "available" : "taken")
+          setAliasCheckMessage(
+            result.available
+              ? `/${result.alias} is available.`
+              : `/${result.alias} already exists.`,
+          )
+        })
+        .catch((error) => {
+          setAliasCheckStatus("error")
+          setAliasCheckMessage(error instanceof Error ? error.message : "Could not check alias.")
+        })
+    }, 450)
+
+    return () => window.clearTimeout(timerId)
+  }, [customAlias, isEditing])
 
   const addAction = (platform: keyof typeof socialPlatforms, actionId: string) => {
     actionIdRef.current += 1
@@ -736,15 +1001,6 @@ export default function SocialLinksGenerator({
     return socialPlatforms[platform].actions.find((action) => action.id === actionId)?.icon ?? socialPlatforms[platform].icon
   }
 
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string)
-      return true
-    } catch {
-      return false
-    }
-  }
-
   const togglePlatformExpanded = (platform: string) => {
     const newExpanded = new Set(expandedPlatforms)
     if (newExpanded.has(platform)) {
@@ -768,9 +1024,138 @@ export default function SocialLinksGenerator({
   const selectStoredFile = (file: ManagedFileDto) => {
     setSelectedFile(file.id)
     setSelectedFileName(file.name)
-    setSelectedFileSize(file.sizeLabel)
     setSelectedFileUrl(getFileDownloadUrl(file))
     setIsFileDialogOpen(false)
+  }
+
+  const coverImageFiles = availableFiles.filter(isImageFile)
+
+  const openCoverImageDialog = () => {
+    setCoverFileError("")
+    setCoverImageDialogTab(coverImageFiles.length > 0 ? "library" : "upload")
+    setIsCoverImageDialogOpen(true)
+  }
+
+  const selectCoverImageFile = (file: ManagedFileDto) => {
+    setCoverImageUrl(getFilePreviewUrl(file))
+    setCoverFileError("")
+    setIsCoverImageDialogOpen(false)
+  }
+
+  const selectBackgroundImage = (background: (typeof backgroundImages)[number]) => {
+    setSelectedBackgroundId(background.id)
+    setBackgroundMediaType("image")
+    setBackgroundMediaUrl(background.imageUrl)
+    setSameAsCoverImage(false)
+  }
+
+  const selectBackgroundVideo = (background: (typeof backgroundVideos)[number]) => {
+    setSelectedBackgroundId(background.id)
+    setBackgroundMediaType("video")
+    setBackgroundMediaUrl(background.videoUrl)
+    setSameAsCoverImage(false)
+  }
+
+  const selectBackgroundFile = (file: ManagedFileDto) => {
+    const mediaType: BackgroundMediaType = isVideoFile(file) ? "video" : "image"
+
+    setSelectedBackgroundId(`file:${file.id}`)
+    setBackgroundMediaType(mediaType)
+    setBackgroundMediaUrl(getFilePreviewUrl(file))
+    setSameAsCoverImage(false)
+  }
+
+  const useYouTubeBackground = () => {
+    const embedUrl = getYouTubeEmbedUrl(youtubeBackgroundUrl)
+
+    if (!embedUrl) {
+      toast.error("Nhập link YouTube hợp lệ.")
+      return
+    }
+
+    setSelectedBackgroundId("youtube")
+    setBackgroundMediaType("youtube")
+    setBackgroundMediaUrl(youtubeBackgroundUrl.trim())
+    setSameAsCoverImage(false)
+    toast.success("Đã chọn YouTube làm background.")
+  }
+
+  const handleCoverUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const extension = file.name.split(".").pop()?.toLowerCase() || ""
+
+    if (!file.type.startsWith("image/") && !COVER_IMAGE_EXTENSIONS.includes(extension)) {
+      setCoverFileError("Cover image phải là file ảnh.")
+      event.target.value = ""
+      return
+    }
+
+    if (file.size > COVER_IMAGE_MAX_SIZE) {
+      setCoverFileError("Cover image tối đa 10 MB.")
+      event.target.value = ""
+      return
+    }
+
+    try {
+      setCoverImageUploading(true)
+      const uploaded = await uploadFile(file, { purpose: "cover" })
+      setAvailableFiles((current) => [uploaded, ...current])
+      setCoverImageUrl(getFilePreviewUrl(uploaded))
+      setCoverFileError("")
+      setIsCoverImageDialogOpen(false)
+      window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }))
+    } catch (error) {
+      setCoverFileError(error instanceof Error ? error.message : "Upload cover image thất bại.")
+    } finally {
+      setCoverImageUploading(false)
+      event.target.value = ""
+    }
+  }
+
+  const openSnippetDialog = () => {
+    setSnippetDraftId(selectedSnippet)
+    setSnippetDialogTab("existing")
+    setIsSnippetDialogOpen(true)
+  }
+
+  const useExistingSnippet = () => {
+    if (!snippetDraftId) {
+      return
+    }
+
+    setSelectedSnippet(snippetDraftId)
+    setIsSnippetDialogOpen(false)
+  }
+
+  const createAndUseSnippet = () => {
+    const content = newSnippetContent.trim()
+    const name = newSnippetName.trim() || content.slice(0, 36) || "Untitled snippet"
+
+    if (!content) {
+      return
+    }
+
+    const snippet: SnippetItem = {
+      id: typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `snippet-${Date.now()}`,
+      name,
+      content,
+      copies: 0,
+      createdAt: new Date().toISOString(),
+    }
+
+    setSnippets((current) => [snippet, ...current])
+    setSelectedSnippet(snippet.id)
+    setSnippetDraftId(snippet.id)
+    setNewSnippetName("")
+    setNewSnippetContent("")
+    setIsSnippetDialogOpen(false)
   }
 
   const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -786,7 +1171,6 @@ export default function SocialLinksGenerator({
       setAvailableFiles((current) => [uploaded, ...current])
       setSelectedFile(uploaded.id)
       setSelectedFileName(uploaded.name)
-      setSelectedFileSize(uploaded.sizeLabel)
       setSelectedFileUrl(getFileDownloadUrl(uploaded))
       setIsFileDialogOpen(false)
       setFileError("")
@@ -802,7 +1186,6 @@ export default function SocialLinksGenerator({
   const clearSelectedFile = () => {
     setSelectedFile("")
     setSelectedFileName("")
-    setSelectedFileSize("")
     setSelectedFileUrl("")
   }
 
@@ -856,6 +1239,32 @@ export default function SocialLinksGenerator({
   const allActionUrlsValid = totalActions > 0 && completedActions === totalActions
   const canCreateLink = isDestinationValid && isTitleValid && allActionUrlsValid
   const selectedBackground = backgroundImages.find((bg) => bg.id === selectedBackgroundId)
+  const selectedSnippetData = snippets.find((snippet) => snippet.id === selectedSnippet)
+  const backgroundFileMedia = availableFiles.filter((file) => isImageFile(file) || isVideoFile(file))
+  const youtubeEmbedUrl = backgroundMediaType === "youtube"
+    ? getYouTubeEmbedUrl(backgroundMediaUrl)
+    : getYouTubeEmbedUrl(youtubeBackgroundUrl)
+  const activeBackgroundMediaType = sameAsCoverImage && coverImageUrl ? "image" : backgroundMediaType
+  const activeBackgroundMediaUrl = sameAsCoverImage && coverImageUrl
+    ? coverImageUrl
+    : backgroundMediaType === "image"
+      ? backgroundMediaUrl || selectedBackground?.imageUrl || ""
+      : backgroundMediaUrl
+  const backgroundImageCategories = [
+    "All",
+    ...Array.from(new Set(Object.values(backgroundImageCategoryMap).flat())).sort(),
+  ]
+  const backgroundVideoCategories = [
+    "All",
+    ...Array.from(new Set(backgroundVideos.flatMap((video) => video.categories))).sort(),
+  ]
+  const filteredBackgroundImages = backgroundImages.filter((background) => (
+    backgroundImageCategory === "All" ||
+    backgroundImageCategoryMap[background.id]?.includes(backgroundImageCategory)
+  ))
+  const filteredBackgroundVideos = backgroundVideos.filter((video) => (
+    backgroundVideoCategory === "All" || video.categories.includes(backgroundVideoCategory)
+  ))
 
   // Derived data for action picker filtering
   const actionPlatformEntries = Object.entries(socialPlatforms)
@@ -874,14 +1283,28 @@ export default function SocialLinksGenerator({
       return platform.actions.some((action) => action.label.toLowerCase().includes(q))
     })
 
+  const selectedBackgroundName =
+    backgroundMediaType === "video"
+      ? backgroundVideos.find((bg) => bg.id === selectedBackgroundId)?.name
+      : backgroundMediaType === "youtube"
+        ? "YouTube video"
+        : selectedBackgroundId.startsWith("file:")
+          ? backgroundFileMedia.find((file) => `file:${file.id}` === selectedBackgroundId)?.name
+          : backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.name
+
   const buildCreatePayload = () => ({
     title,
-    destinationUrl: inputType === "file" ? selectedFileUrl : destinationUrl,
+    destinationUrl:
+      inputType === "file"
+        ? selectedFileUrl
+        : inputType === "snippet"
+          ? selectedSnippetData?.content || selectedSnippet
+          : destinationUrl,
     inputType,
     selectedSnippet: selectedSnippet || undefined,
     selectedFile: selectedFile || undefined,
     subtitle: subtitle || undefined,
-    customAlias: customAlias || undefined,
+    customAlias: !isEditing && customAlias ? customAlias : undefined,
     coverImageUrl: coverImageUrl || undefined,
     expiryEnabled,
     expiryType: expiryEnabled ? expiryType : undefined,
@@ -895,7 +1318,12 @@ export default function SocialLinksGenerator({
     })),
     backgroundSettings: {
       selectedBackgroundId: selectedBackgroundId || undefined,
-      selectedBackgroundName: backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.name,
+      selectedBackgroundName,
+      backgroundMediaType: activeBackgroundMediaType || undefined,
+      backgroundMediaUrl:
+        activeBackgroundMediaType === "youtube"
+          ? backgroundMediaUrl || youtubeBackgroundUrl || undefined
+          : activeBackgroundMediaUrl || undefined,
       sameAsCoverImage,
       effects: {
         opacity,
@@ -912,13 +1340,48 @@ export default function SocialLinksGenerator({
       return
     }
 
+    const normalizedCustomAlias = customAlias.trim()
+
+    if (!isEditing && normalizedCustomAlias) {
+      if (normalizedCustomAlias.length < 3) {
+        setAliasCheckStatus("invalid")
+        setAliasCheckMessage("Alias must be at least 3 characters.")
+        return
+      }
+
+      try {
+        setAliasCheckStatus("checking")
+        setAliasCheckMessage("Checking alias...")
+        const result = await checkLinkAliasAvailability(normalizedCustomAlias)
+
+        if (!result.available) {
+          setAliasCheckStatus("taken")
+          setAliasCheckMessage(`/${result.alias} already exists.`)
+          return
+        }
+
+        setAliasCheckStatus("available")
+        setAliasCheckMessage(`/${result.alias} is available.`)
+      } catch (error) {
+        setAliasCheckStatus("error")
+        setAliasCheckMessage(error instanceof Error ? error.message : "Could not check alias.")
+        return
+      }
+    }
+
     setIsSubmitting(true)
     setSubmitError("")
     setCreatedLink(null)
 
     try {
-      const link = await createLink(buildCreatePayload())
+      const link = initialLink
+        ? await updateLink(initialLink.id, buildCreatePayload())
+        : await createLink(buildCreatePayload())
       setCreatedLink(link)
+      if (initialLink) {
+        toast.success("Link updated successfully")
+      }
+      onSaved?.(link)
       window.dispatchEvent(
         new CustomEvent("Rekonise:link-created", {
           detail: link,
@@ -930,32 +1393,53 @@ export default function SocialLinksGenerator({
       setIsSubmitting(false)
     }
   }
-const isAllExpanded =
-  expandedPlatforms.size === Object.keys(socialPlatforms).length;
+  const isAllExpanded =
+    expandedPlatforms.size === Object.keys(socialPlatforms).length;
   return (
 
     <div
-      className={`${embedded ? "w-full" : "max-w-6xl mx-auto"} grid grid-cols-1 lg:grid-cols-2 gap-6`}
+      className={`${embedded ? "w-full" : "max-w-6xl mx-auto"} grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}
     >
       {/* Left Panel - Form */}
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader>
-            <Tabs value={inputType} onValueChange={(value) => setInputType(value as "url" | "file" | "snippet")} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-                <TabsTrigger value="url" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
-                  <Link className="w-4 h-4 mr-2" />
-                  URL
+          <CardHeader className="space-y-4">
+
+            <Tabs
+              value={inputType}
+              onValueChange={(value) =>
+                setInputType(value as "url" | "file" | "snippet")
+              }
+              className="w-full min-w-0 !gap-0"
+            >
+              <TabsList className="!grid !h-12 !w-full !min-w-0 !grid-cols-3 !items-stretch !justify-stretch gap-1 overflow-hidden rounded-xl bg-slate-100 p-1">
+                <TabsTrigger
+                  value="url"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                >
+                  <Link className="size-4 shrink-0" />
+                  <span className="min-w-0 truncate">URL</span>
                 </TabsTrigger>
-                <TabsTrigger value="file" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
-                  <FileImage className="w-4 h-4 mr-2" />
-                  File
+
+                <TabsTrigger
+                  value="file"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                >
+                  <FileImage className="size-4 shrink-0" />
+                  <span className="min-w-0 truncate">File</span>
                 </TabsTrigger>
-                <TabsTrigger value="snippet" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
-                  <FileImage className="w-4 h-4 mr-2" />
-                  Snippet
+
+                <TabsTrigger
+                  value="snippet"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                >
+                  <MessageSquare className="size-4 shrink-0" />
+                  <span className="min-w-0 truncate">Snippet</span>
                 </TabsTrigger>
               </TabsList>
+
+
+
 
               {/* URL Tab */}
               <TabsContent value="url" className="space-y-4 mt-4">
@@ -983,37 +1467,48 @@ const isAllExpanded =
 
               {/* File Tab */}
               <TabsContent value="file" className="space-y-4 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsFileDialogOpen(true)}
-                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100"
-                >
-                  <FileImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <span className="text-gray-600 font-medium">
-                    {selectedFileName ? "Change file" : "Select file"}
-                  </span>
-                </button>
-                {selectedFileName && (
-                  <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-green-700 ring-1 ring-green-200">
+                <div className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsFileDialogOpen(true)}
+                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
                       <FileImage className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-green-900">{selectedFileName}</p>
-                      <p className="text-xs text-green-700">{selectedFileSize}</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={clearSelectedFile}
-                      className="text-green-700 hover:bg-green-100 hover:text-green-900"
-                      aria-label="Clear selected file"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-900">
+                        {selectedFileName ? "File selected" : "Select file"}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                        {selectedFileName
+                          ? selectedFileName
+                          : "Choose or upload a file to unlock it."}
+                      </span>
+                    </span>
+                    {selectedFileName && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Clear selected file"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          clearSelectedFile()
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            clearSelectedFile()
+                          }
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <div>
                   <Input
                     placeholder="Enter a title*"
@@ -1026,38 +1521,49 @@ const isAllExpanded =
 
               {/* Snippet Tab */}
               <TabsContent value="snippet" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <button className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors bg-gray-50 hover:bg-gray-100">
-                    <FileImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <span className="text-gray-600 font-medium">Select snippet</span>
-                  </button>
-                  {selectedSnippet && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-700">
-                        Selected: {snippets.find((s) => s.id === selectedSnippet)?.name}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Snippet List */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Available Snippets</label>
-                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                    {snippets.map((snippet) => (
-                      <button
-                        key={snippet.id}
-                        onClick={() => setSelectedSnippet(snippet.id)}
-                        className={`p-3 rounded-lg text-left transition-colors ${selectedSnippet === snippet.id
-                          ? "bg-green-100 border-2 border-green-500 text-green-900"
-                          : "bg-gray-50 border border-gray-200 text-gray-900 hover:border-gray-300"
-                          }`}
+                <div className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={openSnippetDialog}
+                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                      <MessageSquare className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-900">
+                        {selectedSnippetData ? "Snippet selected" : "Select snippet"}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                        {selectedSnippetData
+                          ? `${selectedSnippetData.name} · ${formatSnippetSize(selectedSnippetData.content)}`
+                          : "Choose an existing snippet or create a new one."}
+                      </span>
+                    </span>
+                    {selectedSnippetData && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Clear selected snippet"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setSelectedSnippet("")
+                          setSnippetDraftId("")
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            setSelectedSnippet("")
+                            setSnippetDraftId("")
+                          }
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
                       >
-                        <p className="font-medium text-sm">{snippet.name}</p>
-                        <p className="text-xs text-gray-600 mt-1">{snippet.content}</p>
-                      </button>
-                    ))}
-                  </div>
+                        <X className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 <div>
@@ -1075,18 +1581,18 @@ const isAllExpanded =
 
         <Dialog open={isFileDialogOpen} onOpenChange={setIsFileDialogOpen}>
           <DialogContent
-            className="sm:max-w-5xl"
+            className="max-h-[90vh] overflow-hidden sm:max-w-2xl"
           >
             <DialogHeader>
               <DialogTitle>
-                Select or upload file
+                Chọn file đích
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-5 overflow-y-auto">
-              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gray-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-gray-800 focus-within:ring-2 focus-within:ring-green-500 focus-within:ring-offset-2">
+              <label className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white transition-colors hover:bg-slate-800 focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2 sm:w-auto">
                 {fileUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                {fileUploading ? "Uploading..." : "Upload file"}
+                {fileUploading ? "Đang upload..." : "Upload file mới"}
                 <input
                   type="file"
                   className="sr-only"
@@ -1102,75 +1608,70 @@ const isAllExpanded =
               )}
 
               <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-170 text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                      <tr className="border-b border-gray-200">
-                        <th className="w-20 px-5 py-3 font-semibold">Type</th>
-                        <th className="px-5 py-3 font-semibold">Name</th>
-                        <th className="w-36 px-5 py-3 font-semibold">Size</th>
-                        <th className="w-44 px-5 py-3 font-semibold">
-                          <span className="inline-flex items-center gap-1">
-                            Uploaded
-                            <ArrowDown className="h-4 w-4" />
-                          </span>
-                        </th>
-                        <th className="w-28 px-5 py-3 text-right font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filesLoading ? (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
-                            Loading files...
-                          </td>
-                        </tr>
-                      ) : availableFiles.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
-                            No files yet. Upload one to use as destination.
-                          </td>
-                        </tr>
-                      ) : (
-                        availableFiles.map((file) => (
-                          <tr
-                            key={file.id}
-                            className={`border-b border-gray-100 transition-colors last:border-b-0 ${selectedFile === file.id ? "bg-green-50" : "hover:bg-gray-50"
-                              }`}
-                          >
-                            <td className="px-5 py-4">
-                              <div className="flex h-9 w-12 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-500">
-                                <ImageIcon className="h-5 w-5" />
-                              </div>
-                            </td>
-                            <td className="px-5 py-4">
-                              <p className="max-w-105 truncate font-medium text-gray-900">
+                <div className="border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div className="grid grid-cols-[minmax(0,1.6fr)_auto_auto_auto] items-center gap-4">
+                    <span>Name</span>
+                    <span>Size</span>
+                    <span>
+                      <span className="inline-flex items-center gap-1">
+                        Uploaded
+                        <ArrowDown className="h-4 w-4" />
+                      </span>
+                    </span>
+                    <span className="text-right">Action</span>
+                  </div>
+                </div>
+
+                <div className="max-h-[50vh] overflow-y-auto">
+                  {filesLoading ? (
+                    <div className="px-5 py-8 text-center text-gray-500">
+                      Loading files...
+                    </div>
+                  ) : availableFiles.length === 0 ? (
+                    <div className="px-5 py-8 text-center text-gray-500">
+                      No files yet. Upload one to use as destination.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {availableFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className={`grid grid-cols-1 gap-3 px-5 py-4 sm:grid-cols-[minmax(0,1.6fr)_auto_auto_auto] sm:items-center sm:gap-4 ${selectedFile === file.id ? "bg-green-50" : "hover:bg-gray-50"
+                            }`}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-500">
+                              <ImageIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-gray-900">
                                 {file.name}
                               </p>
-                            </td>
-                            <td className="px-5 py-4 text-gray-600">{file.sizeLabel}</td>
-                            <td className="px-5 py-4 text-gray-600">
-                              {new Intl.DateTimeFormat("vi-VN", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              }).format(new Date(file.createdAt))}
-                            </td>
-                            <td className="px-5 py-4 text-right">
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => selectStoredFile(file)}
-                                className="bg-green-600 text-white hover:bg-green-700"
-                              >
-                                Select
-                              </Button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                              <p className="mt-0.5 text-xs text-gray-500 sm:hidden">{file.sizeLabel}</p>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600">{file.sizeLabel}</div>
+                          <div className="text-sm text-gray-600">
+                            {new Intl.DateTimeFormat("vi-VN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }).format(new Date(file.createdAt))}
+                          </div>
+                          <div className="flex justify-start sm:justify-end">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => selectStoredFile(file)}
+                              className="w-full bg-green-600 text-white hover:bg-green-700 sm:w-auto"
+                            >
+                              Chọn
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-end">
@@ -1185,7 +1686,7 @@ const isAllExpanded =
                     </button>
                   </div>
                   <span className="sm:ml-6">
-                    {availableFiles.length > 0 ? `1 - ${availableFiles.length} of ${availableFiles.length}` : "0 of 0"}
+                    {availableFiles.length > 0 ? `${availableFiles.length} file` : "0 file"}
                   </span>
                   <div className="flex items-center gap-1 text-gray-400">
                     <Button type="button" variant="ghost" size="icon-sm" disabled>
@@ -1213,8 +1714,311 @@ const isAllExpanded =
                 onClick={() => setIsFileDialogOpen(false)}
                 className="h-10 px-4 font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
-                Close
+                Đóng
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isCoverImageDialogOpen} onOpenChange={setIsCoverImageDialogOpen}>
+          <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Chọn cover image</DialogTitle>
+            </DialogHeader>
+
+            <div className="overflow-y-auto">
+              {coverFileError && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                  {coverFileError}
+                </div>
+              )}
+
+              <Tabs value={coverImageDialogTab} onValueChange={(value) => setCoverImageDialogTab(value as "library" | "upload")}>
+                <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
+                  <TabsTrigger value="library" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    My images
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    Upload
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="library" className="mt-4">
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                    <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ảnh đã upload</p>
+                        <p className="mt-0.5 text-sm text-gray-500">{coverImageFiles.length} image</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCoverImageDialogTab("upload")}
+                        className="gap-2"
+                      >
+                        <UploadCloud className="h-4 w-4" />
+                        Upload
+                      </Button>
+                    </div>
+
+                    <div className="max-h-[52vh] overflow-y-auto">
+                      {filesLoading ? (
+                        <div className="flex items-center justify-center gap-2 px-5 py-10 text-sm font-medium text-gray-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading images...
+                        </div>
+                      ) : coverImageFiles.length === 0 ? (
+                        <div className="px-5 py-10 text-center">
+                          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-slate-100 text-slate-500">
+                            <FileImage className="h-6 w-6" />
+                          </div>
+                          <p className="mt-3 text-sm font-semibold text-gray-900">No images yet</p>
+                          <p className="mt-1 text-sm text-gray-500">Upload an image to use it as the cover.</p>
+                          <Button
+                            type="button"
+                            onClick={() => setCoverImageDialogTab("upload")}
+                            className="mt-4 gap-2 bg-slate-950 text-white hover:bg-slate-800"
+                          >
+                            <UploadCloud className="h-4 w-4" />
+                            Upload image
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
+                          {coverImageFiles.map((file) => {
+                            const imageUrl = getFilePreviewUrl(file)
+                            const selected = coverImageUrl === imageUrl
+
+                            return (
+                              <button
+                                key={file.id}
+                                type="button"
+                                onClick={() => selectCoverImageFile(file)}
+                                className={[
+                                  "group overflow-hidden rounded-xl border bg-gray-50 text-left transition hover:bg-white",
+                                  selected ? "border-slate-950 ring-2 ring-slate-950/10" : "border-gray-200 hover:border-gray-300",
+                                ].join(" ")}
+                              >
+                                <div className="relative aspect-[4/3] w-full bg-gray-100">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={imageUrl}
+                                    alt={file.name}
+                                    className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                                  />
+                                  {selected && (
+                                    <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-slate-950 text-white shadow-sm">
+                                      <Check className="h-4 w-4" />
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="space-y-1 px-3 py-2">
+                                  <p className="truncate text-sm font-semibold text-gray-900">{file.name}</p>
+                                  <p className="truncate text-xs text-gray-500">{file.sizeLabel}</p>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="upload" className="mt-4">
+                  <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center transition hover:border-gray-400 hover:bg-white focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2">
+                    <span className="grid h-12 w-12 place-items-center rounded-xl bg-white text-slate-700 ring-1 ring-gray-200">
+                      {coverImageUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <UploadCloud className="h-6 w-6" />}
+                    </span>
+                    <span className="mt-4 text-sm font-bold text-gray-900">
+                      {coverImageUploading ? "Đang upload..." : "Chọn ảnh cover"}
+                    </span>
+                    <span className="mt-1 max-w-sm text-sm text-gray-500">
+                      PNG, JPG, WebP, GIF, AVIF hoặc SVG. Tối đa 10 MB.
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleCoverUploadFile}
+                      disabled={coverImageUploading}
+                    />
+                  </label>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <DialogFooter>
+              {coverImageUrl && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setCoverImageUrl("")
+                    setSameAsCoverImage(false)
+                    setIsCoverImageDialogOpen(false)
+                  }}
+                  className="h-10 px-4 font-semibold"
+                >
+                  Remove cover
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsCoverImageDialogOpen(false)}
+                className="h-10 px-4 font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
+                Đóng
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isSnippetDialogOpen} onOpenChange={setIsSnippetDialogOpen}>
+          <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Select Code Snippet</DialogTitle>
+            </DialogHeader>
+
+            <Tabs
+              value={snippetDialogTab}
+              onValueChange={(value) => setSnippetDialogTab(value as "existing" | "create")}
+              className="min-h-96 w-full"
+            >
+              <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
+                <TabsTrigger
+                  value="existing"
+                  className="min-h-10 rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm"
+                >
+                  Use Existing
+                </TabsTrigger>
+                <TabsTrigger
+                  value="create"
+                  className="min-h-10 rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm"
+                >
+                  Create New
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="existing" className="mt-4">
+                <div className="rounded-2xl border border-gray-200 bg-white p-3 text-gray-900 shadow-sm">
+                  <div className="mb-3 grid grid-cols-1 gap-2 text-xs uppercase tracking-wide text-gray-500 sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:px-2">
+                    <span>Preview</span>
+                    <span className="hidden sm:block">Size</span>
+                    <span className="hidden sm:block">Copies</span>
+                    <span className="hidden sm:block">Created</span>
+                  </div>
+
+                  <div className="max-h-[50vh] overflow-y-auto rounded-xl">
+                    <div className="divide-y divide-white/5">
+                      {snippets.map((snippet) => {
+                        const selected = snippetDraftId === snippet.id
+
+                        return (
+                          <button
+                            key={snippet.id}
+                            type="button"
+                            onClick={() => setSnippetDraftId(snippet.id)}
+                            className={`grid w-full grid-cols-1 gap-3 px-3 py-4 text-left transition sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:items-center sm:gap-4 ${selected ? "bg-emerald-50 ring-1 ring-emerald-200" : "hover:bg-gray-50"
+                              }`}
+                          >
+                            <div className="flex min-w-0 items-start gap-3">
+                              <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${selected ? "bg-emerald-500" : "bg-gray-300"}`} />
+                              <div className="min-w-0">
+                                <p className="truncate font-mono text-xs text-gray-900">
+                                  {snippet.content}
+                                </p>
+                                <p className="mt-1 text-xs font-medium text-gray-500">
+                                  {snippet.name}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-600 sm:text-xs">
+                              <span className="sm:hidden text-gray-500">Size: </span>
+                              {formatSnippetSize(snippet.content)}
+                            </div>
+                            <div className="text-sm text-gray-600 sm:text-xs">
+                              <span className="sm:hidden text-gray-500">Copies: </span>
+                              {snippet.copies}
+                            </div>
+                            <div className="text-sm text-gray-600 sm:text-xs">
+                              <span className="sm:hidden text-gray-500">Created: </span>
+                              {new Intl.DateTimeFormat("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }).format(new Date(snippet.createdAt))}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="create" className="mt-4">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-800">
+                      Snippet name
+                    </label>
+                    <Input
+                      value={newSnippetName}
+                      onChange={(event) => setNewSnippetName(event.target.value)}
+                      placeholder="e.g. Download instructions"
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-800">
+                      Code or text
+                    </label>
+                    <Textarea
+                      value={newSnippetContent}
+                      onChange={(event) => setNewSnippetContent(event.target.value)}
+                      placeholder="Paste code, coupon, token, or short text..."
+                      className="min-h-48 resize-y font-mono text-sm"
+                    />
+                    <p className="mt-2 text-xs font-medium text-slate-500">
+                      Size: {formatSnippetSize(newSnippetContent)}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsSnippetDialogOpen(false)}
+                className="h-10 px-4 font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+              >
+                Cancel
+              </Button>
+              {snippetDialogTab === "existing" ? (
+                <Button
+                  type="button"
+                  onClick={useExistingSnippet}
+                  disabled={!snippetDraftId}
+                  className="h-10 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
+                >
+                  Use Snippet
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={createAndUseSnippet}
+                  disabled={!newSnippetContent.trim()}
+                  className="h-10 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create & Use
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1283,7 +2087,7 @@ const isAllExpanded =
                       className="text-gray-500 hover:text-gray-700"
                       onClick={toggleExpandAllPlatforms}
                     >
-                      {expandedPlatforms.size === Object.keys(socialPlatforms).length ? <ChevronsUpDown /> : <ChevronsDown/>}
+                      {expandedPlatforms.size === Object.keys(socialPlatforms).length ? <ChevronsUpDown /> : <ChevronsDown />}
 
                       {expandedPlatforms.size === Object.keys(socialPlatforms).length ? "Collapse all" : "Expand all"}
                     </Button>
@@ -1353,7 +2157,7 @@ const isAllExpanded =
                       className="text-gray-500 hover:text-gray-700"
                       onClick={toggleExpandAllPlatforms}
                     >
-                      
+
                       {isAllExpanded ? (
                         <ChevronsDownUp className="size-5" strokeWidth={2.4} />
                       ) : (
@@ -1478,18 +2282,30 @@ const isAllExpanded =
                     <TabsContent value="images">
                       <div className="rounded-lg border border-gray-200/40 dark:border-slate-800/40 bg-white/50 dark:bg-transparent p-3">
                         <div className="flex gap-2 mb-3 flex-wrap">
-                          {/* example category chips (optional) */}
-                          <button className="px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">All</button>
-                          <button className="px-3 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300">Texture</button>
-                          <button className="px-3 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300">Geometric</button>
-                          <button className="px-3 py-1 rounded-full bg-gray-100 dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300">Nature</button>
+                          {backgroundImageCategories.map((category) => (
+                            <button
+                              key={category}
+                              type="button"
+                              onClick={() => setBackgroundImageCategory(category)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${backgroundImageCategory === category
+                                ? "bg-green-600 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
+                                }`}
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="mb-3 text-xs font-medium text-gray-500">
+                          {filteredBackgroundImages.length} image{filteredBackgroundImages.length === 1 ? "" : "s"}
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-90 overflow-y-auto pr-2">
-                          {backgroundImages.map((bg) => (
+                          {filteredBackgroundImages.map((bg) => (
                             <button
                               key={bg.id}
-                              onClick={() => setSelectedBackgroundId(bg.id)}
+                              onClick={() => selectBackgroundImage(bg)}
                               title={bg.name}
                               className={`relative aspect-square w-full overflow-hidden rounded-xl transition-transform transform will-change-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-green-400/60 ${selectedBackgroundId === bg.id
                                 ? "ring-4 ring-green-500 shadow-[0_10px_30px_rgba(16,185,129,0.12)] scale-100"
@@ -1517,6 +2333,156 @@ const isAllExpanded =
                       {/* <CardContent className="text-sm text-muted-foreground">
                             Page views are up 25% compared to last month.
                           </CardContent> */}
+                    </TabsContent>
+                    <TabsContent value="videos">
+                      <div className="rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {backgroundVideoCategories.map((category) => (
+                            <button
+                              key={category}
+                              type="button"
+                              onClick={() => setBackgroundVideoCategory(category)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${backgroundVideoCategory === category
+                                ? "bg-slate-950 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
+                                }`}
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="mb-3 text-xs font-medium text-gray-500">
+                          {filteredBackgroundVideos.length} video{filteredBackgroundVideos.length === 1 ? "" : "s"}
+                        </div>
+
+                        <div className="grid max-h-90 grid-cols-1 gap-3 overflow-y-auto pr-2 sm:grid-cols-2">
+                          {filteredBackgroundVideos.map((video) => (
+                            <button
+                              key={video.id}
+                              type="button"
+                              onClick={() => selectBackgroundVideo(video)}
+                              title={video.name}
+                              className={`group relative aspect-video overflow-hidden rounded-xl text-left transition-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-green-400/60 ${selectedBackgroundId === video.id
+                                ? "ring-4 ring-green-500 shadow-[0_10px_30px_rgba(16,185,129,0.12)]"
+                                : "hover:scale-[1.02]"
+                                }`}
+                            >
+                              <video
+                                src={video.videoUrl}
+                                muted
+                                loop
+                                playsInline
+                                preload="metadata"
+                                onMouseEnter={(event) => void event.currentTarget.play()}
+                                onMouseLeave={(event) => event.currentTarget.pause()}
+                                className="h-full w-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
+                              <div className="absolute inset-x-0 bottom-0 p-3">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-800">
+                                  <PlayCircle className="h-3 w-3" />
+                                  {video.source}
+                                </span>
+                                <p className="mt-1 text-sm font-bold text-white">{video.name}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="my-files">
+                      <div className="rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                        {filesLoading ? (
+                          <div className="flex items-center justify-center gap-2 py-8 text-sm font-medium text-gray-500">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading files...
+                          </div>
+                        ) : backgroundFileMedia.length === 0 ? (
+                          <div className="py-8 text-center text-sm text-gray-500">
+                            Upload images or videos first, then use them as background.
+                          </div>
+                        ) : (
+                          <div className="grid max-h-90 grid-cols-2 gap-3 overflow-y-auto pr-2 sm:grid-cols-3">
+                            {backgroundFileMedia.map((file) => {
+                              const fileUrl = getFilePreviewUrl(file)
+                              const isVideo = isVideoFile(file)
+                              const selected = selectedBackgroundId === `file:${file.id}`
+
+                              return (
+                                <button
+                                  key={file.id}
+                                  type="button"
+                                  onClick={() => selectBackgroundFile(file)}
+                                  title={file.name}
+                                  className={`group overflow-hidden rounded-xl border bg-gray-50 text-left transition hover:bg-white ${selected ? "border-green-500 ring-4 ring-green-500/20" : "border-gray-200 hover:border-gray-300"}`}
+                                >
+                                  <div className="relative aspect-square bg-gray-100">
+                                    {isVideo ? (
+                                      <video
+                                        src={fileUrl}
+                                        muted
+                                        loop
+                                        playsInline
+                                        preload="metadata"
+                                        onMouseEnter={(event) => void event.currentTarget.play()}
+                                        onMouseLeave={(event) => event.currentTarget.pause()}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={fileUrl} alt={file.name} className="h-full w-full object-cover" />
+                                    )}
+                                    <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                      {isVideo ? "Video" : "Image"}
+                                    </span>
+                                  </div>
+                                  <div className="px-3 py-2">
+                                    <p className="truncate text-sm font-semibold text-gray-900">{file.name}</p>
+                                    <p className="truncate text-xs text-gray-500">{file.sizeLabel}</p>
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="embed">
+                      <div className="space-y-3 rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
+                            value={youtubeBackgroundUrl}
+                            onChange={(event) => setYoutubeBackgroundUrl(event.target.value)}
+                            placeholder="Paste YouTube video URL"
+                            className="h-11 bg-white"
+                          />
+                          <Button
+                            type="button"
+                            onClick={useYouTubeBackground}
+                            className="h-11 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
+                          >
+                            Use video
+                          </Button>
+                        </div>
+
+                        {youtubeBackgroundUrl && !getYouTubeEmbedUrl(youtubeBackgroundUrl) && (
+                          <p className="text-sm font-medium text-red-600">
+                            Please enter a valid YouTube, youtu.be, Shorts, or Embed URL.
+                          </p>
+                        )}
+
+                        {getYouTubeEmbedUrl(youtubeBackgroundUrl) && (
+                          <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-black">
+                            <iframe
+                              src={getYouTubeEmbedUrl(youtubeBackgroundUrl)}
+                              title="YouTube background preview"
+                              allow="autoplay; encrypted-media; picture-in-picture"
+                              className="h-full w-full"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </TabsContent>
                   </Tabs>
 
@@ -1648,60 +2614,101 @@ const isAllExpanded =
                 <div className="space-y-2">
                   {coverImageUrl && (
                     <div className="relative w-full h-32 rounded-lg overflow-hidden border border-gray-200">
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={coverImageUrl}
                         alt="Cover"
-                        width={1200}
-                        height={800}
                         className="w-full h-full object-cover"
                       />
                       <button
-                        onClick={() => setCoverImageUrl("")}
+                        type="button"
+                        onClick={() => {
+                          setCoverImageUrl("")
+                          setSameAsCoverImage(false)
+                        }}
                         className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   )}
-                  <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="flex items-center gap-2">
-                      <FileImage className="w-5 h-5 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {coverImageUrl ? "Change image" : "Upload cover image"}
+                  <button
+                    type="button"
+                    onClick={openCoverImageDialog}
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                      <FileImage className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-gray-900">
+                        {coverImageUrl ? "Cover image selected" : "Select cover image"}
                       </span>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const reader = new FileReader()
-                          reader.onload = (event) => {
-                            setCoverImageUrl(event.target?.result as string)
-                          }
-                          reader.readAsDataURL(file)
-                        }
-                      }}
-                      className="hidden"
-                    />
-                  </label>
+                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                        {coverImageUrl || "Choose an existing image or upload a new one."}
+                      </span>
+                    </span>
+                  </button>
                 </div>
               </div>
 
               {/* Custom Alias */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Custom Alias</label>
-                <div className="flex gap-2">
-                  <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3">
+                <div className="space-y-2">
+                  <div className={`flex flex-1 items-center rounded-lg border bg-gray-50 px-3 ${
+                    aliasCheckStatus === "available"
+                      ? "border-emerald-300"
+                      : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error"
+                        ? "border-red-300"
+                        : "border-gray-200"
+                  } ${isEditing ? "opacity-70" : ""}`}>
                     <span className="text-gray-600 text-sm">yoursite.com/</span>
                     <Input
                       placeholder="custom-alias"
                       value={customAlias}
-                      onChange={(e) => setCustomAlias(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                      className="h-11 border-0 bg-transparent text-sm"
+                      disabled={isEditing}
+                      onChange={(e) => {
+                        const nextAlias = e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9-]+/g, "-")
+                          .replace(/-+/g, "-")
+                          .replace(/^-+/, "")
+
+                        setCustomAlias(nextAlias)
+                        setAliasCheckStatus(nextAlias ? "checking" : "idle")
+                        setAliasCheckMessage(nextAlias ? "Checking alias..." : "")
+                      }}
+                      className="h-11 border-0 bg-transparent text-sm disabled:cursor-not-allowed"
                     />
+                    {!isEditing && customAlias ? (
+                      <span className="ml-2 grid h-6 w-6 shrink-0 place-items-center">
+                        {aliasCheckStatus === "checking" ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                        ) : aliasCheckStatus === "available" ? (
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        ) : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error" ? (
+                          <X className="h-4 w-4 text-red-600" />
+                        ) : null}
+                      </span>
+                    ) : null}
                   </div>
+
+                  {isEditing ? (
+                    null
+                  ) : aliasCheckMessage ? (
+                    <p
+                      className={`text-xs font-medium ${
+                        aliasCheckStatus === "available"
+                          ? "text-emerald-600"
+                          : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error"
+                            ? "text-red-600"
+                            : "text-gray-500"
+                      }`}
+                    >
+                      {aliasCheckMessage}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </CollapsibleContent>
@@ -1847,7 +2854,7 @@ const isAllExpanded =
       </div>
 
       {/* Right Panel - Preview */}
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-700">PREVIEW</h2>
 
@@ -1857,39 +2864,56 @@ const isAllExpanded =
             disabled={!canCreateLink || isSubmitting}
             onClick={handleCreateLink}
           >
-            {isSubmitting ? "Creating..." : "Create"}
+            {isSubmitting ? (isEditing ? "Saving..." : "Creating...") : isEditing ? "Save changes" : "Create"}
           </Button>
         </div>
 
         <Card className="relative z-10 overflow-hidden rounded-2xl p-7">
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundColor: "white",
-              backgroundImage: sameAsCoverImage
-                ? coverImageUrl
-                  ? `url(${coverImageUrl})`
-                  : "linear-gradient(135deg, #f8f9fa, #e9ecef)"
-                : selectedBackground?.imageUrl
-                  ? `url(${selectedBackground.imageUrl})`
+          {activeBackgroundMediaType === "video" && activeBackgroundMediaUrl ? (
+            <video
+              src={activeBackgroundMediaUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              style={{
+                filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
+              }}
+            />
+          ) : activeBackgroundMediaType === "youtube" && youtubeEmbedUrl ? (
+            <iframe
+              src={youtubeEmbedUrl}
+              title="YouTube background"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[150%] w-[266%] -translate-x-1/2 -translate-y-1/2 sm:h-[130%] sm:w-[231%]"
+              style={{
+                filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
+              }}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: "white",
+                backgroundImage: activeBackgroundMediaUrl
+                  ? `url(${activeBackgroundMediaUrl})`
                   : "none",
-              backgroundSize:
-                (sameAsCoverImage && coverImageUrl) || selectedBackground?.imageUrl ? "cover" : "auto",
-              backgroundPosition:
-                (sameAsCoverImage && coverImageUrl) || selectedBackground?.imageUrl ? "center" : "initial",
-              backgroundRepeat: "no-repeat",
-              filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
-            }}
-          />
+                backgroundSize: activeBackgroundMediaUrl ? "cover" : "auto",
+                backgroundPosition: activeBackgroundMediaUrl ? "center" : "initial",
+                backgroundRepeat: "no-repeat",
+                filter: `opacity(${opacity / 100}) blur(${blur}px) saturate(${saturation / 100}) contrast(${contrast / 100}) grayscale(${grayscale / 100})`,
+              }}
+            />
+          )}
 
           <Card className="relative gap-2 overflow-hidden rounded-2xl border border-white/30 bg-white/55 p-6 text-center shadow-xl backdrop-blur-md">
             {coverImageUrl && (
               <div className="mb-2 h-40 w-full overflow-hidden rounded-lg">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={coverImageUrl}
                   alt="Cover"
-                  width={1200}
-                  height={800}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -1951,11 +2975,12 @@ const isAllExpanded =
               disabled={!isDestinationValid}
               onClick={() => {
                 if (!isDestinationValid) return;
+                if (inputType === "snippet") return;
 
                 window.open(inputType === "file" ? selectedFileUrl : destinationUrl, "_blank", "noopener,noreferrer");
               }}
             >
-              <Lock />{inputType === "file" ? "Unlock file" : "Unlock link"}
+              <Lock />{inputType === "file" ? "Unlock file" : inputType === "snippet" ? "Reveal snippet" : "Unlock link"}
             </Button>
 
             {submitError && (
@@ -1966,10 +2991,12 @@ const isAllExpanded =
 
             {createdLink && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-left text-sm text-green-800">
-                <p className="font-semibold">Link created successfully</p>
+                <p className="font-semibold">{isEditing ? "Link updated successfully" : "Link created successfully"}</p>
 
                 <a
                   href={`/l/${createdLink.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
                   className="mt-1 block break-all font-medium text-green-700 underline underline-offset-4"
                 >
                   /l/{createdLink.slug}

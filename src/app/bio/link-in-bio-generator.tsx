@@ -191,7 +191,7 @@ export default function LinkInBioGenerator({
     setWidgets(widgets.map((widget) => (widget.id === id ? { ...widget, [field]: value } : widget)))
   }
 
-  const updateAppearanceSettings = (field: keyof AppearanceSettings, value: string) => {
+  const updateAppearanceSettings = (field: keyof AppearanceSettings, value: string | undefined) => {
     setAppearanceSettings((prev) => ({
       ...prev,
       [field]: value,

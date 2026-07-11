@@ -1,4 +1,5 @@
 import { Bug, CalendarDays, Rocket, Sparkles, Wand2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Badge, PageHeader, SoftCard } from "@/components/dashboard/ui";
 
@@ -30,12 +31,14 @@ const updates = [
 ];
 
 export function NewView() {
+  const t = useTranslations("SimplePages.new");
+
   return (
     <>
       <PageHeader
-        eyebrow="Product updates"
-        title="New"
-        description="Theo dõi các tính năng mới, cải tiến và bản sửa lỗi mới nhất của nền tảng."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <SoftCard className="mb-5 overflow-hidden p-6">

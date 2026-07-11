@@ -1,4 +1,5 @@
 import { CheckCircle2, Gift, Gem, Star, Trophy, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   Badge,
@@ -17,12 +18,14 @@ const tiers = [
 ];
 
 export function LoyaltyView() {
+  const t = useTranslations("SimplePages.loyalty");
+
   return (
     <>
       <PageHeader
-        eyebrow="Loyalty"
-        title="Thân thiết"
-        description="Gamification nhẹ giúp bạn theo dõi điểm thân thiết, nhiệm vụ và quyền lợi theo hạng thành viên."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <section className="grid gap-5 xl:grid-cols-[1fr_360px]">

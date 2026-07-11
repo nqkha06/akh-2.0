@@ -12,7 +12,7 @@ export function MobileBottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 mb-2 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      {/* <nav className="fixed bottom-0 left-0 right-0 z-40 mb-2 pb-[env(safe-area-inset-bottom)] lg:hidden">
         <div className="mx-auto max-w-6xl px-3">
           <div className="flex items-center justify-between gap-2 rounded-2xl border border-gray-200/80 bg-white/70 px-3 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl">
             <Link
@@ -72,7 +72,7 @@ export function MobileBottomNav() {
           </DialogHeader>
           <SocialLinksGenerator embedded />
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </>
   )
 }

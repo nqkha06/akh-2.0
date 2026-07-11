@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 
 import { CreateLinkDto } from "./dto/create-link.dto";
 import { LinksService } from "./links.service";
@@ -15,6 +15,11 @@ export class LinksController {
   @Get()
   findAll() {
     return this.linksService.findAll();
+  }
+
+  @Get("alias/check")
+  checkAlias(@Query("alias") alias: string) {
+    return this.linksService.checkAlias(alias);
   }
 
   @Patch(":id")

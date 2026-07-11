@@ -1,4 +1,5 @@
 import { LifeBuoy, LockKeyhole, MessageCircle, Search, Shield, Wallet, Link2, PhoneCall, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { AppButton, Badge, PageHeader, SoftCard, TableShell } from "@/components/dashboard/ui";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,12 +20,14 @@ const faqs = [
 ];
 
 export function SupportView() {
+  const t = useTranslations("SimplePages.support");
+
   return (
     <>
       <PageHeader
-        eyebrow="Support center"
-        title="Hỗ trợ"
-        description="Tìm câu trả lời nhanh, gửi ticket và theo dõi trạng thái xử lý hỗ trợ."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <SoftCard className="mb-5 p-6">

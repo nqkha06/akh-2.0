@@ -16,9 +16,13 @@ export class LinksService {
   async create(createLinkDto: CreateLinkDto) {
     await this.validateDestination(createLinkDto);
 
-    const slug = await this.createUniqueSlug(
-      createLinkDto.customAlias || createLinkDto.title,
-    );
+    const customAlias = this.normalizeAlias(createLinkDto.customAlias);
+    const slug = customAlias || await this.createUniqueSlug(createLinkDto.title);
+
+    if (customAlias) {
+      await this.assertAliasAvailable(customAlias);
+    }
+
     const background = createLinkDto.backgroundSettings;
     const effects = background?.effects;
 
@@ -32,7 +36,7 @@ export class LinksService {
           selectedSnippet: this.emptyToNull(createLinkDto.selectedSnippet),
           selectedFile: this.emptyToNull(createLinkDto.selectedFile),
           subtitle: this.emptyToNull(createLinkDto.subtitle),
-          customAlias: this.emptyToNull(createLinkDto.customAlias),
+          customAlias,
           coverImageUrl: this.emptyToNull(createLinkDto.coverImageUrl),
           expiryEnabled: createLinkDto.expiryEnabled ?? false,
           expiryType: this.emptyToNull(createLinkDto.expiryType),
@@ -43,6 +47,8 @@ export class LinksService {
           selectedBackgroundName: this.emptyToNull(
             background?.selectedBackgroundName,
           ),
+          backgroundMediaType: this.emptyToNull(background?.backgroundMediaType),
+          backgroundMediaUrl: this.emptyToNull(background?.backgroundMediaUrl),
           sameAsCoverImage: background?.sameAsCoverImage ?? false,
           opacity: effects?.opacity ?? 100,
           blur: effects?.blur ?? 0,
@@ -86,6 +92,21 @@ export class LinksService {
     });
 
     return links.map((link) => this.toResponse(link));
+  }
+
+  async checkAlias(alias: string) {
+    const normalizedAlias = this.normalizeAlias(alias);
+
+    if (!normalizedAlias) {
+      throw new BadRequestException("Alias không hợp lệ.");
+    }
+
+    const existing = await this.findAliasOwner(normalizedAlias);
+
+    return {
+      alias: normalizedAlias,
+      available: !existing,
+    };
   }
 
   async findOne(slug: string) {
@@ -139,7 +160,6 @@ export class LinksService {
           selectedSnippet: this.emptyToNull(updateLinkDto.selectedSnippet),
           selectedFile: this.emptyToNull(updateLinkDto.selectedFile),
           subtitle: this.emptyToNull(updateLinkDto.subtitle),
-          customAlias: this.emptyToNull(updateLinkDto.customAlias),
           coverImageUrl: this.emptyToNull(updateLinkDto.coverImageUrl),
           expiryEnabled: updateLinkDto.expiryEnabled ?? false,
           expiryType: this.emptyToNull(updateLinkDto.expiryType),
@@ -150,6 +170,8 @@ export class LinksService {
           selectedBackgroundName: this.emptyToNull(
             background?.selectedBackgroundName,
           ),
+          backgroundMediaType: this.emptyToNull(background?.backgroundMediaType),
+          backgroundMediaUrl: this.emptyToNull(background?.backgroundMediaUrl),
           sameAsCoverImage: background?.sameAsCoverImage ?? false,
           opacity: effects?.opacity ?? 100,
           blur: effects?.blur ?? 0,
@@ -184,6 +206,40 @@ export class LinksService {
     }
 
     return slug;
+  }
+
+  private normalizeAlias(value?: string | null) {
+    if (!value) {
+      return null;
+    }
+
+    return this.slugify(value) || null;
+  }
+
+  private async findAliasOwner(alias: string) {
+    return this.prisma.link.findFirst({
+      where: {
+        OR: [
+          {
+            slug: alias,
+          },
+          {
+            customAlias: alias,
+          },
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  private async assertAliasAvailable(alias: string) {
+    const existing = await this.findAliasOwner(alias);
+
+    if (existing) {
+      throw new ConflictException("Custom alias đã tồn tại.");
+    }
   }
 
   private async validateDestination(createLinkDto: CreateLinkDto) {
@@ -274,6 +330,8 @@ export class LinksService {
       backgroundSettings: {
         selectedBackgroundId: link.selectedBackgroundId,
         selectedBackgroundName: link.selectedBackgroundName,
+        backgroundMediaType: link.backgroundMediaType,
+        backgroundMediaUrl: link.backgroundMediaUrl,
         sameAsCoverImage: link.sameAsCoverImage,
         effects: {
           opacity: link.opacity,

@@ -76,6 +76,14 @@ class BackgroundSettingsDto {
   selectedBackgroundName?: string;
 
   @IsOptional()
+  @IsIn(["image", "video", "youtube"])
+  backgroundMediaType?: "image" | "video" | "youtube";
+
+  @IsOptional()
+  @IsString()
+  backgroundMediaUrl?: string;
+
+  @IsOptional()
   @IsBoolean()
   sameAsCoverImage?: boolean;
 

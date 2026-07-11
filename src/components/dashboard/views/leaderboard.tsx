@@ -1,17 +1,19 @@
 import { Crown, Medal, Trophy } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Badge, PageHeader, SoftCard, TableShell } from "@/components/dashboard/ui";
 import { rankingRows } from "@/lib/dashboard-data";
 
 export function LeaderboardView() {
+  const t = useTranslations("SimplePages.leaderboard");
   const topThree = rankingRows.slice(0, 3);
 
   return (
     <>
       <PageHeader
-        eyebrow="Competition"
-        title="Bảng xếp hạng"
-        description="Top creator theo thu nhập, điểm và lượt giới thiệu trong tuần, tháng hoặc toàn thời gian."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <div className="flex gap-2 rounded-lg border border-slate-200 bg-white p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             {["Tuần", "Tháng", "All-time"].map((item, index) => (

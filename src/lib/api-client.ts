@@ -32,6 +32,8 @@ export type LinkDto = {
   backgroundSettings: {
     selectedBackgroundId: string | null;
     selectedBackgroundName: string | null;
+    backgroundMediaType: "image" | "video" | "youtube" | null;
+    backgroundMediaUrl: string | null;
     sameAsCoverImage: boolean;
     effects: {
       opacity: number;
@@ -143,6 +145,8 @@ export type CreateLinkPayload = {
   backgroundSettings?: {
     selectedBackgroundId?: string;
     selectedBackgroundName?: string;
+    backgroundMediaType?: "image" | "video" | "youtube";
+    backgroundMediaUrl?: string;
     sameAsCoverImage?: boolean;
     effects?: {
       opacity?: number;
@@ -202,6 +206,24 @@ export async function getLinks() {
   return (await response.json()) as LinkDto[];
 }
 
+export async function checkLinkAliasAvailability(alias: string) {
+  const searchParams = new URLSearchParams({
+    alias,
+  });
+  const response = await fetch(`${API_URL}/links/alias/check?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as {
+    alias: string;
+    available: boolean;
+  };
+}
+
 export async function getLink(slug: string) {
   const response = await fetch(`${API_URL}/links/${slug}`, {
     cache: "no-store",
@@ -250,11 +272,23 @@ export async function getFiles(params?: {
   return (await response.json()) as FilesResponseDto;
 }
 
-export async function uploadFile(file: File) {
+export async function uploadFile(
+  file: File,
+  options?: {
+    purpose?: "file" | "cover";
+  },
+) {
   const formData = new FormData();
   formData.append("file", file);
+  const searchParams = new URLSearchParams();
 
-  const response = await fetch(`${API_URL}/files`, {
+  if (options?.purpose) {
+    searchParams.set("purpose", options.purpose);
+  }
+
+  const query = searchParams.toString();
+
+  const response = await fetch(`${API_URL}/files${query ? `?${query}` : ""}`, {
     method: "POST",
     body: formData,
   });
@@ -302,6 +336,10 @@ export async function deleteFile(id: string) {
 
 export function getFileDownloadUrl(file: Pick<ManagedFileDto, "id">) {
   return absoluteApiUrl(`/files/${file.id}/download`);
+}
+
+export function getFilePreviewUrl(file: Pick<ManagedFileDto, "id">) {
+  return absoluteApiUrl(`/files/${file.id}/download?disposition=inline`);
 }
 
 export async function createBioPage(payload: CreateBioPagePayload) {

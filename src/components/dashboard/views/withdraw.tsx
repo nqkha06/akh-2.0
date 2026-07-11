@@ -1,4 +1,5 @@
 import { AlertCircle, Building2, Clock3, CreditCard, Wallet } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   AppButton,
@@ -10,12 +11,14 @@ import {
 } from "@/components/dashboard/ui";
 
 export function WithdrawView() {
+  const t = useTranslations("SimplePages.withdraw");
+
   return (
     <>
       <PageHeader
-        eyebrow="Payout"
-        title="Rút tiền"
-        description="Theo dõi số dư, gửi yêu cầu rút tiền và kiểm tra lịch sử giao dịch minh bạch."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
 
       <section className="mb-5 grid gap-4 md:grid-cols-3">

@@ -1,4 +1,5 @@
 import { Copy, Share2, UserCheck, Users, Wallet } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   AppButton,
@@ -17,16 +18,18 @@ const referredUsers = [
 ];
 
 export function ReferralsView() {
+  const t = useTranslations("SimplePages.referrals");
+
   return (
     <>
       <PageHeader
-        eyebrow="Referral"
-        title="Giới thiệu"
-        description="Mời bạn bè tham gia Rekonise và nhận hoa hồng từ hoạt động kiếm tiền của họ."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         action={
           <AppButton>
             <Share2 size={16} />
-            Chia sẻ link
+            {t("share")}
           </AppButton>
         }
       />

@@ -25,6 +25,8 @@ model Link {
   maxClicks              Int?
   selectedBackgroundId   String?
   selectedBackgroundName String?
+  backgroundMediaType    String?
+  backgroundMediaUrl     String?
   sameAsCoverImage       Boolean      @default(false)
   opacity                Int          @default(100)
   blur                   Int          @default(0)

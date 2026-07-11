@@ -57,9 +57,27 @@ export class FilesController {
       },
     }),
   )
-  async upload(@UploadedFile() file?: UploadedDiskFile) {
+  async upload(
+    @UploadedFile() file?: UploadedDiskFile,
+    @Query("purpose") purpose?: "file" | "cover",
+  ) {
     if (!file) {
       throw new BadRequestException("File không hợp lệ.");
+    }
+
+    if (purpose === "cover") {
+      const mimeType = file.mimetype.toLowerCase();
+      const maxCoverSize = 10 * 1024 * 1024;
+
+      if (!mimeType.startsWith("image/")) {
+        await this.filesService.forceRemoveLocalFile(file.path);
+        throw new BadRequestException("Cover image phải là file ảnh.");
+      }
+
+      if (file.size > maxCoverSize) {
+        await this.filesService.forceRemoveLocalFile(file.path);
+        throw new BadRequestException("Cover image tối đa 10 MB.");
+      }
     }
 
     return this.filesService.create(file);
@@ -77,13 +95,19 @@ export class FilesController {
 
   @Get(":id/download")
   @Header("Cache-Control", "private, max-age=0")
-  async download(@Param("id") id: string, @Res({ passthrough: true }) res: Response) {
+  async download(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) res: Response,
+    @Query("disposition") disposition?: "attachment" | "inline",
+  ) {
     const { file, stream } = await this.filesService.download(id);
+    const isInlineImage =
+      disposition === "inline" && file.mimeType.toLowerCase().startsWith("image/");
 
     res.set({
       "Content-Type": file.mimeType,
       "Content-Length": file.size.toString(),
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(file.name)}"`,
+      "Content-Disposition": `${isInlineImage ? "inline" : "attachment"}; filename="${encodeURIComponent(file.name)}"`,
     });
 
     return stream;

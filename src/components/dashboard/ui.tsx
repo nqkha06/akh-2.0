@@ -8,6 +8,9 @@ import {
 
 export function PageHeader({
   title,
+  description,
+  action,
+  eyebrow,
 }: {
   title: string;
   description: string;
@@ -15,25 +18,26 @@ export function PageHeader({
   eyebrow?: string;
 }) {
   return (
-     <div className="mb-4 pb-4">
+    <div className="mb-4 pb-4">
       <nav className="mb-3 flex items-center gap-1 text-xs font-semibold text-slate-400">
-        <span className="hover:text-slate-600">Home</span>
+        <span className="hover:text-slate-600">{eyebrow ?? "Home"}</span>
         <ChevronRight size={14} className="text-slate-300" />
-        <span className="text-slate-600">Social links</span>
+        <span className="text-slate-600">{title}</span>
       </nav>
 
-      {/* <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-blue-600">
-        <Sparkles size={12} />
-        Affiliate Links
-      </div> */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            {title}
+          </h1>
 
-      <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-        {title}
-      </h1>
+          <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-500">
+            {description}
+          </p>
+        </div>
 
-      {/* <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-slate-500">
-        Theo dõi hiệu suất từng link, tạo URL rút gọn và tối ưu chiến dịch kiếm tiền.
-      </p> */}
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
     </div>
     // <div className="mb-4 border-b border-slate-200 pb-4">
     //   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
