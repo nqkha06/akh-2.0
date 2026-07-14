@@ -9,6 +9,7 @@ import { QuickActions } from "@/components/dashboard/overview/quick-actions";
 import { RecentActivity } from "@/components/dashboard/overview/recent-activity";
 import { TopContentTable } from "@/components/dashboard/overview/top-content-table";
 import { useOverviewData } from "@/components/dashboard/overview/use-overview-data";
+import { PageHeader } from "../ui";
 
 export function OverviewView() {
   const {
@@ -25,6 +26,8 @@ export function OverviewView() {
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-7 [--primary:oklch(0.55_0.21_274)] [--ring:var(--primary)] [--overview-success:oklch(0.53_0.15_154)] dark:[--primary:oklch(0.7_0.16_274)] dark:[--overview-success:oklch(0.72_0.16_154)] sm:space-y-8">
+      
+      
       <OverviewHeader
         dateRange={dateRange}
         customRange={customRange}
