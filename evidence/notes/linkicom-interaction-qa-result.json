@@ -1,0 +1,13 @@
+{
+  "disabledInitially": true,
+  "enabledAfterActions": true,
+  "revealVisible": true,
+  "analyticsPreviewVisible": true,
+  "communityPanelVisible": true,
+  "noHorizontalOverflow": true,
+  "mobile": {
+    "noHorizontalOverflow": true,
+    "menuButtonVisible": true,
+    "primaryCtaFits": true
+  }
+}

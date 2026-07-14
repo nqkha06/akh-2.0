@@ -341,6 +341,7 @@ export async function uploadFile(
   file: File,
   options?: {
     purpose?: "file" | "cover";
+    signal?: AbortSignal;
   },
 ) {
   const formData = new FormData();
@@ -356,6 +357,7 @@ export async function uploadFile(
   const response = await fetch(`${API_URL}/files${query ? `?${query}` : ""}`, {
     method: "POST",
     body: formData,
+    signal: options?.signal,
   });
 
   if (!response.ok) {

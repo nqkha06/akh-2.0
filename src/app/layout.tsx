@@ -16,8 +16,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rekonise",
-  description: "Nền tảng rút gọn link kiếm tiền cho nhà sáng tạo nội dung tại Việt Nam. Tạo link, theo dõi hiệu suất và tối ưu thu nhập dễ dàng.",
+  title: "Linkicom — One link. More momentum.",
+  description: "Create link-in-bio pages, verified social unlocks and protected content experiences that turn creator traffic into real growth.",
 };
 
 export default async function RootLayout({
