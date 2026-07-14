@@ -1,46 +1,59 @@
 "use client";
+
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from "react";
+import {
+    BarChart3,
+    Copy,
+    Edit3,
+    Link2,
+    MoreVertical,
+    QrCode,
+    Trash2,
+    Unplug,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import QRCode from "qrcode";
+
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    Card,
+    CardContent,
+} from "@/components/ui/card";
+import {
+    Credenza,
+    CredenzaBody,
+    CredenzaClose,
+    CredenzaContent,
+    CredenzaDescription,
+    CredenzaFooter,
+    CredenzaHeader,
+    CredenzaTitle,
+    CredenzaTrigger,
+} from "@/components/ui/credenza";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, BarChart3, Edit3, MoreVertical, QrCode, Trash2, Unplug } from "lucide-react";
-import { toast } from "sonner";
-import { useTranslations } from "next-intl";
-import type { LinkDto } from "@/lib/api-client";
-import SocialLinksGenerator from "@/features/link-creation/components/link-creator";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import QRCode from "qrcode";
-
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge";
+import type { LinkDto } from "@/lib/api-client";
+import SocialLinksGenerator from "@/features/link-creation/components/link-creator";
 
 type LinkCardProps = {
     link: LinkDto;
 };
+
+type QrErrorCorrection = "L" | "M" | "Q" | "H";
 
 export function LinkCard({ link }: LinkCardProps) {
     const t = useTranslations("LinkCard");
@@ -58,12 +71,13 @@ export function LinkCard({ link }: LinkCardProps) {
         if (typeof window === "undefined") {
             return shortUrl;
         }
+
         return new URL(shortUrl, window.location.origin).toString();
     }, [shortUrl]);
 
     const [qrSize, setQrSize] = useState(224);
     const [qrMargin, setQrMargin] = useState(1);
-    const [qrErrorCorrection, setQrErrorCorrection] = useState<"L" | "M" | "Q" | "H">("M");
+    const [qrErrorCorrection, setQrErrorCorrection] = useState<QrErrorCorrection>("M");
     const [qrForeground, setQrForeground] = useState("#111827");
     const [qrBackground, setQrBackground] = useState("#ffffff");
     const [qrImageSrc, setQrImageSrc] = useState("");
@@ -85,6 +99,7 @@ export function LinkCard({ link }: LinkCardProps) {
                         light: qrBackground,
                     },
                 });
+
                 if (isMounted) {
                     setQrImageSrc(dataUrl);
                 }
@@ -106,6 +121,10 @@ export function LinkCard({ link }: LinkCardProps) {
         };
     }, [redirectUrl, qrSize, qrMargin, qrErrorCorrection, qrForeground, qrBackground]);
 
+    const copyRedirectUrl = () => {
+        void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")));
+    };
+
     const handleDownloadQr = () => {
         if (!qrImageSrc) {
             toast.error(t("qrNotReady"));
@@ -120,332 +139,407 @@ export function LinkCard({ link }: LinkCardProps) {
 
     return (
         <>
-        <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-xl font-black tracking-tight text-slate-950">
-                            {link.title}
-                        </h3>
+            <Card>
+                <CardContent>
+                    {/* Main information */}
+                    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                        {/* Link icon */}
+                        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:size-14">
+                            <Link2
+                                aria-hidden
+                                className="size-6 text-slate-400 sm:size-7"
+                                strokeWidth={2}
+                            />
+                        </div>
 
-                        <span
-                            className={[
-                                "inline-flex items-center rounded-full px-3 py-1 text-xs font-black",
-                                isActive ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500",
-                            ].join(" ")}
-                        >
-                            {statusLabel}
-                        </span>
+                        {/* Title, URLs and badges */}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="min-w-0">
+                                    <h3 className="truncate text-lg font-bold tracking-tight sm:text-xl">
+                                        {link.title}
+                                    </h3>
 
-                        <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-600">
-                            {t("monetizationOn")}
-                        </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
-                        <span className="max-w-full truncate">
-                            {link.destinationUrl ?? "https://example.com"}
-                        </span>
-
-                        <span className="text-slate-400">{t("to")}</span>
-
-                        <button
-                            type="button"
-                            onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
-                            className="inline-flex items-center rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-black text-slate-950 transition hover:bg-slate-200"
-                        >
-                            {redirectUrl}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
-                        >
-                            <Copy size={18} />
-                            {t("copyLink")}
-                        </button>
-
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
-                                >
-                                    <QrCode size={18} />
-                                    {t("qrCode")}
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-xl">
-                                <DialogHeader>
-                                    <DialogTitle>{t("qrCode")}</DialogTitle>
-                                    <DialogDescription>
-                                        {t("qrDescription")}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <Field>
-                                        <FieldLabel htmlFor={`qr-size-${link.id}`}>{t("qrSize")}</FieldLabel>
-                                        <Input
-                                            id={`qr-size-${link.id}`}
-                                            min={120}
-                                            max={1024}
-                                            value={qrSize}
-                                            type="number"
-                                            onChange={(event) => {
-                                                const next = Number(event.target.value);
-                                                if (!Number.isNaN(next)) {
-                                                    setQrSize(Math.min(1024, Math.max(120, next)));
-                                                }
-                                            }}
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel htmlFor={`qr-margin-${link.id}`}>{t("qrMargin")}</FieldLabel>
-                                        <Input
-                                            id={`qr-margin-${link.id}`}
-                                            min={0}
-                                            max={20}
-                                            value={qrMargin}
-                                            type="number"
-                                            onChange={(event) => {
-                                                const next = Number(event.target.value);
-                                                if (!Number.isNaN(next)) {
-                                                    setQrMargin(Math.min(20, Math.max(0, next)));
-                                                }
-                                            }}
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel htmlFor={`qr-error-${link.id}`}>{t("errorCorrection")}</FieldLabel>
-                                        <Select
-                                            value={qrErrorCorrection}
-                                            onValueChange={(value) => setQrErrorCorrection(value as "L" | "M" | "Q" | "H")}
+                                    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 sm:text-sm">
+                                        <span
+                                            className="min-w-0 max-w-full truncate"
+                                            title={link.destinationUrl ?? undefined}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent
-                                                position={"popper" /* Use popper for better positioning with the dialog */}
-                                            >
-                                                <SelectGroup>
-                                                    <SelectItem value="L">L</SelectItem>
-                                                    <SelectItem value="M">M</SelectItem>
-                                                    <SelectItem value="Q">Q</SelectItem>
-                                                    <SelectItem value="H">H</SelectItem>
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                       
-                                    </Field>
+                                            {link.destinationUrl ?? "https://example.com"}
+                                        </span>
 
-                                    <Field>
-                                        <FieldLabel htmlFor={`qr-fg-${link.id}`}>{t("foregroundColor")}</FieldLabel>
-                                        <Input
-                                            id={`qr-fg-${link.id}`}
-                                            value={qrForeground}
-                                            type="color"
-                                            onChange={(event) => setQrForeground(event.target.value)}
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel htmlFor={`qr-bg-${link.id}`}>{t("backgroundColor")}</FieldLabel>
-                                        <Input
-                                            id={`qr-bg-${link.id}`}
-                                            value={qrBackground}
-                                            type="color"
-                                            onChange={(event) => setQrBackground(event.target.value)}
-                                        />
-                                    </Field>
+                                        <span className="shrink-0 text-slate-400">
+                                            {t("to")}
+                                        </span>
 
-                                </FieldGroup>
-                                <div className="border-border bg-background flex justify-center rounded-xl border p-4">
-                                    {qrImageSrc ? (
-                                        <img
-                                            alt="Generated QR code"
-                                            className="h-56 w-56"
-                                            src={qrImageSrc}
-                                        />
-                                    ) : (
-                                        <div className="flex h-56 w-56 items-center justify-center text-sm text-slate-500">
-                                            {isQrLoading ? t("generating") : t("qrUnavailable")}
-                                        </div>
-                                    )}
+                                        <button
+                                            type="button"
+                                            onClick={copyRedirectUrl}
+                                            className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-medium text-slate-950 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                                            title={redirectUrl}
+                                        >
+                                            {redirectUrl}
+                                        </button>
+                                    </div>
                                 </div>
-                                <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <DialogClose asChild>
-                                        <Button variant="outline">{commonT("close")}</Button>
-                                    </DialogClose>
 
-                                    <div className="flex flex-col gap-2 sm:flex-row">
-                                        <DialogClose asChild>
+                                {/* Status badges */}
+                                <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
+                                    <Badge
+                                        variant="secondary"
+                                        className={
+                                            isActive
+                                                ? "border-0 bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"
+                                                : "border-0 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600"
+                                        }
+                                    >
+                                        {statusLabel}
+                                    </Badge>
+
+                                    <Badge
+                                        variant="secondary"
+                                        className="border-0 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700"
+                                    >
+                                        {t("monetizationOn")}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom action bar */}
+                    <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:p-3 dark:bg-slate-800/60 dark:border-slate-700">
+                        {/* Main actions */}
+                        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={copyRedirectUrl}
+                                className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                            >
+                                <Copy className="size-3.5 sm:size-4" />
+                                <span className="hidden sm:inline">{t("copyLink")}</span>
+                                <span className="sm:hidden">{t("copy")}</span>
+                            </Button>
+
+                            <Credenza>
+                                <CredenzaTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                                        aria-label={t("qrCode")}
+                                    >
+                                        <QrCode className="size-3.5 sm:size-4" />
+                                        <span className="hidden sm:inline">{t("qrCode")}</span>
+                                        <span className="sm:hidden">QR</span>
+                                    </Button>
+                                </CredenzaTrigger>
+
+                                <CredenzaContent className="sm:max-w-xl">
+                                    <CredenzaHeader>
+                                        <CredenzaTitle>{t("qrCode")}</CredenzaTitle>
+                                    </CredenzaHeader>
+
+                                    <CredenzaBody className="space-y-4">
+                                        <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <Field>
+                                            <FieldLabel htmlFor={`qr-size-${link.id}`}>
+                                                {t("qrSize")}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id={`qr-size-${link.id}`}
+                                                min={120}
+                                                max={1024}
+                                                value={qrSize}
+                                                type="number"
+                                                onChange={(event) => {
+                                                    const next = Number(event.target.value);
+
+                                                    if (!Number.isNaN(next)) {
+                                                        setQrSize(Math.min(1024, Math.max(120, next)));
+                                                    }
+                                                }}
+                                            />
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor={`qr-margin-${link.id}`}>
+                                                {t("qrMargin")}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id={`qr-margin-${link.id}`}
+                                                min={0}
+                                                max={20}
+                                                value={qrMargin}
+                                                type="number"
+                                                onChange={(event) => {
+                                                    const next = Number(event.target.value);
+
+                                                    if (!Number.isNaN(next)) {
+                                                        setQrMargin(Math.min(20, Math.max(0, next)));
+                                                    }
+                                                }}
+                                            />
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor={`qr-error-${link.id}`}>
+                                                {t("errorCorrection")}
+                                            </FieldLabel>
+
+                                            <Select
+                                                value={qrErrorCorrection}
+                                                onValueChange={(value) =>
+                                                    setQrErrorCorrection(value as QrErrorCorrection)
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id={`qr-error-${link.id}`}
+                                                    className="w-full"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+
+                                                <SelectContent position="popper">
+                                                    {(["L", "M", "Q", "H"] as QrErrorCorrection[]).map(
+                                                        (value) => (
+                                                            <SelectItem key={value} value={value}>
+                                                                {value}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor={`qr-fg-${link.id}`}>
+                                                {t("foregroundColor")}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id={`qr-fg-${link.id}`}
+                                                value={qrForeground}
+                                                type="color"
+                                                className="h-10 w-full cursor-pointer p-1"
+                                                onChange={(event) =>
+                                                    setQrForeground(event.target.value)
+                                                }
+                                            />
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor={`qr-bg-${link.id}`}>
+                                                {t("backgroundColor")}
+                                            </FieldLabel>
+
+                                            <Input
+                                                id={`qr-bg-${link.id}`}
+                                                value={qrBackground}
+                                                type="color"
+                                                className="h-10 w-full cursor-pointer p-1"
+                                                onChange={(event) =>
+                                                    setQrBackground(event.target.value)
+                                                }
+                                            />
+                                        </Field>
+                                        </FieldGroup>
+
+                                        <div className="flex min-h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                                        {qrImageSrc ? (
+                                            <img
+                                                alt="Generated QR code"
+                                                className="size-56 max-w-full"
+                                                src={qrImageSrc}
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-slate-500">
+                                                {isQrLoading
+                                                    ? t("generating")
+                                                    : t("qrUnavailable")}
+                                            </p>
+                                        )}
+                                        </div>
+                                    </CredenzaBody>
+
+                                    <CredenzaFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+                                        <CredenzaClose asChild>
+                                            <Button variant="outline">
+                                                {commonT("close")}
+                                            </Button>
+                                        </CredenzaClose>
+
+                                        <div className="flex flex-col gap-2 sm:flex-row">
                                             <Button
                                                 variant="outline"
-                                                onClick={() => void navigator.clipboard.writeText(redirectUrl).then(() => toast.success(t("copied")))}
+                                                onClick={copyRedirectUrl}
                                             >
                                                 {t("copyRedirectUrl")}
                                             </Button>
-                                        </DialogClose>
 
-                                        <Button variant="default" onClick={handleDownloadQr} disabled={!qrImageSrc || isQrLoading}>
-                                            {t("downloadPng")}
-                                        </Button>
-                                    </div>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
-                                >
-                                    <BarChart3 size={18} />
-                                    {t("stats")}
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-xl">
-                                <DialogHeader>
-                                    <DialogTitle>{t("statsTitle")}</DialogTitle>
-                                    <DialogDescription>
-                                        {t("statsDescription")}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-                                    <div className="border-border bg-background rounded-xl border p-3">
-                                        <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            {t("clicks")}
-                                        </p>
-                                        <p className="mt-1 text-lg font-semibold">0</p>
-                                    </div>
-                                    <div className="border-border bg-background rounded-xl border p-3">
-                                        <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            {t("visitors")}
-                                        </p>
-                                        <p className="mt-1 text-lg font-semibold">0</p>
-                                    </div>
-                                    <div className="border-border bg-background rounded-xl border p-3">
-                                        <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            {t("earnings")}
-                                        </p>
-                                        <p className="mt-1 text-lg font-semibold">$0.0000</p>
-                                    </div>
-                                    <div className="border-border bg-background rounded-xl border p-3">
-                                        <p className="text-muted-foreground text-[10px] font-medium uppercase">
-                                            {t("status")}
-                                        </p>
-                                        <p className="mt-1 text-lg font-semibold">{statusLabel}</p>
-                                    </div>
-                                </div>
-                                <div className="border-border bg-background space-y-3 rounded-xl border p-4 text-sm">
-                                    <div>
-                                        <p className="text-muted-foreground text-xs uppercase">
-                                            {t("shortUrl")}
-                                        </p>
-                                        <p className="mt-1 break-all font-medium">{redirectUrl}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs uppercase">
-                                            {t("destinationUrl")}
-                                        </p>
-                                        <p className="mt-1 break-all font-medium">
-                                            https://www.youtube.com/watch?v=3EEnvO0yMHY
-                                        </p>
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div>
-                                            <p className="text-muted-foreground text-xs uppercase">
-                                                {t("created")}
-                                            </p>
-                                            <p className="mt-1 font-medium">5/9/2026, 10:25:54 PM</p>
+                                            <Button
+                                                onClick={handleDownloadQr}
+                                                disabled={!qrImageSrc || isQrLoading}
+                                            >
+                                                {t("downloadPng")}
+                                            </Button>
                                         </div>
-                                        <div>
-                                            <p className="text-muted-foreground text-xs uppercase">
-                                                {t("lastUpdated")}
-                                            </p>
-                                            <p className="mt-1 font-medium">6/1/2026, 12:52:26 AM</p>
+                                    </CredenzaFooter>
+                                </CredenzaContent>
+                            </Credenza>
+
+                            <Credenza>
+                                <CredenzaTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                                        aria-label={t("stats")}
+                                    >
+                                        <BarChart3 className="size-3.5 sm:size-4" />
+                                        <span className="hidden sm:inline">{t("stats")}</span>
+                                    </Button>
+                                </CredenzaTrigger>
+
+                                <CredenzaContent className="sm:max-w-xl">
+                                    <CredenzaHeader>
+                                        <CredenzaTitle>{t("statsTitle")}</CredenzaTitle>
+                                    </CredenzaHeader>
+
+                                    <CredenzaBody className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        {[
+                                            [t("clicks"), "0"],
+                                            [t("visitors"), "0"],
+                                            [t("earnings"), "$0.0000"],
+                                            [t("status"), statusLabel],
+                                        ].map(([label, value]) => (
+                                            <div
+                                                key={label}
+                                                className="rounded-lg border border-slate-200 bg-slate-50/70 p-3"
+                                            >
+                                                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                                    {label}
+                                                </p>
+
+                                                <p className="mt-1 truncate text-lg font-semibold text-slate-950">
+                                                    {value}
+                                                </p>
+                                            </div>
+                                        ))}
                                         </div>
-                                    </div>
-                                </div>
 
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="outline">{commonT("close")}</Button>
-                                    </DialogClose>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                                        <div className="space-y-4 rounded-xl border border-slate-200 p-4 text-sm">
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                                {t("shortUrl")}
+                                            </p>
 
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-500"
-                        >
-                            {t("monetization")}
-                            <Switch />
+                                            <p className="mt-1 break-all font-medium text-slate-950">
+                                                {redirectUrl}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                                {t("destinationUrl")}
+                                            </p>
+
+                                            <p className="mt-1 break-all font-medium text-slate-950">
+                                                {link.destinationUrl ?? "https://example.com"}
+                                            </p>
+                                        </div>
+                                        </div>
+                                    </CredenzaBody>
+
+                                    <CredenzaFooter>
+                                        <CredenzaClose asChild>
+                                            <Button variant="outline">
+                                                {commonT("close")}
+                                            </Button>
+                                        </CredenzaClose>
+                                    </CredenzaFooter>
+                                </CredenzaContent>
+                            </Credenza>
                         </div>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex size-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition hover:border-slate-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950"
+                        {/* Monetization and menu */}
+                        <div className="flex items-center justify-between gap-2 sm:justify-end">
+                            <div className="flex h-9 flex-1 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2 sm:h-10 sm:flex-none sm:px-3 dark:bg-slate-800/60 dark:border-slate-700">
+                                <Label
+                                    htmlFor={`monetization-${link.id}`}
+                                    className="cursor-pointer text-xs font-semibold text-slate-500"
                                 >
-                                    <MoreVertical size={20} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-56 rounded-2xl border border-slate-200 bg-white p-0 shadow-[0_18px_45px_rgba(15,23,42,0.16)]"
-                            >
-                                <DropdownMenuItem
-                                    onSelect={(event) => {
-                                        event.preventDefault();
-                                        setEditOpen(true);
-                                    }}
-                                    className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-50 focus:bg-slate-50 focus:text-slate-950"
-                                >
-                                    <Edit3 size={19} />
-                                    {t("edit")}
-                                </DropdownMenuItem>
-                                <div className="h-px bg-slate-100" />
-                                <DropdownMenuItem className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-orange-600 transition hover:bg-orange-50 focus:bg-orange-50 focus:text-orange-600">
-                                    <Unplug size={19} />
-                                    {t("deactivate")}
-                                </DropdownMenuItem>
-                                <div className="h-px bg-slate-100" />
-                                <DropdownMenuItem className="flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-base font-bold text-red-600 transition hover:bg-red-50 focus:bg-red-50 focus:text-red-600">
-                                    <Trash2 size={19} />
-                                    {t("delete")}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                    {t("monetization")}
+                                </Label>
+
+                                <Switch
+                                    id={`monetization-${link.id}`}
+                                    aria-label={t("monetization")}
+                                />
+                            </div>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="size-9 shrink-0 bg-white shadow-none sm:size-10"
+                                        aria-label={t("edit")}
+                                        title={t("edit")}
+                                    >
+                                        <MoreVertical className="size-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" className="w-52">
+                                    <DropdownMenuItem
+                                        onSelect={(event) => {
+                                            event.preventDefault();
+                                            setEditOpen(true);
+                                        }}
+                                    >
+                                        <Edit3 className="size-4" />
+                                        {t("edit")}
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem className="text-orange-600 focus:text-orange-700">
+                                        <Unplug className="size-4" />
+                                        {t("deactivate")}
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <Trash2 className="size-4" />
+                                        {t("delete")}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </article>
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent className="max-h-[92vh] overflow-y-auto p-4 sm:max-w-6xl sm:p-6">
-                <DialogHeader>
-                    <DialogTitle>{t("editTitle")}</DialogTitle>
-                    <DialogDescription>
-                        {t("editDescription")}
-                    </DialogDescription>
-                </DialogHeader>
-                <SocialLinksGenerator
-                    embedded
-                    initialLink={link}
-                    onSaved={() => setEditOpen(false)}
-                />
-            </DialogContent>
-        </Dialog>
+                </CardContent>
+            </Card>
+            <Credenza open={editOpen} onOpenChange={setEditOpen}>
+                <CredenzaContent className="sm:max-w-6xl">
+                    <CredenzaHeader>
+                        <CredenzaTitle>{t("editTitle")}</CredenzaTitle>
+                    </CredenzaHeader>
+                    <CredenzaBody className="px-4 sm:px-6">
+                        <SocialLinksGenerator embedded initialLink={link} onSaved={() => setEditOpen(false)} />
+                    </CredenzaBody>
+                    <CredenzaFooter>
+                        <CredenzaClose asChild>
+                            <Button variant="outline">{commonT("close")}</Button>
+                        </CredenzaClose>
+                    </CredenzaFooter>
+                </CredenzaContent>
+            </Credenza>
         </>
     );
 }

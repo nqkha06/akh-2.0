@@ -94,7 +94,7 @@ class BackgroundSettingsDto {
 }
 
 export class CreateLinkDto {
-  @ValidateIf((payload: CreateLinkDto) => payload.inputType !== "snippet")
+  @ValidateIf((payload: CreateLinkDto) => payload.inputType === "url")
   @IsUrl({ require_protocol: true })
   destinationUrl: string;
 

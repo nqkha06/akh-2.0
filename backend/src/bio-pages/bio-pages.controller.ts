@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 
 import { BioPagesService } from "./bio-pages.service";
 import { CreateBioPageDto } from "./dto/create-bio-page.dto";
@@ -10,6 +10,11 @@ export class BioPagesController {
   @Post()
   create(@Body() createBioPageDto: CreateBioPageDto) {
     return this.bioPagesService.create(createBioPageDto);
+  }
+
+  @Patch(":id")
+  update(@Param("id") id: string, @Body() updateBioPageDto: CreateBioPageDto) {
+    return this.bioPagesService.update(id, updateBioPageDto);
   }
 
   @Get()

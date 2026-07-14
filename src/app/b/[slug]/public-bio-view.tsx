@@ -7,8 +7,6 @@ import {
   Banknote,
   Headphones,
   Link2,
-  Music,
-  Play,
   Users,
 } from "lucide-react";
 import {
@@ -27,7 +25,9 @@ import {
   SiYoutube,
 } from "@icons-pack/react-simple-icons";
 
-import { trackBioClick, type BioPageDto, type BioWidgetDto } from "@/lib/api-client";
+import { BioWidgetEmbed } from "@/components/bio-widget-embed";
+import { PublicCreatorLayout } from "@/components/public-creator-layout";
+import { trackBioClick, type BioPageDto } from "@/lib/api-client";
 
 function getSocialIcon(platform: string) {
   switch (platform.toLowerCase()) {
@@ -67,23 +67,6 @@ function getSocialIcon(platform: string) {
   }
 }
 
-function getWidgetIcon(type: string) {
-  switch (type) {
-    case "youtube-video":
-      return <SiYoutube className="size-5" />;
-    case "spotify-track":
-      return <SiSpotify className="size-5" />;
-    case "instagram-post":
-      return <SiInstagram className="size-5" />;
-    case "twitch-stream":
-      return <SiTwitch className="size-5" />;
-    case "audio-preview":
-      return <Music className="size-5" />;
-    default:
-      return <Play className="size-5" />;
-  }
-}
-
 function parseHexColor(value?: string | null) {
   if (!value?.startsWith("#")) {
     return null;
@@ -93,9 +76,9 @@ function parseHexColor(value?: string | null) {
   const fullHex =
     hex.length === 3
       ? hex
-          .split("")
-          .map((char) => `${char}${char}`)
-          .join("")
+        .split("")
+        .map((char) => `${char}${char}`)
+        .join("")
       : hex;
 
   if (!/^[0-9a-f]{6}$/i.test(fullHex)) {
@@ -123,37 +106,47 @@ function getAccentColor(backgroundColor?: string | null) {
   return backgroundColor || "#2563eb";
 }
 
-function getPageStyle(bioPage: BioPageDto): React.CSSProperties {
-  const accent = getAccentColor(bioPage.appearance.backgroundColor);
-  const rgb = parseHexColor(accent) || { r: 37, g: 99, b: 235 };
-  const accentRgb = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+function getYouTubeEmbedUrl(value?: string | null) {
+  if (!value) return "";
 
-  if (bioPage.appearance.backgroundImage) {
-    return {
-      "--bio-accent": accent,
-      "--bio-accent-rgb": accentRgb,
-      backgroundColor: "#0f172a",
-      backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.58)), url('${bioPage.appearance.backgroundImage}')`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    } as React.CSSProperties;
+  try {
+    const url = new URL(value.trim());
+    const host = url.hostname.replace(/^www\./, "");
+    const id = host === "youtu.be"
+      ? url.pathname.split("/").filter(Boolean)[0] || ""
+      : ["youtube.com", "m.youtube.com", "music.youtube.com"].includes(host)
+        ? url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")
+          ? url.pathname.split("/").filter(Boolean)[1] || ""
+          : url.searchParams.get("v") || ""
+        : "";
+
+    return /^[a-zA-Z0-9_-]{11}$/.test(id)
+      ? `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&modestbranding=1&rel=0`
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+function getBackgroundMedia(bioPage: BioPageDto) {
+  const { backgroundMediaType, backgroundMediaUrl, backgroundImage } = bioPage.appearance;
+
+  if (backgroundMediaType && backgroundMediaUrl) {
+    return { type: backgroundMediaType, url: backgroundMediaUrl };
   }
 
-  return {
-    "--bio-accent": accent,
-    "--bio-accent-rgb": accentRgb,
-    backgroundColor: "#f8fafc",
-    backgroundImage: `radial-gradient(circle at 12% 0%, rgba(${accentRgb}, 0.16), transparent 32%), radial-gradient(circle at 90% 10%, rgba(249, 115, 22, 0.13), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #eef2ff 52%, #f7fee7 100%)`,
-  } as React.CSSProperties;
+  return backgroundImage ? { type: "image" as const, url: backgroundImage } : null;
 }
 
 function getCoverStyle(bioPage: BioPageDto): React.CSSProperties {
   const accent = getAccentColor(bioPage.appearance.backgroundColor);
   const rgb = parseHexColor(accent) || { r: 37, g: 99, b: 235 };
 
-  if (bioPage.appearance.backgroundImage) {
+  const backgroundMedia = getBackgroundMedia(bioPage);
+
+  if (backgroundMedia?.type === "image") {
     return {
-      backgroundImage: `linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.48)), url('${bioPage.appearance.backgroundImage}')`,
+      backgroundImage: `linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.48)), url('${backgroundMedia.url}')`,
       backgroundSize: "cover",
       backgroundPosition: "center",
     };
@@ -276,98 +269,6 @@ function getLinkButtonStyle(buttonStyle: string): React.CSSProperties | undefine
   return undefined;
 }
 
-function getWidgetCardClass(buttonStyle: string) {
-  const base =
-    "group block cursor-pointer overflow-hidden border backdrop-blur transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bio-accent)]";
-
-  switch (buttonStyle) {
-    case "minimalist":
-      return `${base} rounded-xl border-slate-200 bg-white shadow-none hover:border-slate-300 hover:bg-slate-50`;
-    case "mineral-square":
-      return `${base} rounded-lg border-2 border-slate-950 bg-white shadow-[6px_6px_0_rgba(15,23,42,1)] hover:bg-slate-50`;
-    case "rounded-border":
-      return `${base} rounded-[1.65rem] border-2 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.09)] hover:bg-slate-50`;
-    case "glow":
-      return `${base} rounded-[1.65rem] border-slate-700 bg-slate-950 text-white shadow-[0_18px_58px_rgba(37,99,235,0.34)] hover:bg-slate-900`;
-    case "soft-shadow":
-      return `${base} rounded-2xl border-slate-100 bg-white shadow-[0_18px_42px_rgba(15,23,42,0.12)] hover:border-slate-200`;
-    case "accent-gradient":
-      return `${base} rounded-[1.35rem] border-transparent bg-slate-950 text-white shadow-[0_18px_52px_rgba(37,99,235,0.24)] hover:bg-slate-900`;
-    case "glass-outline":
-      return `${base} rounded-[1.35rem] border-white/80 bg-white/70 shadow-[0_18px_48px_rgba(15,23,42,0.10)] hover:bg-white/88`;
-    case "neon-outline":
-      return `${base} rounded-[1.65rem] border-2 border-cyan-300 bg-slate-950 text-white shadow-[0_0_30px_rgba(34,211,238,0.34)] hover:bg-slate-900`;
-    case "compact-sharp":
-      return `${base} rounded-md border-slate-300 bg-white shadow-sm hover:border-slate-500 hover:bg-slate-50`;
-    case "mineral-rounded":
-      return `${base} rounded-[1.65rem] border-white/80 bg-white/85 shadow-[0_18px_52px_rgba(15,23,42,0.12)] hover:bg-white`;
-    default:
-      return `${base} rounded-[1.65rem] border-white/80 bg-white/92 shadow-[0_18px_52px_rgba(15,23,42,0.12)] hover:border-slate-300 hover:bg-white`;
-  }
-}
-
-function renderWidget(widget: BioWidgetDto, onClick: () => void, buttonStyle: string) {
-  const label = widget.title || widget.type.replace(/-/g, " ");
-  const isDark =
-    buttonStyle === "glow" ||
-    buttonStyle === "accent-gradient" ||
-    buttonStyle === "neon-outline";
-
-  return (
-    <a
-      key={widget.id}
-      href={widget.url}
-      onClick={onClick}
-      target="_blank"
-      rel="noreferrer"
-      className={getWidgetCardClass(buttonStyle)}
-      style={getLinkButtonStyle(buttonStyle)}
-    >
-      <div className="flex items-stretch">
-        <div
-          className={`grid w-24 shrink-0 place-items-center sm:w-32 ${
-            isDark
-              ? "bg-white text-slate-950"
-              : buttonStyle === "rounded-border"
-                ? "bg-[color:var(--bio-accent)] text-white"
-                : "bg-slate-950 text-white"
-          }`}
-        >
-          {getWidgetIcon(widget.type)}
-        </div>
-        <div className="min-w-0 flex-1 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p
-                className={`text-[11px] font-bold uppercase tracking-[0.12em] ${
-                  isDark ? "text-slate-400" : "text-slate-500"
-                }`}
-              >
-                Featured
-              </p>
-              <p className={`mt-1 truncate text-base font-bold ${isDark ? "text-white" : "text-slate-950"}`}>
-                {label}
-              </p>
-            </div>
-            <span
-              className={`grid size-9 shrink-0 place-items-center rounded-full transition-colors duration-200 ${
-                isDark
-                  ? "bg-white/10 text-white group-hover:bg-white group-hover:text-slate-950"
-                  : "bg-slate-100 text-slate-700 group-hover:bg-slate-950 group-hover:text-white"
-              }`}
-            >
-              <ArrowUpRight className="size-4" />
-            </span>
-          </div>
-          <p className={`mt-3 line-clamp-2 text-sm leading-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-            {widget.description || getHost(widget.url)}
-          </p>
-        </div>
-      </div>
-    </a>
-  );
-}
-
 export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
   const visibleLinks = bioPage.customLinks.filter(
     (link) => !bioPage.hiddenLinks.includes(link.id),
@@ -381,74 +282,47 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
     bioPage.appearance.buttonStyle === "glow" ||
     bioPage.appearance.buttonStyle === "accent-gradient" ||
     bioPage.appearance.buttonStyle === "neon-outline";
+  const backgroundMedia = getBackgroundMedia(bioPage);
+  const youtubeEmbedUrl = backgroundMedia?.type === "youtube"
+    ? getYouTubeEmbedUrl(backgroundMedia.url)
+    : "";
+  const accent = getAccentColor(bioPage.appearance.backgroundColor);
+  const accentRgb = parseHexColor(accent) || { r: 37, g: 99, b: 235 };
+  const pageVariables = {
+    "--bio-accent": accent,
+    "--bio-accent-rgb": `${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}`,
+  } as React.CSSProperties;
 
   return (
-    <main
-      className="min-h-screen overflow-x-hidden px-4 py-5 text-slate-950 sm:px-6 sm:py-8 lg:px-10 lg:py-12"
-      style={getPageStyle(bioPage)}
+    <PublicCreatorLayout
+      background={<>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-800 to-blue-950" />
+        {backgroundMedia?.type === "image" ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backgroundMedia.url})` }} /> : null}
+        {backgroundMedia?.type === "video" ? <video aria-hidden="true" src={backgroundMedia.url} autoPlay muted loop playsInline className="pointer-events-none absolute inset-0 size-full object-cover" /> : null}
+        {youtubeEmbedUrl ? <iframe aria-hidden="true" src={youtubeEmbedUrl} title="YouTube background" allow="autoplay; encrypted-media; picture-in-picture" className="pointer-events-none absolute left-1/2 top-1/2 h-[150%] w-[266%] -translate-x-1/2 -translate-y-1/2" /> : null}
+      </>}
     >
-      <section className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-        <aside className="overflow-hidden rounded-[2rem] border border-white/75 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.16)] backdrop-blur-xl lg:sticky lg:top-10">
-          <div className="h-36 sm:h-44" style={getCoverStyle(bioPage)} />
-          <div className="px-5 pb-6 sm:px-7">
-            <div className="-mt-12 flex items-end justify-between gap-4">
-              <div className="grid size-24 shrink-0 place-items-center rounded-[1.65rem] border-4 border-white bg-slate-950 text-3xl font-bold text-white shadow-[0_18px_48px_rgba(15,23,42,0.26)] sm:size-28 sm:text-4xl">
-                {getInitials(bioPage.name)}
-              </div>
-              <div className="mb-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
-                {totalLinks} links
-              </div>
+      <div style={pageVariables} className="overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl">
+        <div className="h-32 sm:h-36" style={getCoverStyle(bioPage)} />
+        <div className="space-y-5 px-4 pb-5 sm:px-6 sm:pb-6">
+          <header className="-mt-12 text-center">
+            <div className="mx-auto flex size-24 items-center justify-center rounded-[1.5rem] border-4 border-white bg-slate-950 text-3xl font-bold text-white shadow-xl sm:size-28 sm:text-4xl">
+              {getInitials(bioPage.name)}
             </div>
-
-            <div className="mt-5">
-              <h1 className="text-3xl font-bold text-slate-950 sm:text-4xl">
-                {bioPage.name}
-              </h1>
-              <p className="mt-2 text-sm font-semibold text-slate-500">
-                rekonise.bio/{bioPage.slug}
-              </p>
-            </div>
-
-            {bioPage.title ? (
-              <p className="mt-5 text-base leading-7 text-slate-700">{bioPage.title}</p>
-            ) : null}
-
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{bioPage.name}</h1>
+            <p className="mt-2 text-sm font-semibold text-slate-500">rekonise.bio/{bioPage.slug}</p>
+            {bioPage.title ? <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-slate-700">{bioPage.title}</p> : null}
             {bioPage.socialLinks.length > 0 ? (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {bioPage.socialLinks.slice(0, 8).map((social) => (
-                  <a
-                    key={social.id}
-                    href={social.url}
-                    onClick={trackClick}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="grid size-11 cursor-pointer place-items-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors duration-200 hover:border-slate-400 hover:bg-slate-950 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bio-accent)]"
-                    aria-label={social.platform}
-                  >
-                    {getSocialIcon(social.platform)}
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {bioPage.socialLinks.slice(0, 8).map(({ id, url, platform }) => (
+                  <a key={id} href={url} onClick={trackClick} target="_blank" rel="noopener noreferrer" aria-label={platform} className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-950 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bio-accent)]">
+                    {getSocialIcon(platform)}
                   </a>
                 ))}
               </div>
             ) : null}
-
-            <div className="mt-7 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5">
-              <div>
-                <p className="text-2xl font-bold text-slate-950">{bioPage.views}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                  Views
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-950">{bioPage.clicks}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                  Clicks
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="space-y-4 rounded-[2rem] border border-white/75 bg-white/72 p-4 shadow-[0_24px_90px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-5 lg:p-6">
+          </header>
+          <div className="space-y-4">
           {bioPage.widgets.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
@@ -456,9 +330,7 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
                   Featured
                 </h2>
               </div>
-              {bioPage.widgets.map((widget) =>
-                renderWidget(widget, trackClick, bioPage.appearance.buttonStyle),
-              )}
+              {bioPage.widgets.map((widget) => <BioWidgetEmbed key={widget.id} widget={widget} onExternalLink={trackClick} />)}
             </div>
           ) : null}
 
@@ -495,11 +367,10 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
                     </span>
                   </span>
                   <span
-                    className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-200 ${
-                      isDarkButton
+                    className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-200 ${isDarkButton
                         ? "bg-white/10 text-white group-hover:bg-white group-hover:text-slate-950"
                         : "bg-slate-100 text-slate-600 group-hover:bg-slate-950 group-hover:text-white"
-                    }`}
+                      }`}
                   >
                     <ArrowUpRight className="size-4" />
                   </span>
@@ -516,13 +387,14 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
             </div>
           ) : null}
 
-          <footer className="px-1 pt-2">
+          </div>
+          <footer className="border-t pt-4">
             <p className="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
               Powered by Rekonise Bio
             </p>
           </footer>
         </div>
-      </section>
-    </main>
+      </div>
+    </PublicCreatorLayout>
   );
 }

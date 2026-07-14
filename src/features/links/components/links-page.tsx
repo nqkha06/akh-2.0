@@ -1,12 +1,17 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Check,
+  CircleSlash,
   Filter,
   Home,
   Link2,
+  Megaphone,
+  MonitorSmartphone,
   Plus,
   RotateCcw,
   Search,
@@ -22,6 +27,21 @@ import {
   EmptyState,
   PageHeader,
 } from "@/components/dashboard/ui";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Drawer,
   DrawerContent,
@@ -29,6 +49,11 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLinks, type LinkDto } from "@/lib/api-client";
 import { filterLinks, sortLinks } from "../lib/filter-links";
 import {
@@ -309,23 +334,18 @@ function LinksTabs({
   const t = useTranslations("Links");
 
   return (
-    <div className="mb-5 flex">
-      <div className="inline-flex w-full rounded-2xl bg-slate-100/70 p-1 ring-1 ring-slate-200/70 sm:w-auto">
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => onChange(value as LinksTab)}
+      className="mb-5"
+    >
+      <TabsList className="h-auto w-full justify-start rounded-xl border border-slate-200 bg-slate-100/70 p-1 sm:w-fit">
         {linksTabs.map((tab) => {
           const Icon = tab.icon;
-          const active = activeTab === tab.id;
 
           return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`inline-flex h-10 flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition-all duration-200 sm:flex-none sm:px-4 ${active
-                ? "border-slate-200 bg-white text-slate-950 shadow-sm"
-                : "border-transparent text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                }`}
-            >
-              <Icon size={16} />
+            <TabsTrigger key={tab.id} value={tab.id} className="h-10 flex-1 px-3 font-semibold sm:flex-none sm:px-4">
+              <Icon />
               {tab.mobileLabelKey ? (
                 <>
                   <span className="hidden sm:inline">{t(tab.labelKey)}</span>
@@ -334,11 +354,11 @@ function LinksTabs({
               ) : (
                 t(tab.labelKey)
               )}
-            </button>
+            </TabsTrigger>
           );
         })}
-      </div>
-    </div>
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -346,28 +366,28 @@ function LinksSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((row) => (
-        <div key={row} className="rounded-3xl border border-slate-200 bg-white p-5">
-          <div className="flex items-start justify-between gap-4">
+        <Card key={row} className="gap-0 border-slate-200/80 p-0 shadow-sm">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-4 sm:p-5">
             <div className="space-y-3">
-              <div className="h-7 w-40 animate-pulse rounded-lg bg-slate-100" />
-              <div className="h-5 w-96 max-w-full animate-pulse rounded-lg bg-slate-100" />
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-5 w-96 max-w-full" />
             </div>
             <div className="hidden gap-2 sm:flex">
-              <div className="h-8 w-20 animate-pulse rounded-full bg-slate-100" />
-              <div className="h-8 w-36 animate-pulse rounded-full bg-slate-100" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-36 rounded-full" />
             </div>
           </div>
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="m-4 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:m-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex gap-3">
-                <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-11 w-32 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-11 w-24 animate-pulse rounded-xl bg-slate-100" />
+                <Skeleton className="h-9 w-28" />
+                <Skeleton className="h-9 w-28" />
+                <Skeleton className="h-9 w-24" />
               </div>
-              <div className="hidden h-11 w-52 animate-pulse rounded-xl bg-slate-100 lg:block" />
+              <Skeleton className="hidden h-9 w-52 lg:block" />
             </div>
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -386,9 +406,210 @@ function useMediaQuery(query: string) {
   );
 }
 
+type MonetizationPlanId = "clean" | "faucet" | "low" | "balanced" | "high" | "maximum";
+type AdDensity = "none" | "limited" | "maximum";
+
+function MonetizationPanel() {
+  const t = useTranslations("Links");
+  const [currentPlanId, setCurrentPlanId] = useState<MonetizationPlanId>("high");
+  const [pendingPlanId, setPendingPlanId] = useState<MonetizationPlanId | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const plans: Array<{
+    id: MonetizationPlanId;
+    profit: string;
+    steps: number;
+    ads: Record<"popup" | "banner" | "interstitial" | "notification", AdDensity>;
+  }> = [
+    { id: "clean", profit: "1%", steps: 1, ads: { popup: "limited", banner: "none", interstitial: "none", notification: "none" } },
+    { id: "faucet", profit: "20%", steps: 5, ads: { popup: "maximum", banner: "maximum", interstitial: "none", notification: "none" } },
+    { id: "low", profit: "20%", steps: 2, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
+    { id: "balanced", profit: "50%", steps: 3, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
+    { id: "high", profit: "80%", steps: 4, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
+    { id: "maximum", profit: "100%", steps: 5, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
+  ];
+  const adTypes = ["popup", "banner", "interstitial", "notification"] as const;
+  const payoutRates = [
+    { country: "unitedStates", code: "US", desktopBase: 12, mobileBase: 12 },
+    { country: "canada", code: "CA", desktopBase: 11, mobileBase: 11 },
+    { country: "unitedKingdom", code: "GB", desktopBase: 10, mobileBase: 10 },
+    { country: "germany", code: "DE", desktopBase: 8, mobileBase: 8 },
+    { country: "france", code: "FR", desktopBase: 8, mobileBase: 8 },
+    { country: "vietnam", code: "VN", desktopBase: 1.8, mobileBase: 1.5 },
+  ];
+  const currentPlan = plans.find((plan) => plan.id === currentPlanId) ?? plans[0];
+  const pendingPlan = plans.find((plan) => plan.id === pendingPlanId) ?? null;
+  const profitShare = Number.parseInt(currentPlan.profit, 10) / 100;
+  const formatCpm = (value: number) => `$${(value * profitShare).toFixed(2)}`;
+
+  const closeEnrollment = () => {
+    setPendingPlanId(null);
+    setAgreedToTerms(false);
+  };
+
+  const enroll = () => {
+    if (!pendingPlan || !agreedToTerms) return;
+    setCurrentPlanId(pendingPlan.id);
+    closeEnrollment();
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card className="gap-0 border-slate-200 bg-slate-50/80 px-4 py-3 shadow-none sm:flex-row sm:items-center sm:px-5">
+        <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
+          <Check className="size-4 shrink-0 text-emerald-600" />
+          <span>{t("monetization.currentPlan")}</span>
+          <strong className="truncate text-slate-950">{t(`monetization.plans.${currentPlan.id}.title`)}</strong>
+          <span className="hidden text-slate-400 sm:inline">·</span>
+          <span className="hidden sm:inline">{t("monetization.contextProfit", { profit: currentPlan.profit })}</span>
+          <span className="hidden text-slate-400 sm:inline">·</span>
+          <span className="hidden sm:inline">{t("monetization.contextSteps", { steps: currentPlan.steps })}</span>
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-500 sm:mt-0 sm:ml-auto sm:max-w-md sm:text-right">
+          {t("monetization.contextHint")}
+        </p>
+      </Card>
+
+      <section aria-labelledby="monetization-plans" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <h3 id="monetization-plans" className="sr-only">{t("monetization.plansTitle")}</h3>
+        {plans.map((plan) => {
+          const isCurrent = plan.id === currentPlanId;
+
+          return (
+            <Card
+              key={plan.id}
+              className={[
+                "gap-0 border p-0 shadow-sm transition-shadow duration-200 hover:shadow-md",
+                isCurrent ? "border-emerald-300 ring-1 ring-emerald-100" : "border-slate-200",
+              ].join(" ")}
+            >
+              <CardHeader className="px-5 pt-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg">{t(`monetization.plans.${plan.id}.title`)}</CardTitle>
+                    <CardDescription className="mt-1 leading-5">{t(`monetization.plans.${plan.id}.description`)}</CardDescription>
+                  </div>
+                  {isCurrent ? <Badge className="shrink-0 bg-emerald-600 hover:bg-emerald-600">{t("monetization.active")}</Badge> : null}
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-5 px-5 py-5">
+                <div className="grid grid-cols-2 divide-x rounded-lg border bg-slate-50/70">
+                  <div className="px-3 py-3">
+                    <p className="text-xs font-medium text-slate-500">{t("monetization.profit")}</p>
+                    <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{plan.profit}</p>
+                  </div>
+                  <div className="px-3 py-3">
+                    <p className="text-xs font-medium text-slate-500">{t("monetization.steps")}</p>
+                    <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{plan.steps}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("monetization.visitorExperience")}</p>
+                  {adTypes.map((adType) => {
+                    const density = plan.ads[adType];
+                    const isDisabled = density === "none";
+
+                    return (
+                      <div key={adType} className="flex items-center gap-3">
+                        <span className={isDisabled ? "grid size-7 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-400" : "grid size-7 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600"}>
+                          {isDisabled ? <CircleSlash className="size-4" /> : <Megaphone className="size-4" />}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800">{t(`monetization.ads.${adType}`)}</p>
+                          <p className="text-xs text-slate-500">{t(`monetization.adDensity.${density}`)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+
+              <CardFooter className="border-t px-5 py-4">
+                {isCurrent ? (
+                  <Button className="w-full bg-emerald-600 hover:bg-emerald-600" disabled><Check />{t("monetization.active")}</Button>
+                ) : (
+                  <Button type="button" variant="outline" className="w-full" onClick={() => setPendingPlanId(plan.id)}>
+                    <MonitorSmartphone />
+                    {t("monetization.enroll")}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </section>
+
+      <Card className="gap-0 overflow-hidden">
+        <CardHeader className="flex flex-col gap-3 border-b sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>{t("monetization.payoutTitle")}</CardTitle>
+            <CardDescription className="mt-1 leading-5">{t("monetization.payoutDescription")}</CardDescription>
+          </div>
+          <Badge variant="secondary" className="w-fit bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+            {t("monetization.contextProfit", { profit: currentPlan.profit })}
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[580px] text-sm">
+              <caption className="sr-only">{t("monetization.payoutTitle")}</caption>
+              <thead className="border-b bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th scope="col" className="px-5 py-3 text-left sm:px-6">{t("monetization.country")}</th>
+                  <th scope="col" className="px-5 py-3 text-right sm:px-6">{t("monetization.desktopCpm")}</th>
+                  <th scope="col" className="px-5 py-3 text-right sm:px-6">{t("monetization.mobileCpm")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {payoutRates.map((rate) => (
+                  <tr key={rate.country} className="transition-colors hover:bg-slate-50/80">
+                    <td className="px-5 py-3 sm:px-6">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={`https://flagcdn.com/w80/${rate.code.toLowerCase()}.png`}
+                          alt=""
+                          className="size-7 rounded-full border border-slate-200 bg-white object-cover"
+                        />
+                        <span className="font-medium text-slate-800">{t(`monetization.countries.${rate.country}`)}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700 sm:px-6">{formatCpm(rate.desktopBase)}</td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700 sm:px-6">{formatCpm(rate.mobileBase)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+        <CardFooter className="border-t bg-slate-50/60 px-5 py-3 text-xs leading-5 text-slate-500 sm:px-6">
+          {t("monetization.payoutNote")}
+        </CardFooter>
+      </Card>
+
+      <AlertDialog open={Boolean(pendingPlan)} onOpenChange={(open) => !open && closeEnrollment()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("monetization.confirmTitle", { plan: pendingPlan ? t(`monetization.plans.${pendingPlan.id}.title`) : "" })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("monetization.confirmDescription", { profit: pendingPlan?.profit ?? "", steps: pendingPlan?.steps ?? 0 })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <Label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/40 p-3 text-sm font-normal leading-5 text-slate-600">
+            <Checkbox checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked === true)} />
+            <span>{t("monetization.confirmTerms")}</span>
+          </Label>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeEnrollment}>{t("monetization.cancel")}</AlertDialogCancel>
+            <AlertDialogAction disabled={!agreedToTerms} onClick={enroll}>{t("monetization.confirmEnroll")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export function LinksView() {
   const t = useTranslations("Links");
-  const commonT = useTranslations("Common");
   const [links, setLinks] = useState<LinkDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -477,14 +698,15 @@ export function LinksView() {
   };
 
   const createLinkButton = (
-    <button
+    <Button
       type="button"
       onClick={() => setActiveTab("create")}
-      className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16)] transition hover:bg-blue-700"
+      size="lg"
+      className="h-11 rounded-xl bg-blue-600 px-4 font-semibold shadow-sm hover:bg-blue-700"
     >
-      <Plus size={16} />
+      <Plus />
       {t("createNew")}
-    </button>
+    </Button>
   );
 
   return (
@@ -500,45 +722,47 @@ export function LinksView() {
       {activeTab === "overview" ? (
         <div className="space-y-5">
           {error ? (
-            <EmptyState
-              title={t("loadErrorTitle")}
-              description={error}
-              action={
-                <AppButton>
-                  <Plus size={16} />
+            <Alert variant="destructive" className="rounded-2xl">
+              <AlertTitle>{t("loadErrorTitle")}</AlertTitle>
+              <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>{error}</span>
+                <AppButton variant="secondary" className="h-9 shrink-0 px-3">
                   {t("tryAgain")}
                 </AppButton>
-              }
-            />
+              </AlertDescription>
+            </Alert>
           ) : loading ? (
             <LinksSkeleton />
           ) : (
             <div className="space-y-5">
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:max-w-md">
-                  <Search size={16} className="text-slate-400" />
-                  <input
+              <Card className="flex flex-col gap-3 border-slate-200/80 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-input bg-background px-3 sm:max-w-md">
+                  <Search aria-hidden className="size-4 text-muted-foreground" />
+                  <Input
+                    aria-label={t("searchPlaceholder")}
                     value={filters.query}
                     onChange={(event) => updateFilter("query", event.target.value)}
-                    className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+                    className="h-8 border-0 bg-transparent px-0 text-sm font-medium shadow-none focus-visible:ring-0"
                     placeholder={t("searchPlaceholder")}
                   />
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <select
+                  <Select
                     value={filters.sort}
-                    onChange={(event) =>
-                      updateFilter("sort", event.target.value as LinkSort)
-                    }
-                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                    onValueChange={(value) => updateFilter("sort", value as LinkSort)}
                   >
-                    <option value="newest">{t("sort.newest")}</option>
-                    <option value="oldest">{t("sort.oldest")}</option>
-                    <option value="clicks-desc">{t("sort.clicksDesc")}</option>
-                    <option value="title-asc">{t("sort.titleAsc")}</option>
-                    <option value="actions-desc">{t("sort.actionsDesc")}</option>
-                  </select>
+                    <SelectTrigger className="h-10 w-full rounded-lg font-medium sm:w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">{t("sort.newest")}</SelectItem>
+                      <SelectItem value="oldest">{t("sort.oldest")}</SelectItem>
+                      <SelectItem value="clicks-desc">{t("sort.clicksDesc")}</SelectItem>
+                      <SelectItem value="title-asc">{t("sort.titleAsc")}</SelectItem>
+                      <SelectItem value="actions-desc">{t("sort.actionsDesc")}</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   <Drawer
                     key={filterDirection}
@@ -547,18 +771,19 @@ export function LinksView() {
                     direction={filterDirection}
                   >
                     <DrawerTrigger asChild>
-                      <button
+                      <Button
                         type="button"
-                        className="relative inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-slate-300 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
+                        variant="outline"
+                        className="relative h-10 rounded-lg px-4 font-semibold text-slate-600 hover:text-slate-950"
                       >
-                        <Filter size={16} />
+                        <Filter />
                         {t("filter")}
                         {activeFilterCount > 0 ? (
-                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-blue-600 px-1.5 text-[11px] font-black text-white">
+                          <Badge className="min-w-5 justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] text-white hover:bg-blue-600">
                             {activeFilterCount}
-                          </span>
+                          </Badge>
                         ) : null}
-                      </button>
+                      </Button>
                     </DrawerTrigger>
 
                     <DrawerContent
@@ -588,186 +813,140 @@ export function LinksView() {
                         ].join(" ")}
                       >
                         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-                          <label className="grid gap-2">
-                            <span className="text-sm font-bold text-slate-700">{t("status")}</span>
-                            <select
+                          <div className="grid gap-2">
+                            <Label htmlFor="links-status">{t("status")}</Label>
+                            <Select
                               value={filters.status}
-                              onChange={(event) =>
-                                updateFilter("status", event.target.value as LinkStatusFilter)
-                              }
-                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                              onValueChange={(value) => updateFilter("status", value as LinkStatusFilter)}
                             >
-                              <option value="all">{t("allStatus")}</option>
-                              <option value="active">{t("statusActive")}</option>
-                              <option value="inactive">{t("statusInactive")}</option>
-                              <option value="paused">{t("statusPaused")}</option>
-                            </select>
-                          </label>
+                              <SelectTrigger id="links-status" className="h-10 w-full rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t("allStatus")}</SelectItem>
+                                <SelectItem value="active">{t("statusActive")}</SelectItem>
+                                <SelectItem value="inactive">{t("statusInactive")}</SelectItem>
+                                <SelectItem value="paused">{t("statusPaused")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                          <label className="grid gap-2">
-                            <span className="text-sm font-bold text-slate-700">{t("type")}</span>
-                            <select
+                          <div className="grid gap-2">
+                            <Label htmlFor="links-type">{t("type")}</Label>
+                            <Select
                               value={filters.inputType}
-                              onChange={(event) =>
-                                updateFilter("inputType", event.target.value as LinkTypeFilter)
-                              }
-                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                              onValueChange={(value) => updateFilter("inputType", value as LinkTypeFilter)}
                             >
-                              <option value="all">{t("allTypes")}</option>
-                              <option value="url">{t("typeUrl")}</option>
-                              <option value="file">{t("typeFile")}</option>
-                              <option value="snippet">{t("typeSnippet")}</option>
-                            </select>
-                          </label>
+                              <SelectTrigger id="links-type" className="h-10 w-full rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t("allTypes")}</SelectItem>
+                                <SelectItem value="url">{t("typeUrl")}</SelectItem>
+                                <SelectItem value="file">{t("typeFile")}</SelectItem>
+                                <SelectItem value="snippet">{t("typeSnippet")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                          <label className="grid gap-2">
-                            <span className="text-sm font-bold text-slate-700">{t("platform")}</span>
-                            <select
+                          <div className="grid gap-2">
+                            <Label htmlFor="links-platform">{t("platform")}</Label>
+                            <Select
                               value={filters.platform}
-                              onChange={(event) => updateFilter("platform", event.target.value)}
-                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                              onValueChange={(value) => updateFilter("platform", value)}
                             >
-                              <option value="all">{t("allPlatforms")}</option>
-                              {platformOptions.map((platform) => (
-                                <option key={platform} value={platform}>
-                                  {platform}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                              <SelectTrigger id="links-platform" className="h-10 w-full rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t("allPlatforms")}</SelectItem>
+                                {platformOptions.map((platform) => (
+                                  <SelectItem key={platform} value={platform}>
+                                    {platform}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <label className="grid gap-2">
-                              <span className="text-sm font-bold text-slate-700">{t("fromDate")}</span>
-                              <input
+                            <div className="grid gap-2">
+                              <Label htmlFor="links-created-from">{t("fromDate")}</Label>
+                              <Input
+                                id="links-created-from"
                                 type="date"
                                 value={filters.createdFrom}
                                 onChange={(event) => updateFilter("createdFrom", event.target.value)}
-                                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                                className="h-10 rounded-lg font-medium"
                               />
-                            </label>
+                            </div>
 
-                            <label className="grid gap-2">
-                              <span className="text-sm font-bold text-slate-700">{t("toDate")}</span>
-                              <input
+                            <div className="grid gap-2">
+                              <Label htmlFor="links-created-to">{t("toDate")}</Label>
+                              <Input
+                                id="links-created-to"
                                 type="date"
                                 value={filters.createdTo}
                                 onChange={(event) => updateFilter("createdTo", event.target.value)}
-                                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none"
+                                className="h-10 rounded-lg font-medium"
                               />
-                            </label>
+                            </div>
                           </div>
 
-                          <label className="grid gap-2">
-                            <span className="text-sm font-bold text-slate-700">{t("minClicks")}</span>
-                            <input
+                          <div className="grid gap-2">
+                            <Label htmlFor="links-min-clicks">{t("minClicks")}</Label>
+                            <Input
+                              id="links-min-clicks"
                               type="number"
                               min={0}
                               value={filters.minClicks}
                               onChange={(event) => updateFilter("minClicks", event.target.value)}
                               placeholder={t("minClicksPlaceholder")}
-                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none placeholder:text-slate-400"
+                              className="h-10 rounded-lg font-medium"
                             />
-                          </label>
+                          </div>
 
-                          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-blue-200 hover:bg-blue-50">
-                            <input
-                              type="checkbox"
+                          <Label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:border-blue-200 hover:bg-blue-50">
+                            <Checkbox
                               checked={filters.highPerformance}
-                              onChange={(event) =>
-                                updateFilter("highPerformance", event.target.checked)
-                              }
-                              className="mt-1 size-4 rounded border-slate-300 text-blue-600"
+                              onCheckedChange={(checked) => updateFilter("highPerformance", checked === true)}
+                              className="mt-0.5"
                             />
                             <span>
-                              <span className="block text-sm font-bold text-slate-800">
+                              <span className="block text-sm font-semibold text-slate-800">
                                 {t("highPerformance")}
                               </span>
-                              <span className="mt-0.5 block text-xs font-semibold text-slate-500">
+                              <span className="mt-0.5 block text-xs font-medium text-slate-500">
                                 {t("highPerformanceDescription")}
                               </span>
                             </span>
-                          </label>
+                          </Label>
                         </div>
 
                         <div className="flex gap-2 border-t border-slate-200 bg-white px-5 py-4">
-                          <button
+                          <Button
                             type="button"
                             onClick={() => setFilters(defaultLinkFilters)}
-                            className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                            variant="outline"
+                            className="h-10 flex-1 rounded-lg font-semibold text-slate-600 hover:text-slate-950"
                           >
-                            <RotateCcw size={15} />
+                            <RotateCcw />
                             {t("reset")}
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button
                             type="button"
                             onClick={() => setFilterOpen(false)}
-                            className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-xl bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700"
+                            className="h-10 flex-1 rounded-lg bg-blue-600 px-3 font-semibold text-white hover:bg-blue-700"
                           >
                             {t("apply")}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </DrawerContent>
 	                  </Drawer>
 	                </div>
-	              </div>
-
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-600">
-                  <SlidersHorizontal size={16} className="text-blue-600" />
-                  <span>
-                    {t("showing", {
-                      first: firstItem,
-                      last: lastItem,
-                      total: filteredLinks.length,
-                    })}
-                  </span>
-                  {usingDemoData ? (
-                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
-                      {t("demoData")}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-500">{t("rows")}</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPage(1);
-                      setPageSize(Number(event.target.value));
-                    }}
-                    className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-sm font-bold text-slate-700 outline-none"
-                  >
-                    {pageSizeOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    disabled={safePage === 1}
-                    className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="min-w-16 text-center text-sm font-black text-slate-700">
-                    {safePage}/{totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    disabled={safePage === totalPages}
-                    className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              </Card>
 
               {sourceLinks.length === 0 ? (
                 <EmptyState
@@ -780,14 +959,16 @@ export function LinksView() {
                   title={t("notFound")}
                   description={t("notFoundDescription")}
                   action={
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setFilters(defaultLinkFilters)}
-                      className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                      variant="outline"
+                      size="lg"
+                      className="h-11 rounded-xl font-semibold text-slate-700"
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw />
                       {t("resetFilters")}
-                    </button>
+                    </Button>
                   }
                 />
               ) : (
@@ -797,6 +978,72 @@ export function LinksView() {
                   ))}
                 </section>
               )}
+
+
+              <Card className="flex flex-col gap-3 border-slate-200 px-4 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-600">
+                  <SlidersHorizontal className="size-4 text-blue-600" />
+                  <span>
+                    {t("showing", {
+                      first: firstItem,
+                      last: lastItem,
+                      total: filteredLinks.length,
+                    })}
+                  </span>
+                  {usingDemoData ? (
+                    <Badge variant="secondary" className="border-amber-100 bg-amber-50 text-amber-700">
+                      {t("demoData")}
+                    </Badge>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-500">{t("rows")}</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => {
+                      setPage(1);
+                      setPageSize(Number(value));
+                    }}
+                  >
+                    <SelectTrigger className="h-9 w-16 rounded-lg px-2 font-semibold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pageSizeOptions.map((option) => (
+                        <SelectItem key={option} value={String(option)}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={safePage === 1}
+                    variant="outline"
+                    size="icon"
+                    className="size-9 rounded-lg"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  <span className="min-w-16 text-center text-sm font-semibold text-slate-700" aria-live="polite">
+                    {safePage}/{totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    disabled={safePage === totalPages}
+                    variant="outline"
+                    size="icon"
+                    className="size-9 rounded-lg"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight />
+                  </Button>
+                </div>
+              </Card>
             </div>
           )}
         </div>
@@ -807,7 +1054,7 @@ export function LinksView() {
       ) : null}
 
       {activeTab === "monetization" ? (
-        <div className="space-y-5">{t("tabs.monetization")}: {commonT("comingSoon")}</div>
+        <MonetizationPanel />
       ) : null}
     </>
   );

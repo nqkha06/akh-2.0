@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { FilePickerCredenza } from "@/components/file-picker-credenza"
 import {
   Credenza,
   CredenzaBody,
@@ -55,13 +56,6 @@ import {
   UsersRound,
   Plus,
   Trash2,
-  UploadCloud,
-  ImageIcon,
-  ArrowDown,
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
   ChevronDown,
   ChevronUp,
   Settings,
@@ -801,7 +795,6 @@ export default function SocialLinksGenerator({
   const [snippetDraftId, setSnippetDraftId] = useState<string>(initialLink?.selectedSnippet || "")
   const [isSnippetDialogOpen, setIsSnippetDialogOpen] = useState(false)
   const [isCoverImageDialogOpen, setIsCoverImageDialogOpen] = useState(false)
-  const [coverImageDialogTab, setCoverImageDialogTab] = useState<"library" | "upload">("library")
   const [snippetDialogTab, setSnippetDialogTab] = useState<"existing" | "create">("existing")
   const [newSnippetName, setNewSnippetName] = useState("")
   const [newSnippetContent, setNewSnippetContent] = useState("")
@@ -1013,7 +1006,6 @@ export default function SocialLinksGenerator({
 
   const openCoverImageDialog = () => {
     setCoverFileError("")
-    setCoverImageDialogTab(coverImageFiles.length > 0 ? "library" : "upload")
     setIsCoverImageDialogOpen(true)
   }
 
@@ -1550,298 +1542,75 @@ export default function SocialLinksGenerator({
           </CardHeader>
         </Card>
 
-        <Credenza open={isFileDialogOpen} onOpenChange={setIsFileDialogOpen}>
-          <CredenzaContent>
-            <CredenzaHeader>
-              <CredenzaTitle>{t("fileDialogTitle")}</CredenzaTitle>
-            </CredenzaHeader>
+        <FilePickerCredenza
+          open={isFileDialogOpen}
+          onOpenChange={setIsFileDialogOpen}
+          title={t("fileDialogTitle")}
+          files={availableFiles}
+          isLoading={filesLoading}
+          error={fileError}
+          selectedFileId={selectedFile}
+          onSelect={selectStoredFile}
+          upload={{
+            isUploading: fileUploading,
+            label: t("uploadNewFile"),
+            uploadingLabel: t("uploading"),
+            onChange: handleUploadFile,
+          }}
+          labels={{
+            name: t("name"),
+            size: t("size"),
+            uploaded: t("uploaded"),
+            action: t("action"),
+            loading: t("loading"),
+            empty: t("noFiles"),
+            select: t("select"),
+            close: t("close"),
+          }}
+        />
 
-            <CredenzaBody className="space-y-5">
-              <label className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white transition-colors hover:bg-slate-800 focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2 sm:w-auto">
-                {fileUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                {fileUploading ? t("uploading") : t("uploadNewFile")}
-                <input
-                  type="file"
-                  className="sr-only"
-                  onChange={handleUploadFile}
-                  disabled={fileUploading}
-                />
-              </label>
-
-              {fileError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                  {fileError}
-                </div>
-              )}
-
-              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div className="border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  <div className="grid grid-cols-[minmax(0,1.6fr)_auto_auto_auto] items-center gap-4">
-                    <span>{t("name")}</span>
-                    <span>{t("size")}</span>
-                    <span>
-                      <span className="inline-flex items-center gap-1">
-                        {t("uploaded")}
-                        <ArrowDown className="h-4 w-4" />
-                      </span>
-                    </span>
-                    <span className="text-right">{t("action")}</span>
-                  </div>
-                </div>
-
-                <div className="max-h-[50vh] overflow-y-auto">
-                  {filesLoading ? (
-                    <div className="px-5 py-8 text-center text-gray-500">
-                      {t("loading")}
-                    </div>
-                  ) : availableFiles.length === 0 ? (
-                    <div className="px-5 py-8 text-center text-gray-500">
-                      {t("noFiles")}
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100">
-                      {availableFiles.map((file) => (
-                        <div
-                          key={file.id}
-                          className={`grid grid-cols-1 gap-3 px-5 py-4 sm:grid-cols-[minmax(0,1.6fr)_auto_auto_auto] sm:items-center sm:gap-4 ${selectedFile === file.id ? "bg-green-50" : "hover:bg-gray-50"
-                            }`}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-500">
-                              <ImageIcon className="h-5 w-5" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-gray-900">
-                                {file.name}
-                              </p>
-                              <p className="mt-0.5 text-xs text-gray-500 sm:hidden">{file.sizeLabel}</p>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-600">{file.sizeLabel}</div>
-                          <div className="text-sm text-gray-600">
-                            {new Intl.DateTimeFormat("vi-VN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            }).format(new Date(file.createdAt))}
-                          </div>
-                          <div className="flex justify-start sm:justify-end">
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => selectStoredFile(file)}
-                              className="w-full bg-green-600 text-white hover:bg-green-700 sm:w-auto"
-                            >
-                              {t("select")}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-end">
-                  <div className="flex items-center gap-2">
-                    <span>{t("itemsPerPage")}</span>
-                    <button
-                      type="button"
-                      className="flex h-9 min-w-16 items-center justify-between rounded-md border border-gray-200 bg-white px-3 text-gray-900"
-                    >
-                      10
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    </button>
-                  </div>
-                  <span className="sm:ml-6">
-                    {t("fileCount", { count: availableFiles.length })}
-                  </span>
-                  <div className="flex items-center gap-1 text-gray-400">
-                    <Button type="button" variant="ghost" size="icon-sm" disabled>
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" disabled>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" disabled>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" disabled>
-                      <ChevronsRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-            </CredenzaBody>
-
-            <CredenzaFooter>
+        <FilePickerCredenza
+          open={isCoverImageDialogOpen}
+          onOpenChange={setIsCoverImageDialogOpen}
+          title={t("coverDialogTitle")}
+          files={coverImageFiles}
+          isLoading={filesLoading}
+          error={coverFileError}
+          selectedFileId={coverImageFiles.find((file) => getFilePreviewUrl(file) === coverImageUrl)?.id}
+          onSelect={selectCoverImageFile}
+          upload={{
+            accept: "image/*",
+            isUploading: coverImageUploading,
+            label: t("uploadImage"),
+            uploadingLabel: t("uploading"),
+            onChange: handleCoverUploadFile,
+          }}
+          footer={
+            coverImageUrl ? (
               <Button
                 type="button"
-                variant="ghost"
-                onClick={() => setIsFileDialogOpen(false)}
-                className="h-10 px-4 font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                variant="outline"
+                onClick={() => {
+                  setCoverImageUrl("")
+                  setSameAsCoverImage(false)
+                  setIsCoverImageDialogOpen(false)
+                }}
               >
-                {t("close")}
+                {t("removeCover")}
               </Button>
-            </CredenzaFooter>
-          </CredenzaContent>
-        </Credenza>
-
-        <Credenza open={isCoverImageDialogOpen} onOpenChange={setIsCoverImageDialogOpen}>
-          <CredenzaContent>
-            <CredenzaHeader>
-              <CredenzaTitle>{t("coverDialogTitle")}</CredenzaTitle>
-            </CredenzaHeader>
-
-            <CredenzaBody>
-              {coverFileError && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                  {coverFileError}
-                </div>
-              )}
-
-              <Tabs value={coverImageDialogTab} onValueChange={(value) => setCoverImageDialogTab(value as "library" | "upload")}>
-                <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
-                  <TabsTrigger value="library" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    {t("myImages")}
-                  </TabsTrigger>
-                  <TabsTrigger value="upload" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    {t("upload")}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="library" className="mt-4">
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("uploadedImages")}</p>
-                        <p className="mt-0.5 text-sm text-gray-500">{t("imageCount", { count: coverImageFiles.length })}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCoverImageDialogTab("upload")}
-                        className="gap-2"
-                      >
-                        <UploadCloud className="h-4 w-4" />
-                        Upload
-                      </Button>
-                    </div>
-
-                    <div className="max-h-[52vh] overflow-y-auto">
-                      {filesLoading ? (
-                        <div className="flex items-center justify-center gap-2 px-5 py-10 text-sm font-medium text-gray-500">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {t("loading")}
-                        </div>
-                      ) : coverImageFiles.length === 0 ? (
-                        <div className="px-5 py-10 text-center">
-                          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-slate-100 text-slate-500">
-                            <FileImage className="h-6 w-6" />
-                          </div>
-                          <p className="mt-3 text-sm font-semibold text-gray-900">{t("noImages")}</p>
-                          <p className="mt-1 text-sm text-gray-500">{t("coverHint")}</p>
-                          <Button
-                            type="button"
-                            onClick={() => setCoverImageDialogTab("upload")}
-                            className="mt-4 gap-2 bg-slate-950 text-white hover:bg-slate-800"
-                          >
-                            <UploadCloud className="h-4 w-4" />
-                            {t("uploadImage")}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
-                          {coverImageFiles.map((file) => {
-                            const imageUrl = getFilePreviewUrl(file)
-                            const selected = coverImageUrl === imageUrl
-
-                            return (
-                              <button
-                                key={file.id}
-                                type="button"
-                                onClick={() => selectCoverImageFile(file)}
-                                className={[
-                                  "group overflow-hidden rounded-xl border bg-gray-50 text-left transition hover:bg-white",
-                                  selected ? "border-slate-950 ring-2 ring-slate-950/10" : "border-gray-200 hover:border-gray-300",
-                                ].join(" ")}
-                              >
-                                <div className="relative aspect-[4/3] w-full bg-gray-100">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={imageUrl}
-                                    alt={file.name}
-                                    className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-                                  />
-                                  {selected && (
-                                    <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-slate-950 text-white shadow-sm">
-                                      <Check className="h-4 w-4" />
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="space-y-1 px-3 py-2">
-                                  <p className="truncate text-sm font-semibold text-gray-900">{file.name}</p>
-                                  <p className="truncate text-xs text-gray-500">{file.sizeLabel}</p>
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="upload" className="mt-4">
-                  <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center transition hover:border-gray-400 hover:bg-white focus-within:ring-2 focus-within:ring-slate-950 focus-within:ring-offset-2">
-                    <span className="grid h-12 w-12 place-items-center rounded-xl bg-white text-slate-700 ring-1 ring-gray-200">
-                      {coverImageUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <UploadCloud className="h-6 w-6" />}
-                    </span>
-                    <span className="mt-4 text-sm font-bold text-gray-900">
-                      {coverImageUploading ? t("uploading") : t("coverUploadTitle")}
-                    </span>
-                    <span className="mt-1 max-w-sm text-sm text-gray-500">
-                      {t("coverUploadHint")}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={handleCoverUploadFile}
-                      disabled={coverImageUploading}
-                    />
-                  </label>
-                </TabsContent>
-              </Tabs>
-            </CredenzaBody>
-
-            <CredenzaFooter>
-              {coverImageUrl && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setCoverImageUrl("")
-                    setSameAsCoverImage(false)
-                    setIsCoverImageDialogOpen(false)
-                  }}
-                  className="h-10 px-4 font-semibold"
-                >
-                  {t("removeCover")}
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsCoverImageDialogOpen(false)}
-                className="h-10 px-4 font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              >
-                {t("close")}
-              </Button>
-            </CredenzaFooter>
-          </CredenzaContent>
-        </Credenza>
+            ) : null
+          }
+          labels={{
+            name: t("name"),
+            size: t("size"),
+            uploaded: t("uploaded"),
+            action: t("action"),
+            loading: t("loading"),
+            empty: t("noImages"),
+            select: t("select"),
+            close: t("close"),
+          }}
+        />
 
         <Credenza open={isSnippetDialogOpen} onOpenChange={setIsSnippetDialogOpen}>
           <CredenzaContent >

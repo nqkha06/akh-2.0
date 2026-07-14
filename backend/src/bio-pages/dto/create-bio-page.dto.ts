@@ -70,6 +70,20 @@ class BioAppearanceDto {
   @IsString()
   @MaxLength(800)
   backgroundImage?: string;
+
+  @IsOptional()
+  @IsIn(["image", "video", "youtube"])
+  backgroundMediaType?: "image" | "video" | "youtube";
+
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(800)
+  backgroundMediaUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  selectedBackgroundId?: string;
 }
 
 export class CreateBioPageDto {

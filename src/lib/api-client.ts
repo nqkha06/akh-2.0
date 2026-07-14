@@ -104,6 +104,9 @@ export type BioAppearanceDto = {
   buttonStyle: string;
   backgroundColor: string;
   backgroundImage?: string | null;
+  backgroundMediaType?: "image" | "video" | "youtube" | null;
+  backgroundMediaUrl?: string | null;
+  selectedBackgroundId?: string | null;
 };
 
 export type BioPageDto = {
@@ -407,6 +410,22 @@ export function getFilePreviewUrl(file: Pick<ManagedFileDto, "id">) {
 export async function createBioPage(payload: CreateBioPagePayload) {
   const response = await fetch(`${API_URL}/bio-pages`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as BioPageDto;
+}
+
+export async function updateBioPage(id: string, payload: CreateBioPagePayload) {
+  const response = await fetch(`${API_URL}/bio-pages/${id}`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },

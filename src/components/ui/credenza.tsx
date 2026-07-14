@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -15,6 +16,7 @@ import {
   Drawer,
   DrawerClose,
   DrawerContent,
+  DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
@@ -88,7 +90,7 @@ function CredenzaContent({ className, children, ...props }: CredenzaPartProps) {
     <Content
       {...(props as React.ComponentProps<typeof DialogContent>)}
       className={cn(
-        "overflow-hidden p-0",
+        "flex flex-col overflow-hidden p-0",
         isMobile
           ? "max-h-[92dvh] rounded-t-2xl"
           : "max-h-[min(90dvh,860px)] sm:max-w-3xl",
@@ -112,6 +114,12 @@ function CredenzaTitle({ className, ...props }: CredenzaPartProps) {
   return <Title {...props} className={cn("text-left", className)} />
 }
 
+function CredenzaDescription({ className, ...props }: CredenzaPartProps) {
+  const { isMobile } = useCredenza()
+  const Description = isMobile ? DrawerDescription : DialogDescription
+  return <Description {...props} className={cn("text-sm text-muted-foreground", className)} />
+}
+
 function CredenzaBody({ className, ...props }: CredenzaPartProps) {
   return (
     <div
@@ -132,6 +140,7 @@ export {
   CredenzaBody,
   CredenzaClose,
   CredenzaContent,
+  CredenzaDescription,
   CredenzaFooter,
   CredenzaHeader,
   CredenzaTitle,

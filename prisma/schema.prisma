@@ -93,6 +93,9 @@ model BioPage {
   buttonStyle     String   @default("rounded")
   backgroundColor String   @default("#ffffff")
   backgroundImage String?
+  backgroundMediaType String?
+  backgroundMediaUrl  String?
+  selectedBackgroundId String?
   socialLinksJson String   @default("[]")
   customLinksJson String   @default("[]")
   widgetsJson     String   @default("[]")

@@ -32,6 +32,13 @@ export class BioPagesService {
           backgroundImage: this.emptyToNull(
             createBioPageDto.appearance.backgroundImage,
           ),
+          backgroundMediaType: createBioPageDto.appearance.backgroundMediaType || null,
+          backgroundMediaUrl: this.emptyToNull(
+            createBioPageDto.appearance.backgroundMediaUrl,
+          ),
+          selectedBackgroundId: this.emptyToNull(
+            createBioPageDto.appearance.selectedBackgroundId,
+          ),
           socialLinksJson: JSON.stringify(createBioPageDto.socialLinks),
           customLinksJson: JSON.stringify(createBioPageDto.customLinks),
           widgetsJson: JSON.stringify(createBioPageDto.widgets),
@@ -50,6 +57,54 @@ export class BioPagesService {
 
       throw error;
     }
+  }
+
+  async update(id: string, updateBioPageDto: CreateBioPageDto) {
+    this.validatePayload(updateBioPageDto);
+
+    const existing = await this.prisma.bioPage.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException("Không tìm thấy bio page.");
+    }
+
+    const requestedSlug = updateBioPageDto.customSlug
+      ? this.slugify(updateBioPageDto.customSlug)
+      : existing.slug;
+
+    if (!requestedSlug) {
+      throw new BadRequestException("Slug bio không hợp lệ.");
+    }
+
+    if (requestedSlug !== existing.slug) {
+      const conflictingPage = await this.prisma.bioPage.findUnique({
+        where: { slug: requestedSlug },
+      });
+      if (conflictingPage) {
+        throw new ConflictException("Slug bio đã tồn tại.");
+      }
+    }
+
+    const bioPage = await this.prisma.bioPage.update({
+      where: { id },
+      data: {
+        slug: requestedSlug,
+        name: updateBioPageDto.name.trim(),
+        title: this.emptyToNull(updateBioPageDto.title),
+        status: updateBioPageDto.status || "published",
+        buttonStyle: updateBioPageDto.appearance.buttonStyle,
+        backgroundColor: updateBioPageDto.appearance.backgroundColor,
+        backgroundImage: this.emptyToNull(updateBioPageDto.appearance.backgroundImage),
+        backgroundMediaType: updateBioPageDto.appearance.backgroundMediaType || null,
+        backgroundMediaUrl: this.emptyToNull(updateBioPageDto.appearance.backgroundMediaUrl),
+        selectedBackgroundId: this.emptyToNull(updateBioPageDto.appearance.selectedBackgroundId),
+        socialLinksJson: JSON.stringify(updateBioPageDto.socialLinks),
+        customLinksJson: JSON.stringify(updateBioPageDto.customLinks),
+        widgetsJson: JSON.stringify(updateBioPageDto.widgets),
+        hiddenLinksJson: JSON.stringify(updateBioPageDto.hiddenLinks),
+      },
+    });
+
+    return this.toResponse(bioPage);
   }
 
   async findAll() {
@@ -175,6 +230,9 @@ export class BioPagesService {
         buttonStyle: bioPage.buttonStyle,
         backgroundColor: bioPage.backgroundColor,
         backgroundImage: bioPage.backgroundImage,
+        backgroundMediaType: bioPage.backgroundMediaType,
+        backgroundMediaUrl: bioPage.backgroundMediaUrl,
+        selectedBackgroundId: bioPage.selectedBackgroundId,
       },
       createdAt: bioPage.createdAt,
       updatedAt: bioPage.updatedAt,

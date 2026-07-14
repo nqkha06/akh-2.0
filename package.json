@@ -1,7 +1,7 @@
 {
   "name": "stu-v2.0",
   "version": "1.0.0",
-  "description": "Dashboard quản lý link SUB to unlock.",
+  "description": "",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   CircleHelp,
-  CloudUpload,
   Crown,
   Folder,
   Gauge,
@@ -15,11 +14,9 @@ import {
   Link2,
   LockKeyhole,
   Network,
-  Sparkles,
   Trophy,
   User,
   Wallet,
-  Zap,
   LogOut,
   Settings,
   CreditCard,
@@ -32,9 +29,19 @@ import { useTheme } from "next-themes";
 import { useLocale, useTranslations } from "next-intl";
 
 import { CreateLinkDialog } from "@/components/create-link-dialog";
+import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +54,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch"
 import {
@@ -58,46 +66,42 @@ import {
 const navGroups = [
   {
     labelKey: "groups.overview",
-    items: [{ href: "/", labelKey: "nav.overview", icon: Gauge }],
+    items: [{ href: "/member", labelKey: "nav.overview", icon: Gauge }],
   },
   {
     labelKey: "groups.monetization",
     items: [
-      { href: "/links", labelKey: "nav.links", icon: Link2 },
-      { href: "/files", labelKey: "nav.files", icon: Folder },
-      { href: "/bio", labelKey: "nav.bio", icon: Folder },
-      { href: "/levels", labelKey: "nav.levels", icon: Network },
-      { href: "/withdraw", labelKey: "nav.withdraw", icon: Wallet },
+      { href: "/member/links", labelKey: "nav.links", icon: Link2 },
+      { href: "/member/files", labelKey: "nav.files", icon: Folder },
+      { href: "/member/bio", labelKey: "nav.bio", icon: Folder },
+      { href: "/member/levels", labelKey: "nav.levels", icon: Network },
+      { href: "/member/withdraw", labelKey: "nav.withdraw", icon: Wallet },
     ],
   },
   {
     labelKey: "groups.community",
     items: [
-      { href: "/referrals", labelKey: "nav.referrals", icon: Gift },
-      // { href: "/new", labelKey: "nav.new", icon: Sparkles, badgeKey: "nav.new" },
-      { href: "/loyalty", labelKey: "nav.loyalty", icon: Trophy },
-      { href: "/leaderboard", labelKey: "nav.leaderboard", icon: Crown },
+      { href: "/member/rewards", labelKey: "nav.rewards", icon: Gift },
+      { href: "/member/referrals", labelKey: "nav.referrals", icon: Gift },
+      // { href: "/member/new", labelKey: "nav.new", icon: Sparkles, badgeKey: "nav.new" },
+      { href: "/member/loyalty", labelKey: "nav.loyalty", icon: Trophy },
+      { href: "/member/leaderboard", labelKey: "nav.leaderboard", icon: Crown },
     ],
   },
   {
     labelKey: "groups.accountSupport",
     items: [
-      { href: "/account", labelKey: "nav.account", icon: User },
-      { href: "/support", labelKey: "nav.support", icon: CircleHelp },
+      { href: "/member/account", labelKey: "nav.account", icon: User },
+      { href: "/member/support", labelKey: "nav.support", icon: CircleHelp },
     ],
   },
 ];
 
 type NavItemData = (typeof navGroups)[number]["items"][number];
 
-const partners = [
-  // { label: "VuotNhanh", icon: Zap, tone: "bg-amber-50 text-amber-700 ring-amber-100" },
-  // { label: "ZuFile", icon: CloudUpload, tone: "bg-blue-50 text-blue-700 ring-blue-100" },
-];
-
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-3">
+    <Link href="/member" className="flex items-center gap-3">
       <div className="grid size-10 place-items-center rounded-lg bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.18)]">
         <LockKeyhole size={24} strokeWidth={2.6} />
       </div>
@@ -112,7 +116,7 @@ function Logo() {
 }
 
 function isActivePath(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href;
+  return href === "/member" ? pathname === "/member" : pathname === href;
 }
 
 function NavItem({ item }: { item: NavItemData }) {
@@ -244,164 +248,298 @@ function Topbar() {
     changeLocale(nextLocale);
   };
 
+  const notifications = [
+    {
+      id: 1,
+      icon: Link2,
+      title: t("topbar.notificationItems.linkReadyTitle"),
+      description: t("topbar.notificationItems.linkReadyDescription"),
+      time: t("topbar.notificationItems.justNow"),
+      tone: "bg-blue-50 text-blue-600",
+      unread: true,
+    },
+    {
+      id: 2,
+      icon: Gauge,
+      title: t("topbar.notificationItems.performanceTitle"),
+      description: t("topbar.notificationItems.performanceDescription"),
+      time: t("topbar.notificationItems.hoursAgo"),
+      tone: "bg-emerald-50 text-emerald-600",
+      unread: true,
+    },
+    {
+      id: 3,
+      icon: Folder,
+      title: t("topbar.notificationItems.fileReadyTitle"),
+      description: t("topbar.notificationItems.fileReadyDescription"),
+      time: t("topbar.notificationItems.yesterday"),
+      tone: "bg-violet-50 text-violet-600",
+      unread: true,
+    },
+  ];
+  const unreadCount = notifications.length;
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-18 border-b border-slate-200/80 bg-white/90 backdrop-blur-2xl dark:border-slate-800/80 dark:bg-slate-950/80 lg:left-72">
-      <div className="flex h-full items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="min-w-0 lg:hidden">
-          <Logo />
-        </div>
-
-        <div className="hidden min-w-0 lg:block">
-          <div className="hidden lg:block">
-            <CreateLinkDialog />
-          </div>
-        </div>
-
-        <div className="ml-auto flex items-center gap-3">
-
-          <button
-            className="relative grid size-10 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-blue-600 hover:shadow-[0_2px_6px_rgba(15,23,42,0.08)]"
-            aria-label={t("topbar.notifications")}
-          >
-            <Bell size={20} strokeWidth={1.9} />
-            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-emerald-500" />
-          </button>
-
-          <div className="relative">
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <span className="grid size-10 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                    Q
-                  </span>
-                </button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                align="end"
-                className="w-64 border-slate-200 bg-white text-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
-              >
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        alt="@haydenbleasel"
-                        src="https://github.com/haydenbleasel.png"
-                      />
-                      <AvatarFallback>HB</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex flex-col space-y-1">
-                      <p className="font-medium text-sm leading-none">
-                        Hayden Bleasel
-                      </p>
-
-                      <div className="flex items-center gap-2">
-                        <p className="text-muted-foreground text-xs leading-none">
-                          example@email.com
-                        </p>
-
-                        <Badge className="w-fit text-xs" variant="secondary">
-                          Pro
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  className="flex items-center justify-between gap-4"
-                  onSelect={(event) => event.preventDefault()}
-                >
-                  <div className="flex items-center gap-2">
-                    {isDark ? <Moon /> : <Sun />}
-                    {t("topbar.theme")}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {isDark ? t("topbar.dark") : t("topbar.light")}
-                    </span>
-
-                    <Switch
-                      checked={isDark}
-                      onCheckedChange={(checked) =>
-                        setTheme(checked ? "dark" : "light")
-                      }
-                      aria-label={t("topbar.toggleDarkMode")}
-                    />
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    disabled={isChangingLocale}
-                    className="gap-2"
-                  >
-                    <Languages className="size-4" />
-
-                    <span className="flex-1">
-                      {t("topbar.language")}
-                    </span>
-
-                    <span className="mr-2 text-xs text-muted-foreground">
-                      {localeLabels[locale]}
-                    </span>
-                  </DropdownMenuSubTrigger>
-
-                  <DropdownMenuSubContent className="min-w-44">
-                    <DropdownMenuRadioGroup
-                      value={locale}
-                      onValueChange={handleLocaleChange}
-                    >
-                      {locales.map((item) => (
-                        <DropdownMenuRadioItem
-                          key={item}
-                          value={item}
-                          disabled={isChangingLocale}
-                        >
-                          {localeLabels[item]}
-                        </DropdownMenuRadioItem>
-                      ))}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem>
-                  <User />
-                  {t("topbar.editProfile")}
-                </DropdownMenuItem>
-
-                <DropdownMenuItem>
-                  <CreditCard />
-                  {t("topbar.subscription")}
-                </DropdownMenuItem>
-
-                <DropdownMenuItem>
-                  <Settings />
-                  {t("topbar.accountSettings")}
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem variant="destructive">
-                  <LogOut />
-                  {t("topbar.logout")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+    <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-border bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75 lg:left-72">
+    <div className="flex h-full items-center gap-3 px-4 sm:px-6 lg:px-8">
+      {/* Mobile logo */}
+      <div className="shrink-0 lg:hidden">
+        <Logo />
       </div>
-    </header>
+
+      {/* Desktop primary action */}
+      <div className="hidden min-w-0 lg:block">
+        <CreateLinkDialog />
+      </div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {/* Notifications */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-10 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+      aria-label={t("topbar.notifications")}
+    >
+      <span className="relative inline-flex">
+        <Bell className="size-5" strokeWidth={1.9} />
+
+        {unreadCount > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1 -top-1 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+          />
+        )}
+      </span>
+
+      <span className="sr-only">
+        {unreadCount} {t("topbar.unread")}
+      </span>
+    </Button>
+  </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="max-h-[min(32rem,calc(100vh-5rem))] w-[calc(100vw-2rem)] max-w-sm overflow-y-auto p-0"
+          >
+            <DropdownMenuLabel className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm font-semibold">
+                {t("topbar.notifications")}
+              </span>
+
+              <Badge className="rounded-full px-2 py-0.5 text-xs">
+                {unreadCount}
+              </Badge>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator className="my-0" />
+
+            {notifications.length > 0 ? (
+              notifications.map((notification) => {
+                const Icon = notification.icon;
+
+                return (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className="cursor-pointer items-start gap-3 rounded-none px-4 py-3 focus:bg-accent"
+                  >
+                    <span
+                      className={`grid size-9 shrink-0 place-items-center rounded-lg ${notification.tone}`}
+                    >
+                      <Icon className="size-4" aria-hidden="true" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {notification.title}
+                        </span>
+
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {notification.time}
+                        </span>
+                      </span>
+
+                      <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+                        {notification.description}
+                      </span>
+                    </span>
+
+                    {notification.unread !== false && (
+                      <span
+                        aria-hidden="true"
+                        className="mt-1.5 size-2 shrink-0 rounded-full bg-primary"
+                      />
+                    )}
+                  </DropdownMenuItem>
+                );
+              })
+            ) : (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                {t("topbar.noNotifications")}
+              </div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Account */}
+        <DropdownMenu>
+           <DropdownMenuTrigger asChild>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-11 overflow-visible rounded-full p-0"
+      aria-label="Menu"
+    >
+      <span className="relative inline-flex">
+        <Avatar className="size-10">
+          <AvatarImage
+            src="https://github.com/haydenbleasel.png"
+            alt="Hayden Bleasel"
+          />
+          <AvatarFallback>HB</AvatarFallback>
+        </Avatar>
+
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-background"
+        />
+      </span>
+    </Button>
+  </DropdownMenuTrigger>
+
+
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="w-72"
+          >
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-10">
+                  <AvatarImage
+                    src="https://github.com/haydenbleasel.png"
+                    alt="Hayden Bleasel"
+                  />
+                  <AvatarFallback>HB</AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium leading-none">
+                    Hayden Bleasel
+                  </p>
+
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      example@email.com
+                    </p>
+
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 text-[10px]"
+                    >
+                      Pro
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={(event) => event.preventDefault()}
+            >
+              {isDark ? (
+                <Moon className="size-4" aria-hidden="true" />
+              ) : (
+                <Sun className="size-4" aria-hidden="true" />
+              )}
+
+              <span className="flex-1">
+                {t("topbar.theme")}
+              </span>
+
+              <span className="text-xs text-muted-foreground">
+                {isDark ? t("topbar.dark") : t("topbar.light")}
+              </span>
+
+              <Switch
+                checked={isDark}
+                onCheckedChange={(checked) => {
+                  setTheme(checked ? "dark" : "light");
+                }}
+                aria-label={t("topbar.toggleDarkMode")}
+              />
+            </DropdownMenuItem>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger
+                disabled={isChangingLocale}
+                className="gap-2"
+              >
+                <Languages className="size-4" aria-hidden="true" />
+
+                <span className="flex-1">
+                  {t("topbar.language")}
+                </span>
+
+                <span className="mr-2 text-xs text-muted-foreground">
+                  {localeLabels[locale]}
+                </span>
+              </DropdownMenuSubTrigger>
+
+              <DropdownMenuSubContent className="min-w-44">
+                <DropdownMenuRadioGroup
+                  value={locale}
+                  onValueChange={handleLocaleChange}
+                >
+                  {locales.map((item) => (
+                    <DropdownMenuRadioItem
+                      key={item}
+                      value={item}
+                      disabled={isChangingLocale}
+                    >
+                      {localeLabels[item]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <User className="size-4" aria-hidden="true" />
+                {t("topbar.editProfile")}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                <CreditCard className="size-4" aria-hidden="true" />
+                {t("topbar.subscription")}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                <Settings className="size-4" aria-hidden="true" />
+                {t("topbar.accountSettings")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem variant="destructive">
+              <LogOut className="size-4" aria-hidden="true" />
+              {t("topbar.logout")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  </header>
   );
 }
 
@@ -413,13 +551,13 @@ function DashboardFooter() {
       <div className="flex flex-col gap-3 md:flex-row items-center md:justify-between">
         <p>© 2026 Rekonise.</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link href="/support" className="transition hover:text-slate-950">
+          <Link href="/member/support" className="transition hover:text-slate-950">
             {t("nav.support")}
           </Link>
-          <Link href="/account" className="transition hover:text-slate-950">
+          <Link href="/member/account" className="transition hover:text-slate-950">
             {t("nav.account")}
           </Link>
-          <Link href="/leaderboard" className="transition hover:text-slate-950">
+          <Link href="/member/leaderboard" className="transition hover:text-slate-950">
             {t("nav.leaderboard")}
           </Link>
         </div>
@@ -430,17 +568,47 @@ function DashboardFooter() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <main className="min-h-screen bg-white pb-20 text-slate-900 dark:bg-slate-950 dark:text-slate-100 lg:pb-0">
       <Sidebar />
       <Topbar />
       <section className="flex min-h-screen flex-col pt-18 lg:ml-72">
         <div className="flex-1 px-4 pb-12 pt-6 sm:px-6 lg:px-8">{children}</div>
         <DashboardFooter />
       </section>
+      <MobileBottomNav />
     </main>
   );
 }
 
-export function DashboardShell({ children }: { children: ReactNode }) {
-  return <AppLayout>{children}</AppLayout>;
+function DashboardBreadcrumb({ title }: { title: string }) {
+  return (
+    <Breadcrumb className="mb-2">
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href="/member">Home</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>{title}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
+export function DashboardShell({
+  children,
+  pageTitle,
+}: {
+  children: ReactNode;
+  pageTitle: string;
+}) {
+  return (
+    <AppLayout>
+      <DashboardBreadcrumb title={pageTitle} />
+      {children}
+    </AppLayout>
+  );
 }

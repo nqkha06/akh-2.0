@@ -5,8 +5,6 @@ import { Toaster } from "sonner";
 import { getLocale } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
 import { cn } from "@/lib/utils";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav";
 import { ThemeProvider } from "../components/theme-provider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -34,9 +32,8 @@ export default async function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div className="pb-24 lg:pb-0">{children}</div>
+            {children}
             <Toaster position="top-right" />
-            <MobileBottomNav />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
