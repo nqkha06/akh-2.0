@@ -205,7 +205,7 @@ function getLinkButtonClass(buttonStyle: string) {
     case "neon-outline":
       return `${base} rounded-full border-2 border-cyan-300 bg-slate-950 text-white shadow-[0_0_30px_rgba(34,211,238,0.34)] hover:border-cyan-200 hover:bg-slate-900`;
     case "compact-sharp":
-      return `${base} rounded-md border border-slate-300 bg-white px-3 py-3 text-slate-950 shadow-sm hover:border-slate-500 hover:bg-slate-50`;
+      return `${base} !min-h-12 rounded-md border border-slate-300 bg-white px-3 py-3 text-slate-950 shadow-sm hover:border-slate-500 hover:bg-slate-50`;
     default:
       return `${base} rounded-full border border-slate-950 bg-slate-950 text-white shadow-[0_18px_52px_rgba(15,23,42,0.18)] hover:bg-slate-800`;
   }

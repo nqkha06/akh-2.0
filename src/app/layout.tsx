@@ -31,7 +31,7 @@ export default async function RootLayout({
     <html lang={locale} className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             {children}
             <Toaster position="top-right" />
           </ThemeProvider>

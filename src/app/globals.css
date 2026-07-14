@@ -5,6 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 64px;
+  --header-height: 60px;
   --muted: oklch(0.97 0 0);
   --line: #e8ebf2;
   --panel: #ffffff;
@@ -18,7 +21,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.55 0.205 258);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -28,7 +31,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.55 0.205 258);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -37,7 +40,7 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.55 0.205 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -68,25 +71,47 @@ a {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
 
-/*
- * Temporarily disabled so application motion still plays while testing.
- * Re-enable this block to respect the operating system's Reduce Motion setting.
- *
- * @media (prefers-reduced-motion: reduce) {
- *   *,
- *   *::before,
- *   *::after {
- *     scroll-behavior: auto !important;
- *     transition-duration: 0.01ms !important;
- *     animation-duration: 0.01ms !important;
- *     animation-iteration-count: 1 !important;
- *   }
- * }
- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.dashboard-sidebar-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.dashboard-sidebar-scroll:hover {
+  scrollbar-color: color-mix(in oklab, var(--sidebar-foreground) 24%, transparent) transparent;
+}
+
+.dashboard-sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dashboard-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-sidebar-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.dashboard-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--sidebar-foreground) 24%, transparent);
+}
 
 @theme inline {
   --font-heading: var(--font-sans);
@@ -138,8 +163,8 @@ input:focus-visible {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.65 0.18 258);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -149,7 +174,7 @@ input:focus-visible {
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.65 0.18 258);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -157,7 +182,7 @@ input:focus-visible {
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.65 0.18 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);

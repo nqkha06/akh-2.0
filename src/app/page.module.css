@@ -100,7 +100,7 @@
 .integrationStrip h2 { max-width: 1040px; margin: 0; color: var(--text); font-family: inherit; font-size: clamp(18px, 1.6vw, 24px); font-weight: 600; line-height: 1.1; letter-spacing: -.035em; text-align: center; text-wrap: balance; }
 .integrationStrip h2 span { color: #00a85a; }
 .platformMarquee { width: 100%; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
-.platformMarqueeTrack { width: max-content; display: flex; animation: platform-marquee 28s linear infinite; animation-play-state: running; will-change: transform; }
+.platformMarqueeTrack { width: max-content; display: flex; animation: platform-marquee 50s linear infinite; animation-play-state: running; will-change: transform; }
 .platformMarqueeGroup { padding-right: 38px; display: flex; flex: none; align-items: center; gap: 38px; }
 .platformLogo { display: flex; flex: none; align-items: center; gap: 10px; color: var(--platform-color); opacity: .86; white-space: nowrap; }
 .platformLogo svg { width: 32px; height: 32px; flex: none; }
@@ -470,7 +470,7 @@
   .heroVisual::before { width: 470px; height: 470px; }
   .platformFloat { display: none; }
   .clickBadge { left: 0; }
-  .integrationStrip { padding: 28px 0 26px; }
+  .integrationStrip { padding: 50px 0 45px; }
   .integrationStrip .container { width: 100%; gap: 22px; }
   .integrationStrip h2 { padding: 0 20px; font-size: clamp(17px, 4.9vw, 20px); line-height: 1.15; letter-spacing: -.025em; }
   .platformMarqueeGroup { padding-right: 24px; gap: 24px; }
@@ -514,6 +514,6 @@
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .platformMarquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
-  .platformMarqueeTrack { animation: platform-marquee 28s linear infinite !important; animation-duration: 28s !important; animation-iteration-count: infinite !important; animation-play-state: running !important; will-change: transform; }
+  .platformMarqueeTrack { animation: platform-marquee 50s linear infinite !important; animation-duration: 50s !important; animation-iteration-count: infinite !important; animation-play-state: running !important; will-change: transform; }
   .platformMarqueeGroup[aria-hidden="true"] { display: flex; }
 }

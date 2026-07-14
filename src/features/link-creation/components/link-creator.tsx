@@ -5,10 +5,10 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FilePickerCredenza } from "@/components/file-picker-credenza"
+import { SnippetPickerCredenza } from "./snippet-picker-credenza"
 import {
   Credenza,
   CredenzaBody,
@@ -31,12 +31,14 @@ import {
 import {
   checkLinkAliasAvailability,
   createSnippet,
+  deleteSnippet,
   createLink,
   getFileDownloadUrl,
   getFilePreviewUrl,
   getFiles,
   getSnippets,
   uploadFile,
+  updateSnippet,
   updateLink,
   type LinkDto,
   type ManagedFileDto,
@@ -44,6 +46,7 @@ import {
 } from "@/lib/api-client"
 import {
   Link,
+  FileCode2,
   FileImage,
   MessageCircle,
   MessageSquare,
@@ -791,13 +794,11 @@ export default function SocialLinksGenerator({
   const [coverFileError, setCoverFileError] = useState("")
   const [snippets, setSnippets] = useState<SnippetDto[]>([])
   const [snippetsLoading, setSnippetsLoading] = useState(false)
+  const [snippetsLoaded, setSnippetsLoaded] = useState(false)
+  const [snippetError, setSnippetError] = useState("")
   const [selectedSnippet, setSelectedSnippet] = useState<string>(initialLink?.selectedSnippet || "")
-  const [snippetDraftId, setSnippetDraftId] = useState<string>(initialLink?.selectedSnippet || "")
   const [isSnippetDialogOpen, setIsSnippetDialogOpen] = useState(false)
   const [isCoverImageDialogOpen, setIsCoverImageDialogOpen] = useState(false)
-  const [snippetDialogTab, setSnippetDialogTab] = useState<"existing" | "create">("existing")
-  const [newSnippetName, setNewSnippetName] = useState("")
-  const [newSnippetContent, setNewSnippetContent] = useState("")
   const [actions, setActions] = useState<SocialAction[]>(initialActions)
   const [isActionModalOpen, setIsActionModalOpen] = useState(false)
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false)
@@ -877,24 +878,17 @@ export default function SocialLinksGenerator({
     }
   }, [loadAvailableFiles])
 
-  useEffect(() => {
-    let mounted = true
-
-    async function loadSnippets() {
-      try {
-        setSnippetsLoading(true)
-        const data = await getSnippets()
-        if (mounted) setSnippets(data)
-      } catch (error) {
-        if (mounted) toast.error(error instanceof Error ? error.message : t("snippetLoadFailed"))
-      } finally {
-        if (mounted) setSnippetsLoading(false)
-      }
-    }
-
-    void loadSnippets()
-    return () => {
-      mounted = false
+  const loadSnippets = useCallback(async () => {
+    try {
+      setSnippetsLoading(true)
+      setSnippetError("")
+      const data = await getSnippets()
+      setSnippets(data)
+      setSnippetsLoaded(true)
+    } catch (error) {
+      setSnippetError(error instanceof Error ? error.message : t("snippetLoadFailed"))
+    } finally {
+      setSnippetsLoading(false)
     }
   }, [t])
 
@@ -1053,24 +1047,19 @@ export default function SocialLinksGenerator({
     toast.success(t("youtubeSelected"))
   }
 
-  const handleCoverUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-
-    if (!file) {
-      return
-    }
+  const uploadCoverFiles = async (files: File[]) => {
+    const file = files[0]
+    if (!file) return
 
     const extension = file.name.split(".").pop()?.toLowerCase() || ""
 
     if (!file.type.startsWith("image/") && !COVER_IMAGE_EXTENSIONS.includes(extension)) {
       setCoverFileError(t("coverMustImage"))
-      event.target.value = ""
       return
     }
 
     if (file.size > COVER_IMAGE_MAX_SIZE) {
       setCoverFileError(t("coverMaxSize"))
-      event.target.value = ""
       return
     }
 
@@ -1086,69 +1075,75 @@ export default function SocialLinksGenerator({
       setCoverFileError(error instanceof Error ? error.message : t("uploadCoverFailed"))
     } finally {
       setCoverImageUploading(false)
-      event.target.value = ""
     }
+  }
+
+  const handleCoverUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    await uploadCoverFiles(Array.from(event.target.files || []))
+    event.target.value = ""
   }
 
   const openSnippetDialog = () => {
-    setSnippetDraftId(selectedSnippet)
-    setSnippetDialogTab("existing")
     setIsSnippetDialogOpen(true)
+    if (!snippetsLoaded && !snippetsLoading) void loadSnippets()
   }
 
-  const useExistingSnippet = () => {
-    if (!snippetDraftId) {
-      return
-    }
-
-    setSelectedSnippet(snippetDraftId)
+  const selectSnippet = (snippet: SnippetDto) => {
+    setSelectedSnippet(snippet.id)
     setIsSnippetDialogOpen(false)
   }
 
-  const createAndUseSnippet = async () => {
-    const content = newSnippetContent.trim()
-    const name = newSnippetName.trim() || content.slice(0, 36) || "Untitled snippet"
-
-    if (!content) {
-      return
-    }
-
-    try {
-      const snippet = await createSnippet({ name, content })
-      setSnippets((current) => [snippet, ...current])
-      setSelectedSnippet(snippet.id)
-      setSnippetDraftId(snippet.id)
-      setNewSnippetName("")
-      setNewSnippetContent("")
-      setIsSnippetDialogOpen(false)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("snippetCreateFailed"))
-    }
+  const createSnippetItem = async (payload: { name?: string; content: string }) => {
+    const snippet = await createSnippet(payload)
+    setSnippets((current) => [snippet, ...current])
+    return snippet
   }
 
-  const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const updateSnippetItem = async (
+    id: string,
+    payload: { name?: string; content?: string },
+  ) => {
+    const snippet = await updateSnippet(id, payload)
+    setSnippets((current) => current.map((item) => item.id === id ? snippet : item))
+    return snippet
+  }
 
-    if (!file) {
-      return
-    }
+  const deleteSnippetItem = async (id: string) => {
+    await deleteSnippet(id)
+    setSnippets((current) => current.filter((snippet) => snippet.id !== id))
+    if (selectedSnippet === id) setSelectedSnippet("")
+  }
+
+  const uploadDestinationFiles = async (files: File[]) => {
+    if (files.length === 0) return
 
     try {
       setFileUploading(true)
-      const uploaded = await uploadFile(file)
-      setAvailableFiles((current) => [uploaded, ...current])
-      setSelectedFile(uploaded.id)
-      setSelectedFileName(uploaded.name)
-      setSelectedFileUrl(getFileDownloadUrl(uploaded))
+      const uploadedFiles: ManagedFileDto[] = []
+
+      for (const file of files) {
+        const uploaded = await uploadFile(file)
+        uploadedFiles.push(uploaded)
+        window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }))
+      }
+
+      const selectedUpload = uploadedFiles[0]
+      setAvailableFiles((current) => [...uploadedFiles, ...current])
+      setSelectedFile(selectedUpload.id)
+      setSelectedFileName(selectedUpload.name)
+      setSelectedFileUrl(getFileDownloadUrl(selectedUpload))
       setIsFileDialogOpen(false)
       setFileError("")
-      window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }))
     } catch (error) {
       setFileError(error instanceof Error ? error.message : t("uploadFileFailed"))
     } finally {
       setFileUploading(false)
-      event.target.value = ""
     }
+  }
+
+  const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    await uploadDestinationFiles(Array.from(event.target.files || []))
+    event.target.value = ""
   }
 
   const clearSelectedFile = () => {
@@ -1361,24 +1356,27 @@ export default function SocialLinksGenerator({
   return (
 
     <div
-      className={`${embedded ? "w-full" : "max-w-6xl mx-auto"} grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}
+      className={`${embedded ? "w-full" : "mx-auto max-w-6xl"} grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] lg:items-start`}
     >
       {/* Left Panel - Form */}
-      <div className="min-w-0 space-y-6">
-        <Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader className="space-y-4">
+      <div className="min-w-0 space-y-4">
+        <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
+          <CardHeader className="space-y-4 px-4 py-4 sm:px-5">
 
             <Tabs
               value={inputType}
-              onValueChange={(value) =>
+              onValueChange={(value) => {
                 setInputType(value as "url" | "file" | "snippet")
-              }
+                if (value === "snippet" && !snippetsLoaded && !snippetsLoading) {
+                  void loadSnippets()
+                }
+              }}
               className="w-full min-w-0 !gap-0"
             >
-              <TabsList className="!grid !h-12 !w-full !min-w-0 !grid-cols-3 !items-stretch !justify-stretch gap-1 overflow-hidden rounded-xl bg-slate-100 p-1">
+              <TabsList variant="line" className="!grid !h-10 !w-full !min-w-0 !grid-cols-3 !items-stretch !justify-stretch gap-0 rounded-none border-b border-border bg-transparent p-0">
                 <TabsTrigger
                   value="url"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
                 >
                   <Link className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.url")}</span>
@@ -1386,7 +1384,7 @@ export default function SocialLinksGenerator({
 
                 <TabsTrigger
                   value="file"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
                 >
                   <FileImage className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.file")}</span>
@@ -1394,7 +1392,7 @@ export default function SocialLinksGenerator({
 
                 <TabsTrigger
                   value="snippet"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-lg !border-0 !px-2 !py-0 text-sm font-medium text-slate-500 !shadow-none transition-colors [&::after]:!hidden hover:bg-transparent hover:text-slate-900 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 data-[state=active]:!bg-slate-950 data-[state=active]:!text-white data-[state=active]:!shadow-none"
+                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
                 >
                   <MessageSquare className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.snippet")}</span>
@@ -1405,17 +1403,17 @@ export default function SocialLinksGenerator({
 
 
               {/* URL Tab */}
-              <TabsContent value="url" className="space-y-4 mt-4">
+              <TabsContent value="url" className="mt-4 space-y-3">
                 <div>
                   <Input
                     placeholder={t("destinationUrlPlaceholder")}
                     value={destinationUrl}
                     onChange={(e) => setDestinationUrl(e.target.value)}
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${destinationUrl.length > 0 && !isDestinationUrlValid ? "border-red-500" : ""
+                    className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${destinationUrl.length > 0 && !isDestinationUrlValid ? "border-destructive" : ""
                       }`}
                   />
                   {destinationUrl.length > 0 && !isDestinationUrlValid && (
-                    <p className="text-red-500 text-sm mt-1">{t("invalidUrl")}</p>
+                    <p className="mt-1 text-sm text-destructive">{t("invalidUrl")}</p>
                   )}
                 </div>
                 <div>
@@ -1423,27 +1421,27 @@ export default function SocialLinksGenerator({
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
                 </div>
               </TabsContent>
 
               {/* File Tab */}
-              <TabsContent value="file" className="space-y-4 mt-4">
+              <TabsContent value="file" className="mt-4 space-y-3">
                 <div className="flex items-stretch gap-2">
                   <button
                     type="button"
                     onClick={() => setIsFileDialogOpen(true)}
-                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30"
                   >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
                       <FileImage className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-gray-900">
+                      <span className="block text-sm font-medium text-foreground">
                         {selectedFileName ? t("fileSelected") : t("selectFile")}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                         {selectedFileName
                           ? selectedFileName
                           : t("fileHint")}
@@ -1465,7 +1463,7 @@ export default function SocialLinksGenerator({
                             clearSelectedFile()
                           }
                         }}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                        className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         <X className="h-3.5 w-3.5" />
                       </span>
@@ -1477,27 +1475,27 @@ export default function SocialLinksGenerator({
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
                 </div>
               </TabsContent>
 
               {/* Snippet Tab */}
-              <TabsContent value="snippet" className="space-y-4 mt-4">
+              <TabsContent value="snippet" className="mt-4 space-y-3">
                 <div className="flex items-stretch gap-2">
                   <button
                     type="button"
                     onClick={openSnippetDialog}
-                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30"
                   >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
                       <MessageSquare className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-gray-900">
+                      <span className="block text-sm font-medium text-foreground">
                         {selectedSnippetData ? t("snippetSelected") : t("selectSnippet")}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                         {selectedSnippetData
                           ? `${selectedSnippetData.name} · ${formatSnippetSize(selectedSnippetData.content)}`
                           : t("snippetHint")}
@@ -1511,17 +1509,15 @@ export default function SocialLinksGenerator({
                         onClick={(event) => {
                           event.stopPropagation()
                           setSelectedSnippet("")
-                          setSnippetDraftId("")
                         }}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault()
                             event.stopPropagation()
                             setSelectedSnippet("")
-                            setSnippetDraftId("")
                           }
                         }}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                        className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       >
                         <X className="h-3.5 w-3.5" />
                       </span>
@@ -1534,7 +1530,7 @@ export default function SocialLinksGenerator({
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
                 </div>
               </TabsContent>
@@ -1546,6 +1542,8 @@ export default function SocialLinksGenerator({
           open={isFileDialogOpen}
           onOpenChange={setIsFileDialogOpen}
           title={t("fileDialogTitle")}
+          description={t("filePickerDescription")}
+          mode="destination"
           files={availableFiles}
           isLoading={filesLoading}
           error={fileError}
@@ -1555,7 +1553,9 @@ export default function SocialLinksGenerator({
             isUploading: fileUploading,
             label: t("uploadNewFile"),
             uploadingLabel: t("uploading"),
+            multiple: true,
             onChange: handleUploadFile,
+            onFiles: uploadDestinationFiles,
           }}
           labels={{
             name: t("name"),
@@ -1566,6 +1566,22 @@ export default function SocialLinksGenerator({
             empty: t("noFiles"),
             select: t("select"),
             close: t("close"),
+            search: t("searchFiles"),
+            allTypes: t("allTypes"),
+            images: t("images"),
+            videos: t("videos"),
+            documents: t("documents"),
+            other: t("otherFiles"),
+            newest: t("newest"),
+            oldest: t("oldest"),
+            nameSort: t("nameSort"),
+            sizeSort: t("sizeSort"),
+            noResults: t("noFileResults"),
+            clearSearch: t("clearFilters"),
+            preview: t("preview"),
+            dragHint: t("dragFilesHint"),
+            browseHint: t("browseFilesHint"),
+            fileCount: (count) => t("fileCount", { count }),
           }}
         />
 
@@ -1573,6 +1589,8 @@ export default function SocialLinksGenerator({
           open={isCoverImageDialogOpen}
           onOpenChange={setIsCoverImageDialogOpen}
           title={t("coverDialogTitle")}
+          description={t("coverHint")}
+          mode="cover"
           files={coverImageFiles}
           isLoading={filesLoading}
           error={coverFileError}
@@ -1584,6 +1602,7 @@ export default function SocialLinksGenerator({
             label: t("uploadImage"),
             uploadingLabel: t("uploading"),
             onChange: handleCoverUploadFile,
+            onFiles: uploadCoverFiles,
           }}
           footer={
             coverImageUrl ? (
@@ -1609,186 +1628,56 @@ export default function SocialLinksGenerator({
             empty: t("noImages"),
             select: t("select"),
             close: t("close"),
+            search: t("searchImages"),
+            allTypes: t("allTypes"),
+            images: t("images"),
+            newest: t("newest"),
+            oldest: t("oldest"),
+            nameSort: t("nameSort"),
+            sizeSort: t("sizeSort"),
+            noResults: t("noImageResults"),
+            clearSearch: t("clearFilters"),
+            preview: t("preview"),
+            dragHint: t("dragImageHint"),
+            browseHint: t("coverUploadHint"),
+            fileCount: (count) => t("imageCount", { count }),
           }}
         />
 
-        <Credenza open={isSnippetDialogOpen} onOpenChange={setIsSnippetDialogOpen}>
-          <CredenzaContent >
-            <CredenzaHeader>
-              <CredenzaTitle>{t("snippetDialogTitle")}</CredenzaTitle>
-            </CredenzaHeader>
-
-            <CredenzaBody>
-            <Tabs
-              value={snippetDialogTab}
-              onValueChange={(value) => setSnippetDialogTab(value as "existing" | "create")}
-              className="min-h-96 w-full"
-            >
-              <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
-                <TabsTrigger
-                  value="existing"
-                  className="min-h-10 rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm"
-                >
-                  {t("useExisting")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="create"
-                  className="min-h-10 rounded-lg data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm"
-                >
-                  {t("createNew")}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="existing" className="mt-4">
-                <div className="rounded-2xl border border-gray-200 bg-white p-3 text-gray-900 shadow-sm">
-                  <div className="mb-3 grid grid-cols-1 gap-2 text-xs uppercase tracking-wide text-gray-500 sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:px-2">
-                    <span>{t("preview")}</span>
-                    <span className="hidden sm:block">{t("size")}</span>
-                    <span className="hidden sm:block">{t("copies")}</span>
-                    <span className="hidden sm:block">{t("created")}</span>
-                  </div>
-
-                  <div className="max-h-[50vh] overflow-y-auto rounded-xl">
-                    <div className="divide-y divide-white/5">
-                      {snippetsLoading ? (
-                        <div className="px-3 py-8 text-center text-sm text-gray-500">
-                          {t("loading")}
-                        </div>
-                      ) : snippets.length === 0 ? (
-                        <div className="px-3 py-8 text-center text-sm text-gray-500">
-                          {t("snippetHint")}
-                        </div>
-                      ) : snippets.map((snippet) => {
-                        const selected = snippetDraftId === snippet.id
-
-                        return (
-                          <button
-                            key={snippet.id}
-                            type="button"
-                            onClick={() => setSnippetDraftId(snippet.id)}
-                            className={`grid w-full grid-cols-1 gap-3 px-3 py-4 text-left transition sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:items-center sm:gap-4 ${selected ? "bg-emerald-50 ring-1 ring-emerald-200" : "hover:bg-gray-50"
-                              }`}
-                          >
-                            <div className="flex min-w-0 items-start gap-3">
-                              <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${selected ? "bg-emerald-500" : "bg-gray-300"}`} />
-                              <div className="min-w-0">
-                                <p className="truncate font-mono text-xs text-gray-900">
-                                  {snippet.content}
-                                </p>
-                                <p className="mt-1 text-xs font-medium text-gray-500">
-                                  {snippet.name}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-sm text-gray-600 sm:text-xs">
-                              <span className="sm:hidden text-gray-500">{t("size")}: </span>
-                              {formatSnippetSize(snippet.content)}
-                            </div>
-                            <div className="text-sm text-gray-600 sm:text-xs">
-                              <span className="sm:hidden text-gray-500">{t("copies")}: </span>
-                              {snippet.copies}
-                            </div>
-                            <div className="text-sm text-gray-600 sm:text-xs">
-                              <span className="sm:hidden text-gray-500">{t("created")}: </span>
-                              {new Intl.DateTimeFormat("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }).format(new Date(snippet.createdAt))}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="create" className="mt-4">
-                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-800">
-                      {t("snippetName")}
-                    </label>
-                    <Input
-                      value={newSnippetName}
-                      onChange={(event) => setNewSnippetName(event.target.value)}
-                      placeholder={t("snippetNamePlaceholder")}
-                      className="h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-800">
-                      {t("codeOrText")}
-                    </label>
-                    <Textarea
-                      value={newSnippetContent}
-                      onChange={(event) => setNewSnippetContent(event.target.value)}
-                      placeholder={t("snippetContentPlaceholder")}
-                      className="min-h-48 resize-y font-mono text-sm"
-                    />
-                    <p className="mt-2 text-xs font-medium text-slate-500">
-                      Size: {formatSnippetSize(newSnippetContent)}
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-            </CredenzaBody>
-
-            <CredenzaFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsSnippetDialogOpen(false)}
-                className="h-10 px-4 font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-              >
-                {t("cancel")}
-              </Button>
-              {snippetDialogTab === "existing" ? (
-                <Button
-                  type="button"
-                  onClick={useExistingSnippet}
-                  disabled={!snippetDraftId}
-                  className="h-10 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
-                >
-                  {t("useSnippet")}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={createAndUseSnippet}
-                  disabled={!newSnippetContent.trim()}
-                  className="h-10 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t("createAndUse")}
-                </Button>
-              )}
-            </CredenzaFooter>
-          </CredenzaContent>
-        </Credenza>
-
+        <SnippetPickerCredenza
+          key={selectedSnippet || "unselected-snippet"}
+          open={isSnippetDialogOpen}
+          onOpenChange={setIsSnippetDialogOpen}
+          snippets={snippets}
+          selectedId={selectedSnippet}
+          isLoading={snippetsLoading}
+          loadError={snippetError}
+          onRetry={() => void loadSnippets()}
+          onSelect={selectSnippet}
+          onCreate={createSnippetItem}
+          onUpdate={updateSnippetItem}
+          onDelete={deleteSnippetItem}
+        />
         {/* Actions Section */}
-        <Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-gray-700">
-              <Settings className="w-5 h-5" />
-              <h3 className="font-semibold">{t("actions")}</h3>
+        <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
+          <CardHeader className="border-b border-border px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2 text-foreground">
+              <Settings className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">{t("actions")}</h3>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 px-4 py-4 sm:px-5">
             {actions.map((action, index) => {
               const platform = socialPlatforms[action.platform]
               const Icon = getActionIcon(action.platform, action.action)
               return (
-                <div key={action.id} className="space-y-2">
+                <div key={action.id} className="space-y-2 rounded-lg border border-border bg-muted/15 p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1">
-                      <span className="text-gray-500">{index + 1}.</span>
+                      <span className="text-xs font-medium tabular-nums text-muted-foreground">{index + 1}.</span>
                       <button
                         onClick={() => handleEditAction(action.id)}
-                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg flex-1 transition-colors text-left"
+                        className="flex flex-1 items-center gap-2 rounded-md bg-muted px-3 py-2 text-left text-foreground transition-colors hover:bg-accent"
                       >
                         <Icon className="w-4 h-4" />
                         <span className="text-sm">{getActionLabel(action.platform, action.action)}</span>
@@ -1798,7 +1687,7 @@ export default function SocialLinksGenerator({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeAction(action.id)}
-                      className="text-gray-500 hover:text-red-500"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1808,11 +1697,11 @@ export default function SocialLinksGenerator({
                       placeholder={t("enterPlatformUrl", { platform: platform.name.toLowerCase() })}
                       value={action.url}
                       onChange={(e) => updateActionUrl(action.id, e.target.value)}
-                      className={`h-11 bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${action.url.length > 0 && !action.isValid ? "border-red-500" : ""
+                      className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${action.url.length > 0 && !action.isValid ? "border-destructive" : ""
                         }`}
                     />
                     {action.url.length > 0 && !action.isValid && (
-                      <p className="text-red-500 text-sm mt-1">{t("invalidInput")}</p>
+                      <p className="mt-1 text-sm text-destructive">{t("invalidInput")}</p>
                     )}
                   </div>
                 </div>
@@ -1828,7 +1717,7 @@ export default function SocialLinksGenerator({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-muted-foreground hover:bg-accent hover:text-foreground"
                       onClick={toggleExpandAllPlatforms}
                     >
                       {expandedPlatforms.size === Object.keys(socialPlatforms).length ? <ChevronsUpDown /> : <ChevronsDown />}
@@ -1845,7 +1734,7 @@ export default function SocialLinksGenerator({
                       <div key={key}>
                         <button
                           onClick={() => togglePlatformExpanded(key)}
-                          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/25 p-3 transition-colors hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-2">
                             <Icon className="w-5 h-5" />
@@ -1883,7 +1772,7 @@ export default function SocialLinksGenerator({
             <Credenza open={isActionModalOpen} onOpenChange={setIsActionModalOpen}>
               <Button
                 variant="ghost"
-                className="h-11 w-full text-gray-600 hover:text-gray-900 border-dashed border-2 border-gray-300 hover:border-gray-400"
+                className="h-10 w-full rounded-lg border border-dashed border-border text-muted-foreground shadow-none hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                 onClick={() => setIsActionModalOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -1896,7 +1785,7 @@ export default function SocialLinksGenerator({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-muted-foreground hover:bg-accent hover:text-foreground"
                       onClick={toggleExpandAllPlatforms}
                     >
 
@@ -1924,7 +1813,7 @@ export default function SocialLinksGenerator({
                         <button
                           key={cat}
                           onClick={() => setActionCategory(cat)}
-                          className={`px-3 py-1 rounded-full text-sm ${actionCategory === cat ? "bg-green-600 text-white" : "bg-gray-100 text-gray-700"}`}
+                          className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${actionCategory === cat ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"}`}
                         >
                           {cat === "all" ? t("all") : cat}
                         </button>
@@ -1940,7 +1829,7 @@ export default function SocialLinksGenerator({
                       <div key={key}>
                         <button
                           onClick={() => togglePlatformExpanded(key)}
-                          className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/25 p-3 transition-colors hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-2">
                             <PlatformIcon className="w-5 h-5" />
@@ -1979,17 +1868,17 @@ export default function SocialLinksGenerator({
 
         <div className="space-y-2">
           <Collapsible open={layoutOpen} onOpenChange={setLayoutOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
               <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-gray-500" />
-                <span className="text-gray-700 font-semibold">{t("layout")}</span>
+                <Settings className="size-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{t("layout")}</span>
               </div>
-              {layoutOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {layoutOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
-            <CollapsibleContent className="p-4 bg-white border border-gray-200 rounded-lg mt-1 space-y-6">
+            <CollapsibleContent className="mt-1 space-y-6 rounded-lg border border-border bg-card p-4">
               {/* Background Section */}
               <div>
-                <h4 className="text-gray-700 font-medium mb-3">{t("background")}</h4>
+                <h4 className="mb-3 text-sm font-medium text-foreground">{t("background")}</h4>
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => {
@@ -1998,13 +1887,13 @@ export default function SocialLinksGenerator({
                     }}
                     disabled={!coverImageUrl}
                     aria-disabled={!coverImageUrl}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sameAsCoverImage ? "bg-green-600" : "bg-gray-300"} ${!coverImageUrl ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sameAsCoverImage ? "bg-primary" : "bg-muted"} ${!coverImageUrl ? "cursor-not-allowed opacity-50" : ""}`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${sameAsCoverImage ? "translate-x-6" : "translate-x-1"}`}
                     />
                   </button>
-                  <span className="text-gray-600">{t("sameAsCover")}</span>
+                  <span className="text-sm text-muted-foreground">{t("sameAsCover")}</span>
                 </div>
               </div>
 
@@ -2012,7 +1901,7 @@ export default function SocialLinksGenerator({
               {!sameAsCoverImage && (
 
                 <div>
-                  <h4 className="text-gray-700 dark:text-gray-200 font-medium mb-3">{t("gallery")}</h4>
+                  <h4 className="mb-3 text-sm font-medium text-foreground">{t("gallery")}</h4>
                   <Tabs defaultValue="images" className="w-full">
                     <TabsList variant="line">
                       <TabsTrigger value="images">{t("images")}</TabsTrigger>
@@ -2022,7 +1911,7 @@ export default function SocialLinksGenerator({
                     </TabsList>
 
                     <TabsContent value="images">
-                      <div className="rounded-lg border border-gray-200/40 dark:border-slate-800/40 bg-white/50 dark:bg-transparent p-3">
+                      <div className="rounded-lg border border-border bg-muted/15 p-3">
                         <div className="flex gap-2 mb-3 flex-wrap">
                           {backgroundImageCategories.map((category) => (
                             <button
@@ -2030,8 +1919,8 @@ export default function SocialLinksGenerator({
                               type="button"
                               onClick={() => setBackgroundImageCategory(category)}
                               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${backgroundImageCategory === category
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
                                 }`}
                             >
                               {category}
@@ -2039,7 +1928,7 @@ export default function SocialLinksGenerator({
                           ))}
                         </div>
 
-                        <div className="mb-3 text-xs font-medium text-gray-500">
+                        <div className="mb-3 text-xs font-medium text-muted-foreground">
                           {t("imageCountShort", { count: filteredBackgroundImages.length })}
                         </div>
 
@@ -2049,8 +1938,8 @@ export default function SocialLinksGenerator({
                               key={bg.id}
                               onClick={() => selectBackgroundImage(bg)}
                               title={bg.name}
-                              className={`relative aspect-square w-full overflow-hidden rounded-xl transition-transform transform will-change-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-green-400/60 ${selectedBackgroundId === bg.id
-                                ? "ring-4 ring-green-500 shadow-[0_10px_30px_rgba(16,185,129,0.12)] scale-100"
+                              className={`relative aspect-square w-full overflow-hidden rounded-lg transition-transform transform will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedBackgroundId === bg.id
+                                ? "ring-2 ring-primary scale-100"
                                 : "hover:scale-105"
                                 }`}
                             >
@@ -2077,7 +1966,7 @@ export default function SocialLinksGenerator({
                           </CardContent> */}
                     </TabsContent>
                     <TabsContent value="videos">
-                      <div className="rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                      <div className="rounded-lg border border-border bg-muted/15 p-3">
                         <div className="mb-3 flex flex-wrap gap-2">
                           {backgroundVideoCategories.map((category) => (
                             <button
@@ -2085,8 +1974,8 @@ export default function SocialLinksGenerator({
                               type="button"
                               onClick={() => setBackgroundVideoCategory(category)}
                               className={`rounded-full px-3 py-1 text-xs font-semibold transition ${backgroundVideoCategory === category
-                                ? "bg-slate-950 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
                                 }`}
                             >
                               {category}
@@ -2094,7 +1983,7 @@ export default function SocialLinksGenerator({
                           ))}
                         </div>
 
-                        <div className="mb-3 text-xs font-medium text-gray-500">
+                        <div className="mb-3 text-xs font-medium text-muted-foreground">
                           {t("videoCountShort", { count: filteredBackgroundVideos.length })}
                         </div>
 
@@ -2105,8 +1994,8 @@ export default function SocialLinksGenerator({
                               type="button"
                               onClick={() => selectBackgroundVideo(video)}
                               title={video.name}
-                              className={`group relative aspect-video overflow-hidden rounded-xl text-left transition-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-green-400/60 ${selectedBackgroundId === video.id
-                                ? "ring-4 ring-green-500 shadow-[0_10px_30px_rgba(16,185,129,0.12)]"
+                              className={`group relative aspect-video overflow-hidden rounded-lg text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedBackgroundId === video.id
+                                ? "ring-2 ring-primary"
                                 : "hover:scale-[1.02]"
                                 }`}
                             >
@@ -2134,14 +2023,14 @@ export default function SocialLinksGenerator({
                       </div>
                     </TabsContent>
                     <TabsContent value="my-files">
-                      <div className="rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                      <div className="rounded-lg border border-border bg-muted/15 p-3">
                         {filesLoading ? (
-                          <div className="flex items-center justify-center gap-2 py-8 text-sm font-medium text-gray-500">
+                          <div className="flex items-center justify-center gap-2 py-8 text-sm font-medium text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             {t("loadingFiles")}
                           </div>
                         ) : backgroundFileMedia.length === 0 ? (
-                          <div className="py-8 text-center text-sm text-gray-500">
+                          <div className="py-8 text-center text-sm text-muted-foreground">
                             {t("backgroundFileHint")}
                           </div>
                         ) : (
@@ -2157,9 +2046,9 @@ export default function SocialLinksGenerator({
                                   type="button"
                                   onClick={() => selectBackgroundFile(file)}
                                   title={file.name}
-                                  className={`group overflow-hidden rounded-xl border bg-gray-50 text-left transition hover:bg-white ${selected ? "border-green-500 ring-4 ring-green-500/20" : "border-gray-200 hover:border-gray-300"}`}
+                                  className={`group overflow-hidden rounded-lg border bg-muted/20 text-left transition-colors hover:bg-muted/35 ${selected ? "border-primary ring-2 ring-primary/15" : "border-border hover:border-foreground/20"}`}
                                 >
-                                  <div className="relative aspect-square bg-gray-100">
+                                  <div className="relative aspect-square bg-muted">
                                     {isVideo ? (
                                       <video
                                         src={fileUrl}
@@ -2180,8 +2069,8 @@ export default function SocialLinksGenerator({
                                     </span>
                                   </div>
                                   <div className="px-3 py-2">
-                                    <p className="truncate text-sm font-semibold text-gray-900">{file.name}</p>
-                                    <p className="truncate text-xs text-gray-500">{file.sizeLabel}</p>
+                                    <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                                    <p className="truncate text-xs text-muted-foreground">{file.sizeLabel}</p>
                                   </div>
                                 </button>
                               )
@@ -2191,18 +2080,18 @@ export default function SocialLinksGenerator({
                       </div>
                     </TabsContent>
                     <TabsContent value="embed">
-                      <div className="space-y-3 rounded-lg border border-gray-200/40 bg-white/50 p-3 dark:border-slate-800/40 dark:bg-transparent">
+                      <div className="space-y-3 rounded-lg border border-border bg-muted/15 p-3">
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <Input
                             value={youtubeBackgroundUrl}
                             onChange={(event) => setYoutubeBackgroundUrl(event.target.value)}
                             placeholder={t("youtubePlaceholder")}
-                            className="h-11 bg-white"
+                            className="h-10 border-border bg-background shadow-none"
                           />
                           <Button
                             type="button"
                             onClick={useYouTubeBackground}
-                            className="h-11 bg-slate-950 px-4 font-bold text-white hover:bg-slate-800"
+                            className="h-10 bg-primary px-4 font-medium text-primary-foreground shadow-none hover:bg-primary/90"
                           >
                             {t("useVideo")}
                           </Button>
@@ -2215,7 +2104,7 @@ export default function SocialLinksGenerator({
                         )}
 
                         {getYouTubeEmbedUrl(youtubeBackgroundUrl) && (
-                          <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-black">
+                          <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-black">
                             <iframe
                               src={getYouTubeEmbedUrl(youtubeBackgroundUrl)}
                               title={t("youtubePreview")}
@@ -2232,9 +2121,9 @@ export default function SocialLinksGenerator({
               )}
 
               {/* Effects Section */}
-              <div className="border-t border-gray-200 pt-6">
+              <div className="border-t border-border pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-gray-700 font-medium">{t("effects")}</h4>
+                  <h4 className="text-sm font-medium text-foreground">{t("effects")}</h4>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -2249,8 +2138,8 @@ export default function SocialLinksGenerator({
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-gray-600">{t("opacity")}</label>
-                      <span className="text-sm text-gray-600">{opacity}%</span>
+                      <label className="text-sm text-muted-foreground">{t("opacity")}</label>
+                      <span className="text-sm text-muted-foreground">{opacity}%</span>
                     </div>
                     <input
                       type="range"
@@ -2258,15 +2147,15 @@ export default function SocialLinksGenerator({
                       max="100"
                       value={opacity}
                       onChange={(e) => setOpacity(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                     />
                   </div>
 
                   {/* Blur Slider */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-gray-600">{t("blur")}</label>
-                      <span className="text-sm text-gray-600">{blur}px</span>
+                      <label className="text-sm text-muted-foreground">{t("blur")}</label>
+                      <span className="text-sm text-muted-foreground">{blur}px</span>
                     </div>
                     <input
                       type="range"
@@ -2274,15 +2163,15 @@ export default function SocialLinksGenerator({
                       max="100"
                       value={blur}
                       onChange={(e) => setBlur(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                     />
                   </div>
 
                   {/* Saturation Slider */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-gray-600">{t("saturation")}</label>
-                      <span className="text-sm text-gray-600">{saturation}%</span>
+                      <label className="text-sm text-muted-foreground">{t("saturation")}</label>
+                      <span className="text-sm text-muted-foreground">{saturation}%</span>
                     </div>
                     <input
                       type="range"
@@ -2290,15 +2179,15 @@ export default function SocialLinksGenerator({
                       max="200"
                       value={saturation}
                       onChange={(e) => setSaturation(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                     />
                   </div>
 
                   {/* Contrast Slider */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-gray-600">{t("contrast")}</label>
-                      <span className="text-sm text-gray-600">{contrast}%</span>
+                      <label className="text-sm text-muted-foreground">{t("contrast")}</label>
+                      <span className="text-sm text-muted-foreground">{contrast}%</span>
                     </div>
                     <input
                       type="range"
@@ -2306,15 +2195,15 @@ export default function SocialLinksGenerator({
                       max="200"
                       value={contrast}
                       onChange={(e) => setContrast(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                     />
                   </div>
 
                   {/* Grayscale Slider */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-gray-600">{t("grayscale")}</label>
-                      <span className="text-sm text-gray-600">{grayscale}%</span>
+                      <label className="text-sm text-muted-foreground">{t("grayscale")}</label>
+                      <span className="text-sm text-muted-foreground">{grayscale}%</span>
                     </div>
                     <input
                       type="range"
@@ -2322,7 +2211,7 @@ export default function SocialLinksGenerator({
                       max="100"
                       value={grayscale}
                       onChange={(e) => setGrayscale(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
                     />
                   </div>
                 </div>
@@ -2331,31 +2220,31 @@ export default function SocialLinksGenerator({
           </Collapsible>
 
           <Collapsible open={extraOptionsOpen} onOpenChange={setExtraOptionsOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
               <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-gray-500" />
-                <span className="text-gray-700 font-semibold">{t("extraOptions")}</span>
+                <Settings className="size-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{t("extraOptions")}</span>
               </div>
-              {extraOptionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {extraOptionsOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
-            <CollapsibleContent className="p-4 bg-white border border-gray-200 rounded-lg mt-1 space-y-4">
+            <CollapsibleContent className="mt-1 space-y-4 rounded-lg border border-border bg-card p-4">
               {/* Subtitle */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t("subtitle")}</label>
+                <label className="mb-2 block text-sm font-medium text-foreground">{t("subtitle")}</label>
                 <Input
                   placeholder={t("subtitlePlaceholder")}
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  className="h-11 border-gray-200"
+                  className="h-10 rounded-lg border-border bg-background shadow-none"
                 />
               </div>
 
               {/* Cover Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t("coverImage")}</label>
+                <label className="mb-2 block text-sm font-medium text-foreground">{t("coverImage")}</label>
                 <div className="space-y-2">
                   {coverImageUrl && (
-                    <div className="relative w-full h-32 rounded-lg overflow-hidden border border-gray-200">
+                    <div className="relative h-32 w-full overflow-hidden rounded-lg border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={coverImageUrl}
@@ -2377,16 +2266,16 @@ export default function SocialLinksGenerator({
                   <button
                     type="button"
                     onClick={openCoverImageDialog}
-                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 text-left text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                    className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30"
                   >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
                       <FileImage className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-gray-900">
+                      <span className="block text-sm font-medium text-foreground">
                         {coverImageUrl ? t("coverSelected") : t("selectCover")}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-gray-500">
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                         {coverImageUrl || t("coverSelectHint")}
                       </span>
                     </span>
@@ -2396,16 +2285,16 @@ export default function SocialLinksGenerator({
 
               {/* Custom Alias */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t("customAlias")}</label>
+                <label className="mb-2 block text-sm font-medium text-foreground">{t("customAlias")}</label>
                 <div className="space-y-2">
-                  <div className={`flex flex-1 items-center rounded-lg border bg-gray-50 px-3 ${
+                  <div className={`flex flex-1 items-center rounded-lg border bg-muted/25 px-3 ${
                     aliasCheckStatus === "available"
                       ? "border-emerald-300"
                       : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error"
                         ? "border-red-300"
-                        : "border-gray-200"
+                        : "border-border"
                   } ${isEditing ? "opacity-70" : ""}`}>
-                    <span className="text-gray-600 text-sm">yoursite.com/</span>
+                    <span className="text-sm text-muted-foreground">yoursite.com/</span>
                     <Input
                       placeholder={t("aliasPlaceholder")}
                       value={customAlias}
@@ -2426,7 +2315,7 @@ export default function SocialLinksGenerator({
                     {!isEditing && customAlias ? (
                       <span className="ml-2 grid h-6 w-6 shrink-0 place-items-center">
                         {aliasCheckStatus === "checking" ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : aliasCheckStatus === "available" ? (
                           <Check className="h-4 w-4 text-emerald-600" />
                         ) : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error" ? (
@@ -2445,7 +2334,7 @@ export default function SocialLinksGenerator({
                           ? "text-emerald-600"
                           : aliasCheckStatus === "taken" || aliasCheckStatus === "invalid" || aliasCheckStatus === "error"
                             ? "text-red-600"
-                            : "text-gray-500"
+                            : "text-muted-foreground"
                       }`}
                     >
                       {aliasCheckMessage}
@@ -2483,19 +2372,19 @@ export default function SocialLinksGenerator({
             </Collapsible> */}
 
           <Collapsible open={expiresOpen} onOpenChange={setExpiresOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
               <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-gray-500" />
-                <span className="text-gray-700 font-semibold">{t("expires")}</span>
+                <Clock className="size-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{t("expires")}</span>
               </div>
-              {expiresOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {expiresOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
-            <CollapsibleContent className="p-4 bg-white border border-gray-200 rounded-lg mt-1 space-y-4">
+            <CollapsibleContent className="mt-1 space-y-4 rounded-lg border border-border bg-card p-4">
               {/* Enable Expiry Toggle */}
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setExpiryEnabled(!expiryEnabled)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${expiryEnabled ? "bg-green-600" : "bg-gray-300"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${expiryEnabled ? "bg-primary" : "bg-muted"
                     }`}
                 >
                   <span
@@ -2503,20 +2392,20 @@ export default function SocialLinksGenerator({
                       }`}
                   />
                 </button>
-                <span className="text-gray-600">{t("enableExpiry")}</span>
+                <span className="text-sm text-muted-foreground">{t("enableExpiry")}</span>
               </div>
 
               {expiryEnabled && (
-                <div className="space-y-4 pt-4 border-t border-gray-200">
+                <div className="space-y-4 border-t border-border pt-4">
                   {/* Expiry Type Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("expiryType")}</label>
+                    <label className="mb-2 block text-sm font-medium text-foreground">{t("expiryType")}</label>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setExpiryType("date")}
                         className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${expiryType === "date"
-                          ? "bg-blue-50 border-blue-300 text-blue-700"
-                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
                           }`}
                       >
                         {t("byDate")}
@@ -2524,8 +2413,8 @@ export default function SocialLinksGenerator({
                       <button
                         onClick={() => setExpiryType("clicks")}
                         className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${expiryType === "clicks"
-                          ? "bg-blue-50 border-blue-300 text-blue-700"
-                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
                           }`}
                       >
                         {t("byClicks")}
@@ -2537,27 +2426,27 @@ export default function SocialLinksGenerator({
                   {expiryType === "date" && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{t("expiryDate")}</label>
+                        <label className="mb-2 block text-sm font-medium text-foreground">{t("expiryDate")}</label>
                         <Input
                           type="date"
                           value={expiryDate}
                           onChange={(e) => setExpiryDate(e.target.value)}
-                          className="h-11 border-gray-200"
+                          className="h-10 rounded-lg border-border bg-background shadow-none"
                           min={new Date().toISOString().split("T")[0]}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{t("expiryTime")}</label>
+                        <label className="mb-2 block text-sm font-medium text-foreground">{t("expiryTime")}</label>
                         <Input
                           type="time"
                           value={expiryTime}
                           onChange={(e) => setExpiryTime(e.target.value)}
-                          className="h-11 border-gray-200"
+                          className="h-10 rounded-lg border-border bg-background shadow-none"
                         />
                       </div>
                       {expiryDate && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-700">
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                          <p className="text-sm text-primary">
                             {t("expiresOn", { date: new Date(expiryDate).toLocaleDateString(), time: expiryTime })}
                           </p>
                         </div>
@@ -2569,19 +2458,19 @@ export default function SocialLinksGenerator({
                   {expiryType === "clicks" && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{t("maximumClicks")}</label>
+                        <label className="mb-2 block text-sm font-medium text-foreground">{t("maximumClicks")}</label>
                         <Input
                           type="number"
                           placeholder={t("maximumClicksPlaceholder")}
                           value={maxClicks}
                           onChange={(e) => setMaxClicks(e.target.value)}
-                          className="h-11 border-gray-200"
+                          className="h-10 rounded-lg border-border bg-background shadow-none"
                           min="1"
                         />
                       </div>
                       {maxClicks && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-700">
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                          <p className="text-sm text-primary">
                             {t("expiresAfter", { count: maxClicks })}
                           </p>
                         </div>
@@ -2596,12 +2485,15 @@ export default function SocialLinksGenerator({
       </div>
 
       {/* Right Panel - Preview */}
-      <div className="min-w-0 space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-700">{t("previewTitle")}</h2>
+      <div className="min-w-0 space-y-3 lg:sticky lg:top-24 lg:self-start">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">{t("previewTitle")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t("completeActionsHint")}</p>
+          </div>
 
           <Button
-            className={`h-11 text-white ${canCreateLink ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-300"
+            className={`h-9 rounded-lg px-4 font-medium shadow-none ${canCreateLink ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground"
               }`}
             disabled={!canCreateLink || isSubmitting}
             onClick={handleCreateLink}
@@ -2610,7 +2502,7 @@ export default function SocialLinksGenerator({
           </Button>
         </div>
 
-        <Card className="relative z-10 overflow-hidden rounded-2xl p-7">
+        <Card className="relative z-10 min-h-[420px] overflow-hidden rounded-xl border-border bg-muted/20 p-4 shadow-none sm:p-5 lg:min-h-[560px]">
           {activeBackgroundMediaType === "video" && activeBackgroundMediaUrl ? (
             <video
               src={activeBackgroundMediaUrl}
@@ -2649,7 +2541,7 @@ export default function SocialLinksGenerator({
             />
           )}
 
-          <Card className="relative gap-2 overflow-hidden rounded-2xl border border-white/30 bg-white/55 p-6 text-center shadow-xl backdrop-blur-md">
+          <Card className="relative gap-3 overflow-hidden rounded-xl border border-border/80 bg-background/90 p-5 text-center shadow-none backdrop-blur-md">
             {coverImageUrl && (
               <div className="mb-2 h-40 w-full overflow-hidden rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2664,14 +2556,36 @@ export default function SocialLinksGenerator({
             <h3
               className={
                 title
-                  ? "text-xl font-semibold text-gray-900"
-                  : "text-base font-normal text-gray-500"
+                  ? "text-lg font-semibold text-foreground"
+                  : "text-base font-normal text-muted-foreground"
               }
             >
               {title || t("unlockLink")}
             </h3>
 
-            <p className="text-gray-600">{subtitle ? `${subtitle} ` : t("completeActionsHint")}</p>
+            <p className="text-sm text-muted-foreground">{subtitle ? `${subtitle} ` : t("completeActionsHint")}</p>
+
+            {inputType === "snippet" && selectedSnippetData ? (
+              <div className="overflow-hidden rounded-lg border border-border bg-muted/20 text-left">
+                <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate text-sm font-medium text-foreground">{selectedSnippetData.name}</span>
+                  </div>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">{formatSnippetSize(selectedSnippetData.content)}</span>
+                </div>
+                <div className="relative h-20 overflow-hidden px-3 py-2.5">
+                  <pre className="select-none whitespace-pre-wrap break-words font-mono text-xs leading-5 text-muted-foreground blur-[3px]">
+                    {selectedSnippetData.content}
+                  </pre>
+                  <div className="absolute inset-0 grid place-items-center bg-background/45 backdrop-blur-[1px]">
+                    <span className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                      {t("snippetContentLocked")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {actions.length > 0 && (
               <div className="space-y-3">
@@ -2693,13 +2607,13 @@ export default function SocialLinksGenerator({
               </div>
             )}
 
-            <div className="text-sm text-gray-500">
+            <div className="text-xs text-muted-foreground">
               {t("unlockProgress", { completed: completedActions, total: totalActions })}
             </div>
 
-            <div className="h-2 w-full rounded-full bg-gray-200">
+            <div className="h-1.5 w-full rounded-full bg-muted">
               <div
-                className="h-2 rounded-full bg-green-500 transition-all duration-300"
+                className="h-1.5 rounded-full bg-primary transition-all duration-300"
                 style={{
                   width:
                     totalActions > 0
@@ -2710,9 +2624,9 @@ export default function SocialLinksGenerator({
             </div>
 
             <Button
-              className={`h-11 w-full text-white ${isDestinationValid
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-gray-300"
+              className={`h-10 w-full rounded-lg font-medium shadow-none ${isDestinationValid
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-muted text-muted-foreground"
                 }`}
               disabled={!isDestinationValid}
               onClick={() => {
@@ -2726,20 +2640,20 @@ export default function SocialLinksGenerator({
             </Button>
 
             {submitError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
                 {submitError}
               </div>
             )}
 
             {createdLink && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-left text-sm text-green-800">
+              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-left text-sm text-emerald-700 dark:text-emerald-400">
                 <p className="font-semibold">{isEditing ? t("updated") : t("createdSuccess")}</p>
 
                 <a
                   href={`/l/${createdLink.slug}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 block break-all font-medium text-green-700 underline underline-offset-4"
+                  className="mt-1 block break-all font-medium underline underline-offset-4"
                 >
                   /l/{createdLink.slug}
                 </a>
@@ -2747,7 +2661,7 @@ export default function SocialLinksGenerator({
             )}
 
             {!canCreateLink && (
-              <div className="space-y-1 text-sm text-gray-500">
+              <div className="space-y-1 text-left text-xs text-muted-foreground">
                 {!isTitleValid && <p>• {t("titleRequired")}</p>}
                 {inputType === "url" && !isDestinationUrlValid && <p>• {t("destinationRequired")}</p>}
                 {inputType === "file" && !isFileDestinationValid && <p>• {t("fileRequired")}</p>}

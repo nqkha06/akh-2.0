@@ -337,14 +337,14 @@ function LinksTabs({
     <Tabs
       value={activeTab}
       onValueChange={(value) => onChange(value as LinksTab)}
-      className="mb-5"
+      className="mb-6"
     >
-      <TabsList className="h-auto w-full justify-start rounded-xl border border-slate-200 bg-slate-100/70 p-1 sm:w-fit">
+      <TabsList variant="line" className="h-10 w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0">
         {linksTabs.map((tab) => {
           const Icon = tab.icon;
 
           return (
-            <TabsTrigger key={tab.id} value={tab.id} className="h-10 flex-1 px-3 font-semibold sm:flex-none sm:px-4">
+            <TabsTrigger key={tab.id} value={tab.id} className="h-10 flex-1 rounded-none border-0 px-3 text-sm font-medium text-muted-foreground shadow-none after:bg-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none sm:flex-none sm:px-4">
               <Icon />
               {tab.mobileLabelKey ? (
                 <>
@@ -364,10 +364,10 @@ function LinksTabs({
 
 function LinksSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {[1, 2, 3].map((row) => (
-        <Card key={row} className="gap-0 border-slate-200/80 p-0 shadow-sm">
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-4 sm:p-5">
+        <Card key={row} className="gap-0 overflow-hidden rounded-xl border-border bg-card p-0 shadow-none">
+          <div className="flex items-start justify-between gap-4 border-b border-border p-4 sm:px-5">
             <div className="space-y-3">
               <Skeleton className="h-7 w-40" />
               <Skeleton className="h-5 w-96 max-w-full" />
@@ -377,7 +377,7 @@ function LinksSkeleton() {
               <Skeleton className="h-6 w-36 rounded-full" />
             </div>
           </div>
-          <div className="m-4 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:m-5">
+          <div className="border-t-0 bg-muted/25 p-3 sm:px-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex gap-3">
                 <Skeleton className="h-9 w-28" />
@@ -455,17 +455,17 @@ function MonetizationPanel() {
 
   return (
     <div className="space-y-5">
-      <Card className="gap-0 border-slate-200 bg-slate-50/80 px-4 py-3 shadow-none sm:flex-row sm:items-center sm:px-5">
-        <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
-          <Check className="size-4 shrink-0 text-emerald-600" />
+      <Card className="gap-0 rounded-xl border-border bg-muted/30 px-4 py-3 shadow-none sm:flex-row sm:items-center sm:px-5">
+        <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+          <Check className="size-4 shrink-0 text-primary" />
           <span>{t("monetization.currentPlan")}</span>
-          <strong className="truncate text-slate-950">{t(`monetization.plans.${currentPlan.id}.title`)}</strong>
-          <span className="hidden text-slate-400 sm:inline">·</span>
+          <strong className="truncate text-foreground">{t(`monetization.plans.${currentPlan.id}.title`)}</strong>
+          <span className="hidden text-border sm:inline">·</span>
           <span className="hidden sm:inline">{t("monetization.contextProfit", { profit: currentPlan.profit })}</span>
-          <span className="hidden text-slate-400 sm:inline">·</span>
+          <span className="hidden text-border sm:inline">·</span>
           <span className="hidden sm:inline">{t("monetization.contextSteps", { steps: currentPlan.steps })}</span>
         </div>
-        <p className="mt-2 text-xs leading-5 text-slate-500 sm:mt-0 sm:ml-auto sm:max-w-md sm:text-right">
+        <p className="mt-2 text-xs leading-5 text-muted-foreground sm:mt-0 sm:ml-auto sm:max-w-md sm:text-right">
           {t("monetization.contextHint")}
         </p>
       </Card>
@@ -479,8 +479,8 @@ function MonetizationPanel() {
             <Card
               key={plan.id}
               className={[
-                "gap-0 border p-0 shadow-sm transition-shadow duration-200 hover:shadow-md",
-                isCurrent ? "border-emerald-300 ring-1 ring-emerald-100" : "border-slate-200",
+                "gap-0 overflow-hidden rounded-xl border bg-card p-0 shadow-none transition-colors duration-200 hover:border-foreground/20",
+                isCurrent ? "border-primary/50 ring-1 ring-primary/10" : "border-border",
               ].join(" ")}
             >
               <CardHeader className="px-5 pt-5">
@@ -489,36 +489,36 @@ function MonetizationPanel() {
                     <CardTitle className="text-lg">{t(`monetization.plans.${plan.id}.title`)}</CardTitle>
                     <CardDescription className="mt-1 leading-5">{t(`monetization.plans.${plan.id}.description`)}</CardDescription>
                   </div>
-                  {isCurrent ? <Badge className="shrink-0 bg-emerald-600 hover:bg-emerald-600">{t("monetization.active")}</Badge> : null}
+                  {isCurrent ? <Badge className="shrink-0 bg-primary text-primary-foreground hover:bg-primary">{t("monetization.active")}</Badge> : null}
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-5 px-5 py-5">
-                <div className="grid grid-cols-2 divide-x rounded-lg border bg-slate-50/70">
+                <div className="grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-muted/30">
                   <div className="px-3 py-3">
-                    <p className="text-xs font-medium text-slate-500">{t("monetization.profit")}</p>
-                    <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{plan.profit}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("monetization.profit")}</p>
+                    <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">{plan.profit}</p>
                   </div>
                   <div className="px-3 py-3">
-                    <p className="text-xs font-medium text-slate-500">{t("monetization.steps")}</p>
-                    <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{plan.steps}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("monetization.steps")}</p>
+                    <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">{plan.steps}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("monetization.visitorExperience")}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("monetization.visitorExperience")}</p>
                   {adTypes.map((adType) => {
                     const density = plan.ads[adType];
                     const isDisabled = density === "none";
 
                     return (
                       <div key={adType} className="flex items-center gap-3">
-                        <span className={isDisabled ? "grid size-7 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-400" : "grid size-7 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600"}>
+                        <span className={isDisabled ? "grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground" : "grid size-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"}>
                           {isDisabled ? <CircleSlash className="size-4" /> : <Megaphone className="size-4" />}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-800">{t(`monetization.ads.${adType}`)}</p>
-                          <p className="text-xs text-slate-500">{t(`monetization.adDensity.${density}`)}</p>
+                          <p className="text-sm font-medium text-foreground">{t(`monetization.ads.${adType}`)}</p>
+                          <p className="text-xs text-muted-foreground">{t(`monetization.adDensity.${density}`)}</p>
                         </div>
                       </div>
                     );
@@ -526,11 +526,11 @@ function MonetizationPanel() {
                 </div>
               </CardContent>
 
-              <CardFooter className="border-t px-5 py-4">
+              <CardFooter className="border-t border-border bg-muted/15 px-5 py-4">
                 {isCurrent ? (
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-600" disabled><Check />{t("monetization.active")}</Button>
+                  <Button className="w-full shadow-none" disabled><Check />{t("monetization.active")}</Button>
                 ) : (
-                  <Button type="button" variant="outline" className="w-full" onClick={() => setPendingPlanId(plan.id)}>
+                  <Button type="button" variant="outline" className="w-full border-border shadow-none" onClick={() => setPendingPlanId(plan.id)}>
                     <MonitorSmartphone />
                     {t("monetization.enroll")}
                   </Button>
@@ -541,13 +541,13 @@ function MonetizationPanel() {
         })}
       </section>
 
-      <Card className="gap-0 overflow-hidden">
-        <CardHeader className="flex flex-col gap-3 border-b sm:flex-row sm:items-start sm:justify-between">
+      <Card className="gap-0 overflow-hidden rounded-xl border-border shadow-none">
+        <CardHeader className="flex flex-col gap-3 border-b border-border sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>{t("monetization.payoutTitle")}</CardTitle>
             <CardDescription className="mt-1 leading-5">{t("monetization.payoutDescription")}</CardDescription>
           </div>
-          <Badge variant="secondary" className="w-fit bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+          <Badge variant="secondary" className="w-fit bg-primary/10 text-primary hover:bg-primary/10">
             {t("monetization.contextProfit", { profit: currentPlan.profit })}
           </Badge>
         </CardHeader>
@@ -555,35 +555,35 @@ function MonetizationPanel() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[580px] text-sm">
               <caption className="sr-only">{t("monetization.payoutTitle")}</caption>
-              <thead className="border-b bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-border bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-5 py-3 text-left sm:px-6">{t("monetization.country")}</th>
                   <th scope="col" className="px-5 py-3 text-right sm:px-6">{t("monetization.desktopCpm")}</th>
                   <th scope="col" className="px-5 py-3 text-right sm:px-6">{t("monetization.mobileCpm")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-border">
                 {payoutRates.map((rate) => (
-                  <tr key={rate.country} className="transition-colors hover:bg-slate-50/80">
+                  <tr key={rate.country} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-3 sm:px-6">
                       <div className="flex items-center gap-3">
                         <img
                           src={`https://flagcdn.com/w80/${rate.code.toLowerCase()}.png`}
                           alt=""
-                          className="size-7 rounded-full border border-slate-200 bg-white object-cover"
+                          className="size-7 rounded-full border border-border bg-background object-cover"
                         />
-                        <span className="font-medium text-slate-800">{t(`monetization.countries.${rate.country}`)}</span>
+                        <span className="font-medium text-foreground">{t(`monetization.countries.${rate.country}`)}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700 sm:px-6">{formatCpm(rate.desktopBase)}</td>
-                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700 sm:px-6">{formatCpm(rate.mobileBase)}</td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-primary sm:px-6">{formatCpm(rate.desktopBase)}</td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums text-primary sm:px-6">{formatCpm(rate.mobileBase)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </CardContent>
-        <CardFooter className="border-t bg-slate-50/60 px-5 py-3 text-xs leading-5 text-slate-500 sm:px-6">
+        <CardFooter className="border-t border-border bg-muted/20 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6">
           {t("monetization.payoutNote")}
         </CardFooter>
       </Card>
@@ -594,7 +594,7 @@ function MonetizationPanel() {
             <AlertDialogTitle>{t("monetization.confirmTitle", { plan: pendingPlan ? t(`monetization.plans.${pendingPlan.id}.title`) : "" })}</AlertDialogTitle>
             <AlertDialogDescription>{t("monetization.confirmDescription", { profit: pendingPlan?.profit ?? "", steps: pendingPlan?.steps ?? 0 })}</AlertDialogDescription>
           </AlertDialogHeader>
-          <Label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/40 p-3 text-sm font-normal leading-5 text-slate-600">
+          <Label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 text-sm font-normal leading-5 text-muted-foreground">
             <Checkbox checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked === true)} />
             <span>{t("monetization.confirmTerms")}</span>
           </Label>
@@ -702,7 +702,7 @@ export function LinksView() {
       type="button"
       onClick={() => setActiveTab("create")}
       size="lg"
-      className="h-11 rounded-xl bg-blue-600 px-4 font-semibold shadow-sm hover:bg-blue-700"
+      className="h-10 rounded-lg bg-primary px-4 font-medium text-primary-foreground shadow-none hover:bg-primary/90"
     >
       <Plus />
       {t("createNew")}
@@ -720,9 +720,9 @@ export function LinksView() {
       <LinksTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "overview" ? (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {error ? (
-            <Alert variant="destructive" className="rounded-2xl">
+            <Alert variant="destructive" className="rounded-lg border-destructive/30 shadow-none">
               <AlertTitle>{t("loadErrorTitle")}</AlertTitle>
               <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>{error}</span>
@@ -735,8 +735,8 @@ export function LinksView() {
             <LinksSkeleton />
           ) : (
             <div className="space-y-5">
-              <Card className="flex flex-col gap-3 border-slate-200/80 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-input bg-background px-3 sm:max-w-md">
+              <Card className="flex flex-col gap-3 rounded-none border-x-0 border-border bg-transparent px-0 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 sm:max-w-md">
                   <Search aria-hidden className="size-4 text-muted-foreground" />
                   <Input
                     aria-label={t("searchPlaceholder")}
@@ -752,7 +752,7 @@ export function LinksView() {
                     value={filters.sort}
                     onValueChange={(value) => updateFilter("sort", value as LinkSort)}
                   >
-                    <SelectTrigger className="h-10 w-full rounded-lg font-medium sm:w-44">
+                    <SelectTrigger className="h-10 w-full rounded-lg border-border bg-background font-medium shadow-none sm:w-44">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -774,12 +774,12 @@ export function LinksView() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="relative h-10 rounded-lg px-4 font-semibold text-slate-600 hover:text-slate-950"
+                        className="relative h-10 rounded-lg border-border bg-background px-4 font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
                       >
                         <Filter />
                         {t("filter")}
                         {activeFilterCount > 0 ? (
-                          <Badge className="min-w-5 justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] text-white hover:bg-blue-600">
+                          <Badge className="min-w-5 justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground hover:bg-primary">
                             {activeFilterCount}
                           </Badge>
                         ) : null}
@@ -788,18 +788,18 @@ export function LinksView() {
 
                     <DrawerContent
                       className={[
-                        "overflow-hidden border-slate-200 bg-white text-slate-900",
+                        "overflow-hidden border-border bg-background text-foreground",
                         isDesktopFilter
                           ? "sm:max-w-md"
                           : "max-h-[86dvh] rounded-t-2xl",
                       ].join(" ")}
                     >
-                      <DrawerHeader className="border-b border-slate-200 px-5 py-4 text-left">
-                        <DrawerTitle className="flex items-center gap-2 text-base font-bold text-slate-950">
-                          <Filter size={17} className="text-blue-600" />
+                      <DrawerHeader className="border-b border-border px-5 py-4 text-left">
+                        <DrawerTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                          <Filter size={17} className="text-primary" />
                           {t("filter")}
                         </DrawerTitle>
-                        <p className="text-sm font-medium leading-6 text-slate-500">
+                        <p className="text-sm font-normal leading-6 text-muted-foreground">
                           {t("filterDescription")}
                         </p>
                       </DrawerHeader>
@@ -906,29 +906,29 @@ export function LinksView() {
                             />
                           </div>
 
-                          <Label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:border-blue-200 hover:bg-blue-50">
+                          <Label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30 hover:bg-accent/50">
                             <Checkbox
                               checked={filters.highPerformance}
                               onCheckedChange={(checked) => updateFilter("highPerformance", checked === true)}
                               className="mt-0.5"
                             />
                             <span>
-                              <span className="block text-sm font-semibold text-slate-800">
+                              <span className="block text-sm font-medium text-foreground">
                                 {t("highPerformance")}
                               </span>
-                              <span className="mt-0.5 block text-xs font-medium text-slate-500">
+                              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                                 {t("highPerformanceDescription")}
                               </span>
                             </span>
                           </Label>
                         </div>
 
-                        <div className="flex gap-2 border-t border-slate-200 bg-white px-5 py-4">
+                        <div className="flex gap-2 border-t border-border bg-background px-5 py-4">
                           <Button
                             type="button"
                             onClick={() => setFilters(defaultLinkFilters)}
                             variant="outline"
-                            className="h-10 flex-1 rounded-lg font-semibold text-slate-600 hover:text-slate-950"
+                            className="h-10 flex-1 rounded-lg border-border font-medium text-muted-foreground shadow-none hover:text-foreground"
                           >
                             <RotateCcw />
                             {t("reset")}
@@ -937,7 +937,7 @@ export function LinksView() {
                           <Button
                             type="button"
                             onClick={() => setFilterOpen(false)}
-                            className="h-10 flex-1 rounded-lg bg-blue-600 px-3 font-semibold text-white hover:bg-blue-700"
+                            className="h-10 flex-1 rounded-lg bg-primary px-3 font-medium text-primary-foreground shadow-none hover:bg-primary/90"
                           >
                             {t("apply")}
                           </Button>
@@ -964,7 +964,7 @@ export function LinksView() {
                       onClick={() => setFilters(defaultLinkFilters)}
                       variant="outline"
                       size="lg"
-                      className="h-11 rounded-xl font-semibold text-slate-700"
+                      className="h-10 rounded-lg border-border font-medium text-foreground shadow-none"
                     >
                       <RotateCcw />
                       {t("resetFilters")}
@@ -972,7 +972,7 @@ export function LinksView() {
                   }
                 />
               ) : (
-                <section className="space-y-4">
+                <section className="space-y-3">
                   {paginatedLinks.map((link) => (
                     <LinkCard key={link.id} link={link} />
                   ))}
@@ -980,9 +980,9 @@ export function LinksView() {
               )}
 
 
-              <Card className="flex flex-col gap-3 border-slate-200 px-4 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-600">
-                  <SlidersHorizontal className="size-4 text-blue-600" />
+              <Card className="flex flex-col gap-3 rounded-none border-x-0 border-b-0 border-border bg-transparent px-0 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <SlidersHorizontal className="size-4 text-primary" />
                   <span>
                     {t("showing", {
                       first: firstItem,
@@ -991,14 +991,14 @@ export function LinksView() {
                     })}
                   </span>
                   {usingDemoData ? (
-                    <Badge variant="secondary" className="border-amber-100 bg-amber-50 text-amber-700">
+                    <Badge variant="secondary" className="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400">
                       {t("demoData")}
                     </Badge>
                   ) : null}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-500">{t("rows")}</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("rows")}</span>
                   <Select
                     value={String(pageSize)}
                     onValueChange={(value) => {
@@ -1006,7 +1006,7 @@ export function LinksView() {
                       setPageSize(Number(value));
                     }}
                   >
-                    <SelectTrigger className="h-9 w-16 rounded-lg px-2 font-semibold">
+                    <SelectTrigger className="h-9 w-16 rounded-lg border-border bg-background px-2 font-medium shadow-none">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1023,12 +1023,12 @@ export function LinksView() {
                     disabled={safePage === 1}
                     variant="outline"
                     size="icon"
-                    className="size-9 rounded-lg"
+                    className="size-9 rounded-lg border-border bg-background shadow-none"
                     aria-label="Previous page"
                   >
                     <ChevronLeft />
                   </Button>
-                  <span className="min-w-16 text-center text-sm font-semibold text-slate-700" aria-live="polite">
+                  <span className="min-w-16 text-center text-sm font-medium text-foreground" aria-live="polite">
                     {safePage}/{totalPages}
                   </span>
                   <Button
@@ -1037,7 +1037,7 @@ export function LinksView() {
                     disabled={safePage === totalPages}
                     variant="outline"
                     size="icon"
-                    className="size-9 rounded-lg"
+                    className="size-9 rounded-lg border-border bg-background shadow-none"
                     aria-label="Next page"
                   >
                     <ChevronRight />

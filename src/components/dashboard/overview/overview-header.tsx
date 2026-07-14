@@ -111,8 +111,8 @@ export function OverviewHeader({
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="icon-lg"
-                className="size-11 shrink-0 bg-background shadow-none"
+                // size="lg"
+                className="shrink-0 bg-background shadow-none"
                 aria-label="Làm mới dữ liệu tổng quan"
                 onClick={onRefresh}
                 disabled={isRefreshing}

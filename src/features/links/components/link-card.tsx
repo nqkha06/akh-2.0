@@ -27,7 +27,6 @@ import {
     CredenzaBody,
     CredenzaClose,
     CredenzaContent,
-    CredenzaDescription,
     CredenzaFooter,
     CredenzaHeader,
     CredenzaTitle,
@@ -139,15 +138,15 @@ export function LinkCard({ link }: LinkCardProps) {
 
     return (
         <>
-            <Card>
-                <CardContent>
+            <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none transition-colors duration-200 hover:border-foreground/20">
+                <CardContent className="p-0">
                     {/* Main information */}
-                    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                    <div className="flex min-w-0 flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-5">
                         {/* Link icon */}
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 sm:size-14">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 sm:size-11">
                             <Link2
                                 aria-hidden
-                                className="size-6 text-slate-400 sm:size-7"
+                                className="size-5 text-muted-foreground"
                                 strokeWidth={2}
                             />
                         </div>
@@ -156,11 +155,11 @@ export function LinkCard({ link }: LinkCardProps) {
                         <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="min-w-0">
-                                    <h3 className="truncate text-lg font-bold tracking-tight sm:text-xl">
+                                    <h3 className="truncate text-base font-semibold tracking-tight sm:text-[17px]">
                                         {link.title}
                                     </h3>
 
-                                    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 sm:text-sm">
+                                    <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:text-sm">
                                         <span
                                             className="min-w-0 max-w-full truncate"
                                             title={link.destinationUrl ?? undefined}
@@ -168,14 +167,14 @@ export function LinkCard({ link }: LinkCardProps) {
                                             {link.destinationUrl ?? "https://example.com"}
                                         </span>
 
-                                        <span className="shrink-0 text-slate-400">
+                                        <span className="shrink-0 text-muted-foreground/70">
                                             {t("to")}
                                         </span>
 
                                         <button
                                             type="button"
                                             onClick={copyRedirectUrl}
-                                            className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-medium text-slate-950 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                                            className="max-w-full truncate rounded-md bg-muted px-2 py-1 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                                             title={redirectUrl}
                                         >
                                             {redirectUrl}
@@ -189,8 +188,8 @@ export function LinkCard({ link }: LinkCardProps) {
                                         variant="secondary"
                                         className={
                                             isActive
-                                                ? "border-0 bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"
-                                                : "border-0 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600"
+                                                ? "border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                                                : "border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                                         }
                                     >
                                         {statusLabel}
@@ -198,7 +197,7 @@ export function LinkCard({ link }: LinkCardProps) {
 
                                     <Badge
                                         variant="secondary"
-                                        className="border-0 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700"
+                                        className="border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                                     >
                                         {t("monetizationOn")}
                                     </Badge>
@@ -208,14 +207,14 @@ export function LinkCard({ link }: LinkCardProps) {
                     </div>
 
                     {/* Bottom action bar */}
-                    <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:p-3 dark:bg-slate-800/60 dark:border-slate-700">
+                    <div className="flex flex-col gap-2 border-t border-border bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
                         {/* Main actions */}
                         <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={copyRedirectUrl}
-                                className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                                className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
                             >
                                 <Copy className="size-3.5 sm:size-4" />
                                 <span className="hidden sm:inline">{t("copyLink")}</span>
@@ -227,7 +226,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                                        className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
                                         aria-label={t("qrCode")}
                                     >
                                         <QrCode className="size-3.5 sm:size-4" />
@@ -348,7 +347,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                         </Field>
                                         </FieldGroup>
 
-                                        <div className="flex min-h-64 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                                        <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-4">
                                         {qrImageSrc ? (
                                             <img
                                                 alt="Generated QR code"
@@ -356,7 +355,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                                 src={qrImageSrc}
                                             />
                                         ) : (
-                                            <p className="text-sm text-slate-500">
+                                            <p className="text-sm text-muted-foreground">
                                                 {isQrLoading
                                                     ? t("generating")
                                                     : t("qrUnavailable")}
@@ -396,7 +395,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="h-9 min-w-0 bg-white px-2 shadow-none sm:h-10 sm:px-3"
+                                        className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
                                         aria-label={t("stats")}
                                     >
                                         <BarChart3 className="size-3.5 sm:size-4" />
@@ -419,36 +418,36 @@ export function LinkCard({ link }: LinkCardProps) {
                                         ].map(([label, value]) => (
                                             <div
                                                 key={label}
-                                                className="rounded-lg border border-slate-200 bg-slate-50/70 p-3"
+                                                className="rounded-lg border border-border bg-muted/30 p-3"
                                             >
-                                                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                                                     {label}
                                                 </p>
 
-                                                <p className="mt-1 truncate text-lg font-semibold text-slate-950">
+                                                <p className="mt-1 truncate text-lg font-semibold text-foreground">
                                                     {value}
                                                 </p>
                                             </div>
                                         ))}
                                         </div>
 
-                                        <div className="space-y-4 rounded-xl border border-slate-200 p-4 text-sm">
+                                        <div className="space-y-4 rounded-lg border border-border bg-background p-4 text-sm">
                                         <div>
-                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                 {t("shortUrl")}
                                             </p>
 
-                                            <p className="mt-1 break-all font-medium text-slate-950">
+                                            <p className="mt-1 break-all font-medium text-foreground">
                                                 {redirectUrl}
                                             </p>
                                         </div>
 
                                         <div>
-                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                 {t("destinationUrl")}
                                             </p>
 
-                                            <p className="mt-1 break-all font-medium text-slate-950">
+                                            <p className="mt-1 break-all font-medium text-foreground">
                                                 {link.destinationUrl ?? "https://example.com"}
                                             </p>
                                         </div>
@@ -468,10 +467,10 @@ export function LinkCard({ link }: LinkCardProps) {
 
                         {/* Monetization and menu */}
                         <div className="flex items-center justify-between gap-2 sm:justify-end">
-                            <div className="flex h-9 flex-1 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2 sm:h-10 sm:flex-none sm:px-3 dark:bg-slate-800/60 dark:border-slate-700">
+                            <div className="flex h-8 flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 sm:h-9 sm:flex-none sm:px-3">
                                 <Label
                                     htmlFor={`monetization-${link.id}`}
-                                    className="cursor-pointer text-xs font-semibold text-slate-500"
+                                    className="cursor-pointer text-xs font-medium text-muted-foreground"
                                 >
                                     {t("monetization")}
                                 </Label>
@@ -487,7 +486,7 @@ export function LinkCard({ link }: LinkCardProps) {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        className="size-9 shrink-0 bg-white shadow-none sm:size-10"
+                                        className="size-8 shrink-0 border-border bg-background shadow-none sm:size-9"
                                         aria-label={t("edit")}
                                         title={t("edit")}
                                     >

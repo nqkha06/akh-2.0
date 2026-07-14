@@ -43,7 +43,7 @@ function Sparkline({ values, trend }: { values: number[]; trend: OverviewMetric[
 export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
   return (
     <TooltipProvider>
-      <section aria-label="Chỉ số tổng quan" className="border-y border-border">
+      <section aria-label="Chỉ số tổng quan" className="border rounded-lg border-border bg-card">
         <div className="grid grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric, index) => {
             const TrendIcon = metric.trend === "up" ? ArrowUpRight : ArrowDownRight;
