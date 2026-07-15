@@ -17,29 +17,41 @@ export function PageHeader({
   description,
   action,
   eyebrow,
+  className,
 }: {
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
   action?: ReactNode;
-  eyebrow?: string;
+  eyebrow?: ReactNode;
+  className?: string;
 }) {
   return (
-    <header className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0 space-y-1">
-
-        <h1 className="truncate text-2xl font-semibold tracking-tight">
+    <header
+      className={cn(
+        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        {eyebrow ? (
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground sm:text-[1.5rem]">
           {title}
         </h1>
-        {
-          // description && (
-          //   // <p className="max-w-2xl text-sm text-muted-foreground">
-          //   //   {description}
-          //   // </p>
-          // )
-        }
-
+        {/* {description ? (
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        ) : null} */}
       </div>
-      {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
+      {action ? (
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+          {action}
+        </div>
+      ) : null}
     </header>
   );
 }

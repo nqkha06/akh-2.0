@@ -13,7 +13,6 @@ export type ActionCategory = (typeof actionCategories)[number];
 
 // Categories describe the main user intent of a platform, not its technical API.
 export const platformCategories: Record<string, Exclude<ActionCategory, "all">> = {
-  popular: "Other",
   youtube: "Video",
   twitter: "Social",
   instagram: "Social",

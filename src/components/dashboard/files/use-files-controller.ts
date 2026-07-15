@@ -111,10 +111,15 @@ export function useFilesController() {
   async function runUpload(item: UploadQueueItem) {
     const controller = new AbortController();
     uploadControllers.current.set(item.id, controller);
-    setUploadQueue((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: "uploading", error: undefined } : entry));
+    setUploadQueue((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: "uploading", progress: 0, error: undefined } : entry));
     try {
-      const uploaded = await uploadFile(item.file, { signal: controller.signal });
-      setUploadQueue((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: "success" } : entry));
+      const uploaded = await uploadFile(item.file, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          setUploadQueue((current) => current.map((entry) => entry.id === item.id ? { ...entry, progress } : entry));
+        },
+      });
+      setUploadQueue((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: "success", progress: 100 } : entry));
       setFiles((current) => [withViewData(uploaded), ...current.filter((file) => file.id !== uploaded.id)]);
       setTotalSize((current) => current + uploaded.size);
       window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }));
@@ -128,7 +133,7 @@ export function useFilesController() {
   }
 
   const addFiles = (nextFiles: File[]) => {
-    const items = nextFiles.map((file, index): UploadQueueItem => ({ id: `${Date.now()}-${index}-${file.name}`, file, status: file.size > FILE_SIZE_LIMIT || file.size === 0 ? "error" : "pending", error: file.size > FILE_SIZE_LIMIT ? "File vượt quá giới hạn 100 MB." : file.size === 0 ? "File rỗng không thể tải lên." : undefined }));
+    const items = nextFiles.map((file, index): UploadQueueItem => ({ id: `${Date.now()}-${index}-${file.name}`, file, status: file.size > FILE_SIZE_LIMIT || file.size === 0 ? "error" : "pending", progress: 0, error: file.size > FILE_SIZE_LIMIT ? "File vượt quá giới hạn 100 MB." : file.size === 0 ? "File rỗng không thể tải lên." : undefined }));
     setUploadQueue((current) => [...current, ...items]);
     items.filter((item) => item.status === "pending").forEach((item) => void runUpload(item));
   };

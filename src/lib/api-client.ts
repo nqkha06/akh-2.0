@@ -342,29 +342,128 @@ export async function uploadFile(
   options?: {
     purpose?: "file" | "cover";
     signal?: AbortSignal;
+    onProgress?: (progress: number) => void;
   },
 ) {
-  const formData = new FormData();
-  formData.append("file", file);
-  const searchParams = new URLSearchParams();
+  options?.onProgress?.(0);
 
-  if (options?.purpose) {
-    searchParams.set("purpose", options.purpose);
-  }
-
-  const query = searchParams.toString();
-
-  const response = await fetch(`${API_URL}/files${query ? `?${query}` : ""}`, {
+  const initiateResponse = await fetch(`${API_URL}/files/multipart`, {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileName: file.name,
+      mimeType: file.type || "application/octet-stream",
+      size: file.size,
+      purpose: options?.purpose || "file",
+    }),
     signal: options?.signal,
   });
 
-  if (!response.ok) {
-    throw new Error(await getApiError(response));
+  if (!initiateResponse.ok) {
+    throw new Error(await getApiError(initiateResponse));
   }
 
-  return (await response.json()) as ManagedFileDto;
+  const upload = (await initiateResponse.json()) as {
+    uploadId: string;
+    partSize: number;
+    totalParts: number;
+  };
+  const uploadId = upload.uploadId;
+
+  try {
+    for (let partNumber = 1; partNumber <= upload.totalParts; partNumber += 1) {
+      const start = (partNumber - 1) * upload.partSize;
+      const end = Math.min(start + upload.partSize, file.size);
+      const chunk = file.slice(start, end);
+
+      await uploadMultipartPart(
+        upload.uploadId,
+        partNumber,
+        chunk,
+        options?.signal,
+        (loaded) => {
+          const uploadedBytes = start + loaded;
+          options?.onProgress?.(Math.min(99, Math.round((uploadedBytes / file.size) * 100)));
+        },
+      );
+    }
+
+    const completeResponse = await fetch(`${API_URL}/files/multipart/${upload.uploadId}/complete`, {
+      method: "POST",
+      signal: options?.signal,
+    });
+
+    if (!completeResponse.ok) {
+      throw new Error(await getApiError(completeResponse));
+    }
+
+    options?.onProgress?.(100);
+    return (await completeResponse.json()) as ManagedFileDto;
+  } catch (error) {
+    await fetch(`${API_URL}/files/multipart/${uploadId}`, {
+      method: "DELETE",
+      keepalive: true,
+    }).catch(() => undefined);
+    throw error;
+  }
+}
+
+function uploadMultipartPart(
+  uploadId: string,
+  partNumber: number,
+  chunk: Blob,
+  signal: AbortSignal | undefined,
+  onProgress: (loaded: number) => void,
+) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append("chunk", chunk, `part-${partNumber}`);
+
+    const cleanup = () => signal?.removeEventListener("abort", abortUpload);
+    const abortUpload = () => xhr.abort();
+
+    xhr.open("POST", `${API_URL}/files/multipart/${uploadId}/parts/${partNumber}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded);
+    };
+    xhr.onload = () => {
+      cleanup();
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(chunk.size);
+        resolve();
+        return;
+      }
+      reject(new Error(getXhrApiError(xhr)));
+    };
+    xhr.onerror = () => {
+      cleanup();
+      reject(new Error("Không thể kết nối tới máy chủ upload."));
+    };
+    xhr.onabort = () => {
+      cleanup();
+      reject(new DOMException("Upload đã bị hủy.", "AbortError"));
+    };
+
+    if (signal?.aborted) {
+      reject(new DOMException("Upload đã bị hủy.", "AbortError"));
+      return;
+    }
+
+    signal?.addEventListener("abort", abortUpload, { once: true });
+    xhr.send(formData);
+  });
+}
+
+function getXhrApiError(xhr: XMLHttpRequest) {
+  try {
+    const data = JSON.parse(xhr.responseText) as { message?: string | string[] };
+    return Array.isArray(data.message)
+      ? data.message.join(", ")
+      : data.message || `Request failed with ${xhr.status}`;
+  } catch {
+    return `Request failed with ${xhr.status}`;
+  }
 }
 
 export async function updateFile(

@@ -20,7 +20,7 @@ export function CreateMenu() {
   const items = [
     { href: "/member/create", title: t("create.socialLink"), description: t("create.socialLinkDescription"), icon: Link2 },
     { href: "/member/files", title: t("create.file"), description: t("create.fileDescription"), icon: FileUp },
-    { href: "/member/bio", title: t("create.bio"), description: t("create.bioDescription"), icon: UserRound },
+    { href: "/member/bio/create", title: t("create.bio"), description: t("create.bioDescription"), icon: UserRound },
     { href: "/member/links", title: t("create.unlock"), description: t("create.unlockDescription"), icon: FileCode2 },
   ]
 
@@ -58,4 +58,3 @@ export function CreateMenu() {
     </DropdownMenu>
   )
 }
-

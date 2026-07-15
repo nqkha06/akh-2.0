@@ -31,14 +31,12 @@ import {
 import {
   checkLinkAliasAvailability,
   createSnippet,
-  deleteSnippet,
   createLink,
   getFileDownloadUrl,
   getFilePreviewUrl,
   getFiles,
   getSnippets,
   uploadFile,
-  updateSnippet,
   updateLink,
   type LinkDto,
   type ManagedFileDto,
@@ -136,22 +134,6 @@ type SocialPlatform = {
 }
 
 const baseSocialPlatforms: Record<string, SocialPlatform> = {
-  popular: {
-    name: "Popular",
-    icon: StarIcon,
-    color: "bg-red-600",
-    actions: [
-      { id: "subscribe", label: "Subscribe to channel", requiresUrl: true, icon: UserPlus },
-      { id: "subscribe-notifications", label: "Subscribe & turn on notifications", requiresUrl: true, icon: Bell },
-      { id: "other-visit", label: "Visit website", requiresUrl: true, icon: Link },
-      { id: "like", label: "Like a video", requiresUrl: true, icon: ThumbsUp },
-      { id: "comment", label: "Comment on a video", requiresUrl: true, icon: MessageCircle },
-      { id: "like-comment", label: "Like & comment on video", requiresUrl: true, icon: MessageCircle },
-      { id: "watch", label: "Watch video", requiresUrl: true, icon: PlayCircle },
-      { id: "tiktok-follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-
-    ],
-  },
   youtube: {
     name: "YouTube",
     icon: SiYoutube,
@@ -526,12 +508,77 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
   },
 }
 
+type PopularActionOption = {
+  platform: keyof typeof baseSocialPlatforms
+  action: SocialActionItem
+}
+
+const popularActionMappings: Array<{ platform: keyof typeof baseSocialPlatforms; actionId: string }> = [
+  { platform: "youtube", actionId: "subscribe" },
+  { platform: "youtube", actionId: "subscribe-notifications" },
+  { platform: "other", actionId: "visit-page" },
+  { platform: "youtube", actionId: "like" },
+  { platform: "youtube", actionId: "comment" },
+  { platform: "youtube", actionId: "like-comment" },
+  { platform: "youtube", actionId: "watch" },
+  { platform: "tiktok", actionId: "follow" },
+]
+
+const popularActionOptions: PopularActionOption[] = popularActionMappings.flatMap(({ platform, actionId }) => {
+  const action = baseSocialPlatforms[platform].actions.find((item) => item.id === actionId)
+  return action ? [{ platform, action }] : []
+})
+
 const socialPlatforms: Record<string, SocialPlatform> = Object.fromEntries(
   Object.entries(baseSocialPlatforms).map(([key, platform]) => [
     key,
     { ...platform, category: platformCategories[key] ?? "Other" },
   ]),
 )
+
+const platformIconColors: Record<string, string> = {
+  youtube: "text-red-600 dark:text-red-400",
+  twitter: "text-foreground",
+  instagram: "text-pink-600 dark:text-pink-400",
+  tiktok: "text-foreground",
+  facebook: "text-blue-600 dark:text-blue-400",
+  discord: "text-indigo-600 dark:text-indigo-400",
+  telegram: "text-sky-600 dark:text-sky-400",
+  spotify: "text-green-600 dark:text-green-400",
+  twitch: "text-purple-600 dark:text-purple-400",
+  vimeo: "text-sky-600 dark:text-sky-400",
+  threads: "text-foreground",
+  linkedin: "text-blue-700 dark:text-blue-400",
+  pinterest: "text-red-600 dark:text-red-400",
+  snapchat: "text-yellow-600 dark:text-yellow-300",
+  reddit: "text-orange-600 dark:text-orange-400",
+  whatsapp: "text-green-600 dark:text-green-400",
+  bluesky: "text-sky-600 dark:text-sky-400",
+  soundcloud: "text-orange-600 dark:text-orange-400",
+  deezer: "text-purple-600 dark:text-purple-400",
+  kick: "text-lime-600 dark:text-lime-400",
+  rumble: "text-green-600 dark:text-green-400",
+  roblox: "text-foreground",
+  steam: "text-slate-700 dark:text-slate-300",
+  behance: "text-blue-600 dark:text-blue-400",
+  dribbble: "text-pink-600 dark:text-pink-400",
+  deviantart: "text-green-600 dark:text-green-400",
+  appleMusic: "text-pink-600 dark:text-pink-400",
+  audiomack: "text-yellow-600 dark:text-yellow-300",
+  beatstars: "text-red-600 dark:text-red-400",
+  bandcamp: "text-sky-600 dark:text-sky-400",
+  tidal: "text-foreground",
+  onlyfans: "text-sky-600 dark:text-sky-400",
+  github: "text-foreground",
+  productHunt: "text-orange-600 dark:text-orange-400",
+  googlePlay: "text-green-600 dark:text-green-400",
+  appStore: "text-blue-600 dark:text-blue-400",
+  other: "text-muted-foreground",
+}
+
+function getPlatformIconClass(platform: string) {
+  return platformIconColors[platform] || "text-muted-foreground"
+}
 
 interface SocialAction {
   id: string
@@ -803,6 +850,7 @@ export default function SocialLinksGenerator({
   const [isActionModalOpen, setIsActionModalOpen] = useState(false)
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false)
   const [expandedPlatforms, setExpandedPlatforms] = useState<Set<string>>(new Set(["youtube"]))
+  const [popularExpanded, setPopularExpanded] = useState(true)
   const [layoutOpen, setLayoutOpen] = useState(false)
   const [extraOptionsOpen, setExtraOptionsOpen] = useState(false)
   const [expiresOpen, setExpiresOpen] = useState(false)
@@ -1099,21 +1147,6 @@ export default function SocialLinksGenerator({
     return snippet
   }
 
-  const updateSnippetItem = async (
-    id: string,
-    payload: { name?: string; content?: string },
-  ) => {
-    const snippet = await updateSnippet(id, payload)
-    setSnippets((current) => current.map((item) => item.id === id ? snippet : item))
-    return snippet
-  }
-
-  const deleteSnippetItem = async (id: string) => {
-    await deleteSnippet(id)
-    setSnippets((current) => current.filter((snippet) => snippet.id !== id))
-    if (selectedSnippet === id) setSelectedSnippet("")
-  }
-
   const uploadDestinationFiles = async (files: File[]) => {
     if (files.length === 0) return
 
@@ -1231,15 +1264,23 @@ export default function SocialLinksGenerator({
 
   // Derived data for action picker filtering
   const actionPlatformEntries = Object.entries(socialPlatforms)
-  const filteredPlatforms = actionPlatformEntries
+  const filterActionPlatforms = (search: string, category: string) => actionPlatformEntries
     .map(([key, platform]) => ({ key, platform }))
     .filter(({ platform }) => {
-      if (actionCategory !== "all" && (platform.category || "Other") !== actionCategory) return false
-      if (!actionSearch) return true
-      const q = actionSearch.toLowerCase()
+      if (category !== "all" && (platform.category || "Other") !== category) return false
+      if (!search) return true
+      const q = search.toLowerCase()
       if (platform.name.toLowerCase().includes(q)) return true
       return platform.actions.some((action) => action.label.toLowerCase().includes(q))
     })
+  const filteredPlatforms = filterActionPlatforms(actionSearch, actionCategory)
+  const filterPopularActions = (search: string, category: string) => popularActionOptions.filter(({ platform, action }) => {
+    if (category !== "all" && (platformCategories[platform] || "Other") !== category) return false
+    if (!search) return true
+    const normalizedSearch = search.toLowerCase()
+    return action.label.toLowerCase().includes(normalizedSearch) || platform.toLowerCase().includes(normalizedSearch)
+  })
+  const filteredPopularActions = filterPopularActions(actionSearch, actionCategory)
 
   const selectedBackgroundName =
     backgroundMediaType === "video"
@@ -1373,10 +1414,10 @@ export default function SocialLinksGenerator({
               }}
               className="w-full min-w-0 !gap-0"
             >
-              <TabsList variant="line" className="!grid !h-10 !w-full !min-w-0 !grid-cols-3 !items-stretch !justify-stretch gap-0 rounded-none border-b border-border bg-transparent p-0">
+              <TabsList className="grid h-9 w-full grid-cols-3">
                 <TabsTrigger
                   value="url"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
+                 
                 >
                   <Link className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.url")}</span>
@@ -1384,7 +1425,7 @@ export default function SocialLinksGenerator({
 
                 <TabsTrigger
                   value="file"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
+                 
                 >
                   <FileImage className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.file")}</span>
@@ -1392,7 +1433,7 @@ export default function SocialLinksGenerator({
 
                 <TabsTrigger
                   value="snippet"
-                  className="!m-0 !flex !h-10 !w-auto !min-w-0 !flex-none !items-center !justify-center gap-2 !rounded-none !border-0 !px-2 !py-0 text-sm font-medium text-muted-foreground !shadow-none transition-colors hover:bg-transparent hover:text-foreground focus-visible:!border-0 data-[state=active]:!bg-transparent data-[state=active]:!text-foreground data-[state=active]:!shadow-none"
+                 
                 >
                   <MessageSquare className="size-4 shrink-0" />
                   <span className="min-w-0 truncate">{t("tabs.snippet")}</span>
@@ -1581,6 +1622,12 @@ export default function SocialLinksGenerator({
             preview: t("preview"),
             dragHint: t("dragFilesHint"),
             browseHint: t("browseFilesHint"),
+            filesTab: t("filesTab"),
+            uploadsTab: t("uploadsTab"),
+            itemsPerPage: t("itemsPerPage"),
+            pageOf: (page, total) => t("pageOf", { page, total }),
+            previousPage: t("previousPage"),
+            nextPage: t("nextPage"),
             fileCount: (count) => t("fileCount", { count }),
           }}
         />
@@ -1640,6 +1687,12 @@ export default function SocialLinksGenerator({
             preview: t("preview"),
             dragHint: t("dragImageHint"),
             browseHint: t("coverUploadHint"),
+            filesTab: t("filesTab"),
+            uploadsTab: t("uploadsTab"),
+            itemsPerPage: t("itemsPerPage"),
+            pageOf: (page, total) => t("pageOf", { page, total }),
+            previousPage: t("previousPage"),
+            nextPage: t("nextPage"),
             fileCount: (count) => t("imageCount", { count }),
           }}
         />
@@ -1655,8 +1708,6 @@ export default function SocialLinksGenerator({
           onRetry={() => void loadSnippets()}
           onSelect={selectSnippet}
           onCreate={createSnippetItem}
-          onUpdate={updateSnippetItem}
-          onDelete={deleteSnippetItem}
         />
         {/* Actions Section */}
         <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
@@ -1679,7 +1730,7 @@ export default function SocialLinksGenerator({
                         onClick={() => handleEditAction(action.id)}
                         className="flex flex-1 items-center gap-2 rounded-md bg-muted px-3 py-2 text-left text-foreground transition-colors hover:bg-accent"
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className={`w-4 h-4 ${getPlatformIconClass(action.platform)}`} />
                         <span className="text-sm">{getActionLabel(action.platform, action.action)}</span>
                       </button>
                     </div>
@@ -1727,23 +1778,57 @@ export default function SocialLinksGenerator({
                   </CredenzaTitle>
                 </CredenzaHeader>
                 <CredenzaBody className="space-y-3 max-h-[65dvh]">
+                  {filteredPopularActions.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-border bg-card">
+                      <button
+                        type="button"
+                        onClick={() => setPopularExpanded((value) => !value)}
+                        className="flex w-full items-center justify-between bg-muted/25 p-3 text-left transition-colors hover:bg-accent/60"
+                      >
+                        <span className="flex items-center gap-2">
+                          <StarIcon className="size-5 text-primary" />
+                          <span>{t("popular")}</span>
+                        </span>
+                        {popularExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                      </button>
+                          {popularExpanded ? (
+                            <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                              {filteredPopularActions.map(({ platform, action }) => {
+                                const PopularPlatformIcon = socialPlatforms[platform].icon
+                                return (
+                                  <Button
+                                    key={`${platform}-${action.id}`}
+                                    type="button"
+                                    onClick={() => handleChangeActionType(platform, action.id)}
+                                    className={`${socialPlatforms[platform].color} text-sm text-white hover:opacity-80`}
+                                    size="sm"
+                                  >
+                                    <PopularPlatformIcon className="mr-1 size-4" />
+                                    {getActionLabel(platform, action.id)}
+                                  </Button>
+                                )
+                              })}
+                            </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {Object.entries(socialPlatforms).map(([key, platform]) => {
                     const Icon = platform.icon
                     const isExpanded = expandedPlatforms.has(key)
                     return (
-                      <div key={key}>
+                      <div key={key} className="overflow-hidden rounded-lg border border-border bg-card">
                         <button
                           onClick={() => togglePlatformExpanded(key)}
-                          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/25 p-3 transition-colors hover:bg-accent/60"
+                          className="flex w-full items-center justify-between bg-muted/25 p-3 text-left transition-colors hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-2">
-                            <Icon className="w-5 h-5" />
+                            <Icon className={`w-5 h-5 ${getPlatformIconClass(key)}`} />
                             <span>{platform.name}</span>
                           </div>
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                         {isExpanded && (
-                          <div className="mt-2 grid grid-cols-2 gap-2 px-3">
+                          <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
                             {platform.actions.map((action) => (
                               <Button
                                 key={action.id}
@@ -1822,23 +1907,57 @@ export default function SocialLinksGenerator({
                   </div>
 
                   {/* All Platforms */}
+                  {filteredPopularActions.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-border bg-card">
+                      <button
+                        type="button"
+                        onClick={() => setPopularExpanded((value) => !value)}
+                        className="flex w-full items-center justify-between bg-muted/25 p-3 text-left transition-colors hover:bg-accent/60"
+                      >
+                        <span className="flex items-center gap-2">
+                          <StarIcon className="size-5 text-primary" />
+                          <span>{t("popular")}</span>
+                        </span>
+                        {popularExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                      </button>
+                          {popularExpanded ? (
+                            <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                              {filteredPopularActions.map(({ platform, action }) => {
+                                const PopularPlatformIcon = socialPlatforms[platform].icon
+                                return (
+                                  <Button
+                                    key={`${platform}-${action.id}`}
+                                    type="button"
+                                    onClick={() => addAction(platform, action.id)}
+                                    className={`${socialPlatforms[platform].color} text-sm text-white hover:opacity-80`}
+                                    size="sm"
+                                  >
+                                    <PopularPlatformIcon className="mr-1 size-4" />
+                                    {getActionLabel(platform, action.id)}
+                                  </Button>
+                                )
+                              })}
+                            </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {filteredPlatforms.map(({ key, platform }) => {
                     const PlatformIcon = platform.icon
                     const isExpanded = expandedPlatforms.has(key)
                     return (
-                      <div key={key}>
+                      <div key={key} className="overflow-hidden rounded-lg border border-border bg-card">
                         <button
                           onClick={() => togglePlatformExpanded(key)}
-                          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/25 p-3 transition-colors hover:bg-accent/60"
+                          className="flex w-full items-center justify-between bg-muted/25 p-3 text-left transition-colors hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-2">
-                            <PlatformIcon className="w-5 h-5" />
+                            <PlatformIcon className={`w-5 h-5 ${getPlatformIconClass(key)}`} />
                             <span>{platform.name} ({platform.actions.length})</span>
                           </div>
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                         {isExpanded && (
-                          <div className="mt-2 grid grid-cols-2 gap-2 px-3">
+                          <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
                             {platform.actions.map((action) => (
                               <Button
                                 key={action.id}
@@ -1846,7 +1965,7 @@ export default function SocialLinksGenerator({
                                 className={`${platform.color} hover:opacity-80 text-white text-sm`}
                                 size="sm"
                               >
-                                <action.icon className="w-4 h-4 mr-1" />
+                                <PlatformIcon className="w-4 h-4 mr-1" />
                                 {getActionLabel(key as keyof typeof socialPlatforms, action.id)}
                               </Button>
                             ))}

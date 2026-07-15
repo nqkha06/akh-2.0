@@ -15,7 +15,6 @@ import {
   Music2,
   Palette,
   Plus,
-  Save,
   Settings,
   Shield,
   Trash2,
@@ -135,20 +134,20 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 }
 
 export default function LinkInBioGenerator({
-  showHeader = true,
   initialBio,
   onSaved,
+  onSavingChange,
 }: {
-  showHeader?: boolean
   initialBio?: BioPageDto | null
   onSaved?: (bioPage: BioPageDto) => void
+  onSavingChange?: (saving: boolean) => void
 }) {
   const nextIdRef = useRef(10)
   const [expandedSections, setExpandedSections] = useState<Record<EditorSectionKey, boolean>>({
     details: true,
     links: false,
     socials: false,
-    appearance: true,
+    appearance: false,
     widgets: false,
     admin: false,
   })
@@ -178,8 +177,6 @@ export default function LinkInBioGenerator({
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
   const [savedBio, setSavedBio] = useState<BioPageDto | null>(null)
-
-  const isEditing = Boolean(initialBio)
 
   const setSectionOpen = (section: EditorSectionKey, open: boolean) => {
     setExpandedSections((current) => ({ ...current, [section]: open }))
@@ -237,11 +234,11 @@ export default function LinkInBioGenerator({
     }
   }
 
-  const buildBioPayload = (): CreateBioPagePayload => ({
+  const buildBioPayload = (statusOverride: "published" | "draft" = status): CreateBioPagePayload => ({
     name: profileDetails.name.trim(),
     title: profileDetails.title || undefined,
     customSlug: customSlug || undefined,
-    status,
+    status: statusOverride,
     socialLinks: socialLinks.filter((link) => link.platform && isValidUrl(link.url)),
     customLinks: customLinks.filter((link) => link.title.trim() && isValidUrl(link.url)),
     widgets: widgets.filter((widget) => isValidUrl(widget.url)).map((widget) => ({ ...widget, title: widget.title.trim() })),
@@ -249,10 +246,11 @@ export default function LinkInBioGenerator({
     appearance: appearanceSettings,
   })
 
-  const handleSaveBio = async () => {
+  const handleSaveBio = async (saveMode: "draft" | "published" | "current" = "current") => {
     if (isSaving) return
 
-    const payload = buildBioPayload()
+    const nextStatus = saveMode === "current" ? status : saveMode
+    const payload = buildBioPayload(nextStatus)
     if (!payload.name) {
       setSaveError("Tên trang là bắt buộc.")
       return
@@ -263,6 +261,7 @@ export default function LinkInBioGenerator({
     }
 
     setIsSaving(true)
+    onSavingChange?.(true)
     setSaveError("")
     try {
       const bioPage = initialBio
@@ -274,6 +273,7 @@ export default function LinkInBioGenerator({
       setSaveError(error instanceof Error ? error.message : "Không lưu được trang Link-in-bio.")
     } finally {
       setIsSaving(false)
+      onSavingChange?.(false)
     }
   }
 
@@ -372,27 +372,17 @@ export default function LinkInBioGenerator({
     : { backgroundColor: appearanceSettings.backgroundColor || "#f4f7fb" }
   const accentColor = getBioAccentColor(appearanceSettings.backgroundColor)
   const selectedButtonStyle = normalizeBioButtonStyle(appearanceSettings.buttonStyle)
-  const selectedButtonStyleData = bioButtonStyles.find((style) => style.value === selectedButtonStyle)
   const validColorValue = /^#[0-9a-f]{6}$/i.test(appearanceSettings.backgroundColor)
     ? appearanceSettings.backgroundColor
     : "#ffffff"
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-border pb-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold tracking-tight text-foreground">
-              {showHeader ? "Thiết kế Link-in-bio" : isEditing ? "Nội dung và giao diện" : "Thiết lập trang mới"}
-            </h2>
-            <Badge variant="outline" className={status === "published" ? "border-primary/20 bg-primary/10 text-primary" : "text-muted-foreground"}>
-              {status === "published" ? "Đã xuất bản" : "Bản nháp"}
-            </Badge>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">Chỉnh nội dung bên trái và theo dõi thay đổi trực tiếp trong preview.</p>
-        </div>
-      </div>
-
+    <form id="link-in-bio-editor-form" className="space-y-5" onSubmit={(event) => {
+      event.preventDefault()
+      const submitter = event.nativeEvent.submitter as HTMLButtonElement | null
+      const saveMode = submitter?.value === "draft" || submitter?.value === "published" ? submitter.value : "current"
+      void handleSaveBio(saveMode)
+    }}>
       {saveError ? <div role="alert" className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive">{saveError}</div> : null}
       {savedBio ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
@@ -517,19 +507,13 @@ export default function LinkInBioGenerator({
             <p className="text-xs leading-5 text-muted-foreground">Trang đã xuất bản có thể mở công khai tại /b/{customSlug || "ten-cua-ban"}.</p>
           </EditorSection>
 
-          <div className="flex justify-end border-t border-border pt-4">
-            <Button type="button" onClick={handleSaveBio} disabled={isSaving || !profileDetails.name.trim()} className="h-10 w-full rounded-lg px-4 shadow-none sm:w-auto">
-              <Save className="size-4" />
-              {isSaving ? "Đang lưu..." : isEditing ? "Lưu thay đổi" : "Tạo trang"}
-            </Button>
-          </div>
         </div>
 
         <aside className="min-w-0 xl:sticky xl:top-0">
           <div className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <div><h3 className="text-sm font-semibold text-foreground">Xem trước trực tiếp</h3><p className="mt-0.5 text-xs text-muted-foreground">{selectedButtonStyleData?.label}</p></div>
-              <Badge variant="secondary">{status === "published" ? "Công khai" : "Bản nháp"}</Badge>
+                              <h3 className="text-sm font-semibold text-foreground">Xem trước trực tiếp</h3>
+
             </div>
 
             <div className="bg-muted/20 p-3 sm:p-4">
@@ -561,6 +545,6 @@ export default function LinkInBioGenerator({
           </div>
         </aside>
       </div>
-    </div>
+    </form>
   )
 }

@@ -75,6 +75,10 @@ let dashboard: WithdrawalDashboardData = {
   transactions: initialTransactions,
 };
 
+export function getWithdrawalDemoData() {
+  return structuredClone(dashboard);
+}
+
 const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 
 /**
@@ -83,8 +87,7 @@ const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, 
  */
 export const withdrawalDataSource: WithdrawalDataSource = {
   async getDashboard() {
-    await wait(320);
-    return structuredClone(dashboard);
+    return getWithdrawalDemoData();
   },
   async estimate({ amount }) {
     await wait(80);

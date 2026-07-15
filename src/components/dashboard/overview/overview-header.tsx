@@ -19,7 +19,7 @@ type OverviewHeaderProps = {
   onRefresh: () => void;
 };
 
-export function OverviewHeader({
+export function OverviewDateControls({
   dateRange,
   customRange,
   isRefreshing,
@@ -45,17 +45,7 @@ export function OverviewHeader({
   };
 
   return (
-    <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground sm:text-[1.75rem]">
-          Bảng tổng quan
-        </h1>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Theo dõi lượt truy cập, chuyển đổi và hiệu suất nội dung của bạn.
-        </p>
-      </div>
-
-      <div className="flex w-full items-center gap-2 sm:w-auto">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
           <PopoverAnchor asChild>
             <div className="min-w-36 flex-1 sm:flex-none">
@@ -123,7 +113,6 @@ export function OverviewHeader({
             <TooltipContent>Làm mới dữ liệu</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </div>
-    </header>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Globe2, LockKeyhole, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,17 +48,27 @@ export function FilesTable(props: FilesTableProps) {
 
   return (
     <TooltipProvider>
-      <section aria-label="Danh sách file">
+      <section aria-label="Danh sách file" className="overflow-hidden rounded-xl border border-border bg-card">
         {props.uploads.filter((item) => item.status === "uploading" || item.status === "pending").map((item) => (
           <div key={item.id} className="flex min-h-16 items-center gap-3 border-b border-border bg-primary/5 px-3 sm:px-4">
-            <LoaderUpload /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.file.name}</p><p className="text-xs text-muted-foreground">Đang tải lên</p><div className="mt-2 h-1 max-w-sm overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={`Đang tải ${item.file.name}`}><div className="h-full w-full animate-pulse rounded-full bg-primary/70 motion-reduce:animate-none" /></div></div><Button variant="ghost" size="icon-sm" onClick={() => props.onCancelUpload(item.id)} aria-label={`Hủy tải lên ${item.file.name}`}><X /></Button>
+            <LoaderUpload /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.file.name}</p><p className="text-xs text-muted-foreground">Đang tải lên · {item.progress}%</p><div className="mt-2 h-1.5 max-w-sm overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={`Đang tải ${item.file.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><div className="h-full rounded-full bg-primary transition-[width] duration-200 motion-reduce:transition-none" style={{ width: `${item.progress}%` }} /></div></div><Button variant="ghost" size="icon-sm" onClick={() => props.onCancelUpload(item.id)} aria-label={`Hủy tải lên ${item.file.name}`}><X /></Button>
           </div>
         ))}
 
         <div className="hidden overflow-x-auto md:block">
           <Table className="min-w-[1040px]">
             <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border)]">
-              <TableRow className="hover:bg-transparent"><TableHead className="w-12 px-4"><Checkbox checked={indeterminate ? "indeterminate" : allSelected} onCheckedChange={(checked) => props.onSelectPage(Boolean(checked))} aria-label="Chọn tất cả file trên trang" /></TableHead><TableHead className="w-[32%]">File</TableHead><TableHead>Loại</TableHead><TableHead className="text-right">Dung lượng</TableHead><TableHead>Trạng thái</TableHead><TableHead>Ngày tải lên</TableHead><TableHead>Được sử dụng tại</TableHead><TableHead className="w-12"><span className="sr-only">Hành động</span></TableHead></TableRow>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12 px-4">
+                  <Checkbox checked={indeterminate ? "indeterminate" : allSelected} onCheckedChange={(checked) => props.onSelectPage(Boolean(checked))} aria-label="Chọn tất cả file trên trang" />
+                </TableHead>
+                <TableHead className="w-[52%]">File</TableHead>
+                <TableHead>Loại</TableHead>
+                <TableHead>Dung lượng</TableHead>
+                <TableHead>Ngày tải lên</TableHead>
+                <TableHead className="w-12">
+                  <span className="sr-only">Hành động</span></TableHead>
+                </TableRow>
             </TableHeader>
             <TableBody>
               {props.files.map((file) => {
@@ -68,10 +78,8 @@ export function FilesTable(props: FilesTableProps) {
                     <TableCell className="px-4"><Checkbox checked={selected} onCheckedChange={(checked) => props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} /></TableCell>
                     <TableCell><div className="flex min-w-0 items-center gap-3"><FileVisual file={file} /><div className="min-w-0"><Tooltip><TooltipTrigger asChild><button type="button" className="block max-w-72 truncate text-left text-sm font-medium text-foreground hover:text-primary hover:underline" onClick={() => props.onPreview(file)}>{file.name}</button></TooltipTrigger><TooltipContent>{file.name}</TooltipContent></Tooltip><p className="mt-0.5 max-w-72 truncate text-xs text-muted-foreground">/{file.alias}</p></div></div></TableCell>
                     <TableCell className="text-muted-foreground">{typeLabels[getFileType(file)]}</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{file.sizeLabel}</TableCell>
-                    <TableCell><FileStatusBadge status={file.status} /><p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">{file.isPublic ? <Globe2 className="size-3" /> : <LockKeyhole className="size-3" />}{file.isPublic ? "Công khai" : "Riêng tư"}</p></TableCell>
+                    <TableCell className="font-medium tabular-nums">{file.sizeLabel}</TableCell>
                     <TableCell className="text-muted-foreground">{formatFileDate(file.createdAt)}</TableCell>
-                    <TableCell>{file.usageCount === null ? <Tooltip><TooltipTrigger asChild><span className="cursor-help text-muted-foreground">—</span></TooltipTrigger><TooltipContent>API chưa cung cấp dữ liệu nơi sử dụng.</TooltipContent></Tooltip> : `${file.usageCount} nơi`}</TableCell>
                     <TableCell className="pr-3"><FileRowActions file={file} downloadUrl={getFileDownloadUrl(file)} onPreview={props.onPreview} onCopyUrl={props.onCopyUrl} onCopyAlias={props.onCopyAlias} onUseDestination={props.onUseDestination} onRename={props.onRename} onDelete={props.onDelete} /></TableCell>
                   </TableRow>
                 );

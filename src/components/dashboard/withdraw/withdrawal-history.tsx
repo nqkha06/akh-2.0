@@ -29,11 +29,14 @@ export function WithdrawalStatusBadge({ status }: { status: WithdrawalStatus }) 
 }
 
 export function WithdrawalHistoryFilters({ controller }: { controller: WithdrawalController }) {
+  const statusLabel = controller.statusFilter === "all" ? "Mọi trạng thái" : statusConfig[controller.statusFilter].label;
+  const dateLabel = controller.dateFilter === "30d" ? "30 ngày qua" : controller.dateFilter === "90d" ? "90 ngày qua" : "Mọi thời gian";
+  const sortLabel = controller.sort === "newest" ? "Mới nhất" : "Cũ nhất";
   return (
     <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
-      <Select value={controller.statusFilter} onValueChange={(value) => controller.setStatusFilter(value as WithdrawalStatus | "all")}><SelectTrigger aria-label="Lọc theo trạng thái" className="h-9 w-full sm:w-[150px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Mọi trạng thái</SelectItem><SelectItem value="processing">Đang xử lý</SelectItem><SelectItem value="paid">Đã thanh toán</SelectItem><SelectItem value="failed">Thất bại</SelectItem><SelectItem value="cancelled">Đã hủy</SelectItem><SelectItem value="verification_required">Cần xác minh</SelectItem></SelectContent></Select>
-      <Select value={controller.dateFilter} onValueChange={(value) => controller.setDateFilter(value as "all" | "30d" | "90d")}><SelectTrigger aria-label="Lọc theo thời gian" className="h-9 w-full sm:w-[135px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Mọi thời gian</SelectItem><SelectItem value="30d">30 ngày qua</SelectItem><SelectItem value="90d">90 ngày qua</SelectItem></SelectContent></Select>
-      <Select value={controller.sort} onValueChange={(value) => controller.setSort(value as "newest" | "oldest")}><SelectTrigger aria-label="Sắp xếp" className="h-9 w-full sm:w-[130px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="newest">Mới nhất</SelectItem><SelectItem value="oldest">Cũ nhất</SelectItem></SelectContent></Select>
+      <Select value={controller.statusFilter} onValueChange={(value) => controller.setStatusFilter(value as WithdrawalStatus | "all")}><SelectTrigger aria-label="Lọc theo trạng thái" className="h-9 w-full sm:w-[150px]"><SelectValue>{statusLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">Mọi trạng thái</SelectItem><SelectItem value="processing">Đang xử lý</SelectItem><SelectItem value="paid">Đã thanh toán</SelectItem><SelectItem value="failed">Thất bại</SelectItem><SelectItem value="cancelled">Đã hủy</SelectItem><SelectItem value="verification_required">Cần xác minh</SelectItem></SelectContent></Select>
+      <Select value={controller.dateFilter} onValueChange={(value) => controller.setDateFilter(value as "all" | "30d" | "90d")}><SelectTrigger aria-label="Lọc theo thời gian" className="h-9 w-full sm:w-[135px]"><SelectValue>{dateLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">Mọi thời gian</SelectItem><SelectItem value="30d">30 ngày qua</SelectItem><SelectItem value="90d">90 ngày qua</SelectItem></SelectContent></Select>
+      <Select value={controller.sort} onValueChange={(value) => controller.setSort(value as "newest" | "oldest")}><SelectTrigger aria-label="Sắp xếp" className="h-9 w-full sm:w-[130px]"><SelectValue>{sortLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="newest">Mới nhất</SelectItem><SelectItem value="oldest">Cũ nhất</SelectItem></SelectContent></Select>
     </div>
   );
 }

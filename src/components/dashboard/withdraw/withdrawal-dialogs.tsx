@@ -88,9 +88,10 @@ export function WithdrawalSuccessDialog({ controller }: { controller: Withdrawal
 export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalController }) {
   const transaction = controller.detailTransaction;
   const copyId = async () => { if (!transaction) return; await navigator.clipboard.writeText(transaction.id); toast.success("Đã sao chép mã giao dịch."); };
+  if (!transaction) return null;
   return (
-    <Sheet open={Boolean(transaction)} onOpenChange={(open) => { if (!open) controller.setDetailTransaction(undefined); }}>
-      {transaction ? <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+    <Sheet open onOpenChange={(open) => { if (!open) controller.setDetailTransaction(undefined); }}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader className="border-b border-border px-5 py-5">
           <SheetTitle>Chi tiết giao dịch</SheetTitle>
           <SheetDescription>{transaction.id}</SheetDescription>
@@ -109,7 +110,7 @@ export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalCo
           </dl>
         </div>
         {transaction.status === "failed" ? <SheetFooter className="border-t border-border px-5"><Button variant="outline" asChild><Link href="/member/account">Đổi phương thức nhận tiền</Link></Button><Button asChild><Link href="/member/support">Liên hệ hỗ trợ</Link></Button></SheetFooter> : null}
-      </SheetContent> : null}
+      </SheetContent>
     </Sheet>
   );
 }

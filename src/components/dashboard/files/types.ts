@@ -10,6 +10,7 @@ export type UploadQueueItem = {
   id: string;
   file: File;
   status: UploadQueueStatus;
+  progress: number;
   error?: string;
 };
 
@@ -21,4 +22,3 @@ export type FilesFilters = {
   type: FileTypeFilter;
   status: FileStatusFilter;
 };
-

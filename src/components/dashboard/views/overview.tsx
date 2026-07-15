@@ -1,7 +1,7 @@
 "use client";
 
 import { ConversionFunnel } from "@/components/dashboard/overview/conversion-funnel";
-import { OverviewHeader } from "@/components/dashboard/overview/overview-header";
+import { OverviewDateControls } from "@/components/dashboard/overview/overview-header";
 import { OverviewMetrics } from "@/components/dashboard/overview/overview-metrics";
 import { OverviewEmptyState, OverviewErrorState, OverviewSkeleton } from "@/components/dashboard/overview/overview-states";
 import { PerformanceChart } from "@/components/dashboard/overview/performance-chart";
@@ -28,13 +28,19 @@ export function OverviewView() {
     <div className="mx-auto max-w-[1280px] space-y-7 [--primary:oklch(0.55_0.21_274)] [--ring:var(--primary)] [--overview-success:oklch(0.53_0.15_154)] dark:[--primary:oklch(0.7_0.16_274)] dark:[--overview-success:oklch(0.72_0.16_154)] sm:space-y-8">
       
       
-      <OverviewHeader
-        dateRange={dateRange}
-        customRange={customRange}
-        isRefreshing={isLoading}
-        onDateRangeChange={setDateRange}
-        onCustomRangeApply={applyCustomRange}
-        onRefresh={refresh}
+      <PageHeader
+        title="Bảng tổng quan"
+        description="Theo dõi lượt truy cập, chuyển đổi và hiệu suất nội dung của bạn."
+        action={
+          <OverviewDateControls
+            dateRange={dateRange}
+            customRange={customRange}
+            isRefreshing={isLoading}
+            onDateRangeChange={setDateRange}
+            onCustomRangeApply={applyCustomRange}
+            onRefresh={refresh}
+          />
+        }
       />
 
       {error ? <OverviewErrorState onRetry={retry} /> : null}

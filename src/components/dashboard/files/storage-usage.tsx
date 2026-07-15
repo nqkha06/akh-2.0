@@ -10,7 +10,7 @@ export function StorageUsage({ used, privateFiles }: { used: number; privateFile
 
   return (
     <TooltipProvider>
-      <section className="grid gap-4 border-y border-border py-4 sm:grid-cols-[1fr_minmax(260px,380px)] sm:items-center" aria-label="Dung lượng lưu trữ">
+      <section className="grid gap-4 rounded-xl border border-border bg-card px-4 py-4 sm:grid-cols-[1fr_minmax(260px,380px)] sm:items-center sm:px-5" aria-label="Dung lượng lưu trữ">
         <div className="flex items-start gap-3">
           <HardDrive className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div>

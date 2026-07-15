@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { withdrawalDataSource } from "./demo-data-source";
+import { getWithdrawalDemoData, withdrawalDataSource } from "./demo-data-source";
 import type {
   CreateWithdrawalPayload,
   PayoutMethod,
@@ -41,12 +41,13 @@ export function formatDateTime(value?: string) {
 }
 
 export function useWithdrawalController() {
-  const [data, setData] = useState<WithdrawalDashboardData>();
-  const [loading, setLoading] = useState(true);
+  const [initialData] = useState<WithdrawalDashboardData | undefined>(() => process.env.NODE_ENV === "development" ? getWithdrawalDemoData() : undefined);
+  const [data, setData] = useState<WithdrawalDashboardData | undefined>(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [pageError, setPageError] = useState("");
   const [historyError] = useState("");
   const [amountInput, setAmountInput] = useState("");
-  const [selectedMethodId, setSelectedMethodId] = useState("");
+  const [selectedMethodId, setSelectedMethodId] = useState(initialData?.defaultMethodId ?? initialData?.payoutMethods[0]?.id ?? "");
   const [estimate, setEstimate] = useState<WithdrawalEstimate>();
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
@@ -75,8 +76,9 @@ export function useWithdrawalController() {
   }, []);
 
   useEffect(() => {
+    if (initialData) return;
     void Promise.resolve().then(load);
-  }, [load]);
+  }, [initialData, load]);
 
   const amount = parseAmount(amountInput);
   const selectedMethod = data?.payoutMethods.find((method) => method.id === selectedMethodId);

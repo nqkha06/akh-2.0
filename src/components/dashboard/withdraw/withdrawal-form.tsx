@@ -82,7 +82,7 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
         <div className="grid gap-2">
           <Label htmlFor="payout-method">Phương thức nhận tiền</Label>
           <Select value={selectedMethodId} onValueChange={setSelectedMethodId} disabled={submitting}>
-            <SelectTrigger id="payout-method" className="h-12 w-full"><SelectValue placeholder="Chọn phương thức" /></SelectTrigger>
+            <SelectTrigger id="payout-method" className="h-12 w-full"><SelectValue placeholder="Chọn phương thức">{selectedMethod ? `${selectedMethod.provider} ${selectedMethod.maskedAccount} · ${selectedMethod.accountHolder}` : undefined}</SelectValue></SelectTrigger>
             <SelectContent>
               {data.payoutMethods.map((method) => <SelectItem key={method.id} value={method.id}>{method.provider} {method.maskedAccount} · {method.accountHolder}</SelectItem>)}
             </SelectContent>

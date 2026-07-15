@@ -1,0 +1,7 @@
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+export function RewardsRulesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent><DialogHeader><DialogTitle>Thể lệ phần thưởng</DialogTitle><DialogDescription>Cách tiến độ, xác minh và số dư thưởng được ghi nhận.</DialogDescription></DialogHeader><div className="space-y-4 text-sm leading-6"><div><p className="font-medium">Hoạt động hợp lệ</p><p className="text-muted-foreground">Chỉ lượt xem, lượt nhấp, lượt mở khóa và hoạt động creator hợp lệ mới được tính vào cột mốc.</p></div><Separator /><div><p className="font-medium">Xác minh phần thưởng</p><p className="text-muted-foreground">Traffic bất thường, bot hoặc thao tác trùng lặp có thể bị loại khỏi kết quả. Phần thưởng chờ xác minh chưa thuộc số dư có thể sử dụng.</p></div><Separator /><div><p className="font-medium">Chuỗi hoạt động</p><p className="text-muted-foreground">Hoàn thành ít nhất một hoạt động được hệ thống công nhận mỗi ngày. Bỏ lỡ một ngày sẽ đặt lại chuỗi về 0.</p></div></div><DialogFooter><Button onClick={() => onOpenChange(false)}>Đã hiểu</Button></DialogFooter></DialogContent></Dialog>;
+}

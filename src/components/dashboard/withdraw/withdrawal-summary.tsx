@@ -5,22 +5,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/dashboard/ui";
 
 import type { WithdrawalDashboardData } from "./types";
 import { formatCurrency } from "./use-withdrawal-controller";
-
-export function WithdrawalHeader() {
-  return (
-    <header>
-      <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground sm:text-[1.75rem]">
-        Rút tiền
-      </h1>
-      <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Chuyển số dư khả dụng về phương thức thanh toán của bạn.
-      </p>
-    </header>
-  );
-}
 
 export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
   const metrics = [
@@ -104,7 +92,7 @@ export function WithdrawalSkeleton() {
 export function WithdrawalErrorState({ message, onRetry }: { message?: string; onRetry: () => void }) {
   return (
     <div className="space-y-6">
-      <WithdrawalHeader />
+      <PageHeader title="Rút tiền" description="Chuyển số dư khả dụng về phương thức thanh toán của bạn." />
       <Alert variant="destructive">
         <CircleAlert />
         <AlertTitle>Không thể tải thông tin rút tiền.</AlertTitle>

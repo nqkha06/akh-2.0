@@ -1,15 +1,6 @@
 import type { ReactNode } from "react"
-import Link from "next/link"
 
 import { AppShell } from "./app-shell/app-shell"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 
 export function AppLayout({
   children,
@@ -19,35 +10,12 @@ export function AppLayout({
   return <AppShell>{children}</AppShell>
 }
 
-function DashboardBreadcrumb({ title }: { title: string }) {
-  return (
-    <Breadcrumb className="mb-2">
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/member">Home</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>{title}</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
-  )
-}
-
 export function DashboardShell({
   children,
-  pageTitle,
 }: {
   children: ReactNode
-  pageTitle: string
+  /** Kept for route compatibility; page titles are rendered by PageHeader in each view. */
+  pageTitle?: string
 }) {
-  return (
-    <AppLayout>
-      <DashboardBreadcrumb title={pageTitle} />
-      {children}
-    </AppLayout>
-  )
+  return <AppLayout>{children}</AppLayout>
 }
