@@ -16,7 +16,6 @@ export function StorageUsage({ used, privateFiles }: { used: number; privateFile
           <div>
             <div className="flex items-center gap-1.5 text-sm text-foreground">
               <span className="font-medium">{formatBytes(used)} / 1 GB đã sử dụng</span>
-              <span className="text-muted-foreground">· {privateFiles} file riêng tư</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button" className="rounded-sm text-muted-foreground hover:text-foreground" aria-label="Giải thích giới hạn lưu trữ"><Info className="size-3.5" /></button>

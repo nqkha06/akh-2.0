@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
     BarChart3,
     Copy,
@@ -46,7 +47,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import type { LinkDto } from "@/lib/api-client";
-import SocialLinksGenerator from "@/features/link-creation/components/link-creator";
 
 type LinkCardProps = {
     link: LinkDto;
@@ -81,7 +81,6 @@ export function LinkCard({ link }: LinkCardProps) {
     const [qrBackground, setQrBackground] = useState("#ffffff");
     const [qrImageSrc, setQrImageSrc] = useState("");
     const [isQrLoading, setIsQrLoading] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -495,14 +494,20 @@ export function LinkCard({ link }: LinkCardProps) {
                                 </DropdownMenuTrigger>
 
                                 <DropdownMenuContent align="end" className="w-52">
-                                    <DropdownMenuItem
-                                        onSelect={(event) => {
-                                            event.preventDefault();
-                                            setEditOpen(true);
-                                        }}
-                                    >
-                                        <Edit3 className="size-4" />
-                                        {t("edit")}
+                                    <DropdownMenuItem asChild>
+                                        <Link
+                                            href={`/member/links/${encodeURIComponent(link.id)}/edit`}
+                                            onClick={() => {
+                                                try {
+                                                    sessionStorage.setItem(`social-link-edit:${link.id}`, JSON.stringify(link));
+                                                } catch {
+                                                    // The edit page will load the link from the API instead.
+                                                }
+                                            }}
+                                        >
+                                            <Edit3 className="size-4" />
+                                            {t("edit")}
+                                        </Link>
                                     </DropdownMenuItem>
 
                                     <DropdownMenuSeparator />
@@ -524,21 +529,6 @@ export function LinkCard({ link }: LinkCardProps) {
                     </div>
                 </CardContent>
             </Card>
-            <Credenza open={editOpen} onOpenChange={setEditOpen}>
-                <CredenzaContent className="sm:max-w-6xl">
-                    <CredenzaHeader>
-                        <CredenzaTitle>{t("editTitle")}</CredenzaTitle>
-                    </CredenzaHeader>
-                    <CredenzaBody className="px-4 sm:px-6">
-                        <SocialLinksGenerator embedded initialLink={link} onSaved={() => setEditOpen(false)} />
-                    </CredenzaBody>
-                    <CredenzaFooter>
-                        <CredenzaClose asChild>
-                            <Button variant="outline">{commonT("close")}</Button>
-                        </CredenzaClose>
-                    </CredenzaFooter>
-                </CredenzaContent>
-            </Credenza>
         </>
     );
 }

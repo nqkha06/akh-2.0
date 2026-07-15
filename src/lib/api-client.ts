@@ -382,7 +382,7 @@ export async function uploadFile(
         chunk,
         options?.signal,
         (loaded) => {
-          const uploadedBytes = start + loaded;
+          const uploadedBytes = start + Math.min(loaded, chunk.size);
           options?.onProgress?.(Math.min(99, Math.round((uploadedBytes / file.size) * 100)));
         },
       );

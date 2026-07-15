@@ -2,6 +2,7 @@
 
 import { useTransition, type ReactNode } from "react"
 import Link from "next/link"
+import { signOut, useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
 import { useLocale, useTranslations } from "next-intl"
 import {
@@ -37,14 +38,28 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { localeCookieName, locales, type AppLocale } from "@/i18n/config"
 import { cn } from "@/lib/utils"
 
-const account = {
-  name: "Hayden Bleasel",
-  email: "example@email.com",
-  image: "https://github.com/haydenbleasel.png",
-  initials: "HB",
+function useAccount() {
+  const { data: session } = useSession()
+  const name = session?.user?.name || "Tài khoản Linkicom"
+  const email = session?.user?.email || ""
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "LI"
+
+  return {
+    name,
+    email,
+    image: session?.user?.image || undefined,
+    initials,
+  }
 }
 
 function AccountAvatar({ className }: { className?: string }) {
+  const account = useAccount()
+
   return (
     <Avatar className={cn("size-8", className)}>
       <AvatarImage src={account.image} alt={account.name} />
@@ -54,6 +69,7 @@ function AccountAvatar({ className }: { className?: string }) {
 }
 
 function UserMenuContent() {
+  const account = useAccount()
   const t = useTranslations("Dashboard")
   const { theme = "system", setTheme } = useTheme()
   const locale = useLocale() as AppLocale
@@ -140,7 +156,10 @@ function UserMenuContent() {
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
-      <DropdownMenuItem variant="destructive">
+      <DropdownMenuItem
+        variant="destructive"
+        onSelect={() => void signOut({ redirectTo: "/login" })}
+      >
         <LogOut className="size-4" />
         {t("topbar.logout")}
       </DropdownMenuItem>
@@ -170,6 +189,7 @@ export function UserMenu({ children }: { children?: ReactNode }) {
 }
 
 export function SidebarAccountMenu({ collapsed = false }: { collapsed?: boolean }) {
+  const account = useAccount()
   const trigger = collapsed ? (
     <Button type="button" variant="ghost" size="icon" className="mx-auto size-10 rounded-lg p-0" aria-label="Mở menu tài khoản">
       <AccountAvatar />

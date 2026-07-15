@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "../components/theme-provider";
+import { AuthSessionProvider } from "@/components/auth/auth-session-provider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -31,10 +32,12 @@ export default async function RootLayout({
     <html lang={locale} className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            {children}
-            <Toaster position="top-right" />
-          </ThemeProvider>
+          <AuthSessionProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+              {children}
+              <Toaster position="top-right" />
+            </ThemeProvider>
+          </AuthSessionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

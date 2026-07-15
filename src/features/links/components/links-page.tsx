@@ -735,7 +735,7 @@ export function LinksView() {
             <LinksSkeleton />
           ) : (
             <div className="space-y-5">
-              <Card className="flex flex-col gap-3 rounded-none border-x-0 border-border bg-transparent px-0 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
+              <Card className="flex flex-col gap-3 rounded-none border-0 bg-transparent px-0 py-3 shadow-none sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 sm:max-w-md">
                   <Search aria-hidden className="size-4 text-muted-foreground" />
                   <Input

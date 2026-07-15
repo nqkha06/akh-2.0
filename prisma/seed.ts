@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -163,6 +164,26 @@ const demoLinks = [
 ];
 
 async function main() {
+  const demoPasswordHash = await hash("Demo123!", 12);
+
+  await prisma.user.upsert({
+    where: { email: "demo@linkicom.local" },
+    update: {
+      name: "Linkicom Demo",
+      passwordHash: demoPasswordHash,
+      status: "active",
+      role: "member",
+    },
+    create: {
+      name: "Linkicom Demo",
+      email: "demo@linkicom.local",
+      passwordHash: demoPasswordHash,
+      emailVerifiedAt: new Date(),
+      status: "active",
+      role: "member",
+    },
+  });
+
   for (const snippet of demoSnippets) {
     await prisma.snippet.upsert({
       where: { id: snippet.id },

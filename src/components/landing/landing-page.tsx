@@ -102,8 +102,8 @@ export function Navbar() {
           {links.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
         </div>
         <div className={styles.navActions}>
-          <a className={styles.textButton} href="/member">Sign in</a>
-          <a className={styles.smallPrimary} href="/member/new">Start creating <ArrowRight size={15} /></a>
+          <a className={styles.textButton} href="/login">Sign in</a>
+          <a className={styles.smallPrimary} href="/register">Start creating <ArrowRight size={15} /></a>
         </div>
         <button className={styles.menuButton} onClick={() => setOpen(!open)} aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open}>
           {open ? <X size={21} /> : <Menu size={21} />}
@@ -113,8 +113,8 @@ export function Navbar() {
         {open && (
           <motion.div className={styles.mobileMenu} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             {links.map(([label, href]) => <a key={label} href={href} onClick={() => setOpen(false)}>{label}</a>)}
-            <a href="/member" onClick={() => setOpen(false)}>Sign in</a>
-            <a className={styles.smallPrimary} href="/member/new">Start creating <ArrowRight size={15} /></a>
+            <a href="/login" onClick={() => setOpen(false)}>Sign in</a>
+            <a className={styles.smallPrimary} href="/register">Start creating <ArrowRight size={15} /></a>
           </motion.div>
         )}
       </AnimatePresence>
@@ -162,7 +162,7 @@ export function HeroSection() {
             <h1>One link.<br /><span>More momentum.</span></h1>
             <p>Turn every click into a follow, subscriber, fan, or customer with link-in-bio pages and verified unlock actions.</p>
             <div className={styles.heroButtons}>
-              <a className={styles.primaryButton} href="/member/new">Create your free page <ArrowRight size={17} /></a>
+              <a className={styles.primaryButton} href="/register">Create your free page <ArrowRight size={17} /></a>
               <a className={styles.secondaryButton} href="#unlock-demo"><Play size={15} fill="currentColor" /> See how it works</a>
             </div>
             <div className={styles.microProof}><CircleCheck size={15} /> No credit card required <i /> Launch in minutes</div>
@@ -473,7 +473,7 @@ export function UseCaseTabs() {
           {useCases.map((item) => <button key={item.key} role="tab" aria-selected={active === item.key} aria-controls="use-case-panel" onClick={() => setActive(item.key)} className={active === item.key ? styles.activeUseCase : ""}>{item.label}</button>)}
         </div>
         <div className={styles.useCaseLayout} id="use-case-panel" role="tabpanel">
-          <div className={styles.useCaseCopy}><h3>{current.title}</h3><p>{current.body}</p><div className={styles.workflowLine}>{current.steps.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b>{index < current.steps.length - 1 && <ArrowRight size={16} />}</div>)}</div><a href="/member/new">Build this workflow <ArrowRight size={16} /></a></div>
+          <div className={styles.useCaseCopy}><h3>{current.title}</h3><p>{current.body}</p><div className={styles.workflowLine}>{current.steps.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b>{index < current.steps.length - 1 && <ArrowRight size={16} />}</div>)}</div><a href="/register">Build this workflow <ArrowRight size={16} /></a></div>
           <UseCasePreview active={active} />
         </div>
       </div>
@@ -490,7 +490,7 @@ export function FinalCTA() {
         <div className={`${styles.ctaIcon} ${styles.ctaIconThree}`}><Sparkles size={18} /></div>
         <h2>Your next big click<br />starts right here.</h2>
         <p>Build a page your audience remembers and a growth loop that keeps working.</p>
-        <a className={styles.primaryButton} href="/member/new">Start creating for free <ArrowRight size={17} /></a>
+        <a className={styles.primaryButton} href="/register">Start creating for free <ArrowRight size={17} /></a>
         <small>No credit card required <i /> Free plan available</small>
       </Reveal>
     </section>
