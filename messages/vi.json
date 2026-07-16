@@ -97,11 +97,26 @@
       "unlockDescription": "Mở danh sách link và nội dung được bảo vệ."
     }
   },
+  "Pagination": {
+    "rowsPerPage": "Số dòng mỗi trang",
+    "showing": "Hiển thị",
+    "to": "đến",
+    "of": "trong",
+    "items": "mục",
+    "firstPage": "Đến trang đầu",
+    "previousPage": "Đến trang trước",
+    "nextPage": "Đến trang sau",
+    "lastPage": "Đến trang cuối",
+    "goToPage": "Đến trang {page}",
+    "morePages": "Còn {count} trang"
+  },
   "Links": {
     "management": "Quản lý link",
     "socialLinks": "Social links",
-    "description": "Tạo và quản lý các liên kết rút gọn để theo dõi hiệu suất và tối ưu thu nhập.",
+    "description": "Tạo và quản lý các liên kết yêu cầu visitor hoàn thành social action trước khi mở nội dung.",
+    "context": "Mỗi Social link kết hợp một destination với các hành động bắt buộc. Tổng quan chỉ hiển thị dữ liệu thật từ API; dùng tab Tạo để cấu hình link mới và xem preview ngay trên cùng trang.",
     "tabs": {
+      "label": "Điều hướng Social links",
       "overview": "Tổng quan",
       "create": "Tạo",
       "monetization": "Kiếm tiền",
@@ -134,14 +149,25 @@
     "demoData": "Dữ liệu demo",
     "rows": "Dòng",
     "showing": "Hiển thị {first}-{last} trong {total} link",
+    "filteredCount": "Đang hiển thị {count} trong {total} link",
+    "listLabel": "Danh sách Social links",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
     "createNew": "Tạo liên kết mới",
     "loadErrorTitle": "Không tải được liên kết",
     "loadErrorFallback": "Không tải được danh sách link.",
     "tryAgain": "Thử lại",
     "emptyTitle": "Chưa có liên kết nào",
-    "emptyDescription": "Tạo link đầu tiên để bắt đầu đo click, chuyển đổi và doanh thu.",
+    "emptyDescription": "Tạo Social link đầu tiên để bảo vệ destination bằng các hành động của visitor.",
     "notFound": "Không tìm thấy link phù hợp",
     "notFoundDescription": "Thử đổi từ khóa, trạng thái, loại link hoặc reset bộ lọc.",
+    "summary": {
+      "label": "Tóm tắt Social links",
+      "total": "Tổng số link",
+      "active": "Đang hoạt động",
+      "clicks": "Lượt mở public",
+      "actions": "Action đã cấu hình"
+    },
     "monetization": {
       "eyebrow": "Lộ trình kiếm tiền",
       "plansTitle": "Gói kiếm tiền",
@@ -293,7 +319,10 @@
     "monetizationOn": "Monetization bật",
     "to": "đến",
     "copied": "Đã sao chép!",
+    "copyFailed": "Không thể sao chép link.",
     "copyLink": "Copy link",
+    "copy": "Sao chép",
+    "open": "Mở link",
     "qrCode": "QR Code",
     "qrDescription": "Quét QR code để mở link.",
     "qrSize": "Kích thước QR",
@@ -310,6 +339,11 @@
     "statsTitle": "Thống kê link",
     "statsDescription": "Ảnh chụp hiệu suất demo trong toàn thời gian.",
     "clicks": "Clicks",
+    "actions": "Actions",
+    "updatedAt": "Cập nhật",
+    "destination": "Destination",
+    "protectedSnippet": "Snippet được bảo vệ",
+    "updated": "Cập nhật {date}",
     "visitors": "Visitors",
     "earnings": "Thu nhập",
     "status": "Trạng thái",
@@ -323,18 +357,30 @@
     "delete": "Xóa",
     "editTitle": "Chỉnh social link",
     "editDescription": "Cập nhật destination, actions, giao diện và thời hạn mà không đổi public slug.",
-    "qrNotReady": "QR code chưa sẵn sàng",
-    "copy": "Sao chép"
+    "qrNotReady": "QR code chưa sẵn sàng"
   },
   "Account": {
     "eyebrow": "Cài đặt",
     "title": "Tài khoản",
     "description": "Quản lý hồ sơ, bảo mật, thanh toán, thông báo và tuỳ chọn giao diện.",
+    "context": "Quản lý thông tin tài khoản và các thiết lập dùng chung. Những thay đổi trong bản FE-first này chỉ được lưu trong phiên trình duyệt hiện tại.",
     "verified": "Đã xác minh",
     "editProfile": "Chỉnh hồ sơ",
     "saveChanges": "Lưu thay đổi",
     "toast": {
-      "saved": "Đã lưu thay đổi"
+      "saved": "Đã lưu thay đổi",
+      "sectionSaved": "Đã lưu {section}",
+      "copyFailed": "Không thể sao chép. Vui lòng thử lại."
+    },
+    "navigation": {
+      "label": "Mục cài đặt tài khoản",
+      "personal": "Thông tin cá nhân",
+      "payment": "Phương thức thanh toán",
+      "currency": "Đơn vị tiền tệ",
+      "notifications": "Cài đặt thông báo",
+      "domain": "Tên miền riêng",
+      "password": "Đổi mật khẩu",
+      "referral": "Link giới thiệu"
     },
     "tabs": {
       "profile": "Hồ sơ",
@@ -351,10 +397,37 @@
       "email": "Email",
       "bio": "Giới thiệu ngắn",
       "bioValue": "Creator chia sẻ nội dung hữu ích mỗi ngày.",
+      "fallbackName": "Tài khoản Linkicom",
       "changeAvatar": "Đổi ảnh đại diện",
-      "avatarHint": "Tính năng tải ảnh đại diện sẽ sớm khả dụng.",
+      "avatarHint": "JPG, PNG hoặc WebP. Ảnh vuông cho kết quả hiển thị tốt nhất.",
+      "avatarInvalid": "Vui lòng chọn một tệp hình ảnh hợp lệ.",
       "completeTitle": "Hồ sơ của bạn đã hoàn thiện",
       "completeDescription": "Thông tin này sẽ xuất hiện ở các khu vực liên quan đến tài khoản."
+    },
+    "payment": {
+      "title": "Phương thức thanh toán",
+      "description": "Thiết lập tài khoản mặc định dùng để nhận thanh toán và rút số dư.",
+      "unverified": "Chưa xác minh",
+      "provider": "Kênh thanh toán",
+      "accountHolder": "Tên chủ tài khoản",
+      "accountIdentifier": "Số tài khoản hoặc email thanh toán",
+      "accountPlaceholder": "Nhập thông tin nhận thanh toán",
+      "defaultTitle": "Đặt làm phương thức mặc định",
+      "defaultDescription": "Tự động chọn phương thức này khi tạo yêu cầu rút tiền.",
+      "securityHint": "Thông tin nhạy cảm sẽ được mã hóa khi kết nối với backend.",
+      "save": "Lưu phương thức",
+      "providers": {
+        "bank": "Chuyển khoản ngân hàng",
+        "paypal": "PayPal",
+        "momo": "Ví MoMo"
+      }
+    },
+    "currency": {
+      "title": "Đơn vị tiền tệ",
+      "description": "Chọn đơn vị dùng để hiển thị số dư, doanh thu và báo cáo.",
+      "label": "Tiền tệ hiển thị",
+      "preview": "Ví dụ hiển thị",
+      "hint": "Thay đổi này chỉ ảnh hưởng cách hiển thị; số dư gốc và tỷ giá giao dịch không bị thay đổi."
     },
     "security": {
       "passwordTitle": "Đổi mật khẩu",
@@ -363,6 +436,12 @@
       "newPassword": "Mật khẩu mới",
       "confirmPassword": "Xác nhận mật khẩu mới",
       "updatePassword": "Cập nhật mật khẩu",
+      "passwordUpdated": "Mật khẩu đã được cập nhật trên giao diện.",
+      "requirements": {
+        "length": "Tối thiểu 8 ký tự",
+        "number": "Có ít nhất một chữ số",
+        "match": "Hai mật khẩu trùng nhau"
+      },
       "twoFactorTitle": "Xác thực hai bước",
       "twoFactorDescription": "Thêm một lớp bảo mật khi đăng nhập trên thiết bị mới.",
       "enableTwoFactor": "Bật xác thực hai bước",
@@ -372,12 +451,45 @@
     "notifications": {
       "title": "Tuỳ chọn thông báo",
       "description": "Chọn những cập nhật bạn muốn nhận từ chúng tôi.",
+      "accountTitle": "Bảo mật và tài khoản",
+      "accountDescription": "Đăng nhập mới, thay đổi mật khẩu và cảnh báo bảo mật.",
+      "activityTitle": "Hoạt động Social link",
+      "activityDescription": "Link được xuất bản, tạm dừng hoặc đạt mốc truy cập.",
+      "revenueTitle": "Doanh thu và thanh toán",
+      "revenueDescription": "Số dư, giao dịch và trạng thái yêu cầu rút tiền.",
       "emailTitle": "Thông báo qua email",
       "emailDescription": "Nhận cập nhật quan trọng về tài khoản và hoạt động.",
       "productTitle": "Cập nhật sản phẩm",
       "productDescription": "Nhận thông tin về tính năng mới và cải tiến.",
       "pushTitle": "Thông báo đẩy",
       "pushDescription": "Nhận cảnh báo trực tiếp trên trình duyệt khi được hỗ trợ."
+    },
+    "domain": {
+      "title": "Tên miền riêng",
+      "description": "Dùng tên miền của bạn cho các Social link và trang Link-in-bio.",
+      "label": "Tên miền hoặc tên miền phụ",
+      "dnsTitle": "Cấu hình DNS",
+      "dnsDescription": "Tạo bản ghi dưới đây tại nhà cung cấp tên miền, sau đó quay lại để kiểm tra.",
+      "host": "Host / Name",
+      "value": "Target / Value",
+      "hint": "DNS có thể cần một khoảng thời gian để được cập nhật trên toàn cầu.",
+      "connect": "Kết nối tên miền",
+      "checking": "Đã gửi yêu cầu kiểm tra tên miền.",
+      "copied": "Đã sao chép giá trị DNS.",
+      "status": {
+        "idle": "Chưa kết nối",
+        "pending": "Đang chờ DNS"
+      }
+    },
+    "referral": {
+      "title": "Link giới thiệu",
+      "description": "Chia sẻ đường dẫn cá nhân để mời creator mới tham gia Linkicom.",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép link giới thiệu.",
+      "people": "Người đã giới thiệu",
+      "commission": "Tỷ lệ hoa hồng",
+      "hint": "Theo dõi lượt đăng ký và hoa hồng chi tiết tại trang Giới thiệu.",
+      "manage": "Quản lý giới thiệu"
     },
     "preferences": {
       "title": "Tuỳ chọn hiển thị",
@@ -553,6 +665,46 @@
       "title": "Rút tiền",
       "description": "Theo dõi số dư, gửi yêu cầu rút tiền và kiểm tra lịch sử giao dịch minh bạch."
     }
+  },
+  "PublicLink": {
+    "backgroundVideo": "Video nền",
+    "enableAudio": "Bật âm thanh nền",
+    "muteAudio": "Tắt âm thanh nền",
+    "sharePage": "Chia sẻ trang này",
+    "chooseTheme": "Chọn giao diện",
+    "appearance": "Giao diện",
+    "lightMode": "Sáng",
+    "darkMode": "Tối",
+    "createHeader": "Tạo link của bạn",
+    "createShort": "Tạo link",
+    "protectedContent": "Nội dung được bảo vệ",
+    "defaultDescription": "Hoàn thành các hành động bên cạnh để mở khóa nội dung này.",
+    "requirements": "Yêu cầu",
+    "actionCount": "{count} hành động",
+    "destination": "Nội dung đích",
+    "destinationFile": "File tải xuống",
+    "destinationSnippet": "Snippet bảo mật",
+    "destinationLink": "Liên kết ngoài",
+    "progressTitle": "Tiến độ mở khóa",
+    "progressDescription": "Đã hoàn thành {completed}/{total} hành động bắt buộc.",
+    "readyTitle": "Nội dung đã sẵn sàng",
+    "readyDescription": "Tất cả yêu cầu đã hoàn thành. Bạn có thể tiếp tục.",
+    "recordingAction": "Đang ghi nhận hành động...",
+    "keepPageOpen": "Giữ trang này mở trong giây lát",
+    "completedAction": "Đã hoàn thành · có thể mở lại",
+    "opensNewTab": "Mở {platform} trong tab mới",
+    "done": "Xong",
+    "snippetRevealed": "Snippet đã được hiển thị",
+    "revealSnippet": "Hiển thị snippet",
+    "unlockSnippet": "Hoàn thành yêu cầu để mở snippet",
+    "unlockedContent": "Nội dung đã mở khóa",
+    "openFile": "Mở file",
+    "continueToLink": "Tiếp tục đến liên kết",
+    "unlockLink": "Hoàn thành yêu cầu để mở khóa",
+    "destinationReady": "Nội dung đích đã sẵn sàng để mở.",
+    "destinationProtected": "Nội dung đích được ẩn cho đến khi hoàn thành tất cả yêu cầu.",
+    "protectedBy": "Được bảo vệ bởi Linkicom",
+    "createOwn": "Tạo Social Link của bạn"
   },
   "CreateLink": {
     "actionLabels": {
@@ -746,6 +898,7 @@
     "snippetRequired": "Hãy chọn snippet",
     "actionRequired": "Cần ít nhất một hành động",
     "completeAllActions": "Hãy hoàn thành tất cả hành động",
+    "expiryRequired": "Hãy nhập điều kiện hết hạn hợp lệ",
     "updated": "Cập nhật link thành công",
     "createdSuccess": "Tạo link thành công",
     "createFailed": "Tạo link thất bại",

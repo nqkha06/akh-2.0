@@ -14,6 +14,7 @@ type PublicCreatorLayoutProps = {
   topAction?: ReactNode;
   afterHeader?: ReactNode;
   children: ReactNode;
+  variant?: "default" | "linear";
 
   /**
    * Class cho vùng chứa nội dung chính.
@@ -80,6 +81,7 @@ export function PublicCreatorLayout({
   children,
   className,
   rootClassName,
+  variant = "default",
 }: PublicCreatorLayoutProps) {
   const shareCurrentLink =
     useCallback(async () => {
@@ -124,7 +126,10 @@ export function PublicCreatorLayout({
   return (
     <main
       className={cn(
-        "relative isolate flex min-h-[100svh] flex-col overflow-x-hidden bg-slate-950 text-slate-950",
+        "relative isolate flex min-h-[100svh] flex-col overflow-x-hidden",
+        variant === "linear"
+          ? "bg-slate-50 text-slate-950 dark:bg-[#010102] dark:text-[#f7f8f8]"
+          : "bg-slate-100 text-slate-950 dark:bg-slate-950",
         "supports-[height:100dvh]:min-h-[100dvh]",
         rootClassName,
       )}
@@ -132,7 +137,10 @@ export function PublicCreatorLayout({
       {/* Fallback background */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-30 bg-slate-950"
+        className={cn(
+          "pointer-events-none fixed inset-0 -z-30",
+          variant === "linear" ? "bg-slate-50 dark:bg-[#010102]" : "bg-slate-100 dark:bg-slate-950",
+        )}
       />
 
       <div
@@ -144,23 +152,23 @@ export function PublicCreatorLayout({
           {background}
         </div>
 
-        {/* Overlay chính, đảm bảo nội dung dễ đọc */}
-        <div className="absolute inset-0 bg-slate-950/45" />
-
-        {/* Ánh sáng nhẹ ở phía trên */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent_42%)]" />
-
-        {/* Gradient làm card nổi lên */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-slate-950/10 to-slate-950/55" />
-
-        {/* Một chút màu nền khi không có ảnh */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_85%,rgba(14,165,233,0.12),transparent_35%)]" />
+        {variant === "linear" ? (
+          <div className="absolute inset-0 bg-white/75 dark:bg-black/70" />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-slate-950/45" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent_42%)]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/5 via-slate-950/10 to-slate-950/55" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_85%,rgba(14,165,233,0.12),transparent_35%)]" />
+          </>
+        )}
       </div>
 
       {/* Header */}
       <div className="relative z-30 shrink-0">
         <ShowHeader
           onShare={shareCurrentLink}
+          variant={variant}
         />
       </div>
 
@@ -187,8 +195,9 @@ export function PublicCreatorLayout({
         <section
           className={cn(
             "mx-auto flex w-full flex-1 items-center justify-center",
-            "px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4",
-            "sm:px-5 sm:pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-6",
+            variant === "linear"
+              ? "px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:pb-[max(3rem,env(safe-area-inset-bottom))] sm:pt-10"
+              : "px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-6",
             className,
           )}
         >

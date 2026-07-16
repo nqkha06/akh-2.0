@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
 
 import { CreateLinkDto } from "./dto/create-link.dto";
 import { LinksService } from "./links.service";
@@ -10,6 +10,12 @@ export class LinksController {
   @Post()
   create(@Body() createLinkDto: CreateLinkDto) {
     return this.linksService.create(createLinkDto);
+  }
+
+  @Post(":slug/visit")
+  @HttpCode(200)
+  recordVisit(@Param("slug") slug: string) {
+    return this.linksService.recordVisit(slug);
   }
 
   @Get()

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 
+import { TablePagination } from "@/components/table-pagination";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,9 +21,10 @@ type FilesTableProps = {
   uploads: UploadQueueItem[];
   selectedIds: Set<string>;
   page: number;
-  pageCount: number;
+  pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   onSelect: (id: string, selected: boolean) => void;
   onSelectPage: (selected: boolean) => void;
   onPreview: (file: ManagedFileDto) => void;
@@ -95,9 +97,14 @@ export function FilesTable(props: FilesTableProps) {
           })}
         </div>
 
-        <footer className="flex flex-col gap-3 border-t border-border px-3 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>Hiển thị {props.files.length} trong {props.total} file</span>
-          {props.pageCount > 1 ? <div className="flex items-center gap-2"><Button variant="outline" size="icon-sm" onClick={() => props.onPageChange(props.page - 1)} disabled={props.page <= 1} aria-label="Trang trước"><ChevronLeft /></Button><span>Trang {props.page} / {props.pageCount}</span><Button variant="outline" size="icon-sm" onClick={() => props.onPageChange(props.page + 1)} disabled={props.page >= props.pageCount} aria-label="Trang sau"><ChevronRight /></Button></div> : null}
+        <footer className="border-t border-border px-3 py-3">
+          <TablePagination
+            page={props.page}
+            pageSize={props.pageSize}
+            totalItems={props.total}
+            onPageChange={props.onPageChange}
+            onPageSizeChange={props.onPageSizeChange}
+          />
         </footer>
       </section>
     </TooltipProvider>

@@ -8,7 +8,6 @@ import { useLocale, useTranslations } from "next-intl"
 import {
   CircleHelp,
   Languages,
-  Laptop,
   LogOut,
   MonitorCog,
   Moon,
@@ -71,7 +70,8 @@ function AccountAvatar({ className }: { className?: string }) {
 function UserMenuContent() {
   const account = useAccount()
   const t = useTranslations("Dashboard")
-  const { theme = "system", setTheme } = useTheme()
+  const { theme = "light", setTheme } = useTheme()
+  const currentTheme = theme === "dark" ? "dark" : "light"
   const locale = useLocale() as AppLocale
   const [isChangingLocale, startLocaleTransition] = useTransition()
 
@@ -123,13 +123,12 @@ function UserMenuContent() {
         <DropdownMenuSubTrigger>
           <MonitorCog className="size-4" />
           <span className="flex-1">{t("topbar.theme")}</span>
-          <span className="mr-1 text-xs text-muted-foreground">{t(`topbar.${theme === "dark" ? "dark" : theme === "light" ? "light" : "system"}`)}</span>
+          <span className="mr-1 text-xs text-muted-foreground">{t(`topbar.${currentTheme}`)}</span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="min-w-40">
-          <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+          <DropdownMenuRadioGroup value={currentTheme} onValueChange={setTheme}>
             <DropdownMenuRadioItem value="light"><Sun className="size-4" />{t("topbar.light")}</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="dark"><Moon className="size-4" />{t("topbar.dark")}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="system"><Laptop className="size-4" />{t("topbar.system")}</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuSubContent>
       </DropdownMenuSub>

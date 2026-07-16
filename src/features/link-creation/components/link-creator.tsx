@@ -54,6 +54,7 @@ import {
   ThumbsUp,
   UserPlus,
   Eye,
+  ExternalLink,
   UsersRound,
   Plus,
   Trash2,
@@ -116,6 +117,7 @@ import {
   SiX,
   SiYoutube,
 } from "@icons-pack/react-simple-icons";
+import { cn } from "@/lib/utils"
 
 
 type SocialActionItem = {
@@ -598,11 +600,18 @@ function toPlatformKey(platform: string): keyof typeof socialPlatforms {
 
 function isValidUrl(value: string) {
   try {
-    new URL(value)
-    return true
+    const url = new URL(value.trim())
+    return url.protocol === "http:" || url.protocol === "https:"
   } catch {
     return false
   }
+}
+
+function getLocalDateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 const backgroundImages = [
@@ -897,6 +906,7 @@ export default function SocialLinksGenerator({
   const [expiryDate, setExpiryDate] = useState(initialLink?.expiryDate ? initialLink.expiryDate.slice(0, 10) : "")
   const [maxClicks, setMaxClicks] = useState(initialLink?.maxClicks ? String(initialLink.maxClicks) : "")
   const [expiryTime, setExpiryTime] = useState(initialLink?.expiryTime || "00:00")
+  const [expiryValidationNow, setExpiryValidationNow] = useState(() => Date.now())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [createdLink, setCreatedLink] = useState<LinkDto | null>(null)
@@ -939,6 +949,18 @@ export default function SocialLinksGenerator({
       setSnippetsLoading(false)
     }
   }, [t])
+
+  useEffect(() => {
+    if (inputType === "snippet" && !snippetsLoaded && !snippetsLoading) {
+      void Promise.resolve().then(loadSnippets)
+    }
+  }, [inputType, loadSnippets, snippetsLoaded, snippetsLoading])
+
+  useEffect(() => {
+    if (!expiryEnabled || expiryType !== "date") return
+    const intervalId = window.setInterval(() => setExpiryValidationNow(Date.now()), 10_000)
+    return () => window.clearInterval(intervalId)
+  }, [expiryEnabled, expiryType])
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -992,20 +1014,20 @@ export default function SocialLinksGenerator({
       url: "",
       isValid: false,
     }
-    setActions([...actions, newAction])
+    setActions((current) => [...current, newAction])
     setIsActionModalOpen(false)
   }
 
   const updateActionUrl = (actionId: string, url: string) => {
-    setActions(
-      actions.map((action) =>
+    setActions((current) =>
+      current.map((action) =>
         action.id === actionId ? { ...action, url, isValid: url.length > 0 && isValidUrl(url) } : action,
       ),
     )
   }
 
   const removeAction = (actionId: string) => {
-    setActions(actions.filter((action) => action.id !== actionId))
+    setActions((current) => current.filter((action) => action.id !== actionId))
   }
 
   const getActionLabel = (platform: keyof typeof socialPlatforms, actionId: string) => {
@@ -1018,13 +1040,15 @@ export default function SocialLinksGenerator({
   }
 
   const togglePlatformExpanded = (platform: string) => {
-    const newExpanded = new Set(expandedPlatforms)
-    if (newExpanded.has(platform)) {
-      newExpanded.delete(platform)
-    } else {
-      newExpanded.add(platform)
-    }
-    setExpandedPlatforms(newExpanded)
+    setExpandedPlatforms((current) => {
+      const next = new Set(current)
+      if (next.has(platform)) {
+        next.delete(platform)
+      } else {
+        next.add(platform)
+      }
+      return next
+    })
   }
 
   const toggleExpandAllPlatforms = () => {
@@ -1229,13 +1253,23 @@ export default function SocialLinksGenerator({
       : inputType === "file"
         ? isFileDestinationValid
         : isSnippetDestinationValid
-  const isTitleValid = title.length > 0
+  const isTitleValid = title.trim().length > 0
   const completedActions = actions.filter((a) => a.isValid).length
   const totalActions = actions.length
   const allActionUrlsValid = totalActions > 0 && completedActions === totalActions
-  const canCreateLink = isDestinationValid && isTitleValid && allActionUrlsValid
+  const expiryClickLimit = Number(maxClicks)
+  const expiryTimestamp = expiryDate
+    ? new Date(`${expiryDate}T${expiryTime || "00:00"}:00`).getTime()
+    : Number.NaN
+  const isExpiryValid = !expiryEnabled || (
+    expiryType === "date"
+      ? Number.isFinite(expiryTimestamp) && expiryTimestamp > expiryValidationNow
+      : Number.isInteger(expiryClickLimit) && expiryClickLimit > 0
+  )
+  const canCreateLink = isDestinationValid && isTitleValid && allActionUrlsValid && isExpiryValid
   const selectedBackground = backgroundImages.find((bg) => bg.id === selectedBackgroundId)
   const selectedSnippetData = snippets.find((snippet) => snippet.id === selectedSnippet)
+  const selectedFileDisplayName = availableFiles.find((file) => file.id === selectedFile)?.name || selectedFileName
   const backgroundFileMedia = availableFiles.filter((file) => isImageFile(file) || isVideoFile(file))
   const youtubeEmbedUrl = backgroundMediaType === "youtube"
     ? getYouTubeEmbedUrl(backgroundMediaUrl)
@@ -1282,8 +1316,9 @@ export default function SocialLinksGenerator({
   })
   const filteredPopularActions = filterPopularActions(actionSearch, actionCategory)
 
-  const selectedBackgroundName =
-    backgroundMediaType === "video"
+  const selectedBackgroundName = sameAsCoverImage && coverImageUrl
+    ? "Cover image"
+    : backgroundMediaType === "video"
       ? backgroundVideos.find((bg) => bg.id === selectedBackgroundId)?.name
       : backgroundMediaType === "youtube"
         ? "YouTube video"
@@ -1292,18 +1327,18 @@ export default function SocialLinksGenerator({
           : backgroundImages.find((bg) => bg.id === selectedBackgroundId)?.name
 
   const buildCreatePayload = () => ({
-    title,
+    title: title.trim(),
     destinationUrl:
       inputType === "file"
         ? selectedFileUrl
         : inputType === "snippet"
           ? ""
-          : destinationUrl,
+          : destinationUrl.trim(),
     inputType,
-    selectedSnippet: selectedSnippet || undefined,
-    selectedFile: selectedFile || undefined,
-    subtitle: subtitle || undefined,
-    customAlias: !isEditing && customAlias ? customAlias : undefined,
+    selectedSnippet: inputType === "snippet" ? selectedSnippet || undefined : undefined,
+    selectedFile: inputType === "file" ? selectedFile || undefined : undefined,
+    subtitle: subtitle.trim() || undefined,
+    customAlias: !isEditing && customAlias ? customAlias.trim() : undefined,
     coverImageUrl: coverImageUrl || undefined,
     expiryEnabled,
     expiryType: expiryEnabled ? expiryType : undefined,
@@ -1313,7 +1348,7 @@ export default function SocialLinksGenerator({
     actions: actions.map(a => ({
       platform: a.platform,
       action: a.action,
-      url: a.url
+      url: a.url.trim()
     })),
     backgroundSettings: {
       selectedBackgroundId: selectedBackgroundId || undefined,
@@ -1408,9 +1443,6 @@ export default function SocialLinksGenerator({
               value={inputType}
               onValueChange={(value) => {
                 setInputType(value as "url" | "file" | "snippet")
-                if (value === "snippet" && !snippetsLoaded && !snippetsLoading) {
-                  void loadSnippets()
-                }
               }}
               className="w-full min-w-0 !gap-0"
             >
@@ -1480,15 +1512,15 @@ export default function SocialLinksGenerator({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-foreground">
-                        {selectedFileName ? t("fileSelected") : t("selectFile")}
+                        {selectedFileDisplayName ? t("fileSelected") : t("selectFile")}
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                        {selectedFileName
-                          ? selectedFileName
+                        {selectedFileDisplayName
+                          ? selectedFileDisplayName
                           : t("fileHint")}
                       </span>
                     </span>
-                    {selectedFileName && (
+                    {selectedFileDisplayName && (
                       <span
                         role="button"
                         tabIndex={0}
@@ -1624,10 +1656,6 @@ export default function SocialLinksGenerator({
             browseHint: t("browseFilesHint"),
             filesTab: t("filesTab"),
             uploadsTab: t("uploadsTab"),
-            itemsPerPage: t("itemsPerPage"),
-            pageOf: (page, total) => t("pageOf", { page, total }),
-            previousPage: t("previousPage"),
-            nextPage: t("nextPage"),
             fileCount: (count) => t("fileCount", { count }),
           }}
         />
@@ -1689,10 +1717,6 @@ export default function SocialLinksGenerator({
             browseHint: t("coverUploadHint"),
             filesTab: t("filesTab"),
             uploadsTab: t("uploadsTab"),
-            itemsPerPage: t("itemsPerPage"),
-            pageOf: (page, total) => t("pageOf", { page, total }),
-            previousPage: t("previousPage"),
-            nextPage: t("nextPage"),
             fileCount: (count) => t("imageCount", { count }),
           }}
         />
@@ -2413,7 +2437,7 @@ export default function SocialLinksGenerator({
                         ? "border-red-300"
                         : "border-border"
                   } ${isEditing ? "opacity-70" : ""}`}>
-                    <span className="text-sm text-muted-foreground">yoursite.com/</span>
+                    <span className="text-sm text-muted-foreground">linkicom.io/l/</span>
                     <Input
                       placeholder={t("aliasPlaceholder")}
                       value={customAlias}
@@ -2549,9 +2573,12 @@ export default function SocialLinksGenerator({
                         <Input
                           type="date"
                           value={expiryDate}
-                          onChange={(e) => setExpiryDate(e.target.value)}
+                          onChange={(e) => {
+                            setExpiryDate(e.target.value)
+                            setExpiryValidationNow(Date.now())
+                          }}
                           className="h-10 rounded-lg border-border bg-background shadow-none"
-                          min={new Date().toISOString().split("T")[0]}
+                          min={getLocalDateInputValue(new Date(expiryValidationNow))}
                         />
                       </div>
                       <div>
@@ -2559,7 +2586,10 @@ export default function SocialLinksGenerator({
                         <Input
                           type="time"
                           value={expiryTime}
-                          onChange={(e) => setExpiryTime(e.target.value)}
+                          onChange={(e) => {
+                            setExpiryTime(e.target.value)
+                            setExpiryValidationNow(Date.now())
+                          }}
                           className="h-10 rounded-lg border-border bg-background shadow-none"
                         />
                       </div>
@@ -2621,7 +2651,7 @@ export default function SocialLinksGenerator({
           </Button>
         </div>
 
-        <Card className="relative z-10 min-h-[420px] overflow-hidden rounded-xl border-border bg-muted/20 p-4 shadow-none sm:p-5 lg:min-h-[560px]">
+        <Card className="relative z-10 min-h-[420px] overflow-hidden rounded-xl border-border bg-slate-100 p-4 shadow-none dark:bg-[#010102] sm:p-5 lg:min-h-[560px]">
           {activeBackgroundMediaType === "video" && activeBackgroundMediaUrl ? (
             <video
               src={activeBackgroundMediaUrl}
@@ -2646,9 +2676,8 @@ export default function SocialLinksGenerator({
             />
           ) : (
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="pointer-events-none absolute inset-0 bg-slate-100 dark:bg-[#010102]"
               style={{
-                backgroundColor: "white",
                 backgroundImage: activeBackgroundMediaUrl
                   ? `url(${activeBackgroundMediaUrl})`
                   : "none",
@@ -2660,7 +2689,11 @@ export default function SocialLinksGenerator({
             />
           )}
 
-          <Card className="relative gap-3 overflow-hidden rounded-xl border border-border/80 bg-background/90 p-5 text-center shadow-none backdrop-blur-md">
+          <div className="pointer-events-none absolute inset-0 bg-white/70 dark:bg-black/70" />
+
+          <Card className="r
+          flex flex-col items-center justify-center
+          relative gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-5 text-left text-slate-950 shadow-none backdrop-blur-md dark:border-white/10 dark:bg-[#0f1011]/95 dark:text-[#f7f8f8]">
             {coverImageUrl && (
               <div className="mb-2 h-40 w-full overflow-hidden rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2675,30 +2708,30 @@ export default function SocialLinksGenerator({
             <h3
               className={
                 title
-                  ? "text-lg font-semibold text-foreground"
-                  : "text-base font-normal text-muted-foreground"
+                  ? "text-lg font-semibold tracking-[-0.02em] text-slate-950 dark:text-[#f7f8f8]"
+                  : "text-base font-normal text-slate-600 dark:text-[#8a8f98]"
               }
             >
               {title || t("unlockLink")}
             </h3>
 
-            <p className="text-sm text-muted-foreground">{subtitle ? `${subtitle} ` : t("completeActionsHint")}</p>
+            <p className="text-sm leading-6 text-slate-600 dark:text-[#8a8f98]">{subtitle ? `${subtitle} ` : t("completeActionsHint")}</p>
 
             {inputType === "snippet" && selectedSnippetData ? (
-              <div className="overflow-hidden rounded-lg border border-border bg-muted/20 text-left">
-                <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5">
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-left dark:border-white/10 dark:bg-[#010102]">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 dark:border-white/10">
                   <div className="flex min-w-0 items-center gap-2">
-                    <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-sm font-medium text-foreground">{selectedSnippetData.name}</span>
+                    <FileCode2 className="size-4 shrink-0 text-slate-600 dark:text-[#8a8f98]" />
+                    <span className="truncate text-sm font-medium text-slate-700 dark:text-[#d0d6e0]">{selectedSnippetData.name}</span>
                   </div>
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{formatSnippetSize(selectedSnippetData.content)}</span>
+                  <span className="shrink-0 text-[11px] text-slate-500 dark:text-[#62666d]">{formatSnippetSize(selectedSnippetData.content)}</span>
                 </div>
                 <div className="relative h-20 overflow-hidden px-3 py-2.5">
-                  <pre className="select-none whitespace-pre-wrap break-words font-mono text-xs leading-5 text-muted-foreground blur-[3px]">
+                  <pre className="select-none whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-600 blur-[3px] dark:text-[#8a8f98]">
                     {selectedSnippetData.content}
                   </pre>
-                  <div className="absolute inset-0 grid place-items-center bg-background/45 backdrop-blur-[1px]">
-                    <span className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                  <div className="absolute inset-0 grid place-items-center bg-white/60 backdrop-blur-[1px] dark:bg-[#010102]/60">
+                    <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-[#141516] dark:text-[#8a8f98]">
                       {t("snippetContentLocked")}
                     </span>
                   </div>
@@ -2707,53 +2740,48 @@ export default function SocialLinksGenerator({
             ) : null}
 
             {actions.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-2 w-full overflow-hidden">
                 {actions.map((action) => {
                   const platform = socialPlatforms[action.platform];
                   const Icon = getActionIcon(action.platform, action.action);
 
                   return (
-                    <Button
+                    <div
                       key={action.id}
-                      className={`w-full ${platform.color} text-white hover:opacity-80`}
-                      disabled={!action.isValid}
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {getActionLabel(action.platform, action.action)}
-                    </Button>
+className={cn(
+  "flex max-h-11 w-full items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-white/10",
+  action.isValid ? platform.color : "bg-slate-400 dark:bg-[#23252a]"
+)}                    >
+                      <span className={`grid size-9 shrink-0 place-items-center rounded-md text-white ${action.isValid ? platform.color : "bg-slate-400 dark:bg-[#23252a]"}`}>
+                        <Icon className="size-4" />
+                      </span>
+                      <span className={action.isValid ? "min-w-0 flex-1 truncate text-sm font-medium dark:text-slate-950 text-[#f7f8f8]" : "min-w-0 flex-1 truncate text-sm font-medium text-slate-400 dark:text-[#62666d]"}>
+                        {getActionLabel(action.platform, action.action)}
+                      </span>
+                      <ExternalLink className="size-3.5 shrink-0 text-slate-400 dark:text-[#62666d]" />
+                    </div>
                   );
                 })}
               </div>
             )}
 
-            <div className="text-xs text-muted-foreground">
-              {t("unlockProgress", { completed: completedActions, total: totalActions })}
+            <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-[#8a8f98]">
+              <span>{t("unlockProgress", { completed: 0, total: totalActions })}</span>
             </div>
 
-            <div className="h-1.5 w-full rounded-full bg-muted">
+            <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-[#23252a]">
               <div
                 className="h-1.5 rounded-full bg-primary transition-all duration-300"
                 style={{
-                  width:
-                    totalActions > 0
-                      ? `${(completedActions / totalActions) * 100}%`
-                      : "0%",
+                  width: "0%",
                 }}
               />
             </div>
 
             <Button
-              className={`h-10 w-full rounded-lg font-medium shadow-none ${isDestinationValid
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted text-muted-foreground"
-                }`}
-              disabled={!isDestinationValid}
-              onClick={() => {
-                if (!isDestinationValid) return;
-                if (inputType === "snippet") return;
-
-                window.open(inputType === "file" ? selectedFileUrl : destinationUrl, "_blank", "noopener,noreferrer");
-              }}
+              type="button"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-100 font-medium text-slate-400 shadow-none disabled:opacity-100 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]"
+              disabled
             >
               <Lock />{inputType === "file" ? t("unlockFile") : inputType === "snippet" ? t("revealSnippet") : t("unlockLink")}
             </Button>
@@ -2780,7 +2808,7 @@ export default function SocialLinksGenerator({
             )}
 
             {!canCreateLink && (
-              <div className="space-y-1 text-left text-xs text-muted-foreground">
+              <div className="space-y-1 text-left text-xs text-slate-600 dark:text-[#8a8f98]">
                 {!isTitleValid && <p>• {t("titleRequired")}</p>}
                 {inputType === "url" && !isDestinationUrlValid && <p>• {t("destinationRequired")}</p>}
                 {inputType === "file" && !isFileDestinationValid && <p>• {t("fileRequired")}</p>}
@@ -2789,6 +2817,7 @@ export default function SocialLinksGenerator({
                 {totalActions > 0 && completedActions < totalActions && (
                   <p>• {t("completeAllActions")}</p>
                 )}
+                {!isExpiryValid && <p>• {t("expiryRequired")}</p>}
               </div>
             )}
           </Card>

@@ -10,8 +10,6 @@ import {
 } from "react"
 import {
   Check,
-  ChevronLeft,
-  ChevronRight,
   FileImage,
   FileText,
   FileVideo,
@@ -25,6 +23,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { TablePagination } from "@/components/table-pagination"
 import {
   Credenza,
   CredenzaBody,
@@ -78,10 +77,6 @@ type FilePickerLabels = {
   fileCount?: (count: number) => string
   filesTab?: string
   uploadsTab?: string
-  itemsPerPage?: string
-  pageOf?: (page: number, total: number) => string
-  previousPage?: string
-  nextPage?: string
 }
 
 type FilePickerUpload = {
@@ -181,7 +176,7 @@ export function FilePickerCredenza({
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<FileSort>("newest")
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(8)
+  const [pageSize, setPageSize] = useState(10)
   const [pendingFileId, setPendingFileId] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -411,51 +406,14 @@ export function FilePickerCredenza({
               </div>
 
               {filteredFiles.length > 0 ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
-                  <label className="inline-flex items-center gap-2">
-                    <span>{labels.itemsPerPage || "Items per page"}</span>
-                    <select
-                      value={pageSize}
-                      onChange={(event) => {
-                        setPageSize(Number(event.target.value))
-                        setPage(1)
-                      }}
-                      className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                    >
-                      <option value={8}>8</option>
-                      <option value={16}>16</option>
-                      <option value={32}>32</option>
-                    </select>
-                  </label>
-
-                  <span aria-live="polite">
-                    {labels.pageOf?.(currentPage, totalPages) || `Page ${currentPage} of ${totalPages}`}
-                  </span>
-
-                  <div className="inline-flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={labels.previousPage || "Previous page"}
-                      onClick={() => setPage((value) => Math.max(1, value - 1))}
-                      disabled={currentPage <= 1}
-                      className="shadow-none"
-                    >
-                      <ChevronLeft className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={labels.nextPage || "Next page"}
-                      onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-                      disabled={currentPage >= totalPages}
-                      className="shadow-none"
-                    >
-                      <ChevronRight className="size-4" />
-                    </Button>
-                  </div>
+                <div className="border-t border-border px-3 py-3 sm:px-4">
+                  <TablePagination
+                    page={currentPage}
+                    pageSize={pageSize}
+                    totalItems={filteredFiles.length}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                  />
                 </div>
               ) : null}
             </TabsContent>

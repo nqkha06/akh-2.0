@@ -1,9 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Home, Link2, Menu, Plus, Share2 } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { ArrowRight, Home, Link2, Menu, Moon, Plus, Share2, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetClose,
@@ -32,14 +44,96 @@ const navigationItems = [
   },
 ];
 
-export function ShowHeader({ onShare }: { onShare?: () => void }) {
+function PublicThemeSelector({ variant }: { variant: "default" | "linear" }) {
+  const publicT = useTranslations("PublicLink");
+  const { theme = "light", setTheme } = useTheme();
+  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
+  const currentTheme = mounted && theme === "dark" ? "dark" : "light";
+  const ThemeIcon = currentTheme === "dark" ? Moon : Sun;
+
   return (
-    <header className="sticky top-3 z-40 px-3 pt-3 text-white sm:top-5 sm:px-6 sm:pt-5">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={publicT("chooseTheme")}
+          className={variant === "linear"
+            ? "size-9 rounded-lg border border-border bg-card/90 text-muted-foreground shadow-none hover:bg-accent hover:text-foreground dark:border-white/10 dark:bg-[#0f1011] dark:text-[#d0d6e0] dark:hover:bg-[#18191a] dark:hover:text-white"
+            : "size-9 rounded-full text-slate-700 hover:bg-black/5 hover:text-slate-950 dark:text-white dark:hover:bg-white/15 dark:hover:text-white sm:size-10"}
+        >
+          <ThemeIcon className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-44">
+        <DropdownMenuLabel>{publicT("appearance")}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup value={currentTheme} onValueChange={setTheme}>
+          <DropdownMenuRadioItem value="light">
+            <Sun className="size-4" />
+            {publicT("lightMode")}
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="dark">
+            <Moon className="size-4" />
+            {publicT("darkMode")}
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function ShowHeader({ onShare, variant = "default" }: { onShare?: () => void; variant?: "default" | "linear" }) {
+  const publicT = useTranslations("PublicLink");
+
+  if (variant === "linear") {
+    return (
+      <header className="border-b border-border bg-background/90 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#010102]/90 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between gap-4">
+          <Link href="/" aria-label="Linkicom home" className="flex min-w-0 items-center gap-2.5 text-foreground dark:text-[#f7f8f8]">
+            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[#5e6ad2] text-white">
+              <Link2 className="size-4" />
+            </span>
+            <span className="truncate text-sm font-semibold tracking-[-0.02em]">Linkicom</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <PublicThemeSelector variant="linear" />
+
+            {onShare ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={publicT("sharePage")}
+                onClick={onShare}
+                className="size-9 rounded-lg border border-border bg-card/90 text-muted-foreground shadow-none hover:bg-accent hover:text-foreground dark:border-white/10 dark:bg-[#0f1011] dark:text-[#d0d6e0] dark:hover:bg-[#18191a] dark:hover:text-white"
+              >
+                <Share2 className="size-4" />
+              </Button>
+            ) : null}
+
+            <Button asChild className="hidden h-9 rounded-lg bg-[#5e6ad2] px-3.5 text-xs font-medium text-white shadow-none hover:bg-[#828fff] sm:inline-flex">
+              <Link href="/member/create">
+                <span className="hidden sm:inline">{publicT("createHeader")}</span>
+                <span className="sm:hidden">{publicT("createShort")}</span>
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className="sticky top-3 z-40 px-3 pt-3 text-slate-950 dark:text-white sm:top-5 sm:px-6 sm:pt-5">
       <div className="mx-auto flex min-h-16 max-w-5xl items-center justify-between gap-3  p-2  sm:min-h-20 sm:p-3">
         <Link
           href="/member"
           aria-label="STU home"
-          className="group flex h-12 min-w-0 items-center rounded-full border border-white/20 bg-white/10 pr-3 transition-colors hover:bg-white/15 sm:h-14 sm:pr-5"
+          className="group flex h-12 min-w-0 items-center rounded-full border border-black/10 bg-white/80 pr-3 shadow-sm backdrop-blur-xl transition-colors hover:bg-white dark:border-white/20 dark:bg-white/10 dark:shadow-none dark:hover:bg-white/15 sm:h-14 sm:pr-5"
         >
           <span className="ml-1 grid size-10 shrink-0 place-items-center rounded-full bg-white/90 text-slate-950 shadow-sm transition-transform group-hover:scale-[1.03] sm:size-12">
             <Link2 className="size-5" />
@@ -69,7 +163,9 @@ export function ShowHeader({ onShare }: { onShare?: () => void }) {
           ))}
         </nav> */}
 
-        <div className="flex h-12 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-black/25 p-1.5 sm:h-14 sm:gap-2 sm:p-2">
+        <div className="flex h-12 shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/80 p-1.5 shadow-sm backdrop-blur-xl dark:border-white/15 dark:bg-black/25 dark:shadow-none sm:h-14 sm:gap-2 sm:p-2">
+          <PublicThemeSelector variant="default" />
+
           {onShare ? (
             <Button
               type="button"
@@ -77,7 +173,7 @@ export function ShowHeader({ onShare }: { onShare?: () => void }) {
               size="icon"
               aria-label="Share this page"
               onClick={onShare}
-              className="size-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-10"
+              className="size-9 rounded-full text-slate-700 hover:bg-black/5 hover:text-slate-950 dark:text-white dark:hover:bg-white/15 dark:hover:text-white sm:size-10"
             >
               <Share2 className="size-4" />
             </Button>
@@ -100,7 +196,7 @@ export function ShowHeader({ onShare }: { onShare?: () => void }) {
                 variant="ghost"
                 size="icon"
                 aria-label="Open navigation menu"
-                className="size-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-10 lg:hidden"
+                className="size-9 rounded-full text-slate-700 hover:bg-black/5 hover:text-slate-950 dark:text-white dark:hover:bg-white/15 dark:hover:text-white sm:size-10 lg:hidden"
               >
                 <Menu className="size-5" />
               </Button>

@@ -6,6 +6,7 @@ import { Badge as ShadcnBadge } from "@/components/ui/badge";
 import { Card as ShadcnCard } from "@/components/ui/card";
 import { Skeleton as ShadcnSkeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { TablePagination } from "@/components/table-pagination";
 
 import {
   ToolbarFilterDrawer,
@@ -322,23 +323,8 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return <ShadcnSkeleton className={cn("rounded-lg bg-slate-100", className)} />;
 }
 
-export function Pagination() {
-  return (
-    <div className="flex items-center justify-end gap-2">
-      {["Trước", "1", "2", "3", "Sau"].map((item, index) => (
-        <button
-          key={item}
-          className={`h-9 rounded-xl px-3 text-sm font-bold transition ${
-            index === 1
-              ? "bg-slate-950 text-white"
-              : "border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-950"
-          }`}
-        >
-          {item}
-        </button>
-      ))}
-    </div>
-  );
+export function Pagination(props: ComponentProps<typeof TablePagination>) {
+  return <TablePagination {...props} />;
 }
 
 export function TabPills({

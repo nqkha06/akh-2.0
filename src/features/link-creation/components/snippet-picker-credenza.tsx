@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react"
 import {
   Check,
-  ChevronLeft,
-  ChevronRight,
   FileCode2,
   Loader2,
   Plus,
@@ -14,6 +12,7 @@ import {
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
+import { TablePagination } from "@/components/table-pagination"
 import {
   Credenza,
   CredenzaBody,
@@ -41,8 +40,6 @@ type SnippetPickerCredenzaProps = {
   onCreate: (payload: { name?: string; content: string }) => Promise<SnippetDto>
 }
 
-const PAGE_SIZE = 6
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
@@ -66,6 +63,7 @@ export function SnippetPickerCredenza({
   const [tab, setTab] = useState<"existing" | "create">("existing")
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [draftId, setDraftId] = useState(selectedId || "")
   const [newName, setNewName] = useState("")
   const [newContent, setNewContent] = useState("")
@@ -82,9 +80,9 @@ export function SnippetPickerCredenza({
     return result
   }, [query, snippets])
 
-  const totalPages = Math.max(1, Math.ceil(filteredSnippets.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(filteredSnippets.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const visibleSnippets = filteredSnippets.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const visibleSnippets = filteredSnippets.slice((safePage - 1) * pageSize, safePage * pageSize)
   const activeDraftId = draftId || selectedId || ""
   const activeSnippet = snippets.find((snippet) => snippet.id === activeDraftId)
 
@@ -247,14 +245,15 @@ export function SnippetPickerCredenza({
                   )}
                 </div>
 
-                {totalPages > 1 ? (
-                  <div className="mt-3 flex items-center justify-end gap-1">
-                    <Button type="button" variant="outline" size="icon-sm" disabled={safePage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-                      <ChevronLeft className="size-4" />
-                    </Button>
-                    <Button type="button" variant="outline" size="icon-sm" disabled={safePage === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
-                      <ChevronRight className="size-4" />
-                    </Button>
+                {filteredSnippets.length > 0 ? (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <TablePagination
+                      page={safePage}
+                      pageSize={pageSize}
+                      totalItems={filteredSnippets.length}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
                   </div>
                 ) : null}
               </TabsContent>

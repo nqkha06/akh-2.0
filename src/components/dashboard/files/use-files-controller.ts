@@ -9,7 +9,6 @@ import { deleteFile, getFileDownloadUrl, getFiles, type ManagedFileDto, updateFi
 import { FILE_SIZE_LIMIT, getFileType } from "./file-utils";
 import type { FileSortOption, FilesFilters, FileStatusFilter, FileTypeFilter, ManagedFileView, UploadQueueItem } from "./types";
 
-const PAGE_SIZE = 8;
 const defaultFilters: FilesFilters = { type: "all", status: "all" };
 
 function validType(value: string | null): FileTypeFilter {
@@ -42,6 +41,7 @@ export function useFilesController() {
   const [filters, setFilters] = useState<FilesFilters>(() => ({ type: validType(searchParams.get("type")), status: validStatus(searchParams.get("status")) }));
   const [sort, setSortState] = useState<FileSortOption>(() => validSort(searchParams.get("sort")));
   const [page, setPageState] = useState(() => Math.max(Number(searchParams.get("page")) || 1, 1));
+  const [pageSize, setPageSizeState] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -93,6 +93,7 @@ export function useFilesController() {
   const setStatus = (value: FileStatusFilter) => { const next = { ...filters, status: value }; setFilters(next); setPageState(1); syncUrl({ query, filters: next, sort, page: 1 }); };
   const setSort = (value: FileSortOption) => { setSortState(value); setPageState(1); syncUrl({ query, filters, sort: value, page: 1 }); };
   const setPage = (value: number) => { setPageState(value); syncUrl({ query, filters, sort, page: value }); };
+  const setPageSize = (value: number) => setPageSizeState(value);
   const clearCriteria = () => { setQueryState(""); setDebouncedQuery(""); setFilters(defaultFilters); setSortState("newest"); setPageState(1); syncUrl({ query: "", filters: defaultFilters, sort: "newest", page: 1 }); };
 
   const filteredFiles = useMemo(() => files.filter((file) => {
@@ -105,8 +106,8 @@ export function useFilesController() {
     if (filters.status === "public" && !file.isPublic) return false;
     return true;
   }), [files, filters]);
-  const pageCount = Math.max(Math.ceil(filteredFiles.length / PAGE_SIZE), 1);
-  const visibleFiles = filteredFiles.slice((Math.min(page, pageCount) - 1) * PAGE_SIZE, Math.min(page, pageCount) * PAGE_SIZE);
+  const pageCount = Math.max(Math.ceil(filteredFiles.length / pageSize), 1);
+  const visibleFiles = filteredFiles.slice((Math.min(page, pageCount) - 1) * pageSize, Math.min(page, pageCount) * pageSize);
 
   async function runUpload(item: UploadQueueItem) {
     const controller = new AbortController();
@@ -183,9 +184,9 @@ export function useFilesController() {
   }
 
   return {
-    files, visibleFiles, filteredTotal: filteredFiles.length, totalSize, query, filters, sort, page: Math.min(page, pageCount), pageCount, loading, error,
+    files, visibleFiles, filteredTotal: filteredFiles.length, totalSize, query, filters, sort, page: Math.min(page, pageCount), pageSize, pageCount, loading, error,
     selectedIds, selectedFiles, busy, uploadOpen, uploadQueue, previewFile, previewOpen, previewMode, filePendingDelete, bulkDeleteOpen,
-    setQuery, setType, setStatus, setSort, setPage, clearCriteria, refresh: () => loadFiles(debouncedQuery, sort),
+    setQuery, setType, setStatus, setSort, setPage, setPageSize, clearCriteria, refresh: () => loadFiles(debouncedQuery, sort),
     setUploadOpen, addFiles, retryUpload, cancelUpload, removeUpload, openPreview, setPreviewOpen, copyUrl, copyAlias, useDestination, renameFile, toggleVisibility,
     setFilePendingDelete, confirmDelete, setBulkDeleteOpen, confirmBulkDelete, selectFile, selectPage, clearSelection, downloadSelected, updateSelectedVisibility,
   };

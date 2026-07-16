@@ -49,5 +49,7 @@
 .violation .visual::before { background:linear-gradient(145deg,#ffe5df,#f1ebff 60%,#ddf8fa); }
 .deleted .stateIcon { color:#77717e; background:#f0eef3; }
 .deleted .visual::before { background:linear-gradient(145deg,#e5e1ed,#f5f3f9 58%,#e1f8fa); }
+.unavailable .stateIcon { color:#7357ff; background:#efebff; }
+.unavailable .visual::before { background:linear-gradient(145deg,#e7e0ff,#f5f3f9 58%,#e1f8fa); }
 @media(max-width:820px){.content{grid-template-columns:1fr;gap:45px;padding:60px 0;text-align:center}.copy{margin:auto}.copy>p{margin-inline:auto}.actions{justify-content:center}.visual{min-height:440px}.footer{margin-top:20px}}
 @media(max-width:520px){.page{padding-inline:18px}.header{min-height:66px}.content{padding:45px 0 30px}.code{font-size:120px}.copy h1{font-size:45px}.actions{flex-direction:column}.actions a{width:100%}.visual{min-height:390px;transform:scale(.88);margin:-25px -35px}.sparkle{display:none}.footer{padding:18px 0;flex-direction:column;gap:7px;justify-content:center}.orbitOne{width:440px;height:440px}.visual::before{width:390px;height:390px}}

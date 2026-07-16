@@ -5,6 +5,7 @@ import {
   Compass,
   FileX2,
   Link2Off,
+  PauseCircle,
   ShieldAlert,
   Sparkles,
   Trash2,
@@ -12,7 +13,7 @@ import {
 
 import styles from "./system-status-page.module.css";
 
-export type StatusKind = "default404" | "linkNotFound" | "violation" | "deleted";
+export type StatusKind = "default404" | "linkNotFound" | "violation" | "deleted" | "unavailable";
 
 const statusContent = {
   default404: {
@@ -62,6 +63,18 @@ const statusContent = {
     primaryHref: "/member/new",
     secondary: "Về trang chủ",
     secondaryHref: "/",
+  },
+  unavailable: {
+    code: "410",
+    eyebrow: "Link tạm không khả dụng",
+    title: "Link này hiện không thể mở.",
+    description: "Link có thể đang tạm dừng, đã hết hạn hoặc đạt giới hạn lượt truy cập do chủ sở hữu thiết lập.",
+    Icon: PauseCircle,
+    label: "Link unavailable",
+    primary: "Về trang chủ",
+    primaryHref: "/",
+    secondary: "Tạo link mới",
+    secondaryHref: "/member/create",
   },
 } as const;
 

@@ -301,6 +301,19 @@ export async function getLink(slug: string) {
   return (await response.json()) as LinkDto;
 }
 
+export async function recordLinkVisit(slug: string) {
+  const response = await fetch(`${API_URL}/links/${encodeURIComponent(slug)}/visit`, {
+    method: "POST",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as LinkDto;
+}
+
 export async function getFiles(params?: {
   q?: string;
   sort?: "date" | "name" | "size" | "downloads";

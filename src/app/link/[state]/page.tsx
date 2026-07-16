@@ -7,6 +7,7 @@ const states: Record<string, { kind: StatusKind; title: string }> = {
   "not-found": { kind: "linkNotFound", title: "Không tìm thấy link — Linkicom" },
   violation: { kind: "violation", title: "Link bị vô hiệu hoá — Linkicom" },
   deleted: { kind: "deleted", title: "Link đã bị xoá — Linkicom" },
+  unavailable: { kind: "unavailable", title: "Link không khả dụng — Linkicom" },
 };
 
 export function generateStaticParams() {

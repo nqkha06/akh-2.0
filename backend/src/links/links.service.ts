@@ -14,6 +14,11 @@ export class LinksService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createLinkDto: CreateLinkDto) {
+    const title = createLinkDto.title.trim();
+    if (!title) {
+      throw new BadRequestException("Tiêu đề không được để trống.");
+    }
+
     const destinationUrl = await this.resolveDestination(createLinkDto);
 
     const customAlias = this.normalizeAlias(createLinkDto.customAlias);
@@ -31,7 +36,7 @@ export class LinksService {
         data: {
           slug,
           destinationUrl,
-          title: createLinkDto.title.trim(),
+          title,
           inputType: createLinkDto.inputType,
           selectedSnippet: this.emptyToNull(createLinkDto.selectedSnippet),
           selectedFile: this.emptyToNull(createLinkDto.selectedFile),
@@ -126,7 +131,55 @@ export class LinksService {
     return this.toResponse(link);
   }
 
+  async recordVisit(slug: string) {
+    return this.prisma.$transaction(async (prisma) => {
+      const current = await prisma.link.findUnique({
+        where: { slug },
+        include: { actions: true },
+      });
+
+      if (!current) {
+        throw new NotFoundException("Không tìm thấy link.");
+      }
+
+      const status = current.status.toLowerCase();
+      if (status !== "active") {
+        return this.toResponse(current);
+      }
+
+      const expiredByDate = Boolean(
+        current.expiryEnabled &&
+        current.expiryType === "date" &&
+        current.expiryDate &&
+        current.expiryDate.getTime() <= Date.now(),
+      );
+      const expiredByClicks = Boolean(
+        current.expiryEnabled &&
+        current.expiryType === "clicks" &&
+        current.maxClicks !== null &&
+        current.clicks >= current.maxClicks,
+      );
+
+      if (expiredByDate || expiredByClicks) {
+        return { ...this.toResponse(current), status: "expired" };
+      }
+
+      const visited = await prisma.link.update({
+        where: { id: current.id },
+        data: { clicks: { increment: 1 } },
+        include: { actions: true },
+      });
+
+      return this.toResponse(visited);
+    });
+  }
+
   async update(id: string, updateLinkDto: CreateLinkDto) {
+    const title = updateLinkDto.title.trim();
+    if (!title) {
+      throw new BadRequestException("Tiêu đề không được để trống.");
+    }
+
     const destinationUrl = await this.resolveDestination(updateLinkDto);
 
     const existing = await this.prisma.link.findUnique({
@@ -155,7 +208,7 @@ export class LinksService {
         },
         data: {
           destinationUrl,
-          title: updateLinkDto.title.trim(),
+          title,
           inputType: updateLinkDto.inputType,
           selectedSnippet: this.emptyToNull(updateLinkDto.selectedSnippet),
           selectedFile: this.emptyToNull(updateLinkDto.selectedFile),
@@ -310,7 +363,13 @@ export class LinksService {
     }
 
     const time = createLinkDto.expiryTime || "00:00";
-    return new Date(`${createLinkDto.expiryDate}T${time}:00`);
+    const expiryDate = new Date(`${createLinkDto.expiryDate}T${time}:00`);
+
+    if (Number.isNaN(expiryDate.getTime()) || expiryDate.getTime() <= Date.now()) {
+      throw new BadRequestException("Thời điểm hết hạn phải nằm trong tương lai.");
+    }
+
+    return expiryDate;
   }
 
   private toResponse(

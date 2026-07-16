@@ -33,7 +33,13 @@ export default async function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
           <AuthSessionProvider>
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              themes={["light", "dark"]}
+              disableTransitionOnChange
+            >
               {children}
               <Toaster position="top-right" />
             </ThemeProvider>

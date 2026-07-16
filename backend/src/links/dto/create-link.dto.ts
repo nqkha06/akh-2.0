@@ -25,7 +25,7 @@ class CreateLinkActionDto {
   @IsNotEmpty()
   action: string;
 
-  @IsUrl({ require_protocol: true })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true, require_valid_protocol: true })
   url: string;
 }
 
@@ -95,7 +95,7 @@ class BackgroundSettingsDto {
 
 export class CreateLinkDto {
   @ValidateIf((payload: CreateLinkDto) => payload.inputType === "url")
-  @IsUrl({ require_protocol: true })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true, require_valid_protocol: true })
   destinationUrl: string;
 
   @IsString()
@@ -129,11 +129,11 @@ export class CreateLinkDto {
   @IsBoolean()
   expiryEnabled?: boolean;
 
-  @IsOptional()
+  @ValidateIf((payload: CreateLinkDto) => payload.expiryEnabled === true)
   @IsIn(["date", "clicks"])
   expiryType?: "date" | "clicks";
 
-  @IsOptional()
+  @ValidateIf((payload: CreateLinkDto) => payload.expiryEnabled === true && payload.expiryType === "date")
   @IsDateString()
   expiryDate?: string;
 
@@ -141,7 +141,7 @@ export class CreateLinkDto {
   @IsString()
   expiryTime?: string;
 
-  @IsOptional()
+  @ValidateIf((payload: CreateLinkDto) => payload.expiryEnabled === true && payload.expiryType === "clicks")
   @Type(() => Number)
   @IsInt()
   @Min(1)
