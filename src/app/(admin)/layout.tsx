@@ -28,15 +28,15 @@ export default async function AdminLayout({
       <TooltipProvider>
         <div className="min-h-svh bg-background text-foreground">
           <SidebarProvider
-            style={
-              {
-                "--sidebar-width": "calc(var(--spacing) * 72)",
-                "--header-height": "calc(var(--spacing) * 12)",
-              } as React.CSSProperties
-            }
+            // style={
+            //   {
+            //     "--sidebar-width": "calc(var(--spacing) * 72)",
+            //     "--header-height": "calc(var(--spacing) * 12)",
+            //   } as React.CSSProperties
+            // }
           >
             <AdminSidebar variant="inset" />
-            <SidebarInset>{children}</SidebarInset>
+            <SidebarInset className="min-w-0">{children}</SidebarInset>
           </SidebarProvider>
         </div>
       </TooltipProvider>

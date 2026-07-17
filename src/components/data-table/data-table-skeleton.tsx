@@ -37,11 +37,11 @@ export function DataTableSkeleton({
 
   return (
     <div
-      className={cn("flex w-full flex-col gap-2.5 overflow-auto", className)}
+      className={cn("flex min-w-0 w-full flex-col gap-2.5", className)}
       {...props}
     >
-      <div className="flex w-full items-center justify-between gap-2 overflow-auto p-1">
-        <div className="flex flex-1 items-center gap-2">
+      <div className="flex min-w-0 w-full flex-wrap items-center justify-between gap-2 p-1">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {filterCount > 0
             ? Array.from({ length: filterCount }).map((_, i) => (
                 <Skeleton key={i} className="h-7 w-18 border-dashed" />
@@ -91,9 +91,9 @@ export function DataTableSkeleton({
         </Table>
       </div>
       {withPagination ? (
-        <div className="flex w-full items-center justify-between gap-4 overflow-auto p-1 sm:gap-8">
+        <div className="flex min-w-0 w-full flex-wrap items-center justify-between gap-4 p-1 sm:gap-8">
           <Skeleton className="h-7 w-40 shrink-0" />
-          <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
+          <div className="flex min-w-0 flex-wrap items-center gap-4 sm:gap-6 lg:gap-8">
             <div className="flex items-center gap-2">
               <Skeleton className="h-7 w-24" />
               <Skeleton className="h-7 w-18" />

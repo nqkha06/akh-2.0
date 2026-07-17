@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -39,18 +38,7 @@ type StoredAppearance = {
 
 @Injectable()
 export class LinksService {
-  private readonly publicApiUrl: string;
-
-  constructor(
-    private readonly prisma: PrismaService,
-    configService: ConfigService,
-  ) {
-    this.publicApiUrl = (
-      configService.get<string>("PUBLIC_API_URL") ||
-      configService.get<string>("NEXT_PUBLIC_API_URL") ||
-      `http://localhost:${configService.get<number>("API_PORT", 4000)}/api`
-    ).replace(/\/$/, "");
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: number, createLinkDto: CreateLinkDto) {
     const title = createLinkDto.title.trim();
@@ -489,8 +477,8 @@ export class LinksService {
     const destinationUrl =
       link.destinationType === "snippet"
         ? link.destinationSnippet?.content || link.destinationUrl || ""
-        : link.destinationType === "file" && link.destinationFile
-          ? `${this.publicApiUrl}/files/${encodeURIComponent(link.destinationFile.id)}/download`
+        : link.destinationType === "file"
+          ? this.toFileDestinationUrl(link)
           : link.destinationUrl || "";
 
     return {
@@ -525,5 +513,30 @@ export class LinksService {
       createdAt: link.createdAt,
       updatedAt: link.updatedAt,
     };
+  }
+
+  private toFileDestinationUrl(link: LinkWithRelations) {
+    if (link.destinationFile) {
+      return `/api/backend/files/${encodeURIComponent(link.destinationFile.id)}/download`;
+    }
+
+    const destinationUrl = link.destinationUrl || "";
+    const legacyPath = this.extractLegacyFilePath(destinationUrl);
+    return legacyPath ? `/api/backend${legacyPath.slice(4)}` : destinationUrl;
+  }
+
+  private extractLegacyFilePath(destinationUrl: string) {
+    if (destinationUrl.startsWith("/api/files/")) {
+      return destinationUrl;
+    }
+
+    try {
+      const url = new URL(destinationUrl);
+      return url.pathname.startsWith("/api/files/")
+        ? `${url.pathname}${url.search}`
+        : null;
+    } catch {
+      return null;
+    }
   }
 }

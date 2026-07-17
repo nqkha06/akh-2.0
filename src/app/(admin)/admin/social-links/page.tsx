@@ -16,15 +16,12 @@ export default function AdminSocialLinksPage({
   return (
     <>
       <AdminHeader title="Social Links" />
-      <main className="flex flex-1 flex-col gap-6 px-4 py-4 lg:px-6 lg:py-6">
+      <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-4 lg:px-6 lg:py-6">
         <div>
           <h2 className="font-semibold text-2xl tracking-[-0.6px]">
-            Quản lý Social Links
+            Social Links
           </h2>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Kiểm duyệt, cập nhật trạng thái và quản lý social link trên toàn hệ
-            thống.
-          </p>
+          
         </div>
         <Suspense
           fallback={

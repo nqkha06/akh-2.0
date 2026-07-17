@@ -271,7 +271,7 @@ export class FilesService {
       isPublic: file.isPublic,
       downloadCount: file.downloadCount,
       status: file.status,
-      downloadUrl: `/api/files/${file.id}/download`,
+      downloadUrl: `/api/backend/files/${file.id}/download`,
       createdAt: file.createdAt,
       updatedAt: file.updatedAt,
       deletedAt: file.deletedAt,

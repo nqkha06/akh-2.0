@@ -55,7 +55,7 @@ const demoLinks = [
   },
   {
     slug: "creator-pack",
-    destinationUrl: "/api/files/demo-pack/download",
+    destinationUrl: "/api/backend/files/demo-pack/download",
     title: "Creator preset pack",
     inputType: "file",
     selectedFile: "demo-file-pack",

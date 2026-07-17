@@ -1,18 +1,16 @@
 import "server-only";
 
-import { auth } from "@/auth";
 import type {
   AdminPermission,
   AdminRole,
   AuthorizationData,
 } from "@/features/admin-authorization/types";
+import { getServerSession } from "@/lib/auth/server-session";
 
-const apiUrl = (
-  process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL
-)?.replace(/\/$/, "");
+const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
 
 export async function getAuthorizationData(): Promise<AuthorizationData> {
-  const session = await auth();
+  const session = await getServerSession();
   if (!apiUrl || !session?.backendAccessToken) {
     throw new Error("Phiên quản trị không hợp lệ.");
   }
@@ -43,4 +41,3 @@ async function readApiError(response: Response) {
     return `Request failed with ${response.status}`;
   }
 }
-

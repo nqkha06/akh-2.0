@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server"
 
 import { AppProviders } from "@/components/providers/app-providers"
 import { cn } from "@/lib/utils"
+import NextTopLoader from "nextjs-toploader";
 
 import "./globals.css"
 
@@ -39,6 +40,16 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className={cn(inter.variable, "antialiased")}>
+        <NextTopLoader
+          color="var(--primary)"
+          height={3}
+          showSpinner={false}
+          shadow={false}
+          initialPosition={0.08}
+          crawlSpeed={200}
+          speed={200}
+          zIndex={9999}
+        />
         <NextIntlClientProvider>
           <AppProviders>{children}</AppProviders>
         </NextIntlClientProvider>

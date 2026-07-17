@@ -9,7 +9,11 @@ import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import { Prisma } from "@prisma/client";
 import { compare, hash } from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  randomUUID,
+  timingSafeEqual,
+} from "node:crypto";
 
 import { parseDurationMs } from "../config/env.validation";
 import {
@@ -23,6 +27,10 @@ import type {
   RefreshJwtPayload,
   SessionContext,
 } from "./auth.types";
+import {
+  AUTH_ERROR_CODES,
+  unauthorizedAuthError,
+} from "./auth-errors";
 import type { RegisterDto } from "./dto/register.dto";
 
 const INVALID_CREDENTIALS_MESSAGE = "Email hoặc mật khẩu không chính xác.";
@@ -115,38 +123,52 @@ export class AuthService {
     refreshToken: string,
     context: SessionContext,
   ) {
+    const presentedHash = this.hashRefreshToken(refreshToken);
     const session = await this.prisma.authSession.findUnique({
       where: { id: payload.sid },
       include: { user: true },
     });
 
+    if (!session || session.userId !== payload.sub) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.SESSION_NOT_FOUND,
+        "Không tìm thấy phiên đăng nhập.",
+      );
+    }
+    if (session.revokedAt) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.SESSION_REVOKED,
+        "Phiên đăng nhập đã bị thu hồi.",
+      );
+    }
+    if (session.expiresAt <= new Date()) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED,
+        "Refresh token đã hết hạn.",
+      );
+    }
     if (
-      !session ||
-      session.userId !== payload.sub ||
-      session.revokedAt ||
-      session.expiresAt <= new Date() ||
       session.user.status !== "active" ||
       (this.requiresVerifiedEmail() && !session.user.emailVerifiedAt)
     ) {
-      throw new UnauthorizedException("Refresh token không còn hợp lệ.");
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.USER_DISABLED,
+        "Tài khoản hiện không hoạt động.",
+      );
     }
 
-    const presentedHash = this.hashRefreshToken(refreshToken);
-    if (
-      payload.rot !== session.rotationCounter ||
-      !this.hashesEqual(presentedHash, session.refreshTokenHash)
-    ) {
-      await this.revokeSession(session.id);
-      throw new UnauthorizedException(
-        "Phát hiện refresh token cũ được sử dụng lại. Phiên đã bị thu hồi.",
-      );
+    const isPresentedTokenCurrent =
+      payload.rot === session.rotationCounter &&
+      this.hashesEqual(presentedHash, session.refreshTokenHash);
+    if (!isPresentedTokenCurrent) {
+      return this.rejectRefreshTokenReuse(session.id);
     }
 
     const user = await this.toAuthenticatedUser(session.user);
     const nextRotation = session.rotationCounter + 1;
     const tokens = await this.issueTokenPair(user, session.id, nextRotation);
     const nextHash = this.hashRefreshToken(tokens.refreshToken);
-
+    const now = new Date();
     const rotated = await this.prisma.authSession.updateMany({
       where: {
         id: session.id,
@@ -154,7 +176,7 @@ export class AuthService {
         rotationCounter: session.rotationCounter,
         refreshTokenHash: session.refreshTokenHash,
         revokedAt: null,
-        expiresAt: { gt: new Date() },
+        expiresAt: { gt: now },
       },
       data: {
         refreshTokenHash: nextHash,
@@ -165,10 +187,7 @@ export class AuthService {
     });
 
     if (rotated.count !== 1) {
-      await this.revokeSession(session.id);
-      throw new UnauthorizedException(
-        "Refresh token đã được sử dụng. Phiên đã bị thu hồi.",
-      );
+      return this.rejectRefreshTokenReuse(session.id);
     }
 
     return {
@@ -321,6 +340,14 @@ export class AuthService {
       where: { id: sessionId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  private async rejectRefreshTokenReuse(sessionId: string): Promise<never> {
+    await this.revokeSession(sessionId);
+    throw unauthorizedAuthError(
+      AUTH_ERROR_CODES.REFRESH_TOKEN_REUSE_DETECTED,
+      "Phát hiện refresh token cũ được sử dụng lại. Phiên đã bị thu hồi.",
+    );
   }
 
   private hashRefreshToken(token: string) {

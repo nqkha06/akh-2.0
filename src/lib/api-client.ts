@@ -1,6 +1,9 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:4000/api";
+import {
+  isTerminalAuthError,
+  readAuthError,
+} from "@/lib/auth/auth-errors";
+
+const BROWSER_API_URL = "/api/backend";
 
 export type LinkActionDto = {
   id?: string;
@@ -171,74 +174,57 @@ export type CreateLinkPayload = {
   };
 };
 
-function absoluteApiUrl(path: string) {
-  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+function normalizeApiPath(path: string) {
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
-async function endExpiredSession() {
+function requestApiUrl(path: string) {
+  if (typeof window !== "undefined") {
+    return browserApiUrl(path);
+  }
+
+  const serverApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+  if (!serverApiUrl) {
+    throw new Error("Missing API_INTERNAL_URL environment variable.");
+  }
+
+  return `${serverApiUrl}${normalizeApiPath(path)}`;
+}
+
+function browserApiUrl(path: string) {
+  return `${BROWSER_API_URL}${normalizeApiPath(path)}`;
+}
+
+async function endExpiredSession(reason?: string) {
   const { signOut } = await import("next-auth/react");
   await signOut({ redirect: false });
-  window.location.assign("/login");
-}
-
-let refreshSessionRequest: Promise<import("next-auth").Session | null> | null = null;
-
-async function forceRefreshSession() {
-  if (refreshSessionRequest) return refreshSessionRequest;
-  refreshSessionRequest = (async () => {
-    const response = await fetch("/api/auth/backend-refresh", {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as import("next-auth").Session;
-  })();
-
-  try {
-    return await refreshSessionRequest;
-  } finally {
-    refreshSessionRequest = null;
-  }
-}
-
-async function getAccessToken() {
-  if (typeof window === "undefined") {
-    throw new Error("Authenticated API calls must run in the browser.");
-  }
-
-  const { getSession } = await import("next-auth/react");
-  const session = await getSession();
-  if (!session?.backendAccessToken || session.authError) {
-    throw new Error("Phiên đăng nhập không còn hợp lệ.");
-  }
-  return session.backendAccessToken;
+  const callbackUrl = `${window.location.pathname}${window.location.search}`;
+  const searchParams = new URLSearchParams({ callbackUrl });
+  if (reason) searchParams.set("reason", reason);
+  window.location.assign(`/login?${searchParams.toString()}`);
 }
 
 export async function authenticatedApiFetch(path: string, init: RequestInit = {}) {
-  const token = await getAccessToken();
-  const buildInit = (accessToken: string): RequestInit => ({
+  if (typeof window === "undefined") {
+    throw new Error(
+      "Client API functions must call the Next.js BFF from the browser.",
+    );
+  }
+
+  const response = await fetch(requestApiUrl(path), {
     ...init,
     credentials: "include",
     headers: {
       ...Object.fromEntries(new Headers(init.headers).entries()),
-      Authorization: `Bearer ${accessToken}`,
     },
   });
-
-  const response = await fetch(`${API_URL}${path}`, buildInit(token));
-  if (response.status !== 401) return response;
-
-  const refreshedSession = await forceRefreshSession();
-  if (!refreshedSession?.backendAccessToken || refreshedSession.authError) {
-    await endExpiredSession();
-    return response;
+  if (response.status === 401) {
+    const authError = await readAuthError(response);
+    if (isTerminalAuthError(authError.code)) {
+      await endExpiredSession("session-expired");
+    }
   }
-
-  return fetch(
-    `${API_URL}${path}`,
-    buildInit(refreshedSession.backendAccessToken),
-  );
+  return response;
 }
 
 export async function registerAccount(payload: {
@@ -246,7 +232,7 @@ export async function registerAccount(payload: {
   email: string;
   password: string;
 }) {
-  const response = await fetch(`${API_URL}/auth/register`, {
+  const response = await fetch(requestApiUrl("/auth/register"), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -352,8 +338,9 @@ export async function deleteLink(id: string) {
 }
 
 export async function getSnippets() {
-  const response = await fetch(`${API_URL}/snippets`, {
+  const response = await fetch(requestApiUrl("/snippets"), {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -364,8 +351,9 @@ export async function getSnippets() {
 }
 
 export async function createSnippet(payload: { name?: string; content: string }) {
-  const response = await fetch(`${API_URL}/snippets`, {
+  const response = await fetch(requestApiUrl("/snippets"), {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -381,8 +369,9 @@ export async function updateSnippet(
   id: string,
   payload: { name?: string; content?: string },
 ) {
-  const response = await fetch(`${API_URL}/snippets/${id}`, {
+  const response = await fetch(requestApiUrl(`/snippets/${id}`), {
     method: "PATCH",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -395,8 +384,9 @@ export async function updateSnippet(
 }
 
 export async function deleteSnippet(id: string) {
-  const response = await fetch(`${API_URL}/snippets/${id}`, {
+  const response = await fetch(requestApiUrl(`/snippets/${id}`), {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -405,8 +395,9 @@ export async function deleteSnippet(id: string) {
 }
 
 export async function getLink(slug: string) {
-  const response = await fetch(`${API_URL}/links/${slug}`, {
+  const response = await fetch(requestApiUrl(`/links/${slug}`), {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -417,10 +408,14 @@ export async function getLink(slug: string) {
 }
 
 export async function recordLinkVisit(slug: string) {
-  const response = await fetch(`${API_URL}/links/${encodeURIComponent(slug)}/visit`, {
-    method: "POST",
-    cache: "no-store",
-  });
+  const response = await fetch(
+    requestApiUrl(`/links/${encodeURIComponent(slug)}/visit`),
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "include",
+    },
+  );
 
   if (!response.ok) {
     throw new Error(await getApiError(response));
@@ -454,9 +449,13 @@ export async function getFiles(params?: {
   }
 
   const query = searchParams.toString();
-  const response = await fetch(`${API_URL}/files${query ? `?${query}` : ""}`, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    requestApiUrl(`/files${query ? `?${query}` : ""}`),
+    {
+      cache: "no-store",
+      credentials: "include",
+    },
+  );
 
   if (!response.ok) {
     throw new Error(await getApiError(response));
@@ -475,8 +474,9 @@ export async function uploadFile(
 ) {
   options?.onProgress?.(0);
 
-  const initiateResponse = await fetch(`${API_URL}/files/multipart`, {
+  const initiateResponse = await fetch(requestApiUrl("/files/multipart"), {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       fileName: file.name,
@@ -516,10 +516,14 @@ export async function uploadFile(
       );
     }
 
-    const completeResponse = await fetch(`${API_URL}/files/multipart/${upload.uploadId}/complete`, {
-      method: "POST",
-      signal: options?.signal,
-    });
+    const completeResponse = await fetch(
+      requestApiUrl(`/files/multipart/${upload.uploadId}/complete`),
+      {
+        method: "POST",
+        credentials: "include",
+        signal: options?.signal,
+      },
+    );
 
     if (!completeResponse.ok) {
       throw new Error(await getApiError(completeResponse));
@@ -528,8 +532,9 @@ export async function uploadFile(
     options?.onProgress?.(100);
     return (await completeResponse.json()) as ManagedFileDto;
   } catch (error) {
-    await fetch(`${API_URL}/files/multipart/${uploadId}`, {
+    await fetch(requestApiUrl(`/files/multipart/${uploadId}`), {
       method: "DELETE",
+      credentials: "include",
       keepalive: true,
     }).catch(() => undefined);
     throw error;
@@ -551,7 +556,11 @@ function uploadMultipartPart(
     const cleanup = () => signal?.removeEventListener("abort", abortUpload);
     const abortUpload = () => xhr.abort();
 
-    xhr.open("POST", `${API_URL}/files/multipart/${uploadId}/parts/${partNumber}`);
+    xhr.open(
+      "POST",
+      requestApiUrl(`/files/multipart/${uploadId}/parts/${partNumber}`),
+    );
+    xhr.withCredentials = true;
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded);
     };
@@ -601,8 +610,9 @@ export async function updateFile(
     isPublic?: boolean;
   },
 ) {
-  const response = await fetch(`${API_URL}/files/${id}`, {
+  const response = await fetch(requestApiUrl(`/files/${id}`), {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -617,8 +627,9 @@ export async function updateFile(
 }
 
 export async function deleteFile(id: string) {
-  const response = await fetch(`${API_URL}/files/${id}`, {
+  const response = await fetch(requestApiUrl(`/files/${id}`), {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -629,16 +640,17 @@ export async function deleteFile(id: string) {
 }
 
 export function getFileDownloadUrl(file: Pick<ManagedFileDto, "id">) {
-  return absoluteApiUrl(`/files/${file.id}/download`);
+  return browserApiUrl(`/files/${file.id}/download`);
 }
 
 export function getFilePreviewUrl(file: Pick<ManagedFileDto, "id">) {
-  return absoluteApiUrl(`/files/${file.id}/download?disposition=inline`);
+  return browserApiUrl(`/files/${file.id}/download?disposition=inline`);
 }
 
 export async function createBioPage(payload: CreateBioPagePayload) {
-  const response = await fetch(`${API_URL}/bio-pages`, {
+  const response = await fetch(requestApiUrl("/bio-pages"), {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -653,8 +665,9 @@ export async function createBioPage(payload: CreateBioPagePayload) {
 }
 
 export async function updateBioPage(id: string, payload: CreateBioPagePayload) {
-  const response = await fetch(`${API_URL}/bio-pages/${id}`, {
+  const response = await fetch(requestApiUrl(`/bio-pages/${id}`), {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -669,8 +682,9 @@ export async function updateBioPage(id: string, payload: CreateBioPagePayload) {
 }
 
 export async function getBioPages() {
-  const response = await fetch(`${API_URL}/bio-pages`, {
+  const response = await fetch(requestApiUrl("/bio-pages"), {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -681,8 +695,9 @@ export async function getBioPages() {
 }
 
 export async function getBioPage(slug: string) {
-  const response = await fetch(`${API_URL}/bio-pages/${slug}`, {
+  const response = await fetch(requestApiUrl(`/bio-pages/${slug}`), {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -693,8 +708,9 @@ export async function getBioPage(slug: string) {
 }
 
 export async function trackBioClick(slug: string) {
-  const response = await fetch(`${API_URL}/bio-pages/${slug}/click`, {
+  const response = await fetch(requestApiUrl(`/bio-pages/${slug}/click`), {
     method: "POST",
+    credentials: "include",
   });
 
   if (!response.ok) {

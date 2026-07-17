@@ -1,19 +1,17 @@
 import "server-only"
 
-import { auth } from "@/auth"
 import { serializeAdminSocialLinksQuery } from "@/features/admin-social-links/api/social-links-query-serializer"
 import { adaptAdminSocialLinksResponse } from "@/features/admin-social-links/api/social-links-response-adapter"
 import type { AdminSocialLinksTableQuery } from "@/features/admin-social-links/query/social-links-search-params"
 import type { NestPaginatedAdminSocialLinksResponse } from "@/features/admin-social-links/types"
+import { getServerSession } from "@/lib/auth/server-session"
 
-const apiUrl = (
-  process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL
-)?.replace(/\/$/, "")
+const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "")
 
 export async function getAdminSocialLinksTableData(
   state: AdminSocialLinksTableQuery,
 ) {
-  const session = await auth()
+  const session = await getServerSession()
   if (!apiUrl || !session?.backendAccessToken) {
     throw new Error("Phiên quản trị không hợp lệ.")
   }

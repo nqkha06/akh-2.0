@@ -45,6 +45,7 @@ let baseUrl!: string;
 let prisma!: PrismaService;
 let jwtService!: JwtService;
 let adminAccessToken = "";
+let requestSequence = 0;
 
 function decodeJwt(token: string) {
   const body = token.split(".")[1];
@@ -59,12 +60,21 @@ function refreshCookie(response: Response) {
 }
 
 async function request(path: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (!headers.has("X-Forwarded-For")) {
+    requestSequence += 1;
+    headers.set(
+      "X-Forwarded-For",
+      `198.51.${Math.floor(requestSequence / 250)}.${(requestSequence % 250) + 1}`,
+    );
+  }
+
   return fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...Object.fromEntries(new Headers(init.headers).entries()),
-    },
+    headers,
   });
 }
 
@@ -197,10 +207,15 @@ describe("Authentication E2E", () => {
       headers: { Authorization: `Bearer ${expired}` },
     });
     assert.equal(expiredResponse.status, 401);
+    assert.equal(
+      ((await expiredResponse.json()) as { code: string }).code,
+      "ACCESS_TOKEN_EXPIRED",
+    );
   });
 
-  it("rotates valid refresh tokens and revokes the session on old-token reuse", async () => {
+  it("rotates a refresh token exactly once", async () => {
     const current = await login();
+    const payload = decodeJwt(current.cookie.split("=")[1]);
     const refreshed = await request("/api/auth/refresh", {
       method: "POST",
       headers: { Cookie: current.cookie },
@@ -209,16 +224,76 @@ describe("Authentication E2E", () => {
     const rotatedCookie = refreshCookie(refreshed);
     assert.notEqual(rotatedCookie, current.cookie);
 
+    const session = await prisma.authSession.findUniqueOrThrow({
+      where: { id: payload.sid },
+    });
+    assert.equal(session.rotationCounter, 1);
+    assert.equal(session.revokedAt, null);
+  });
+
+  it("accepts only one of 20 concurrent refresh requests", async () => {
+    const current = await login();
+    const payload = decodeJwt(current.cookie.split("=")[1]);
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, () =>
+        request("/api/auth/refresh", {
+          method: "POST",
+          headers: { Cookie: current.cookie },
+        }),
+      ),
+    );
+
+    assert.equal(
+      responses.filter((response) => response.status === 200).length,
+      1,
+    );
+    assert.equal(
+      responses.filter((response) => response.status === 401).length,
+      19,
+    );
+
+    const session = await prisma.authSession.findUniqueOrThrow({
+      where: { id: payload.sid },
+    });
+    assert.equal(session.rotationCounter, 1);
+    assert.ok(session.revokedAt);
+  });
+
+  it("immediately treats a rotated token as reuse and revokes the session", async () => {
+    const current = await login();
+    const first = await request("/api/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: current.cookie },
+    });
+    assert.equal(first.status, 200);
+    const rotatedCookie = refreshCookie(first);
+    const payload = decodeJwt(current.cookie.split("=")[1]);
+
     const reuse = await request("/api/auth/refresh", {
       method: "POST",
       headers: { Cookie: current.cookie },
     });
     assert.equal(reuse.status, 401);
+    assert.equal(
+      ((await reuse.json()) as { code: string }).code,
+      "REFRESH_TOKEN_REUSE_DETECTED",
+    );
+
+    const session = await prisma.authSession.findUniqueOrThrow({
+      where: { id: payload.sid },
+    });
+    assert.equal(session.rotationCounter, 1);
+    assert.ok(session.revokedAt);
+
     const rotatedAfterReuse = await request("/api/auth/refresh", {
       method: "POST",
       headers: { Cookie: rotatedCookie },
     });
     assert.equal(rotatedAfterReuse.status, 401);
+    assert.equal(
+      ((await rotatedAfterReuse.json()) as { code: string }).code,
+      "SESSION_REVOKED",
+    );
   });
 
   it("rejects expired, malformed and revoked refresh tokens", async () => {
@@ -230,37 +305,38 @@ describe("Authentication E2E", () => {
       payload,
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: -1 },
     );
+    const expiredResponse = await request("/api/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: `stu_refresh_token=${expired}` },
+    });
+    assert.equal(expiredResponse.status, 401);
     assert.equal(
-      (
-        await request("/api/auth/refresh", {
-          method: "POST",
-          headers: { Cookie: `stu_refresh_token=${expired}` },
-        })
-      ).status,
-      401,
+      ((await expiredResponse.json()) as { code: string }).code,
+      "REFRESH_TOKEN_EXPIRED",
     );
+
+    const malformedResponse = await request("/api/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: "stu_refresh_token=not-a-jwt" },
+    });
+    assert.equal(malformedResponse.status, 401);
     assert.equal(
-      (
-        await request("/api/auth/refresh", {
-          method: "POST",
-          headers: { Cookie: "stu_refresh_token=not-a-jwt" },
-        })
-      ).status,
-      401,
+      ((await malformedResponse.json()) as { code: string }).code,
+      "REFRESH_TOKEN_INVALID",
     );
 
     await prisma.authSession.update({
       where: { id: payload.sid },
       data: { revokedAt: new Date() },
     });
+    const revokedResponse = await request("/api/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: current.cookie },
+    });
+    assert.equal(revokedResponse.status, 401);
     assert.equal(
-      (
-        await request("/api/auth/refresh", {
-          method: "POST",
-          headers: { Cookie: current.cookie },
-        })
-      ).status,
-      401,
+      ((await revokedResponse.json()) as { code: string }).code,
+      "SESSION_REVOKED",
     );
   });
 

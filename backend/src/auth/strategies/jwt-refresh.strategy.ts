@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
@@ -6,6 +6,10 @@ import { Strategy } from "passport-jwt";
 
 import { readCookie, refreshCookieName } from "../auth-cookie";
 import type { RefreshJwtPayload } from "../auth.types";
+import {
+  AUTH_ERROR_CODES,
+  unauthorizedAuthError,
+} from "../auth-errors";
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -28,7 +32,10 @@ export class JwtRefreshStrategy extends PassportStrategy(
   validate(request: Request, payload: RefreshJwtPayload) {
     const refreshToken = readCookie(request, this.cookieName);
     if (payload.type !== "refresh" || !payload.sid || !refreshToken) {
-      throw new UnauthorizedException("Refresh token không hợp lệ.");
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_INVALID,
+        "Refresh token không hợp lệ.",
+      );
     }
     return { payload, refreshToken };
   }

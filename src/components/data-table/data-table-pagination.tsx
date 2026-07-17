@@ -31,7 +31,7 @@ export function DataTablePagination<TData>({
   return (
     <div
       className={cn(
-        "flex w-full flex-col-reverse items-center justify-between gap-4 overflow-auto p-1 sm:flex-row sm:gap-8",
+        "flex min-w-0 w-full flex-col-reverse items-center justify-between gap-4 overflow-visible p-1 sm:flex-row sm:flex-wrap sm:gap-8",
         className,
       )}
       {...props}
@@ -40,7 +40,7 @@ export function DataTablePagination<TData>({
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-      <div className="flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8">
+      <div className="flex min-w-0 max-w-full flex-col-reverse items-center gap-4 sm:flex-row sm:flex-wrap sm:gap-6 lg:gap-8">
         <div className="flex items-center space-x-2">
           <p className="whitespace-nowrap font-medium text-sm">Rows per page</p>
           <Select

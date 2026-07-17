@@ -81,7 +81,7 @@ export function SocialLinksTable({
   }, [router, table])
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 w-full flex-col gap-6">
       <div className="grid gap-3 sm:grid-cols-3">
         <SummaryCard label="Kết quả" value={total} />
         <SummaryCard label="Tổng lượt mở" value={totalClicks} />

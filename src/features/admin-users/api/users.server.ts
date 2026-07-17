@@ -1,6 +1,5 @@
 import "server-only";
 
-import { auth } from "@/auth";
 import { adaptUsersResponse } from "@/features/admin-users/api/users-response-adapter";
 import { serializeUsersTableQuery } from "@/features/admin-users/api/users-query-serializer";
 import type { UsersTableQuery } from "@/features/admin-users/query/users-search-params";
@@ -8,13 +7,12 @@ import type {
   NestPaginatedUsersResponse,
   UsersAccessOptions,
 } from "@/features/admin-users/types";
+import { getServerSession } from "@/lib/auth/server-session";
 
-const apiUrl = (
-  process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL
-)?.replace(/\/$/, "");
+const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
 
 export async function getUsersTableData(state: UsersTableQuery) {
-  const session = await auth();
+  const session = await getServerSession();
   if (!apiUrl || !session?.backendAccessToken) {
     throw new Error("Phiên quản trị không hợp lệ.");
   }
@@ -37,7 +35,7 @@ export async function getUsersTableData(state: UsersTableQuery) {
 }
 
 export async function getUsersAccessOptions() {
-  const session = await auth();
+  const session = await getServerSession();
   if (!apiUrl || !session?.backendAccessToken) {
     throw new Error("Phiên quản trị không hợp lệ.");
   }

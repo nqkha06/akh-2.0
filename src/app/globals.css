@@ -75,7 +75,7 @@ input:focus-visible {
   outline-offset: 3px;
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
@@ -84,7 +84,7 @@ input:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-}
+} */
 
 .dashboard-sidebar-scroll {
   scrollbar-gutter: stable;

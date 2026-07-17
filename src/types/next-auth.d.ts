@@ -1,4 +1,5 @@
 import type { DefaultSession } from "next-auth";
+import type { AuthErrorCode } from "@/lib/auth/auth-errors";
 
 declare module "next-auth" {
   interface User {
@@ -12,8 +13,8 @@ declare module "next-auth" {
   }
 
   interface Session {
-    backendAccessToken: string;
-    authError?: "RefreshAccessTokenError";
+    backendAccessToken?: string;
+    authError?: AuthErrorCode;
     user: DefaultSession["user"] & {
       id: string;
       role: string;
@@ -33,6 +34,6 @@ declare module "next-auth/jwt" {
     backendAccessToken?: string;
     backendAccessTokenExpiresAt?: number;
     backendRefreshToken?: string;
-    authError?: "RefreshAccessTokenError";
+    authError?: AuthErrorCode;
   }
 }

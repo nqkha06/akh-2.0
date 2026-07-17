@@ -1,14 +1,26 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-const backendApiUrl = (
-  process.env.API_INTERNAL_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4000/api"
-).replace(/\/$/, "");
+import {
+  AUTH_ERROR_CODES,
+  isTerminalAuthError,
+} from "@/lib/auth/auth-errors";
+import {
+  type BackendAuthResponse,
+  type BackendAuthResult,
+  BackendRefreshError,
+  extractRefreshToken,
+  refreshBackendSession,
+} from "@/lib/auth/refresh-session";
+
+const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+if (!backendApiUrl) {
+  throw new Error("Missing API_INTERNAL_URL environment variable.");
+}
 const refreshCookieName =
   process.env.AUTH_REFRESH_COOKIE_NAME || "stu_refresh_token";
 
@@ -16,36 +28,6 @@ const signInSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8).max(128),
 });
-
-type BackendUser = {
-  id: number;
-  name: string;
-  email: string;
-  emailVerifiedAt: string | null;
-  avatar: string | null;
-  status: string;
-  role: string;
-  roles: string[];
-  permissions: string[];
-};
-
-type BackendAuthResponse = {
-  accessToken: string;
-  tokenType: "Bearer";
-  expiresIn: string;
-  accessTokenExpiresAt: number;
-  user: BackendUser;
-};
-
-type BackendAuthResult = BackendAuthResponse & { refreshToken: string };
-
-function extractRefreshToken(setCookie: string | null) {
-  if (!setCookie) return null;
-  const match = new RegExp(`(?:^|,\\s*)${refreshCookieName}=([^;]+)`).exec(
-    setCookie,
-  );
-  return match ? decodeURIComponent(match[1]) : null;
-}
 
 async function requestBackendAuth(
   path: "/auth/login" | "/auth/google",
@@ -67,40 +49,6 @@ async function requestBackendAuth(
     ...((await response.json()) as BackendAuthResponse),
     refreshToken,
   } satisfies BackendAuthResult;
-}
-
-const refreshRequests = new Map<string, Promise<BackendAuthResult>>();
-
-async function refreshBackendAuth(refreshToken: string) {
-  const inFlight = refreshRequests.get(refreshToken);
-  if (inFlight) return inFlight;
-
-  const request = (async () => {
-    const response = await fetch(`${backendApiUrl}/auth/refresh`, {
-      method: "POST",
-      headers: { Cookie: `${refreshCookieName}=${encodeURIComponent(refreshToken)}` },
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!response.ok) throw new Error("BACKEND_REFRESH_FAILED");
-
-    const rotatedRefreshToken = extractRefreshToken(
-      response.headers.get("set-cookie"),
-    );
-    if (!rotatedRefreshToken) throw new Error("BACKEND_REFRESH_COOKIE_MISSING");
-
-    return {
-      ...((await response.json()) as BackendAuthResponse),
-      refreshToken: rotatedRefreshToken,
-    } satisfies BackendAuthResult;
-  })();
-
-  refreshRequests.set(refreshToken, request);
-  try {
-    return await request;
-  } finally {
-    refreshRequests.delete(refreshToken);
-  }
 }
 
 function applyBackendResult(token: JWT, result: BackendAuthResult) {
@@ -137,120 +85,148 @@ const googleEnabled = Boolean(
   process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
 );
 
-export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
-  trustHost: true,
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60,
-  },
-  providers: [
-    Credentials({
-      name: "Email và mật khẩu",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Mật khẩu", type: "password" },
+function createAuthConfig(request?: NextRequest): NextAuthConfig {
+  const exposeBackendState =
+    request === undefined ||
+    request.nextUrl.pathname.startsWith("/api/backend");
+
+  return {
+    trustHost: true,
+    pages: {
+      signIn: "/login",
+      error: "/login",
+    },
+    session: {
+      strategy: "jwt",
+      maxAge: 7 * 24 * 60 * 60,
+    },
+    providers: [
+      Credentials({
+        name: "Email và mật khẩu",
+        credentials: {
+          email: { label: "Email", type: "email" },
+          password: { label: "Mật khẩu", type: "password" },
+        },
+        async authorize(credentials) {
+          const parsed = signInSchema.safeParse(credentials);
+          if (!parsed.success) return null;
+
+          const result = await requestBackendAuth("/auth/login", parsed.data);
+          if (!result) return null;
+
+          return {
+            id: String(result.user.id),
+            name: result.user.name,
+            email: result.user.email,
+            image: result.user.avatar,
+            role: result.user.role,
+            roles: result.user.roles,
+            permissions: result.user.permissions,
+            status: result.user.status,
+            backendAccessToken: result.accessToken,
+            backendAccessTokenExpiresAt: result.accessTokenExpiresAt,
+            backendRefreshToken: result.refreshToken,
+          };
+        },
+      }),
+      ...(googleEnabled ? [Google] : []),
+    ],
+    callbacks: {
+      authorized({ auth: session, request: authorizedRequest }) {
+        const isProtectedRoute =
+          authorizedRequest.nextUrl.pathname.startsWith("/member") ||
+          authorizedRequest.nextUrl.pathname.startsWith("/admin");
+
+        if (isProtectedRoute) {
+          return Boolean(
+            session?.user &&
+              session.backendAccessToken &&
+              !isTerminalAuthError(session.authError),
+          );
+        }
+        return true;
       },
-      async authorize(credentials) {
-        const parsed = signInSchema.safeParse(credentials);
-        if (!parsed.success) return null;
+      async jwt({ token, user, account, trigger }) {
+        if (user?.backendAccessToken && user.backendRefreshToken) {
+          token.backendAccessToken = user.backendAccessToken;
+          token.backendAccessTokenExpiresAt = user.backendAccessTokenExpiresAt;
+          token.backendRefreshToken = user.backendRefreshToken;
+          token.role = user.role;
+          token.roles = user.roles;
+          token.permissions = user.permissions;
+          token.status = user.status;
+          token.authError = undefined;
+        }
 
-        const result = await requestBackendAuth("/auth/login", parsed.data);
-        if (!result) return null;
+        if (account?.provider === "google" && account.id_token) {
+          const result = await requestBackendAuth("/auth/google", {
+            idToken: account.id_token,
+          });
+          if (!result) throw new Error("BACKEND_GOOGLE_AUTH_FAILED");
+          return applyBackendResult(token, result);
+        }
 
-        return {
-          id: String(result.user.id),
-          name: result.user.name,
-          email: result.user.email,
-          image: result.user.avatar,
-          role: result.user.role,
-          roles: result.user.roles,
-          permissions: result.user.permissions,
-          status: result.user.status,
-          backendAccessToken: result.accessToken,
-          backendAccessTokenExpiresAt: result.accessTokenExpiresAt,
-          backendRefreshToken: result.refreshToken,
-        };
+        const expiresAt = Number(token.backendAccessTokenExpiresAt || 0);
+        const shouldRefresh =
+          trigger === "update" ||
+          !expiresAt ||
+          Date.now() >= expiresAt - 30_000;
+        if (!shouldRefresh) return token;
+
+        if (!token.backendRefreshToken) {
+          token.authError = AUTH_ERROR_CODES.SESSION_NOT_FOUND;
+          token.backendAccessToken = undefined;
+          return token;
+        }
+
+        try {
+          const result = await refreshBackendSession(token.backendRefreshToken);
+          return applyBackendResult(token, result);
+        } catch (error) {
+          const code =
+            error instanceof BackendRefreshError
+              ? error.code
+              : AUTH_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE;
+          token.authError = code;
+
+          if (isTerminalAuthError(code)) {
+            token.backendAccessToken = undefined;
+            token.backendRefreshToken = undefined;
+          }
+          return token;
+        }
       },
-    }),
-    ...(googleEnabled ? [Google] : []),
-  ],
-  callbacks: {
-    authorized({ auth: session, request }) {
-      const isProtectedRoute =
-        request.nextUrl.pathname.startsWith("/member") ||
-        request.nextUrl.pathname.startsWith("/admin");
+      session({ session, token }) {
+        if (session.user) {
+          session.user.id = token.sub || "";
+          session.user.role = String(token.role || "member");
+          session.user.roles = Array.isArray(token.roles) ? token.roles : [];
+          session.user.permissions = Array.isArray(token.permissions)
+            ? token.permissions
+            : [];
+          session.user.status = String(token.status || "active");
+        }
 
-      if (isProtectedRoute) {
-        return Boolean(
-          session?.user && session.backendAccessToken && !session.authError,
-        );
-      }
-      return true;
+        if (exposeBackendState) {
+          session.backendAccessToken = String(token.backendAccessToken || "");
+          session.authError = token.authError;
+        } else {
+          delete session.backendAccessToken;
+          delete session.authError;
+        }
+        return session;
+      },
     },
-    async jwt({ token, user, account, trigger }) {
-      if (user?.backendAccessToken && user.backendRefreshToken) {
-        token.backendAccessToken = user.backendAccessToken;
-        token.backendAccessTokenExpiresAt = user.backendAccessTokenExpiresAt;
-        token.backendRefreshToken = user.backendRefreshToken;
-        token.role = user.role;
-        token.roles = user.roles;
-        token.permissions = user.permissions;
-        token.status = user.status;
-        token.authError = undefined;
-      }
-
-      if (account?.provider === "google" && account.id_token) {
-        const result = await requestBackendAuth("/auth/google", {
-          idToken: account.id_token,
-        });
-        if (!result) throw new Error("BACKEND_GOOGLE_AUTH_FAILED");
-        return applyBackendResult(token, result);
-      }
-
-      const expiresAt = Number(token.backendAccessTokenExpiresAt || 0);
-      const shouldRefresh =
-        trigger === "update" || !expiresAt || Date.now() >= expiresAt - 30_000;
-      if (!shouldRefresh) return token;
-
-      if (!token.backendRefreshToken) {
-        token.authError = "RefreshAccessTokenError";
-        return token;
-      }
-
-      try {
-        const result = await refreshBackendAuth(token.backendRefreshToken);
-        return applyBackendResult(token, result);
-      } catch {
-        token.authError = "RefreshAccessTokenError";
-        token.backendAccessToken = undefined;
-        token.backendRefreshToken = undefined;
-        return token;
-      }
+    events: {
+      async signOut(message) {
+        if ("token" in message) {
+          await revokeBackendSession(message.token?.backendRefreshToken);
+        }
+      },
     },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub || "";
-        session.user.role = String(token.role || "member");
-        session.user.roles = Array.isArray(token.roles) ? token.roles : [];
-        session.user.permissions = Array.isArray(token.permissions)
-          ? token.permissions
-          : [];
-        session.user.status = String(token.status || "active");
-      }
-      session.backendAccessToken = String(token.backendAccessToken || "");
-      session.authError = token.authError;
-      return session;
-    },
-  },
-  events: {
-    async signOut(message) {
-      if ("token" in message) {
-        await revokeBackendSession(message.token?.backendRefreshToken);
-      }
-    },
-  },
-});
+  };
+}
+
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth(
+  (request) => createAuthConfig(request),
+);

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
@@ -9,6 +9,10 @@ import {
   userAuthorizationInclude,
 } from "../../authorization/user-authorization";
 import type { AccessJwtPayload } from "../auth.types";
+import {
+  AUTH_ERROR_CODES,
+  unauthorizedAuthError,
+} from "../auth-errors";
 
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") {
@@ -25,7 +29,10 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
 
   async validate(payload: AccessJwtPayload) {
     if (payload.type !== "access" || !payload.sid) {
-      throw new UnauthorizedException("Access token không hợp lệ.");
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.ACCESS_TOKEN_INVALID,
+        "Access token không hợp lệ.",
+      );
     }
 
     const session = await this.prisma.authSession.findUnique({
@@ -36,15 +43,23 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
     });
     const user = session?.user;
 
-    if (
-      !session ||
-      !user ||
-      session.userId !== payload.sub ||
-      session.revokedAt ||
-      session.expiresAt <= new Date() ||
-      user.status !== "active"
-    ) {
-      throw new UnauthorizedException("Phiên đăng nhập không còn hợp lệ.");
+    if (!session || !user || session.userId !== payload.sub) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.SESSION_NOT_FOUND,
+        "Không tìm thấy phiên đăng nhập.",
+      );
+    }
+    if (session.revokedAt || session.expiresAt <= new Date()) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.SESSION_REVOKED,
+        "Phiên đăng nhập không còn hợp lệ.",
+      );
+    }
+    if (user.status !== "active") {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.USER_DISABLED,
+        "Tài khoản hiện không hoạt động.",
+      );
     }
 
     const authorization = resolveUserAuthorization(user);
