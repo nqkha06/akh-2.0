@@ -166,7 +166,7 @@ const demoLinks = [
 async function main() {
   const demoPasswordHash = await hash("Demo123!", 12);
 
-  await prisma.user.upsert({
+  const demoUser = await prisma.user.upsert({
     where: { email: "demo@linkicom.local" },
     update: {
       name: "Linkicom Demo",
@@ -193,7 +193,51 @@ async function main() {
   }
 
   for (const link of demoLinks) {
-    const { actions, ...data } = link;
+    const { actions } = link;
+    const appearanceJson = JSON.stringify({
+      coverImageUrl: "coverImageUrl" in link ? link.coverImageUrl ?? null : null,
+      backgroundSettings: {
+        selectedBackgroundId: link.selectedBackgroundId ?? null,
+        selectedBackgroundName: link.selectedBackgroundName ?? null,
+        backgroundMediaType: link.backgroundMediaType ?? null,
+        backgroundMediaUrl: link.backgroundMediaUrl ?? null,
+        sameAsCoverImage: false,
+        effects: {
+          opacity: 100,
+          blur: 0,
+          saturation: 100,
+          contrast: 100,
+          grayscale: 0,
+        },
+      },
+    });
+    const destinationSnippetId =
+      link.inputType === "snippet" && "selectedSnippet" in link
+        ? link.selectedSnippet
+        : null;
+    const expiresAt =
+      "expiryEnabled" in link && link.expiryEnabled && link.expiryType === "date"
+        ? link.expiryDate
+        : null;
+    const maxClicks =
+      "expiryEnabled" in link && link.expiryEnabled && link.expiryType === "clicks"
+        ? link.maxClicks
+        : null;
+    const data = {
+      userId: demoUser.id,
+      slug: link.slug,
+      title: link.title,
+      subtitle: link.subtitle,
+      destinationType: link.inputType,
+      destinationUrl: link.inputType === "snippet" && destinationSnippetId ? null : link.destinationUrl,
+      destinationFileId: null,
+      destinationSnippetId,
+      appearanceJson,
+      expiresAt,
+      maxClicks,
+      clicks: link.clicks,
+      status: link.status,
+    };
 
     await prisma.link.upsert({
       where: {
@@ -203,13 +247,13 @@ async function main() {
         ...data,
         actions: {
           deleteMany: {},
-          create: actions,
+          create: actions.map((action, position) => ({ ...action, position })),
         },
       },
       create: {
         ...data,
         actions: {
-          create: actions,
+          create: actions.map((action, position) => ({ ...action, position })),
         },
       },
     });

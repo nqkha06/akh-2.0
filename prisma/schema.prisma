@@ -20,9 +20,30 @@ model User {
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
   socialAccounts  SocialAccount[]
+  authSessions    AuthSession[]
+  links           Link[]
 
   @@index([status])
   @@map("users")
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           Int       @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  rotationCounter  Int       @default(0) @map("rotation_counter")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
 }
 
 model SocialAccount {
@@ -40,76 +61,80 @@ model SocialAccount {
 }
 
 model Link {
-  id                     String       @id @default(cuid())
-  slug                   String       @unique
-  destinationUrl         String
-  title                  String
-  inputType              String       @default("url")
-  selectedSnippet        String?
-  selectedFile           String?
-  subtitle               String?
-  customAlias            String?      @unique
-  coverImageUrl          String?
-  expiryEnabled          Boolean      @default(false)
-  expiryType             String?
-  expiryDate             DateTime?
-  expiryTime             String?
-  maxClicks              Int?
-  selectedBackgroundId   String?
-  selectedBackgroundName String?
-  backgroundMediaType    String?
-  backgroundMediaUrl     String?
-  sameAsCoverImage       Boolean      @default(false)
-  opacity                Int          @default(100)
-  blur                   Int          @default(0)
-  saturation             Int          @default(100)
-  contrast               Int          @default(100)
-  grayscale              Int          @default(0)
-  clicks                 Int          @default(0)
-  status                 String       @default("active")
-  actions                LinkAction[]
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+  id                   Int          @id @default(autoincrement())
+  userId               Int          @map("user_id")
+  slug                 String       @unique
+  title                String
+  subtitle             String?
+  destinationType      String       @default("url") @map("destination_type")
+  destinationUrl       String?      @map("destination_url")
+  destinationFileId    String?      @map("destination_file_id")
+  destinationSnippetId String?      @map("destination_snippet_id")
+  appearanceJson       String       @default("{}") @map("appearance")
+  expiresAt            DateTime?    @map("expires_at")
+  maxClicks            Int?         @map("max_clicks")
+  clicks               Int          @default(0)
+  status               String       @default("active")
+  levelId              Int?         @map("level_id")
+  revenue              Decimal      @default(0)
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+  deletedAt            DateTime?    @map("deleted_at")
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destinationFile      ManagedFile? @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
+  destinationSnippet   Snippet?     @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
+  actions              LinkAction[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("stu_links")
 }
 
 model LinkAction {
-  id        String   @id @default(cuid())
-  linkId    String
+  id        Int      @id @default(autoincrement())
+  linkId    Int      @map("link_id")
   platform  String
   action    String
   url       String
-  createdAt DateTime @default(now())
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
-  @@index([linkId])
+  @@index([linkId, position])
+  @@map("stu_link_actions")
 }
 
 model Snippet {
-  id        String   @id @default(cuid())
-  name      String
-  content   String
-  copies    Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  content          String
+  copies           Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  destinationLinks Link[]
 
   @@index([createdAt])
 }
 
 model ManagedFile {
-  id            String    @id @default(cuid())
-  alias         String    @unique
-  name          String
-  originalName  String
-  extension     String?
-  mimeType      String
-  size          Int
-  path          String
-  isPublic      Boolean   @default(true)
-  downloadCount Int       @default(0)
-  status        String    @default("completed")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id               String    @id @default(cuid())
+  alias            String    @unique
+  name             String
+  originalName     String
+  extension        String?
+  mimeType         String
+  size             Int
+  path             String
+  isPublic         Boolean   @default(true)
+  downloadCount    Int       @default(0)
+  status           String    @default("completed")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  destinationLinks Link[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -117,25 +142,25 @@ model ManagedFile {
 }
 
 model BioPage {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  name            String
-  title           String?
-  status          String   @default("published")
-  buttonStyle     String   @default("rounded")
-  backgroundColor String   @default("#ffffff")
-  backgroundImage String?
-  backgroundMediaType String?
-  backgroundMediaUrl  String?
+  id                   String   @id @default(cuid())
+  slug                 String   @unique
+  name                 String
+  title                String?
+  status               String   @default("published")
+  buttonStyle          String   @default("rounded")
+  backgroundColor      String   @default("#ffffff")
+  backgroundImage      String?
+  backgroundMediaType  String?
+  backgroundMediaUrl   String?
   selectedBackgroundId String?
-  socialLinksJson String   @default("[]")
-  customLinksJson String   @default("[]")
-  widgetsJson     String   @default("[]")
-  hiddenLinksJson String   @default("[]")
-  views           Int      @default(0)
-  clicks          Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  socialLinksJson      String   @default("[]")
+  customLinksJson      String   @default("[]")
+  widgetsJson          String   @default("[]")
+  hiddenLinksJson      String   @default("[]")
+  views                Int      @default(0)
+  clicks               Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([createdAt])
   @@index([status])

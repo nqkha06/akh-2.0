@@ -20,9 +20,6 @@ export function AppSidebar({
     >
       <SidebarBrand collapsed={collapsed} onToggle={onToggle} />
       <SidebarNavigation collapsed={collapsed} canAccess={canAccess} />
-      <div className={collapsed ? "border-t border-sidebar-border p-2" : "border-t border-sidebar-border p-2.5"}>
-        <SidebarAccountMenu collapsed={collapsed} />
-      </div>
     </aside>
   )
 }

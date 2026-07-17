@@ -69,6 +69,7 @@
       "subscription": "Gói dịch vụ",
       "accountSettings": "Cài đặt tài khoản",
       "logout": "Đăng xuất",
+      "logoutAll": "Đăng xuất tất cả thiết bị",
       "language": "Ngôn ngữ"
     },
     "sidebar": {
@@ -76,6 +77,11 @@
       "open": "Mở sidebar",
       "mobileTitle": "Menu Rekonise",
       "mobileDescription": "Điều hướng dashboard Rekonise"
+    },
+    "footer": {
+      "home": "Về trang tổng quan",
+      "navigation": "Điều hướng chân trang",
+      "copyright": "© {year} Link4Sub."
     },
     "search": {
       "open": "Mở tìm kiếm",
@@ -729,7 +735,7 @@
     "loading": "Đang tải...",
     "name": "Tên",
     "size": "Dung lượng",
-    "uploaded": "Đã upload",
+    "uploaded": "Ngày tải lên",
     "action": "Thao tác",
     "noFiles": "Chưa có file. Hãy upload một file để dùng làm đích.",
     "select": "Chọn",
@@ -908,5 +914,93 @@
     "uploadFileFailed": "Upload file thất bại.",
     "youtubeValid": "Hãy nhập link YouTube hợp lệ.",
     "youtubeSelected": "Đã chọn YouTube làm nền."
+  },
+  "Admin": {
+    "brand": {
+      "name": "Linkicom",
+      "console": "Control center",
+      "admin": "Quản trị viên"
+    },
+    "nav": {
+      "overview": "Tổng quan",
+      "users": "Người dùng",
+      "content": "Nội dung",
+      "moderation": "Kiểm duyệt",
+      "system": "Hệ thống"
+    },
+    "header": {
+      "notifications": "Thông báo quản trị",
+      "memberArea": "Mở khu vực member",
+      "toggleTheme": "Đổi giao diện",
+      "logout": "Đăng xuất",
+      "openMenu": "Mở điều hướng admin",
+      "mobileDescription": "Điều hướng các khu vực vận hành hệ thống.",
+      "navigation": "Điều hướng quản trị",
+      "controlPlane": "Control plane sẵn sàng"
+    },
+    "breadcrumb": {
+      "root": "Admin"
+    },
+    "overview": {
+      "eyebrow": "Trung tâm điều hành",
+      "title": "Tổng quan hệ thống",
+      "description": "Một không gian riêng để theo dõi người dùng, nội dung, kiểm duyệt và tình trạng hạ tầng.",
+      "memberArea": "Mở khu vực member"
+    },
+    "metrics": {
+      "label": "Chỉ số hệ thống",
+      "users": "Tổng người dùng",
+      "links": "Social links",
+      "files": "File được quản lý",
+      "reports": "Báo cáo chờ xử lý",
+      "awaitingApi": "Đang chờ API"
+    },
+    "activity": {
+      "title": "Hoạt động gần đây",
+      "description": "Nhật ký vận hành và các thay đổi quan trọng trong hệ thống.",
+      "event": "Sự kiện",
+      "actor": "Người thực hiện",
+      "time": "Thời gian",
+      "status": "Trạng thái",
+      "empty": "Chưa kết nối nguồn dữ liệu audit log."
+    },
+    "system": {
+      "title": "Tình trạng dịch vụ",
+      "description": "Điểm kiểm tra nhanh cho các dịch vụ cốt lõi.",
+      "database": "Cơ sở dữ liệu",
+      "api": "Backend API",
+      "storage": "Object storage",
+      "notConnected": "Chưa kết nối"
+    },
+    "pages": {
+      "users": {
+        "eyebrow": "Danh tính & truy cập",
+        "title": "Quản lý người dùng",
+        "description": "Tra cứu tài khoản, trạng thái truy cập, role và các phiên đăng nhập.",
+        "emptyTitle": "Khung quản lý người dùng đã sẵn sàng",
+        "emptyDescription": "Bước tiếp theo là kết nối API danh sách người dùng, bộ lọc trạng thái và thao tác quản trị."
+      },
+      "content": {
+        "eyebrow": "Kho nội dung",
+        "title": "Quản lý nội dung",
+        "description": "Theo dõi social links, link-in-bio, file và snippet trong một khu vực thống nhất.",
+        "emptyTitle": "Khung nội dung đã sẵn sàng",
+        "emptyDescription": "Có thể bổ sung bảng dữ liệu, bộ lọc theo loại nội dung và thao tác xem nhanh ở bước tiếp theo."
+      },
+      "moderation": {
+        "eyebrow": "Trust & safety",
+        "title": "Trung tâm kiểm duyệt",
+        "description": "Xử lý báo cáo, nội dung rủi ro và các quyết định hạn chế truy cập.",
+        "emptyTitle": "Hàng đợi kiểm duyệt chưa được kết nối",
+        "emptyDescription": "Layout đã dành sẵn không gian cho queue, mức độ ưu tiên và lịch sử quyết định."
+      },
+      "system": {
+        "eyebrow": "Nền tảng",
+        "title": "Cấu hình hệ thống",
+        "description": "Quản lý cài đặt vận hành, tích hợp và trạng thái các dịch vụ nền.",
+        "emptyTitle": "Khu vực hệ thống đã sẵn sàng",
+        "emptyDescription": "Các thiết lập nhạy cảm sẽ chỉ được thêm khi có API, audit log và permission tương ứng."
+      }
+    }
   }
 }

@@ -7,6 +7,7 @@ export type LinkActionDto = {
   platform: string;
   action: string;
   url: string;
+  position?: number;
 };
 
 export type LinkDto = {
@@ -174,12 +175,99 @@ function absoluteApiUrl(path: string) {
   return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export async function createLink(payload: CreateLinkPayload) {
-  const response = await fetch(`${API_URL}/links`, {
-    method: "POST",
+async function endExpiredSession() {
+  const { signOut } = await import("next-auth/react");
+  await signOut({ redirect: false });
+  window.location.assign("/login");
+}
+
+let refreshSessionRequest: Promise<import("next-auth").Session | null> | null = null;
+
+async function forceRefreshSession() {
+  if (refreshSessionRequest) return refreshSessionRequest;
+  refreshSessionRequest = (async () => {
+    const response = await fetch("/api/auth/backend-refresh", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as import("next-auth").Session;
+  })();
+
+  try {
+    return await refreshSessionRequest;
+  } finally {
+    refreshSessionRequest = null;
+  }
+}
+
+async function getAccessToken() {
+  if (typeof window === "undefined") {
+    throw new Error("Authenticated API calls must run in the browser.");
+  }
+
+  const { getSession } = await import("next-auth/react");
+  const session = await getSession();
+  if (!session?.backendAccessToken || session.authError) {
+    throw new Error("Phiên đăng nhập không còn hợp lệ.");
+  }
+  return session.backendAccessToken;
+}
+
+export async function authenticatedApiFetch(path: string, init: RequestInit = {}) {
+  const token = await getAccessToken();
+  const buildInit = (accessToken: string): RequestInit => ({
+    ...init,
+    credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...Object.fromEntries(new Headers(init.headers).entries()),
+      Authorization: `Bearer ${accessToken}`,
     },
+  });
+
+  const response = await fetch(`${API_URL}${path}`, buildInit(token));
+  if (response.status !== 401) return response;
+
+  const refreshedSession = await forceRefreshSession();
+  if (!refreshedSession?.backendAccessToken || refreshedSession.authError) {
+    await endExpiredSession();
+    return response;
+  }
+
+  return fetch(
+    `${API_URL}${path}`,
+    buildInit(refreshedSession.backendAccessToken),
+  );
+}
+
+export async function registerAccount(payload: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const response = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) throw new Error(await getApiError(response));
+  return response.json();
+}
+
+export async function logoutAllDevices() {
+  const response = await authenticatedApiFetch("/auth/logout-all", {
+    method: "POST",
+  });
+  if (!response.ok) throw new Error(await getApiError(response));
+}
+
+export async function createLink(payload: CreateLinkPayload) {
+  const response = await authenticatedApiFetch("/links", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
@@ -191,11 +279,9 @@ export async function createLink(payload: CreateLinkPayload) {
 }
 
 export async function updateLink(id: string, payload: CreateLinkPayload) {
-  const response = await fetch(`${API_URL}/links/${id}`, {
+  const response = await authenticatedApiFetch(`/links/${id}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
@@ -207,7 +293,7 @@ export async function updateLink(id: string, payload: CreateLinkPayload) {
 }
 
 export async function getLinks() {
-  const response = await fetch(`${API_URL}/links`, {
+  const response = await authenticatedApiFetch("/links", {
     cache: "no-store",
   });
 
@@ -222,7 +308,7 @@ export async function checkLinkAliasAvailability(alias: string) {
   const searchParams = new URLSearchParams({
     alias,
   });
-  const response = await fetch(`${API_URL}/links/alias/check?${searchParams.toString()}`, {
+  const response = await authenticatedApiFetch(`/links/alias/check?${searchParams.toString()}`, {
     cache: "no-store",
   });
 
@@ -234,6 +320,35 @@ export async function checkLinkAliasAvailability(alias: string) {
     alias: string;
     available: boolean;
   };
+}
+
+export async function updateLinkStatus(
+  id: string,
+  status: "active" | "inactive" | "paused",
+) {
+  const response = await authenticatedApiFetch(`/links/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as LinkDto;
+}
+
+export async function deleteLink(id: string) {
+  const response = await authenticatedApiFetch(`/links/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as { id: string; deleted: true };
 }
 
 export async function getSnippets() {

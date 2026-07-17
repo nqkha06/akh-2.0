@@ -11,7 +11,9 @@ export const metadata: Metadata = {
 
 export default async function RegisterPage() {
   const session = await auth();
-  if (session?.user) redirect("/member");
+  if (session?.user && session.backendAccessToken && !session.authError) {
+    redirect("/member");
+  }
 
   const googleEnabled = Boolean(
     process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,

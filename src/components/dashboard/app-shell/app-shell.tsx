@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AppHeader } from "./app-header"
+import { AppFooter } from "./app-footer"
 import { AppSidebar } from "./app-sidebar"
 import { MobileSidebar } from "./mobile-sidebar"
 
@@ -43,7 +44,10 @@ export function AppShell({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <AppHeader onOpenMobileSidebar={() => setMobileSidebarOpen(true)} />
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain" id="dashboard-main-content">
-            <div className="px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-6">{children}</div>
+            <div className="flex min-h-full flex-col">
+              <div className="flex-1 px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-6">{children}</div>
+              <AppFooter />
+            </div>
           </main>
         </div>
       </div>

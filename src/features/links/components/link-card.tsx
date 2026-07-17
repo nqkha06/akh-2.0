@@ -46,15 +46,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import type { LinkDto } from "@/lib/api-client";
+import { deleteLink, updateLinkStatus, type LinkDto } from "@/lib/api-client";
 
 type LinkCardProps = {
     link: LinkDto;
+    onChanged?: () => void;
 };
 
 type QrErrorCorrection = "L" | "M" | "Q" | "H";
 
-export function LinkCard({ link }: LinkCardProps) {
+export function LinkCard({ link, onChanged }: LinkCardProps) {
     const t = useTranslations("LinkCard");
     const commonT = useTranslations("Common");
     const isActive = link.status === "active";
@@ -81,6 +82,7 @@ export function LinkCard({ link }: LinkCardProps) {
     const [qrBackground, setQrBackground] = useState("#ffffff");
     const [qrImageSrc, setQrImageSrc] = useState("");
     const [isQrLoading, setIsQrLoading] = useState(false);
+    const [isMutating, setIsMutating] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -133,6 +135,36 @@ export function LinkCard({ link }: LinkCardProps) {
         anchor.href = qrImageSrc;
         anchor.download = `${link.slug}-qr.png`;
         anchor.click();
+    };
+
+    const handleToggleStatus = async () => {
+        if (isMutating) return;
+
+        try {
+            setIsMutating(true);
+            await updateLinkStatus(link.id, isActive ? "inactive" : "active");
+            toast.success(isActive ? t("deactivate") : t("active"));
+            onChanged?.();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : t("copyFailed"));
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (isMutating || !window.confirm(`${t("delete")}: ${link.title}?`)) return;
+
+        try {
+            setIsMutating(true);
+            await deleteLink(link.id);
+            toast.success(t("delete"));
+            onChanged?.();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : t("copyFailed"));
+        } finally {
+            setIsMutating(false);
+        }
     };
 
     return (
@@ -512,14 +544,28 @@ export function LinkCard({ link }: LinkCardProps) {
 
                                     <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem className="text-orange-600 focus:text-orange-700">
+                                    <DropdownMenuItem
+                                        disabled={isMutating}
+                                        className="text-orange-600 focus:text-orange-700"
+                                        onSelect={(event) => {
+                                            event.preventDefault();
+                                            void handleToggleStatus();
+                                        }}
+                                    >
                                         <Unplug className="size-4" />
-                                        {t("deactivate")}
+                                        {isActive ? t("deactivate") : t("active")}
                                     </DropdownMenuItem>
 
                                     <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                    <DropdownMenuItem
+                                        disabled={isMutating}
+                                        className="text-destructive focus:text-destructive"
+                                        onSelect={(event) => {
+                                            event.preventDefault();
+                                            void handleDelete();
+                                        }}
+                                    >
                                         <Trash2 className="size-4" />
                                         {t("delete")}
                                     </DropdownMenuItem>

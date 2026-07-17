@@ -21,15 +21,61 @@ export type UploadedDiskFile = {
   path: string;
 };
 
+export function normalizeFileAlias(value: string): string {
+  const map: Record<string, string> = {
+    đ: "d",
+    Đ: "D",
+    æ: "ae",
+    Æ: "AE",
+    œ: "oe",
+    Œ: "OE",
+    ø: "o",
+    Ø: "O",
+    ł: "l",
+    Ł: "L",
+    ß: "ss",
+    ẞ: "SS",
+    ð: "d",
+    Ð: "D",
+    þ: "th",
+    Þ: "TH",
+  };
+
+  return value
+    // Chỉ lấy tên file, bỏ đường dẫn.
+    .split(/[\\/]/u)
+    .pop()!
+    .trim()
+
+    // Bỏ extension cuối cùng, nhưng giữ dotfile như .env.
+    .replace(/(?<!^)\.[^\s./\\]+$/u, "")
+
+    // Thay các ký tự đặc biệt không được normalize đầy đủ.
+    .replace(
+      /[đĐæÆœŒøØłŁßẞðÐþÞ]/gu,
+      (character) => map[character] ?? character,
+    )
+
+    // Chuẩn hóa Unicode và loại bỏ dấu tiếng Việt/Latin.
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+
+    // Chuyển chữ thường.
+    .toLocaleLowerCase("vi-VN")
+
+    // Giữ chữ và số của mọi ngôn ngữ.
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+
+    // Gộp dấu gạch ngang.
+    .replace(/-+/g, "-")
+
+    // Bỏ dấu gạch ngang đầu/cuối.
+    .replace(/^-+|-+$/g, "");
+}
+
 export function buildStoredFileName(originalName: string) {
   const extension = extname(originalName);
-  const base = basename(originalName, extension)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase()
-    .slice(0, 64);
+  const base = normalizeFileAlias(basename(originalName, extension)).slice(0, 64);
 
   return `${base || "file"}-${randomBytes(8).toString("hex")}${extension}`;
 }
@@ -209,14 +255,7 @@ export class FilesService {
   }
 
   private slugify(value: string) {
-    return value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim()
-      .replace(/\.[a-z0-9]+$/i, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    return normalizeFileAlias(value);
   }
 
   private toResponse(file: ManagedFile) {

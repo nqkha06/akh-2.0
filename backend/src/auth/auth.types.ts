@@ -7,11 +7,30 @@ export type AuthenticatedUser = {
   status: string;
   role: string;
   tokenVersion: number;
+  sessionId?: string;
 };
 
-export type JwtPayload = {
+export type AccessJwtPayload = {
   sub: number;
   email: string;
   role: string;
-  version: number;
+  sid: string;
+  type: "access";
+};
+
+export type RefreshJwtPayload = {
+  sub: number;
+  sid: string;
+  rot: number;
+  type: "refresh";
+};
+
+export type RefreshAuthenticatedRequestUser = {
+  payload: RefreshJwtPayload;
+  refreshToken: string;
+};
+
+export type SessionContext = {
+  userAgent: string | null;
+  ipAddress: string | null;
 };

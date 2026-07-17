@@ -141,12 +141,12 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiYoutube,
     color: "bg-red-600",
     actions: [
-      { id: "subscribe", label: "Subscribe to channel", requiresUrl: true, icon: UserPlus },
-      { id: "subscribe-notifications", label: "Subscribe & turn on notifications", requiresUrl: true, icon: Bell },
-      { id: "like", label: "Like a video", requiresUrl: true, icon: ThumbsUp },
-      { id: "comment", label: "Comment on a video", requiresUrl: true, icon: MessageCircle },
-      { id: "like-comment", label: "Like & comment on video", requiresUrl: true, icon: MessageCircle },
-      { id: "watch", label: "Watch video", requiresUrl: true, icon: PlayCircle },
+      { id: "subscribe", label: "Subscribe to channel", requiresUrl: true, icon: SiYoutube },
+      { id: "subscribe-notifications", label: "Subscribe & turn on notifications", requiresUrl: true, icon: SiYoutube },
+      { id: "like", label: "Like a video", requiresUrl: true, icon: SiYoutube },
+      { id: "comment", label: "Comment on a video", requiresUrl: true, icon: SiYoutube },
+      { id: "like-comment", label: "Like & comment on video", requiresUrl: true, icon: SiYoutube },
+      { id: "watch", label: "Watch video", requiresUrl: true, icon: SiYoutube },
     ],
   },
 
@@ -155,10 +155,10 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiX,
     color: "bg-black",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "like", label: "Like post", requiresUrl: true, icon: ThumbsUp },
-      { id: "reply", label: "Reply to post", requiresUrl: true, icon: MessageSquare },
-      { id: "repost", label: "Repost", requiresUrl: true, icon: Repeat2 },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiX },
+      { id: "like", label: "Like post", requiresUrl: true, icon: SiX },
+      { id: "reply", label: "Reply to post", requiresUrl: true, icon: SiX },
+      { id: "repost", label: "Repost", requiresUrl: true, icon: SiX },
     ],
   },
 
@@ -167,9 +167,9 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiInstagram,
     color: "bg-gradient-to-r from-purple-500 to-pink-500",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "like", label: "Like user", requiresUrl: true, icon: Heart },
-      { id: "comment", label: "Comment on post", requiresUrl: true, icon: MessageCircle },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiInstagram },
+      { id: "like", label: "Like user", requiresUrl: true, icon: SiInstagram },
+      { id: "comment", label: "Comment on post", requiresUrl: true, icon: SiInstagram },
     ],
   },
 
@@ -178,9 +178,9 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiTiktok,
     color: "bg-black",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "like", label: "Like post", requiresUrl: true, icon: ThumbsUp },
-      { id: "comment", label: "Comment on post", requiresUrl: true, icon: MessageCircle },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiTiktok },
+      { id: "like", label: "Like post", requiresUrl: true, icon: SiTiktok },
+      { id: "comment", label: "Comment on post", requiresUrl: true, icon: SiTiktok },
     ],
   },
 
@@ -189,10 +189,10 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiFacebook,
     color: "bg-blue-600",
     actions: [
-      { id: "like-page", label: "Like page", requiresUrl: true, icon: ThumbsUp },
-      { id: "like-post", label: "Like post", requiresUrl: true, icon: ThumbsUp },
-      { id: "comment", label: "Comment on post", requiresUrl: true, icon: MessageCircle },
-      { id: "share", label: "Share post", requiresUrl: true, icon: Share2 },
+      { id: "like-page", label: "Like page", requiresUrl: true, icon: SiFacebook },
+      { id: "like-post", label: "Like post", requiresUrl: true, icon: SiFacebook },
+      { id: "comment", label: "Comment on post", requiresUrl: true, icon: SiFacebook },
+      { id: "share", label: "Share post", requiresUrl: true, icon: SiFacebook },
     ],
   },
 
@@ -201,7 +201,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiDiscord,
     color: "bg-indigo-600",
     actions: [
-      { id: "join-server", label: "Join server", requiresUrl: true, icon: UsersRound },
+      { id: "join-server", label: "Join server", requiresUrl: true, icon: SiDiscord },
     ],
   },
 
@@ -210,7 +210,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiTelegram,
     color: "bg-sky-500",
     actions: [
-      { id: "join-channel", label: "Join channel", requiresUrl: true, icon: Radio },
+      { id: "join-channel", label: "Join channel", requiresUrl: true, icon: SiTelegram },
     ],
   },
 
@@ -219,8 +219,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiSpotify,
     color: "bg-green-500",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
-      { id: "like-song", label: "Like song", requiresUrl: true, icon: Heart },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiSpotify },
+      { id: "like-song", label: "Like song", requiresUrl: true, icon: SiSpotify },
     ],
   },
 
@@ -229,7 +229,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiTwitch,
     color: "bg-purple-600",
     actions: [
-      { id: "follow-streamer", label: "Follow streamer", requiresUrl: true, icon: UserPlus },
+      { id: "follow-streamer", label: "Follow streamer", requiresUrl: true, icon: SiTwitch },
     ],
   },
 
@@ -238,7 +238,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiVimeo,
     color: "bg-sky-500",
     actions: [
-      { id: "follow-creator", label: "Follow creator", requiresUrl: true, icon: UserPlus },
+      { id: "follow-creator", label: "Follow creator", requiresUrl: true, icon: SiVimeo },
     ],
   },
 
@@ -247,7 +247,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiThreads,
     color: "bg-black",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiThreads },
     ],
   },
 
@@ -266,7 +266,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiPinterest,
     color: "bg-red-600",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiPinterest },
     ],
   },
 
@@ -275,7 +275,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiSnapchat,
     color: "bg-yellow-400",
     actions: [
-      { id: "add-user", label: "Add user", requiresUrl: true, icon: UserPlus },
+      { id: "add-user", label: "Add user", requiresUrl: true, icon: SiSnapchat },
     ],
   },
 
@@ -284,8 +284,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiReddit,
     color: "bg-orange-600",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "upvote", label: "Upvote post", requiresUrl: true, icon: ThumbsUp },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiReddit },
+      { id: "upvote", label: "Upvote post", requiresUrl: true, icon: SiReddit },
     ],
   },
 
@@ -294,7 +294,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiWhatsapp,
     color: "bg-green-500",
     actions: [
-      { id: "join-group", label: "Join group", requiresUrl: true, icon: UsersRound },
+      { id: "join-group", label: "Join group", requiresUrl: true, icon: SiWhatsapp },
     ],
   },
 
@@ -303,7 +303,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiBluesky,
     color: "bg-sky-500",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiBluesky },
     ],
   },
 
@@ -312,9 +312,9 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiSoundcloud,
     color: "bg-orange-500",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
-      { id: "like-track", label: "Like track", requiresUrl: true, icon: Heart },
-      { id: "repost-track", label: "Repost track", requiresUrl: true, icon: Repeat2 },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiSoundcloud },
+      { id: "like-track", label: "Like track", requiresUrl: true, icon: SiSoundcloud },
+      { id: "repost-track", label: "Repost track", requiresUrl: true, icon: SiSoundcloud },
     ],
   },
 
@@ -323,7 +323,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiDeezer,
     color: "bg-purple-600",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiDeezer },
     ],
   },
 
@@ -332,7 +332,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiKick,
     color: "bg-lime-500",
     actions: [
-      { id: "follow-streamer", label: "Follow streamer", requiresUrl: true, icon: UserPlus },
+      { id: "follow-streamer", label: "Follow streamer", requiresUrl: true, icon: SiKick },
     ],
   },
 
@@ -341,8 +341,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiRumble,
     color: "bg-green-600",
     actions: [
-      { id: "subscribe", label: "Subscribe to channel", requiresUrl: true, icon: UserPlus },
-      { id: "like-video", label: "Like video", requiresUrl: true, icon: ThumbsUp },
+      { id: "subscribe", label: "Subscribe to channel", requiresUrl: true, icon: SiRumble },
+      { id: "like-video", label: "Like video", requiresUrl: true, icon: SiRumble },
     ],
   },
 
@@ -351,10 +351,10 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiRoblox,
     color: "bg-gray-900",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "join-group", label: "Join group", requiresUrl: true, icon: UsersRound },
-      { id: "favorite-game", label: "Favorite game", requiresUrl: true, icon: Star },
-      { id: "like-game", label: "Like game", requiresUrl: true, icon: ThumbsUp },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiRoblox },
+      { id: "join-group", label: "Join group", requiresUrl: true, icon: SiRoblox },
+      { id: "favorite-game", label: "Favorite game", requiresUrl: true, icon: SiRoblox },
+      { id: "like-game", label: "Like game", requiresUrl: true, icon: SiRoblox },
     ],
   },
 
@@ -363,9 +363,9 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiSteam,
     color: "bg-slate-800",
     actions: [
-      { id: "follow-curator", label: "Follow curator", requiresUrl: true, icon: UserPlus },
-      { id: "comment-profile", label: "Comment on profile", requiresUrl: true, icon: MessageCircle },
-      { id: "join-group", label: "Join group", requiresUrl: true, icon: UsersRound },
+      { id: "follow-curator", label: "Follow curator", requiresUrl: true, icon: SiSteam },
+      { id: "comment-profile", label: "Comment on profile", requiresUrl: true, icon: SiSteam },
+      { id: "join-group", label: "Join group", requiresUrl: true, icon: SiSteam },
     ],
   },
 
@@ -374,7 +374,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiBehance,
     color: "bg-blue-600",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiBehance },
     ],
   },
 
@@ -383,8 +383,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiDribbble,
     color: "bg-pink-500",
     actions: [
-      { id: "follow-designer", label: "Follow designer", requiresUrl: true, icon: UserPlus },
-      { id: "like-shot", label: "Like shot", requiresUrl: true, icon: Heart },
+      { id: "follow-designer", label: "Follow designer", requiresUrl: true, icon: SiDribbble },
+      { id: "like-shot", label: "Like shot", requiresUrl: true, icon: SiDribbble },
     ],
   },
 
@@ -393,8 +393,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiDeviantart,
     color: "bg-green-600",
     actions: [
-      { id: "watch-artist", label: "Watch artist", requiresUrl: true, icon: Eye },
-      { id: "favorite-artwork", label: "Favorite artwork", requiresUrl: true, icon: Star },
+      { id: "watch-artist", label: "Watch artist", requiresUrl: true, icon: SiDeviantart },
+      { id: "favorite-artwork", label: "Favorite artwork", requiresUrl: true, icon: SiDeviantart },
     ],
   },
 
@@ -403,7 +403,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiApplemusic,
     color: "bg-pink-500",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiApplemusic },
     ],
   },
 
@@ -412,8 +412,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiAudiomack,
     color: "bg-yellow-500",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
-      { id: "like-song", label: "Like song", requiresUrl: true, icon: Heart },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiAudiomack },
+      { id: "like-song", label: "Like song", requiresUrl: true, icon: SiAudiomack },
     ],
   },
 
@@ -422,7 +422,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiBeatstars,
     color: "bg-red-600",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiBeatstars },
     ],
   },
 
@@ -431,7 +431,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiBandcamp,
     color: "bg-sky-600",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiBandcamp },
     ],
   },
 
@@ -440,7 +440,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiTidal,
     color: "bg-black",
     actions: [
-      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: UserPlus },
+      { id: "follow-artist", label: "Follow artist", requiresUrl: true, icon: SiTidal },
     ],
   },
 
@@ -458,7 +458,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiOnlyfans,
     color: "bg-sky-500",
     actions: [
-      { id: "view-page", label: "View page", requiresUrl: true, icon: Eye },
+      { id: "view-page", label: "View page", requiresUrl: true, icon: SiOnlyfans },
     ],
   },
 
@@ -467,8 +467,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiGithub,
     color: "bg-gray-900",
     actions: [
-      { id: "follow", label: "Follow user", requiresUrl: true, icon: UserPlus },
-      { id: "star-repository", label: "Star repository", requiresUrl: true, icon: Star },
+      { id: "follow", label: "Follow user", requiresUrl: true, icon: SiGithub },
+      { id: "star-repository", label: "Star repository", requiresUrl: true, icon: SiGithub },
     ],
   },
 
@@ -477,8 +477,8 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiProducthunt,
     color: "bg-orange-600",
     actions: [
-      { id: "upvote-product", label: "Upvote product", requiresUrl: true, icon: ThumbsUp },
-      { id: "follow-maker", label: "Follow maker", requiresUrl: true, icon: UserPlus },
+      { id: "upvote-product", label: "Upvote product", requiresUrl: true, icon: SiProducthunt },
+      { id: "follow-maker", label: "Follow maker", requiresUrl: true, icon: SiProducthunt },
     ],
   },
 
@@ -487,7 +487,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiGoogleplay,
     color: "bg-green-600",
     actions: [
-      { id: "install-app", label: "Install app", requiresUrl: true, icon: Download },
+      { id: "install-app", label: "Install app", requiresUrl: true, icon: SiGoogleplay },
     ],
   },
 
@@ -496,7 +496,7 @@ const baseSocialPlatforms: Record<string, SocialPlatform> = {
     icon: SiAppstore,
     color: "bg-blue-600",
     actions: [
-      { id: "install-app", label: "Install app", requiresUrl: true, icon: Download },
+      { id: "install-app", label: "Install app", requiresUrl: true, icon: SiAppstore },
     ],
   },
 
@@ -1346,6 +1346,7 @@ export default function SocialLinksGenerator({
     expiryTime: expiryEnabled && expiryType === "date" ? expiryTime || undefined : undefined,
     maxClicks: expiryEnabled && expiryType === "clicks" && maxClicks ? Number(maxClicks) : undefined,
     actions: actions.map(a => ({
+      id: /^\d+$/.test(a.id) ? a.id : undefined,
       platform: a.platform,
       action: a.action,
       url: a.url.trim()
@@ -2745,22 +2746,34 @@ export default function SocialLinksGenerator({
                   const platform = socialPlatforms[action.platform];
                   const Icon = getActionIcon(action.platform, action.action);
 
-                  return (
-                    <div
-                      key={action.id}
-className={cn(
-  "flex max-h-11 w-full items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-white/10",
-  action.isValid ? platform.color : "bg-slate-400 dark:bg-[#23252a]"
-)}                    >
-                      <span className={`grid size-9 shrink-0 place-items-center rounded-md text-white ${action.isValid ? platform.color : "bg-slate-400 dark:bg-[#23252a]"}`}>
-                        <Icon className="size-4" />
-                      </span>
-                      <span className={action.isValid ? "min-w-0 flex-1 truncate text-sm font-medium dark:text-slate-950 text-[#f7f8f8]" : "min-w-0 flex-1 truncate text-sm font-medium text-slate-400 dark:text-[#62666d]"}>
-                        {getActionLabel(action.platform, action.action)}
-                      </span>
-                      <ExternalLink className="size-3.5 shrink-0 text-slate-400 dark:text-[#62666d]" />
-                    </div>
-                  );
+              return (
+  <div
+    key={action.id}
+    className={cn(
+      "flex max-h-11 w-full items-center justify-between gap-3 rounded-lg border border-transparent px-3 py-2.5 text-white transition-all",
+      platform.color,
+      action.isValid
+        ? "opacity-100"
+        : "cursor-not-allowed opacity-60 brightness-75",
+    )}
+  >
+    {/* <span className=" text-white">
+      <Icon className="size-4" />
+    </span> */}
+    <Icon className="size-4" />
+
+    <span className="min-w-0 truncate text-sm font-medium">
+      {getActionLabel(action.platform, action.action)}
+    </span>
+
+    <ExternalLink
+      className={cn(
+        "size-3.5 shrink-0",
+        action.isValid ? "text-white/80" : "text-white/50",
+      )}
+    />
+  </div>
+);
                 })}
               </div>
             )}

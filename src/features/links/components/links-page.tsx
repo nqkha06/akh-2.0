@@ -310,7 +310,7 @@ export function LinksView() {
             </LinksEmptyState>
           ) : (
             <section className="space-y-3" aria-label={t("listLabel")}>
-              {paginatedLinks.map((link) => <LinkCard key={link.id} link={link} />)}
+              {paginatedLinks.map((link) => <LinkCard key={link.id} link={link} onChanged={() => void loadLinks()} />)}
             </section>
           )}
 

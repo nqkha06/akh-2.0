@@ -5,10 +5,13 @@ declare module "next-auth" {
     role: string;
     status: string;
     backendAccessToken: string;
+    backendAccessTokenExpiresAt: number;
+    backendRefreshToken: string;
   }
 
   interface Session {
     backendAccessToken: string;
+    authError?: "RefreshAccessTokenError";
     user: DefaultSession["user"] & {
       id: string;
       role: string;
@@ -22,5 +25,8 @@ declare module "next-auth/jwt" {
     role?: string;
     status?: string;
     backendAccessToken?: string;
+    backendAccessTokenExpiresAt?: number;
+    backendRefreshToken?: string;
+    authError?: "RefreshAccessTokenError";
   }
 }

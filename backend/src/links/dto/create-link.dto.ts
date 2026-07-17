@@ -17,6 +17,10 @@ import {
 } from "class-validator";
 
 class CreateLinkActionDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @IsString()
   @IsNotEmpty()
   platform: string;

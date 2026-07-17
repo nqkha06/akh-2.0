@@ -27,9 +27,6 @@ export function MobileSidebar({
           <MobileBrand />
         </SheetHeader>
         <SidebarNavigation onNavigate={() => onOpenChange(false)} canAccess={canAccess} />
-        <div className="border-t border-sidebar-border p-2.5">
-          <SidebarAccountMenu />
-        </div>
       </SheetContent>
     </Sheet>
   )

@@ -1,15 +1,38 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import type { Request } from "express";
 
+import type { AuthenticatedUser } from "../auth/auth.types";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CreateLinkDto } from "./dto/create-link.dto";
+import { UpdateLinkStatusDto } from "./dto/update-link-status.dto";
 import { LinksService } from "./links.service";
+
+type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 
 @Controller("links")
 export class LinksController {
   constructor(private readonly linksService: LinksService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createLinkDto: CreateLinkDto) {
-    return this.linksService.create(createLinkDto);
+  create(
+    @Req() request: AuthenticatedRequest,
+    @Body() createLinkDto: CreateLinkDto,
+  ) {
+    return this.linksService.create(request.user.id, createLinkDto);
   }
 
   @Post(":slug/visit")
@@ -18,19 +41,45 @@ export class LinksController {
     return this.linksService.recordVisit(slug);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.linksService.findAll();
+  findAll(@Req() request: AuthenticatedRequest) {
+    return this.linksService.findAll(request.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get("alias/check")
   checkAlias(@Query("alias") alias: string) {
     return this.linksService.checkAlias(alias);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch(":id/status")
+  updateStatus(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateStatusDto: UpdateLinkStatusDto,
+  ) {
+    return this.linksService.updateStatus(request.user.id, id, updateStatusDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(":id")
-  update(@Param("id") id: string, @Body() updateLinkDto: CreateLinkDto) {
-    return this.linksService.update(id, updateLinkDto);
+  update(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateLinkDto: CreateLinkDto,
+  ) {
+    return this.linksService.update(request.user.id, id, updateLinkDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(":id")
+  remove(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.linksService.remove(request.user.id, id);
   }
 
   @Get(":slug")

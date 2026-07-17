@@ -10,10 +10,24 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 4000);
+  const allowedOrigins = configService
+    .getOrThrow<string>("FRONTEND_ORIGIN")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
 
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: true,
+    origin(
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) {
+      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Origin không được CORS cho phép."), false);
+    },
     credentials: true,
   });
   app.useGlobalPipes(

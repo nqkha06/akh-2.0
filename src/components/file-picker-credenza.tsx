@@ -136,6 +136,10 @@ function formatFileDate(date: string) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).format(new Date(date))
 }
 
@@ -287,135 +291,232 @@ export function FilePickerCredenza({
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="files" className="mt-4 space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={query}
+            <TabsContent value="files" className="mt-4">
+              <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                {/* Toolbar */}
+                <div className="flex flex-col gap-2 border-b border-border bg-muted/20 p-3 sm:flex-row sm:items-center">
+                  <div className="relative min-w-0 flex-1">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
+
+                    <Input
+                      value={query}
+                      onChange={(event) => {
+                        setQuery(event.target.value)
+                        setPage(1)
+                      }}
+                      placeholder={labels.search || "Search files"}
+                      aria-label={labels.search || "Search files"}
+                      className="h-10 rounded-lg border-border bg-background pl-9 pr-9 text-sm shadow-none"
+                    />
+
+                    {query ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery("")
+                          setPage(1)
+                        }}
+                        aria-label={labels.clearSearch || "Clear search"}
+                        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <X className="size-3.5" aria-hidden />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <select
+                    value={sort}
                     onChange={(event) => {
-                      setQuery(event.target.value)
+                      setSort(event.target.value as FileSort)
                       setPage(1)
                     }}
-                    placeholder={labels.search || "Search files"}
-                    aria-label={labels.search || "Search files"}
-                    className="h-9 rounded-lg border-border bg-background pl-9 pr-8 text-sm shadow-none"
-                  />
-                  {query ? (
-                    <button
-                      type="button"
-                      onClick={() => setQuery("")}
-                      aria-label={labels.clearSearch || "Clear search"}
-                      className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  ) : null}
+                    aria-label="Sort files"
+                    className="h-10 min-w-40 rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-none outline-none transition-colors hover:bg-muted/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="newest">{labels.newest || "Newest"}</option>
+                    <option value="oldest">{labels.oldest || "Oldest"}</option>
+                    <option value="name">{labels.nameSort || "Name A–Z"}</option>
+                    <option value="size">{labels.sizeSort || "Largest"}</option>
+                  </select>
                 </div>
 
-                <select
-                  value={sort}
-                  onChange={(event) => {
-                    setSort(event.target.value as FileSort)
-                    setPage(1)
-                  }}
-                  aria-label="Sort files"
-                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  <option value="newest">{labels.newest || "Newest"}</option>
-                  <option value="oldest">{labels.oldest || "Oldest"}</option>
-                  <option value="name">{labels.nameSort || "Name A–Z"}</option>
-                  <option value="size">{labels.sizeSort || "Largest"}</option>
-                </select>
-              </div>
+                {/* Desktop table */}
+                <div className="hidden max-h-[380px] overflow-auto md:block">
+                  <Table className="min-w-[640px]">
+                    <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
+                      <TableRow className="border-b-border hover:bg-transparent">
+                        <TableHead className="w-12 px-3">
+                          <span className="sr-only">Selected</span>
+                        </TableHead>
 
-              <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
-              <div className="hidden max-h-[360px] overflow-auto md:block">
-                <Table className="min-w-[560px]">
-                  <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[52%] px-4 text-xs font-medium text-muted-foreground">{labels.name}</TableHead>
-                      <TableHead className="px-4 text-xs font-medium text-muted-foreground">{labels.size}</TableHead>
-                      <TableHead className="px-4 text-xs font-medium text-muted-foreground">{labels.uploaded}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-40 text-center text-sm text-muted-foreground">
-                          <span className="inline-flex items-center gap-2"><Loader2 className="size-4 animate-spin" />{labels.loading}</span>
-                        </TableCell>
+                        <TableHead className="w-[52%] px-2 text-xs font-medium text-muted-foreground">
+                          {labels.name}
+                        </TableHead>
+
+                        <TableHead className="px-4 text-xs font-medium text-muted-foreground">
+                          {labels.size}
+                        </TableHead>
+
+                        <TableHead className="px-4 text-xs font-medium text-muted-foreground">
+                          {labels.uploaded}
+                        </TableHead>
                       </TableRow>
-                    ) : filteredFiles.length === 0 ? (
-                      <TableRow><TableCell colSpan={3}>{emptyContent}</TableCell></TableRow>
-                    ) : paginatedFiles.map((file) => {
+                    </TableHeader>
+
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-48 text-center">
+                            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                              <Loader2 className="size-4 animate-spin" aria-hidden />
+                              {labels.loading}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredFiles.length === 0 ? (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={4} className="p-0">
+                            {emptyContent}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedFiles.map((file) => {
+                          const isSelected = activeFileId === file.id
+
+                          return (
+                            <TableRow
+                              key={file.id}
+                              data-state={isSelected ? "selected" : undefined}
+                              tabIndex={0}
+                              aria-selected={isSelected}
+                              onClick={() => handleSelectFile(file)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault()
+                                  handleSelectFile(file)
+                                }
+                              }}
+                              className="group cursor-pointer outline-none transition-colors hover:bg-muted/40 focus-visible:bg-accent data-[state=selected]:bg-primary/5"
+                            >
+                              <TableCell className="px-3 py-2.5">
+                                <span
+                                  className={`grid size-5 place-items-center rounded-full border transition-colors ${
+                                    isSelected
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border bg-background text-transparent group-hover:border-primary/40"
+                                  }`}
+                                >
+                                  <Check className="size-3" aria-hidden />
+                                </span>
+                              </TableCell>
+
+                              <TableCell className="px-2 py-2.5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <FileThumbnail file={file} />
+
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-foreground">
+                                      {file.name}
+                                    </span>
+
+                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                                      /{file.alias}
+                                    </span>
+                                  </span>
+                                </div>
+                              </TableCell>
+
+                              <TableCell className="px-4 text-xs text-muted-foreground">
+                                {file.sizeLabel}
+                              </TableCell>
+
+                              <TableCell className="px-4 text-xs text-muted-foreground">
+                                {formatFileDate(file.createdAt)}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="max-h-[44dvh] divide-y divide-border overflow-y-auto md:hidden">
+                  {isLoading ? (
+                    <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                      {labels.loading}
+                    </div>
+                  ) : filteredFiles.length === 0 ? (
+                    emptyContent
+                  ) : (
+                    paginatedFiles.map((file) => {
                       const isSelected = activeFileId === file.id
 
                       return (
-                        <TableRow
+                        <button
                           key={file.id}
-                          data-state={isSelected ? "selected" : undefined}
-                          tabIndex={0}
-                          aria-selected={isSelected}
+                          type="button"
                           onClick={() => handleSelectFile(file)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault()
-                              handleSelectFile(file)
-                            }
-                          }}
-                          className="cursor-pointer outline-none transition-colors focus-visible:bg-accent data-[state=selected]:bg-accent/60"
+                          aria-pressed={isSelected}
+                          data-selected={isSelected}
+                          className="group flex w-full min-w-0 items-center gap-3 px-3 py-3 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:bg-accent data-[selected=true]:bg-primary/5"
                         >
-                          <TableCell className="px-4 py-2.5">
-                            <div className="flex min-w-0 items-center gap-3 text-left">
-                              <FileThumbnail file={file} />
-                              <span className="min-w-0"><span className="block truncate text-sm font-medium text-foreground">{file.name}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">/{file.alias}</span></span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 text-xs text-muted-foreground">{file.sizeLabel}</TableCell>
-                          <TableCell className="px-4 text-xs text-muted-foreground">{formatFileDate(file.createdAt)}</TableCell>
-                        </TableRow>
+                          <FileThumbnail file={file} />
+
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-foreground">
+                              {file.name}
+                            </span>
+
+                            <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span>{file.sizeLabel}</span>
+                              <span aria-hidden>•</span>
+                              <span>{formatFileDate(file.createdAt)}</span>
+                            </span>
+
+                            <span className="mt-0.5 block truncate text-xs text-muted-foreground/80">
+                              /{file.alias}
+                            </span>
+                          </span>
+
+                          <span
+                            className={`grid size-6 shrink-0 place-items-center rounded-full border transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background text-transparent group-hover:border-primary/40"
+                            }`}
+                          >
+                            <Check className="size-3.5" aria-hidden />
+                          </span>
+                        </button>
                       )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="max-h-[44dvh] overflow-y-auto divide-y divide-border md:hidden">
-                {isLoading ? (
-                  <div className="flex h-32 items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{labels.loading}</div>
-                ) : filteredFiles.length === 0 ? emptyContent : paginatedFiles.map((file) => {
-                  const isSelected = activeFileId === file.id
-
-                  return (
-                    <button
-                      key={file.id}
-                      type="button"
-                      onClick={() => handleSelectFile(file)}
-                      aria-pressed={isSelected}
-                      className="flex w-full min-w-0 items-center gap-3 p-3 text-left outline-none transition-colors hover:bg-accent focus-visible:bg-accent data-[selected=true]:bg-accent/60"
-                      data-selected={isSelected}
-                    >
-                      <FileThumbnail file={file} />
-                        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-foreground">{file.name}</span><span className="mt-0.5 block text-xs text-muted-foreground">{file.sizeLabel} · {formatFileDate(file.createdAt)}</span></span>
-                        {isSelected ? <Check className="size-4 shrink-0 text-primary" aria-hidden /> : null}
-                    </button>
-                  )
-                })}
-              </div>
-              </div>
-
-              {filteredFiles.length > 0 ? (
-                <div className="border-t border-border px-3 py-3 sm:px-4">
-                  <TablePagination
-                    page={currentPage}
-                    pageSize={pageSize}
-                    totalItems={filteredFiles.length}
-                    onPageChange={setPage}
-                    onPageSizeChange={setPageSize}
-                  />
+                    })
+                  )}
                 </div>
-              ) : null}
+
+                {/* Pagination cùng card */}
+                {filteredFiles.length > 0 ? (
+                  <div className="flex flex-col gap-3 border-t border-border bg-muted/10 px-3 py-3 sm:px-4">
+
+
+                    <TablePagination
+                      page={currentPage}
+                      pageSize={pageSize}
+                      totalItems={filteredFiles.length}
+                      onPageChange={setPage}
+                      onPageSizeChange={(nextPageSize) => {
+                        setPageSize(nextPageSize)
+                        setPage(1)
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </section>
             </TabsContent>
 
             <TabsContent value="uploads" className="mt-4">

@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "../components/theme-provider";
 import { AuthSessionProvider } from "@/components/auth/auth-session-provider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -33,16 +34,18 @@ export default async function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <NextIntlClientProvider>
           <AuthSessionProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem={false}
-              themes={["light", "dark"]}
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster position="top-right" />
-            </ThemeProvider>
+            <NuqsAdapter>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem={false}
+                themes={["light", "dark"]}
+                disableTransitionOnChange
+              >
+                {children}
+                <Toaster position="top-right" />
+              </ThemeProvider>
+            </NuqsAdapter>
           </AuthSessionProvider>
         </NextIntlClientProvider>
       </body>

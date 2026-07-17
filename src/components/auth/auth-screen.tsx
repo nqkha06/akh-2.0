@@ -20,6 +20,8 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { registerAccount } from "@/lib/api-client";
+
 import styles from "./auth-screen.module.css";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -146,6 +148,9 @@ function validateForm(mode: AuthMode, form: HTMLFormElement) {
   if (mode !== "forgot") {
     if (!password) errors.password = "Vui lòng nhập mật khẩu.";
     else if (password.length < 8) errors.password = "Mật khẩu cần có ít nhất 8 ký tự.";
+    else if (mode === "register" && !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      errors.password = "Mật khẩu cần có chữ hoa, chữ thường và chữ số.";
+    }
   }
 
   if (mode === "register") {
@@ -160,9 +165,11 @@ function validateForm(mode: AuthMode, form: HTMLFormElement) {
 export function AuthScreen({
   mode,
   googleEnabled = false,
+  redirectTo = "/member",
 }: {
   mode: AuthMode;
   googleEnabled?: boolean;
+  redirectTo?: string;
 }) {
   const router = useRouter();
   const copy = pageCopy[mode];
@@ -186,11 +193,9 @@ export function AuthScreen({
       return;
     }
 
-    if (mode !== "login") {
+    if (mode === "forgot") {
       setMessage(
-        mode === "forgot"
-          ? "Yêu cầu hợp lệ — chức năng gửi email sẽ được triển khai ở bước tiếp theo."
-          : "Đăng ký bằng email sẽ được triển khai sau luồng đăng nhập.",
+        "Yêu cầu hợp lệ — chức năng gửi email sẽ được triển khai ở bước tiếp theo.",
       );
       return;
     }
@@ -200,22 +205,38 @@ export function AuthScreen({
     setMessage("");
 
     try {
+      if (mode === "register") {
+        await registerAccount({
+          name: String(formData.get("name") || ""),
+          email: String(formData.get("email") || ""),
+          password: String(formData.get("password") || ""),
+        });
+      }
+
       const result = await signIn("credentials", {
         email: String(formData.get("email") || ""),
         password: String(formData.get("password") || ""),
         redirect: false,
-        redirectTo: "/member",
+        redirectTo,
       });
 
       if (!result?.ok) {
-        setMessage("Email hoặc mật khẩu không đúng.");
+        setMessage(
+          mode === "register"
+            ? "Tài khoản đã tạo nhưng không thể đăng nhập tự động. Hãy đăng nhập lại."
+            : "Email hoặc mật khẩu không chính xác.",
+        );
         return;
       }
 
-      router.push(result.url || "/member");
+      router.push(result.url || redirectTo);
       router.refresh();
-    } catch {
-      setMessage("Không thể kết nối máy chủ xác thực. Vui lòng thử lại.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Không thể kết nối máy chủ xác thực. Vui lòng thử lại.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -229,7 +250,7 @@ export function AuthScreen({
     }
 
     setIsSubmitting(true);
-    await signIn("google", { redirectTo: "/member" });
+    await signIn("google", { redirectTo });
   }
 
   return (
@@ -310,7 +331,7 @@ export function AuthScreen({
                       name="password"
                       type={showPassword ? "text" : "password"}
                       autoComplete={mode === "register" ? "new-password" : "current-password"}
-                      placeholder={mode === "register" ? "Tối thiểu 8 ký tự" : "Nhập mật khẩu"}
+                      placeholder={mode === "register" ? "8+ ký tự, hoa, thường và số" : "Nhập mật khẩu"}
                       aria-invalid={Boolean(errors.password)}
                       aria-describedby={errors.password ? "password-error" : undefined}
                       onChange={() => clearField("password")}

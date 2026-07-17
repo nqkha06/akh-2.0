@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { localeCookieName, locales, type AppLocale } from "@/i18n/config"
+import { logoutAllDevices } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
 function useAccount() {
@@ -74,6 +75,7 @@ function UserMenuContent() {
   const currentTheme = theme === "dark" ? "dark" : "light"
   const locale = useLocale() as AppLocale
   const [isChangingLocale, startLocaleTransition] = useTransition()
+  const [isLoggingOutAll, startLogoutAllTransition] = useTransition()
 
   const localeLabels: Record<AppLocale, string> = { vi: "Tiếng Việt", en: "English" }
 
@@ -89,6 +91,16 @@ function UserMenuContent() {
     ].join("; ")
 
     startLocaleTransition(() => window.location.reload())
+  }
+
+  const handleLogoutAll = () => {
+    startLogoutAllTransition(async () => {
+      try {
+        await logoutAllDevices()
+      } finally {
+        await signOut({ redirectTo: "/login" })
+      }
+    })
   }
 
   return (
@@ -155,6 +167,13 @@ function UserMenuContent() {
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
+      <DropdownMenuItem
+        disabled={isLoggingOutAll}
+        onSelect={handleLogoutAll}
+      >
+        <MonitorCog className="size-4" />
+        {t("topbar.logoutAll")}
+      </DropdownMenuItem>
       <DropdownMenuItem
         variant="destructive"
         onSelect={() => void signOut({ redirectTo: "/login" })}

@@ -69,6 +69,7 @@
       "subscription": "Subscription",
       "accountSettings": "Account settings",
       "logout": "Log out",
+      "logoutAll": "Log out all devices",
       "language": "Language"
     },
     "sidebar": {
@@ -76,6 +77,11 @@
       "open": "Open sidebar",
       "mobileTitle": "Rekonise menu",
       "mobileDescription": "Navigate the Rekonise dashboard"
+    },
+    "footer": {
+      "home": "Back to dashboard",
+      "navigation": "Footer navigation",
+      "copyright": "© {year} Linkicom. All rights reserved."
     },
     "search": {
       "open": "Open search",
@@ -908,5 +914,93 @@
     "uploadFileFailed": "File upload failed.",
     "youtubeValid": "Enter a valid YouTube link.",
     "youtubeSelected": "YouTube selected as background."
+  },
+  "Admin": {
+    "brand": {
+      "name": "Linkicom",
+      "console": "Control center",
+      "admin": "Administrator"
+    },
+    "nav": {
+      "overview": "Overview",
+      "users": "Users",
+      "content": "Content",
+      "moderation": "Moderation",
+      "system": "System"
+    },
+    "header": {
+      "notifications": "Admin notifications",
+      "memberArea": "Open member area",
+      "toggleTheme": "Toggle theme",
+      "logout": "Log out",
+      "openMenu": "Open admin navigation",
+      "mobileDescription": "Navigate system operations and administration.",
+      "navigation": "Admin navigation",
+      "controlPlane": "Control plane ready"
+    },
+    "breadcrumb": {
+      "root": "Admin"
+    },
+    "overview": {
+      "eyebrow": "Operations center",
+      "title": "System overview",
+      "description": "A dedicated workspace for monitoring users, content, moderation, and infrastructure health.",
+      "memberArea": "Open member area"
+    },
+    "metrics": {
+      "label": "System metrics",
+      "users": "Total users",
+      "links": "Social links",
+      "files": "Managed files",
+      "reports": "Pending reports",
+      "awaitingApi": "Awaiting API"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "description": "Operational events and important system changes.",
+      "event": "Event",
+      "actor": "Actor",
+      "time": "Time",
+      "status": "Status",
+      "empty": "The audit-log data source is not connected yet."
+    },
+    "system": {
+      "title": "Service health",
+      "description": "A quick checkpoint for core platform services.",
+      "database": "Database",
+      "api": "Backend API",
+      "storage": "Object storage",
+      "notConnected": "Not connected"
+    },
+    "pages": {
+      "users": {
+        "eyebrow": "Identity & access",
+        "title": "User management",
+        "description": "Review accounts, access state, roles, and active sessions.",
+        "emptyTitle": "The user-management frame is ready",
+        "emptyDescription": "Next, connect the user-list API, status filters, and administrative actions."
+      },
+      "content": {
+        "eyebrow": "Content inventory",
+        "title": "Content management",
+        "description": "Monitor social links, link-in-bio pages, files, and snippets in one place.",
+        "emptyTitle": "The content frame is ready",
+        "emptyDescription": "Data tables, content-type filters, and quick-view actions can be connected next."
+      },
+      "moderation": {
+        "eyebrow": "Trust & safety",
+        "title": "Moderation center",
+        "description": "Handle reports, risky content, and access-restriction decisions.",
+        "emptyTitle": "The moderation queue is not connected",
+        "emptyDescription": "The layout has reserved space for queues, priority levels, and decision history."
+      },
+      "system": {
+        "eyebrow": "Platform",
+        "title": "System configuration",
+        "description": "Manage operational settings, integrations, and background-service health.",
+        "emptyTitle": "The system area is ready",
+        "emptyDescription": "Sensitive settings should only be added together with their API, audit log, and permissions."
+      }
+    }
   }
 }
