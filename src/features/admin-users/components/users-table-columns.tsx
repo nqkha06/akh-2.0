@@ -24,11 +24,6 @@ import {
 import type { AdminUser } from "@/features/admin-users/types";
 import type { DataTableRowAction } from "@/types/data-table";
 
-const roleOptions = [
-  { label: "Admin", value: "admin", icon: Shield },
-  { label: "Member", value: "member", icon: UserRound },
-];
-
 const statusOptions = [
   { label: "Hoạt động", value: "active" },
   { label: "Không hoạt động", value: "inactive" },
@@ -39,9 +34,15 @@ const statusOptions = [
 
 export function getUsersTableColumns({
   currentUserId,
+  canDelete,
+  canUpdate,
+  roleOptions,
   setRowAction,
 }: {
   currentUserId: number;
+  canDelete: boolean;
+  canUpdate: boolean;
+  roleOptions: Array<{ label: string; value: string; icon: typeof Shield }>;
   setRowAction: React.Dispatch<
     React.SetStateAction<DataTableRowAction<AdminUser> | null>
   >;
@@ -131,9 +132,13 @@ export function getUsersTableColumns({
         <DataTableColumnHeader column={column} label="Role" />
       ),
       cell: ({ row }) => (
-        <Badge variant="outline" className="capitalize">
-          {row.original.role}
-        </Badge>
+        <div className="flex max-w-56 flex-wrap gap-1">
+          {row.original.roles.map((role) => (
+            <Badge key={role.id} variant="outline">
+              {role.name}
+            </Badge>
+          ))}
+        </div>
       ),
       meta: {
         label: "Role",
@@ -142,6 +147,7 @@ export function getUsersTableColumns({
         icon: Shield,
       },
       enableColumnFilter: true,
+      enableSorting: false,
     },
     {
       id: "status",
@@ -192,7 +198,8 @@ export function getUsersTableColumns({
       id: "actions",
       enableHiding: false,
       enableSorting: false,
-      cell: ({ row }) => (
+      cell: ({ row }) =>
+        canDelete || canUpdate ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -204,22 +211,26 @@ export function getUsersTableColumns({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem
-              onSelect={() => setRowAction({ row, variant: "update" })}
-            >
-              Chỉnh sửa
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={row.original.id === currentUserId}
-              onSelect={() => setRowAction({ row, variant: "delete" })}
-            >
-              Xóa người dùng
-            </DropdownMenuItem>
+            {canUpdate ? (
+              <DropdownMenuItem
+                onSelect={() => setRowAction({ row, variant: "update" })}
+              >
+                Chỉnh sửa
+              </DropdownMenuItem>
+            ) : null}
+            {canUpdate && canDelete ? <DropdownMenuSeparator /> : null}
+            {canDelete ? (
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={row.original.id === currentUserId}
+                onSelect={() => setRowAction({ row, variant: "delete" })}
+              >
+                Xóa người dùng
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+        ) : null,
     },
   ];
 }

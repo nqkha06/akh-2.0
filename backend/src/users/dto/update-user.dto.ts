@@ -1,5 +1,8 @@
 import { Transform } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsEmail,
   IsIn,
   IsOptional,
@@ -35,8 +38,20 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsIn(["admin", "member"])
-  role?: "admin" | "member";
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @Matches(/^[a-z][a-z0-9-]{1,49}$/, { each: true })
+  roles?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  @Matches(/^[a-z][a-z0-9.-]{1,99}$/, { each: true })
+  permissions?: string[];
 
   @IsOptional()
   @IsIn(["active", "inactive", "locked", "suspended", "disabled"])

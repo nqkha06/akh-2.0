@@ -10,12 +10,12 @@ import {
   IsString,
   Max,
   MaxLength,
+  Matches,
   Min,
   ValidateNested,
 } from "class-validator";
 
-const sortableColumns = ["createdAt", "name", "email", "role", "status"] as const;
-const roles = ["admin", "member"] as const;
+const sortableColumns = ["createdAt", "name", "email", "status"] as const;
 const statuses = ["active", "inactive", "locked", "suspended", "disabled"] as const;
 const filterableColumns = ["name", "email", "role", "status", "createdAt"] as const;
 const filterVariants = [
@@ -106,9 +106,10 @@ export class ListUsersQueryDto {
   @IsOptional()
   @Transform(({ value }) => parseCsv(value))
   @IsArray()
-  @ArrayMaxSize(roles.length)
-  @IsIn(roles, { each: true })
-  role?: Array<(typeof roles)[number]>;
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @Matches(/^[a-z][a-z0-9-]{1,49}$/, { each: true })
+  role?: string[];
 
   @IsOptional()
   @Transform(({ value }) => parseCsv(value))

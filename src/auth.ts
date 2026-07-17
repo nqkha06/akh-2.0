@@ -25,6 +25,8 @@ type BackendUser = {
   avatar: string | null;
   status: string;
   role: string;
+  roles: string[];
+  permissions: string[];
 };
 
 type BackendAuthResponse = {
@@ -107,6 +109,8 @@ function applyBackendResult(token: JWT, result: BackendAuthResult) {
   token.email = result.user.email;
   token.picture = result.user.avatar;
   token.role = result.user.role;
+  token.roles = result.user.roles;
+  token.permissions = result.user.permissions;
   token.status = result.user.status;
   token.backendAccessToken = result.accessToken;
   token.backendAccessTokenExpiresAt = result.accessTokenExpiresAt;
@@ -163,6 +167,8 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
           email: result.user.email,
           image: result.user.avatar,
           role: result.user.role,
+          roles: result.user.roles,
+          permissions: result.user.permissions,
           status: result.user.status,
           backendAccessToken: result.accessToken,
           backendAccessTokenExpiresAt: result.accessTokenExpiresAt,
@@ -174,7 +180,11 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ],
   callbacks: {
     authorized({ auth: session, request }) {
-      if (request.nextUrl.pathname.startsWith("/member")) {
+      const isProtectedRoute =
+        request.nextUrl.pathname.startsWith("/member") ||
+        request.nextUrl.pathname.startsWith("/admin");
+
+      if (isProtectedRoute) {
         return Boolean(
           session?.user && session.backendAccessToken && !session.authError,
         );
@@ -187,6 +197,8 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
         token.backendAccessTokenExpiresAt = user.backendAccessTokenExpiresAt;
         token.backendRefreshToken = user.backendRefreshToken;
         token.role = user.role;
+        token.roles = user.roles;
+        token.permissions = user.permissions;
         token.status = user.status;
         token.authError = undefined;
       }
@@ -223,6 +235,10 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       if (session.user) {
         session.user.id = token.sub || "";
         session.user.role = String(token.role || "member");
+        session.user.roles = Array.isArray(token.roles) ? token.roles : [];
+        session.user.permissions = Array.isArray(token.permissions)
+          ? token.permissions
+          : [];
         session.user.status = String(token.status || "active");
       }
       session.backendAccessToken = String(token.backendAccessToken || "");

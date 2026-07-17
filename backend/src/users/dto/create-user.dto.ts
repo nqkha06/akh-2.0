@@ -1,5 +1,16 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
 export class CreateUserDto {
   @IsString()
@@ -23,8 +34,20 @@ export class CreateUserDto {
   })
   password!: string;
 
-  @IsIn(["admin", "member"])
-  role!: "admin" | "member";
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @Matches(/^[a-z][a-z0-9-]{1,49}$/, { each: true })
+  roles!: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  @Matches(/^[a-z][a-z0-9.-]{1,99}$/, { each: true })
+  permissions: string[] = [];
 
   @IsIn(["active", "inactive", "locked", "suspended", "disabled"])
   status!: "active" | "inactive" | "locked" | "suspended" | "disabled";

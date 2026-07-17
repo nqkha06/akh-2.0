@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 
 import type { PrismaService } from "../prisma/prisma.service";
+import { PermissionsGuard } from "./guards/permissions.guard";
 import { RolesGuard } from "./guards/roles.guard";
 
 type JwtBody = {
@@ -43,6 +44,7 @@ let app!: INestApplication;
 let baseUrl!: string;
 let prisma!: PrismaService;
 let jwtService!: JwtService;
+let adminAccessToken = "";
 
 function decodeJwt(token: string) {
   const body = token.split(".")[1];
@@ -67,9 +69,14 @@ async function request(path: string, init: RequestInit = {}) {
 }
 
 async function login() {
+  return loginAs("auth@example.com", "Secure123");
+}
+
+async function loginAs(email: string, password: string, forwardedFor?: string) {
   const response = await request("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email: "auth@example.com", password: "Secure123" }),
+    headers: forwardedFor ? { "X-Forwarded-For": forwardedFor } : undefined,
+    body: JSON.stringify({ email, password }),
   });
   assert.equal(response.status, 200);
   const body = (await response.json()) as AuthResponse;
@@ -88,6 +95,7 @@ before(async () => {
     import("../prisma/prisma.service"),
   ]);
   app = await NestFactory.create(AppModule, { logger: false });
+  app.getHttpAdapter().getInstance().set("trust proxy", 1);
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({
@@ -319,13 +327,20 @@ describe("Admin users CRUD E2E", () => {
       403,
     );
 
-    const currentUser = await prisma.user.update({
+    const currentUser = await prisma.user.findUniqueOrThrow({
       where: { email: "auth@example.com" },
-      data: { role: "admin" },
+    });
+    const adminRole = await prisma.role.findUniqueOrThrow({
+      where: { key: "admin" },
+    });
+    await prisma.userHasRole.deleteMany({ where: { userId: currentUser.id } });
+    await prisma.userHasRole.create({
+      data: { userId: currentUser.id, roleId: adminRole.id },
     });
     const authorization = {
       Authorization: `Bearer ${current.body.accessToken}`,
     };
+    adminAccessToken = current.body.accessToken;
 
     const createdResponse = await request("/api/admin/users", {
       method: "POST",
@@ -334,7 +349,8 @@ describe("Admin users CRUD E2E", () => {
         name: "Managed User",
         email: "managed@example.com",
         password: "Managed123",
-        role: "member",
+        roles: ["member"],
+        permissions: [],
         status: "active",
       }),
     });
@@ -353,7 +369,8 @@ describe("Admin users CRUD E2E", () => {
         name: "Duplicate Managed User",
         email: "MANAGED@example.com",
         password: "Managed123",
-        role: "member",
+        roles: ["member"],
+        permissions: [],
         status: "active",
       }),
     });
@@ -468,7 +485,8 @@ describe("Admin users CRUD E2E", () => {
       headers: authorization,
       body: JSON.stringify({
         name: "Managed User Updated",
-        role: "admin",
+        roles: ["admin"],
+        permissions: [],
         status: "active",
       }),
     });
@@ -480,7 +498,7 @@ describe("Admin users CRUD E2E", () => {
     const selfDemote = await request(`/api/admin/users/${currentUser.id}`, {
       method: "PATCH",
       headers: authorization,
-      body: JSON.stringify({ role: "member" }),
+      body: JSON.stringify({ roles: ["member"] }),
     });
     assert.equal(selfDemote.status, 400);
 
@@ -512,6 +530,338 @@ describe("Admin users CRUD E2E", () => {
   });
 });
 
+describe("Admin social links E2E", () => {
+  it("enforces permissions and supports table queries, update, soft delete and restore", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { email: "auth@example.com" },
+    });
+    const link = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "admin-social-link-test",
+        title: "Admin Social Link Test",
+        subtitle: "Original subtitle",
+        destinationType: "url",
+        destinationUrl: "https://example.com/original",
+        actions: {
+          create: {
+            platform: "youtube",
+            action: "subscribe",
+            url: "https://youtube.com/@example",
+          },
+        },
+      },
+    });
+
+    assert.equal(
+      (await request("/api/admin/social-links")).status,
+      401,
+    );
+
+    const tableQuery = new URLSearchParams({
+      page: "1",
+      perPage: "10",
+      sort: JSON.stringify([{ id: "title", desc: false }]),
+      filters: JSON.stringify([
+        {
+          id: "title",
+          value: "social-link-test",
+          variant: "text",
+          operator: "iLike",
+          filterId: "title-filter",
+        },
+        {
+          id: "destinationType",
+          value: ["url"],
+          variant: "multiSelect",
+          operator: "inArray",
+          filterId: "type-filter",
+        },
+      ]),
+      joinOperator: "and",
+    });
+    const listResponse = await request(
+      `/api/admin/social-links?${tableQuery}`,
+      { headers: authorization },
+    );
+    assert.equal(listResponse.status, 200, await listResponse.clone().text());
+    const list = (await listResponse.json()) as {
+      items: Array<{
+        id: number;
+        owner: { email: string };
+        actionsCount: number;
+      }>;
+      total: number;
+      totalClicks: number;
+    };
+    assert.equal(list.total, 1);
+    assert.equal(list.items[0]?.id, link.id);
+    assert.equal(list.items[0]?.owner.email, "auth@example.com");
+    assert.equal(list.items[0]?.actionsCount, 1);
+    assert.equal(list.totalClicks, 0);
+
+    const invalidFilters = new URLSearchParams({
+      filters: JSON.stringify([
+        {
+          id: "appearanceJson",
+          value: "private",
+          variant: "text",
+          operator: "iLike",
+          filterId: "invalid-filter",
+        },
+      ]),
+    });
+    assert.equal(
+      (
+        await request(`/api/admin/social-links?${invalidFilters}`, {
+          headers: authorization,
+        })
+      ).status,
+      400,
+    );
+
+    const updatedResponse = await request(
+      `/api/admin/social-links/${link.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          title: "Admin Social Link Updated",
+          subtitle: "Moderated",
+          destinationUrl: "https://example.com/updated",
+          status: "paused",
+        }),
+      },
+    );
+    assert.equal(updatedResponse.status, 200);
+    const updated = (await updatedResponse.json()) as {
+      title: string;
+      status: string;
+      destinationUrl: string;
+    };
+    assert.equal(updated.title, "Admin Social Link Updated");
+    assert.equal(updated.status, "paused");
+    assert.equal(updated.destinationUrl, "https://example.com/updated");
+
+    const deletedResponse = await request("/api/admin/social-links/bulk", {
+      method: "DELETE",
+      headers: authorization,
+      body: JSON.stringify({ ids: [link.id] }),
+    });
+    assert.equal(deletedResponse.status, 200);
+    assert.deepEqual(await deletedResponse.json(), { deleted: 1 });
+
+    const deletedQuery = new URLSearchParams({
+      deletedState: "deleted",
+      filters: JSON.stringify([
+        {
+          id: "title",
+          value: "Admin Social Link Updated",
+          variant: "text",
+          operator: "iLike",
+          filterId: "deleted-title-filter",
+        },
+      ]),
+    });
+    const deletedList = await request(
+      `/api/admin/social-links?${deletedQuery}`,
+      { headers: authorization },
+    );
+    assert.equal(deletedList.status, 200);
+    assert.equal(
+      ((await deletedList.json()) as { total: number }).total,
+      1,
+    );
+
+    const restoredResponse = await request(
+      "/api/admin/social-links/bulk/restore",
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ ids: [link.id] }),
+      },
+    );
+    assert.equal(restoredResponse.status, 200);
+    assert.deepEqual(await restoredResponse.json(), { restored: 1 });
+    const restored = await prisma.link.findUniqueOrThrow({
+      where: { id: link.id },
+    });
+    assert.equal(restored.deletedAt, null);
+    assert.equal(restored.status, "inactive");
+
+    await prisma.link.delete({ where: { id: link.id } });
+  });
+});
+
+describe("Roles and permissions E2E", () => {
+  it("supports role permissions, direct permissions and live permission changes", async () => {
+    assert.ok(adminAccessToken);
+    const adminAuthorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+
+    const permissionsResponse = await request("/api/admin/permissions", {
+      headers: adminAuthorization,
+    });
+    assert.equal(permissionsResponse.status, 200);
+    const permissions = (await permissionsResponse.json()) as Array<{
+      key: string;
+    }>;
+    assert.ok(permissions.some((permission) => permission.key === "users.read"));
+
+    const createRoleResponse = await request("/api/admin/roles", {
+      method: "POST",
+      headers: adminAuthorization,
+      body: JSON.stringify({
+        key: "content-manager",
+        name: "Content Manager",
+        description: "Role kiểm thử.",
+        permissionKeys: ["admin.access", "users.read"],
+      }),
+    });
+    assert.equal(createRoleResponse.status, 201);
+    const role = (await createRoleResponse.json()) as {
+      id: number;
+      key: string;
+    };
+    assert.equal(role.key, "content-manager");
+
+    const createManagerResponse = await request("/api/admin/users", {
+      method: "POST",
+      headers: adminAuthorization,
+      body: JSON.stringify({
+        name: "Permission Manager",
+        email: "permission-manager@example.com",
+        password: "Manager123",
+        roles: ["content-manager"],
+        permissions: [],
+        status: "active",
+      }),
+    });
+    assert.equal(createManagerResponse.status, 201);
+    const managerUser = (await createManagerResponse.json()) as { id: number };
+    const manager = await loginAs(
+      "permission-manager@example.com",
+      "Manager123",
+      "127.0.0.2",
+    );
+    const managerAuthorization = {
+      Authorization: `Bearer ${manager.body.accessToken}`,
+    };
+
+    assert.equal(
+      (
+        await request("/api/admin/users", {
+          headers: managerAuthorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request("/api/admin/roles", {
+          headers: managerAuthorization,
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request("/api/admin/users", {
+          method: "POST",
+          headers: managerAuthorization,
+          body: JSON.stringify({
+            name: "Denied User",
+            email: "denied@example.com",
+            password: "Denied123",
+            roles: ["member"],
+            permissions: [],
+            status: "active",
+          }),
+        })
+      ).status,
+      403,
+    );
+
+    const rolesRead = await prisma.permission.findUniqueOrThrow({
+      where: { key: "roles.read" },
+    });
+    await prisma.userHasPermission.create({
+      data: {
+        userId: managerUser.id,
+        permissionId: rolesRead.id,
+      },
+    });
+    assert.equal(
+      (
+        await request("/api/admin/roles", {
+          headers: managerAuthorization,
+        })
+      ).status,
+      200,
+    );
+
+    const updatedRoleResponse = await request(`/api/admin/roles/${role.id}`, {
+      method: "PATCH",
+      headers: adminAuthorization,
+      body: JSON.stringify({
+        permissionKeys: ["admin.access", "users.read", "users.create"],
+      }),
+    });
+    assert.equal(updatedRoleResponse.status, 200);
+
+    const createdByManager = await request("/api/admin/users", {
+      method: "POST",
+      headers: managerAuthorization,
+      body: JSON.stringify({
+        name: "Created By Manager",
+        email: "created-by-manager@example.com",
+        password: "Created123",
+        roles: ["member"],
+        permissions: [],
+        status: "active",
+      }),
+    });
+    assert.equal(createdByManager.status, 201);
+    const managedUser = (await createdByManager.json()) as { id: number };
+
+    assert.equal(
+      (
+        await request(`/api/admin/roles/${role.id}`, {
+          method: "DELETE",
+          headers: adminAuthorization,
+        })
+      ).status,
+      409,
+    );
+
+    for (const id of [managedUser.id, managerUser.id]) {
+      assert.equal(
+        (
+          await request(`/api/admin/users/${id}`, {
+            method: "DELETE",
+            headers: adminAuthorization,
+          })
+        ).status,
+        200,
+      );
+    }
+    assert.equal(
+      (
+        await request(`/api/admin/roles/${role.id}`, {
+          method: "DELETE",
+          headers: adminAuthorization,
+        })
+      ).status,
+      200,
+    );
+  });
+});
+
 describe("RolesGuard", () => {
   it("returns 403 when the current database-backed user lacks the required role", () => {
     const reflector = {
@@ -530,6 +880,29 @@ describe("RolesGuard", () => {
       () => guard.canActivate(context as never),
       (error: unknown) =>
         error instanceof Error && error.constructor.name === "ForbiddenException",
+    );
+  });
+});
+
+describe("PermissionsGuard", () => {
+  it("returns 403 when a database-resolved permission is missing", () => {
+    const reflector = {
+      getAllAndOverride: () => ["users.delete"],
+    } as unknown as Reflector;
+    const guard = new PermissionsGuard(reflector);
+    const context = {
+      getHandler: () => undefined,
+      getClass: () => undefined,
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { permissions: ["users.read"] } }),
+      }),
+    };
+
+    assert.throws(
+      () => guard.canActivate(context as never),
+      (error: unknown) =>
+        error instanceof Error &&
+        error.constructor.name === "ForbiddenException",
     );
   });
 });

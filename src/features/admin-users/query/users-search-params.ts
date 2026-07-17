@@ -9,7 +9,6 @@ import {
 import type { AdminUser } from "@/features/admin-users/types";
 import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
 
-const roles = ["admin", "member"] as const;
 const statuses = [
   "active",
   "inactive",
@@ -26,7 +25,7 @@ export const usersSearchParamsCache = createSearchParamsCache({
   ]),
   name: parseAsString.withDefault(""),
   email: parseAsString.withDefault(""),
-  role: parseAsArrayOf(parseAsStringEnum([...roles])).withDefault([]),
+  role: parseAsArrayOf(parseAsString).withDefault([]),
   status: parseAsArrayOf(parseAsStringEnum([...statuses])).withDefault([]),
   filters: getFiltersStateParser<AdminUser>().withDefault([]),
   joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),

@@ -12,6 +12,10 @@ import { OAuth2Client } from "google-auth-library";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { parseDurationMs } from "../config/env.validation";
+import {
+  resolveUserAuthorization,
+  userAuthorizationInclude,
+} from "../authorization/user-authorization";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   AccessJwtPayload,
@@ -42,11 +46,13 @@ export class AuthService {
           name: dto.name.trim(),
           email: this.normalizeEmail(dto.email),
           passwordHash: await hash(dto.password, 12),
-          role: "member",
           status: "active",
+          roles: {
+            create: { role: { connect: { key: "member" } } },
+          },
         },
       });
-      return this.toPublicUser(this.toAuthenticatedUser(user));
+      return this.toPublicUser(await this.toAuthenticatedUser(user));
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -136,7 +142,7 @@ export class AuthService {
       );
     }
 
-    const user = this.toAuthenticatedUser(session.user);
+    const user = await this.toAuthenticatedUser(session.user);
     const nextRotation = session.rotationCounter + 1;
     const tokens = await this.issueTokenPair(user, session.id, nextRotation);
     const nextHash = this.hashRefreshToken(tokens.refreshToken);
@@ -253,6 +259,8 @@ export class AuthService {
       avatar: user.avatar,
       status: user.status,
       role: user.role,
+      roles: user.roles,
+      permissions: user.permissions,
     };
   }
 
@@ -384,6 +392,9 @@ export class AuthService {
                 name: input.name,
                 avatar: input.avatar,
                 emailVerifiedAt: new Date(),
+                roles: {
+                  create: { role: { connect: { key: "member" } } },
+                },
               },
             });
 
@@ -417,16 +428,23 @@ export class AuthService {
     }
   }
 
-  private toAuthenticatedUser(user: {
+  private async toAuthenticatedUser(user: {
     id: number;
     name: string;
     email: string;
     emailVerifiedAt: Date | null;
     avatar: string | null;
     status: string;
-    role: string;
     tokenVersion: number;
-  }): AuthenticatedUser {
+  }): Promise<AuthenticatedUser> {
+    const authorizationRecord = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: userAuthorizationInclude,
+    });
+    if (!authorizationRecord) {
+      throw new UnauthorizedException("Tài khoản không còn tồn tại.");
+    }
+    const authorization = resolveUserAuthorization(authorizationRecord);
     return {
       id: user.id,
       name: user.name,
@@ -434,7 +452,7 @@ export class AuthService {
       emailVerifiedAt: user.emailVerifiedAt,
       avatar: user.avatar,
       status: user.status,
-      role: user.role,
+      ...authorization,
       tokenVersion: user.tokenVersion,
     };
   }

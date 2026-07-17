@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
+import { permissionCatalog } from "../backend/src/authorization/permission-catalog";
+
 const prisma = new PrismaClient();
 
 const demoSnippets = [
@@ -166,13 +168,56 @@ const demoLinks = [
 async function main() {
   const demoPasswordHash = await hash("Demo123!", 12);
 
+  for (const permission of permissionCatalog) {
+    await prisma.permission.upsert({
+      where: { key: permission.key },
+      update: permission,
+      create: permission,
+    });
+  }
+  const adminRole = await prisma.role.upsert({
+    where: { key: "admin" },
+    update: { isSystem: true },
+    create: {
+      key: "admin",
+      name: "Administrator",
+      description: "Toàn quyền quản trị hệ thống.",
+      isSystem: true,
+    },
+  });
+  const memberRole = await prisma.role.upsert({
+    where: { key: "member" },
+    update: { isSystem: true },
+    create: {
+      key: "member",
+      name: "Member",
+      description: "Tài khoản thành viên mặc định.",
+      isSystem: true,
+    },
+  });
+  const permissions = await prisma.permission.findMany({ select: { id: true } });
+  for (const permission of permissions) {
+    await prisma.roleHasPermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: adminRole.id,
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        roleId: adminRole.id,
+        permissionId: permission.id,
+      },
+    });
+  }
+
   const demoUser = await prisma.user.upsert({
     where: { email: "demo@linkicom.local" },
     update: {
       name: "Linkicom Demo",
       passwordHash: demoPasswordHash,
       status: "active",
-      role: "member",
     },
     create: {
       name: "Linkicom Demo",
@@ -180,8 +225,14 @@ async function main() {
       passwordHash: demoPasswordHash,
       emailVerifiedAt: new Date(),
       status: "active",
-      role: "member",
     },
+  });
+  await prisma.userHasRole.upsert({
+    where: {
+      roleId_userId: { roleId: memberRole.id, userId: demoUser.id },
+    },
+    update: {},
+    create: { roleId: memberRole.id, userId: demoUser.id },
   });
 
   for (const snippet of demoSnippets) {

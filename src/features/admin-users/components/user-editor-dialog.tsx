@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,16 +29,21 @@ import {
 import type {
   AdminUser,
   AdminUserPayload,
+  UsersAccessOptions,
 } from "@/features/admin-users/types";
 
 export function UserEditorDialog({
   open,
   user,
+  accessOptions,
+  currentUserId,
   onOpenChange,
   onSuccess,
 }: {
   open: boolean;
   user: AdminUser | null;
+  accessOptions: UsersAccessOptions;
+  currentUserId: number;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
@@ -57,6 +63,10 @@ export function UserEditorDialog({
       setError("Mật khẩu là bắt buộc khi tạo tài khoản.");
       return;
     }
+    if (!values.roles.length) {
+      setError("Người dùng cần có ít nhất một role.");
+      return;
+    }
     if (
       values.password &&
       !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(values.password)
@@ -71,7 +81,7 @@ export function UserEditorDialog({
     setError("");
     try {
       if (user) {
-        await updateAdminUser(user.id, values);
+        await updateAdminUser(user.id, values, currentUserId);
         toast.success("Đã cập nhật người dùng.");
       } else {
         await createAdminUser({ ...values, password: values.password || "" });
@@ -95,7 +105,7 @@ export function UserEditorDialog({
       open={open}
       onOpenChange={(nextOpen) => !saving && onOpenChange(nextOpen)}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {user ? "Chỉnh sửa người dùng" : "Thêm người dùng"}
@@ -155,25 +165,40 @@ export function UserEditorDialog({
             />
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Role" htmlFor="admin-user-role">
-              <Select
-                value={values.role}
-                onValueChange={(role: "admin" | "member") =>
-                  setValues((current) => ({ ...current, role }))
-                }
-              >
-                <SelectTrigger id="admin-user-role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+            <div className="grid gap-2">
+              <Label>Roles</Label>
+              <div className="grid gap-2 rounded-md border p-3">
+                {accessOptions.roles.map((role) => (
+                  <label
+                    key={role.id}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <Checkbox
+                      checked={values.roles.includes(role.key)}
+                      disabled={user?.id === currentUserId}
+                      onCheckedChange={(checked) =>
+                        setValues((current) => ({
+                          ...current,
+                          roles: toggleValue(
+                            current.roles,
+                            role.key,
+                            checked === true,
+                          ),
+                        }))
+                      }
+                    />
+                    <span>{role.name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {role.key}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <FormField label="Trạng thái" htmlFor="admin-user-status">
               <Select
                 value={values.status}
+                disabled={user?.id === currentUserId}
                 onValueChange={(status: AdminUserPayload["status"]) =>
                   setValues((current) => ({ ...current, status }))
                 }
@@ -190,6 +215,51 @@ export function UserEditorDialog({
                 </SelectContent>
               </Select>
             </FormField>
+          </div>
+          <div className="grid gap-2">
+            <div>
+              <Label>Quyền trực tiếp</Label>
+              <p className="mt-1 text-muted-foreground text-xs">
+                Chỉ dùng cho ngoại lệ. Quyền từ role vẫn được cộng dồn.
+              </p>
+            </div>
+            <div className="grid gap-4 rounded-md border p-4 sm:grid-cols-2">
+              {groupPermissions(accessOptions.permissions).map(
+                ([group, permissions]) => (
+                  <div key={group} className="grid content-start gap-2">
+                    <p className="font-medium text-sm capitalize">{group}</p>
+                    {permissions.map((permission) => (
+                      <label
+                        key={permission.id}
+                        className="flex items-start gap-2 text-sm"
+                      >
+                        <Checkbox
+                          className="mt-0.5"
+                          checked={values.permissions.includes(permission.key)}
+                          disabled={user?.id === currentUserId}
+                          onCheckedChange={(checked) =>
+                            setValues((current) => ({
+                              ...current,
+                              permissions: toggleValue(
+                                current.permissions,
+                                permission.key,
+                                checked === true,
+                              ),
+                            }))
+                          }
+                        />
+                        <span>
+                          {permission.name}
+                          <span className="block text-muted-foreground text-xs">
+                            {permission.key}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ),
+              )}
+            </div>
           </div>
           {error ? (
             <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-sm">
@@ -237,9 +307,28 @@ function initialValues(user: AdminUser | null): AdminUserPayload {
     name: user?.name || "",
     email: user?.email || "",
     password: "",
-    role: user?.role === "admin" ? "admin" : "member",
+    roles: user?.roles.map((role) => role.key) || ["member"],
+    permissions: user?.directPermissions || [],
     status: normalizeStatus(user?.status),
   };
+}
+
+function toggleValue(values: string[], value: string, checked: boolean) {
+  return checked
+    ? [...new Set([...values, value])]
+    : values.filter((current) => current !== value);
+}
+
+function groupPermissions(permissions: UsersAccessOptions["permissions"]) {
+  return Object.entries(
+    permissions.reduce<Record<string, typeof permissions>>(
+      (groups, permission) => {
+        (groups[permission.group] ||= []).push(permission);
+        return groups;
+      },
+      {},
+    ),
+  );
 }
 
 function normalizeStatus(status?: string): AdminUserPayload["status"] {

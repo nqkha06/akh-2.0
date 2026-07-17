@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Home, LifeBuoy, Link2, Plus, User } from "lucide-react"
 
-import SocialLinksGenerator from "@/app/member/create/demo"
+import SocialLinksGenerator from "@/app/(member)/member/create/demo"
 import {
   Credenza,
   CredenzaBody,

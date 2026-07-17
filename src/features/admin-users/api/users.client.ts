@@ -19,9 +19,14 @@ export async function createAdminUser(
 export async function updateAdminUser(
   id: number,
   payload: AdminUserPayload,
+  currentUserId: number,
 ) {
-  const body = { ...payload };
+  const body: Partial<AdminUserPayload> = { ...payload };
   if (!body.password) delete body.password;
+  if (id === currentUserId) {
+    delete body.roles;
+    delete body.permissions;
+  }
 
   return request<AdminUser>(`/admin/users/${id}`, {
     method: "PATCH",

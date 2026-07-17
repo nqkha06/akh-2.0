@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { AuthOriginGuard } from "./guards/auth-origin.guard";
 import { AuthRateLimitGuard } from "./guards/auth-rate-limit.guard";
+import { PermissionsGuard } from "./guards/permissions.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
@@ -21,12 +22,13 @@ import { LocalStrategy } from "./strategies/local.strategy";
     JwtAccessStrategy,
     JwtRefreshStrategy,
     AuthOriginGuard,
+    PermissionsGuard,
     RolesGuard,
     {
       provide: APP_GUARD,
       useClass: AuthRateLimitGuard,
     },
   ],
-  exports: [AuthService, RolesGuard],
+  exports: [AuthService, PermissionsGuard, RolesGuard],
 })
 export class AuthModule {}

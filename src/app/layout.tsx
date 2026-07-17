@@ -1,54 +1,48 @@
-import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { getLocale } from "next-intl/server";
-import { NextIntlClientProvider } from "next-intl";
-import { cn } from "@/lib/utils";
-import { ThemeProvider } from "../components/theme-provider";
-import { AuthSessionProvider } from "@/components/auth/auth-session-provider";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
+import type { Metadata } from "next"
+import { Geist, Inter } from "next/font/google"
+import { NextIntlClientProvider } from "next-intl"
+import { getLocale } from "next-intl/server"
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import { AppProviders } from "@/components/providers/app-providers"
+import { cn } from "@/lib/utils"
+
+import "./globals.css"
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "vietnamese"],
   display: "swap",
-});
+})
 
 export const metadata: Metadata = {
   title: "Linkicom — One link. More momentum.",
-  description: "Create link-in-bio pages, verified social unlocks and protected content experiences that turn creator traffic into real growth.",
-};
+  description:
+    "Create link-in-bio pages, verified social unlocks and protected content experiences that turn creator traffic into real growth.",
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const locale = await getLocale();
+  const locale = await getLocale()
 
   return (
-    <html lang={locale} className={cn("font-sans", geist.variable)} suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
+    <html
+      lang={locale}
+      className={cn("font-sans", geist.variable)}
+      suppressHydrationWarning
+    >
+      <body className={cn(inter.variable, "antialiased")}>
         <NextIntlClientProvider>
-          <AuthSessionProvider>
-            <NuqsAdapter>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem={false}
-                themes={["light", "dark"]}
-                disableTransitionOnChange
-              >
-                {children}
-                <Toaster position="top-right" />
-              </ThemeProvider>
-            </NuqsAdapter>
-          </AuthSessionProvider>
+          <AppProviders>{children}</AppProviders>
         </NextIntlClientProvider>
       </body>
     </html>
-  );
+  )
 }

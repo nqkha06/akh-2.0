@@ -4,6 +4,10 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { PrismaService } from "../../prisma/prisma.service";
+import {
+  resolveUserAuthorization,
+  userAuthorizationInclude,
+} from "../../authorization/user-authorization";
 import type { AccessJwtPayload } from "../auth.types";
 
 @Injectable()
@@ -26,7 +30,9 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
 
     const session = await this.prisma.authSession.findUnique({
       where: { id: payload.sid },
-      include: { user: true },
+      include: {
+        user: { include: userAuthorizationInclude },
+      },
     });
     const user = session?.user;
 
@@ -41,6 +47,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
       throw new UnauthorizedException("Phiên đăng nhập không còn hợp lệ.");
     }
 
+    const authorization = resolveUserAuthorization(user);
     return {
       id: user.id,
       name: user.name,
@@ -48,7 +55,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
       emailVerifiedAt: user.emailVerifiedAt,
       avatar: user.avatar,
       status: user.status,
-      role: user.role,
+      ...authorization,
       tokenVersion: user.tokenVersion,
       sessionId: session.id,
     };

@@ -4,6 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { validateEnvironment } from "./config/env.validation";
 
 import { AuthModule } from "./auth/auth.module";
+import { AuthorizationModule } from "./authorization/authorization.module";
 import { BioPagesModule } from "./bio-pages/bio-pages.module";
 import { FilesModule } from "./files/files.module";
 import { LinksModule } from "./links/links.module";
@@ -19,6 +20,7 @@ import { UsersModule } from "./users/users.module";
     }),
     PrismaModule,
     AuthModule,
+    AuthorizationModule,
     BioPagesModule,
     FilesModule,
     LinksModule,
