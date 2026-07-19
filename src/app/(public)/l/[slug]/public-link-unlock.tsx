@@ -31,6 +31,7 @@ import { useTranslations } from "next-intl";
 
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
 import type { LinkDto } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 const ACTION_DELAY_SECONDS = 6;
 
@@ -411,17 +412,17 @@ export function PublicLinkUnlock({
     link.backgroundSettings.sameAsCoverImage
       ? "image"
       : link.backgroundSettings
-          .backgroundMediaType;
+        .backgroundMediaType;
 
   const backgroundMediaUrl =
     link.backgroundSettings.sameAsCoverImage
       ? link.coverImageUrl ||
-        selectedBackground?.imageUrl ||
-        null
+      selectedBackground?.imageUrl ||
+      null
       : link.backgroundSettings
-          .backgroundMediaUrl ||
-        selectedBackground?.imageUrl ||
-        null;
+        .backgroundMediaUrl ||
+      selectedBackground?.imageUrl ||
+      null;
 
   const backgroundImageUrl =
     backgroundMediaType === "image"
@@ -436,9 +437,9 @@ export function PublicLinkUnlock({
   const backgroundYouTubeUrl =
     backgroundMediaType === "youtube"
       ? getYouTubeEmbedUrl(
-          backgroundMediaUrl,
-          youtubeMuted,
-        )
+        backgroundMediaUrl,
+        youtubeMuted,
+      )
       : "";
 
   const backgroundEffects = link.backgroundSettings.effects;
@@ -632,253 +633,248 @@ export function PublicLinkUnlock({
         ) : undefined
       }
     >
-      <div className="mx-auto w-full max-w-[1040px]" data-testid="public-link-shell">
-        <section className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-[#0f1011]/95 dark:shadow-none lg:grid-cols-[minmax(0,0.88fr)_minmax(420px,1.12fr)]">
-          <div className="border-b border-slate-200 dark:border-white/10 lg:border-b-0 lg:border-r">
-            {link.coverImageUrl ? (
-              <div className="border-b border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-[#141516] sm:p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={link.coverImageUrl}
-                  alt={link.title}
-                  className="aspect-[16/9] w-full rounded-lg object-cover"
-                />
+      <div
+        className="mx-auto w-full max-w-[680px]"
+        data-testid="public-link-shell"
+      >
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-[#0f1011]/95 dark:shadow-none sm:p-6">
+          {/* Image */}
+          {link.coverImageUrl ? (
+            <img
+              src={link.coverImageUrl}
+              alt={link.title}
+              className="aspect-video w-full rounded-lg object-cover"
+            />
+          ) : null}
+
+          {/* Title */}
+          <div
+            className={cn(
+              "mx-auto text-center",
+              link.coverImageUrl && "mt-6",
+            )}
+          >
+            <h1 className="text-balance text-xl font-semibold leading-tight tracking-[-0.03em] text-slate-950 dark:text-[#f7f8f8] sm:text-2xl">
+              {link.title}
+            </h1>
+
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-[#8a8f98]">
+              {link.subtitle || t("defaultDescription")}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-6 space-y-2">
+            {link.actions.map((action, index) => {
+              const id = action.id || String(index);
+              const completed = completedIdSet.has(id);
+              const loading = loadingIdSet.has(id);
+
+              const ActionIcon = getActionIcon(action.action);
+              const platformColor = getPlatformColor(action.platform);
+
+              const remainingSeconds =
+                remainingSecondsById[id] ?? ACTION_DELAY_SECONDS;
+
+              const countdownProgress =
+                ((ACTION_DELAY_SECONDS - remainingSeconds) /
+                  ACTION_DELAY_SECONDS) *
+                100;
+
+              const actionLabel = createT.has(
+                `actionLabels.${action.action}`,
+              )
+                ? createT(`actionLabels.${action.action}`)
+                : formatAction(action);
+
+              return (
+                <a
+                  key={id}
+                  href={action.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-busy={loading}
+                  aria-disabled={loading || undefined}
+                  data-testid={`public-action-${index}`}
+                  onClick={(event) => {
+                    if (loading) {
+                      event.preventDefault();
+                      return;
+                    }
+
+                    handleActionClick(id);
+                  }}
+                  className={[
+                    "group relative flex min-h-16 w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors",
+                    completed
+                      ? "border-[#27a644]/30 bg-[#27a644]/10"
+                      : loading
+                        ? "cursor-wait border-slate-300 bg-slate-100 dark:border-white/15 dark:bg-[#18191a]"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:bg-[#141516] dark:hover:border-white/20 dark:hover:bg-[#18191a]",
+                  ].join(" ")}
+                >
+                  {loading ? (
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-200 dark:bg-white/5">
+                      <span
+                        className="block h-full bg-[#5e6ad2] transition-[width] duration-1000 ease-linear"
+                        style={{
+                          width: `${Math.min(
+                            Math.max(countdownProgress, 0),
+                            100,
+                          )}%`,
+                        }}
+                      />
+                    </span>
+                  ) : null}
+
+                  <span
+                    className={[
+                      "grid size-10 shrink-0 place-items-center rounded-md text-white",
+                      completed
+                        ? "bg-[#27a644]"
+                        : loading
+                          ? "bg-slate-400 dark:bg-[#23252a]"
+                          : platformColor,
+                    ].join(" ")}
+                  >
+                    {loading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : completed ? (
+                      <CheckCircle2 className="size-4" />
+                    ) : (
+                      <ActionIcon className="size-4" />
+                    )}
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-slate-950 dark:text-[#f7f8f8]">
+                      {loading ? t("recordingAction") : actionLabel}
+                    </span>
+
+                    <span className="mt-1 block truncate text-xs text-slate-600 dark:text-[#8a8f98]">
+                      {loading
+                        ? t("keepPageOpen")
+                        : completed
+                          ? t("completedAction")
+                          : t("opensNewTab", {
+                            platform: formatPlatform(action.platform),
+                          })}
+                    </span>
+                  </span>
+
+                  {loading ? (
+                    <span className="shrink-0 font-mono text-xs font-medium tabular-nums text-slate-700 dark:text-[#d0d6e0]">
+                      {remainingSeconds}s
+                    </span>
+                  ) : completed ? (
+                    <span className="shrink-0 rounded-md border border-[#27a644]/25 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-[#6fd486]">
+                      {t("done")}
+                    </span>
+                  ) : (
+                    <ExternalLink className="size-4 shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-[#62666d] dark:group-hover:text-[#d0d6e0]" />
+                  )}
+                </a>
+              );
+            })}
+          </div>
+
+          {/* Progress */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-slate-950 dark:text-[#f7f8f8]">
+                  {unlocked ? t("readyTitle") : t("progressTitle")}
+                </p>
               </div>
-            ) : null}
 
-            <div className="p-5 sm:p-7 lg:p-8">
-              <div className="flex items-center gap-2 text-xs font-medium tracking-[0.04em] text-slate-600 dark:text-[#8a8f98]">
-                <span className="grid size-7 place-items-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-[#141516] dark:text-[#8a8f98]">
-                  <LockKeyhole className="size-3.5" />
-                </span>
-                {t("protectedContent")}
-              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-[#8a8f98]">
+                  {completedCount }/{totalActions}
+                </p>
+            </div>
 
-              <h1 className="mt-5 text-balance text-[28px] font-semibold leading-[1.16] tracking-[-0.035em] text-slate-950 dark:text-[#f7f8f8] sm:text-[34px]">
-                {link.title}
-              </h1>
-
-              <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-[#8a8f98] sm:text-[15px]">
-                {link.subtitle || t("defaultDescription")}
-              </p>
-
-              <div className="mt-7 grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-[#010102]/45">
-                <div className="border-r border-slate-200 px-3.5 py-3 dark:border-white/10">
-                  <p className="text-[11px] text-slate-500 dark:text-[#62666d]">{t("requirements")}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700 dark:text-[#d0d6e0]">
-                    {t("actionCount", { count: totalActions })}
-                  </p>
-                </div>
-                <div className="px-3.5 py-3">
-                  <p className="text-[11px] text-slate-500 dark:text-[#62666d]">{t("destination")}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-700 dark:text-[#d0d6e0]">
-                    {link.inputType === "file"
-                      ? t("destinationFile")
-                      : link.inputType === "snippet"
-                        ? t("destinationSnippet")
-                        : t("destinationLink")}
-                  </p>
-                </div>
-              </div>
+            <div
+              className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-[#23252a]"
+              data-testid="unlock-progress"
+            >
+              <div
+                className={[
+                  "h-full rounded-full transition-[width] duration-500",
+                  unlocked ? "bg-[#27a644]" : "bg-[#5e6ad2]",
+                ].join(" ")}
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
 
-          <div className="flex min-w-0 flex-col">
-            <div className="border-b border-slate-200 px-5 py-5 dark:border-white/10 sm:px-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-950 dark:text-[#f7f8f8]">
-                    {unlocked ? t("readyTitle") : t("progressTitle")}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-[#8a8f98]">
-                    {unlocked
-                      ? t("readyDescription")
-                      : t("progressDescription", { completed: completedCount, total: totalActions })}
-                  </p>
-                </div>
-                <span
-                  className={[
-                    "shrink-0 rounded-md border px-2 py-1 font-mono text-xs font-medium tabular-nums",
-                    unlocked
-                      ? "border-[#27a644]/30 bg-[#27a644]/10 text-emerald-700 dark:text-[#6fd486]"
-                      : "border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-[#141516] dark:text-[#d0d6e0]",
-                  ].join(" ")}
-                  data-testid="unlock-progress-count"
-                >
-                  {Math.round(progress)}%
-                </span>
-              </div>
-
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-[#23252a]" data-testid="unlock-progress">
-                <div
-                  className={unlocked ? "h-full rounded-full bg-[#27a644] transition-[width] duration-500" : "h-full rounded-full bg-[#5e6ad2] transition-[width] duration-500"}
-                  style={{ width: progress + "%" }}
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-2 px-4 py-4 sm:px-5 sm:py-5">
-              {link.actions.map((action, index) => {
-                const id = action.id || String(index);
-                const completed = completedIdSet.has(id);
-                const loading = loadingIdSet.has(id);
-                const ActionIcon = getActionIcon(action.action);
-                const platformColor = getPlatformColor(action.platform);
-                const remainingSeconds = remainingSecondsById[id] ?? ACTION_DELAY_SECONDS;
-                const countdownProgress =
-                  ((ACTION_DELAY_SECONDS - remainingSeconds) / ACTION_DELAY_SECONDS) * 100;
-                const actionLabel = createT.has("actionLabels." + action.action)
-                  ? createT("actionLabels." + action.action)
-                  : formatAction(action);
-
-                return (
-                  <a
-                    key={id}
-                    href={action.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-busy={loading}
-                    aria-disabled={loading || undefined}
-                    data-testid={"public-action-" + index}
-                    onClick={(event) => {
-                      if (loading) {
-                        event.preventDefault();
-                        return;
-                      }
-                      handleActionClick(id);
-                    }}
-                    className={[
-                      "group relative flex min-h-16 w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      completed
-                        ? "border-[#27a644]/30 bg-[#27a644]/10"
-                        : loading
-                          ? "cursor-wait border-slate-300 bg-slate-100 dark:border-white/15 dark:bg-[#18191a]"
-                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:bg-[#141516] dark:hover:border-white/20 dark:hover:bg-[#18191a]",
-                    ].join(" ")}
-                  >
-                    {loading ? (
-                      <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-200 dark:bg-white/5">
-                        <span
-                          className="block h-full bg-[#5e6ad2] transition-[width] duration-1000 ease-linear"
-                          style={{ width: Math.min(Math.max(countdownProgress, 0), 100) + "%" }}
-                        />
-                      </span>
-                    ) : null}
-
-                    <span
-                      className={[
-                        "grid size-10 shrink-0 place-items-center rounded-md text-white",
-                        completed ? "bg-[#27a644]" : loading ? "bg-slate-400 dark:bg-[#23252a]" : platformColor,
-                      ].join(" ")}
-                    >
-                      {loading ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : completed ? (
-                        <CheckCircle2 className="size-4" />
-                      ) : (
-                        <ActionIcon className="size-4" />
-                      )}
-                    </span>
-
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-slate-950 dark:text-[#f7f8f8]">
-                        {loading ? t("recordingAction") : actionLabel}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-slate-600 dark:text-[#8a8f98]">
-                        {loading
-                          ? t("keepPageOpen")
-                          : completed
-                            ? t("completedAction")
-                            : t("opensNewTab", { platform: formatPlatform(action.platform) })}
-                      </span>
-                    </span>
-
-                    {loading ? (
-                      <span className="shrink-0 font-mono text-xs font-medium tabular-nums text-slate-700 dark:text-[#d0d6e0]">
-                        {remainingSeconds}s
-                      </span>
-                    ) : completed ? (
-                      <span className="shrink-0 rounded-md border border-[#27a644]/25 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-[#6fd486]">
-                        {t("done")}
-                      </span>
-                    ) : (
-                      <ExternalLink className="size-4 shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-[#62666d] dark:group-hover:text-[#d0d6e0]" />
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-slate-200 p-4 dark:border-white/10 sm:p-5">
-              {link.inputType === "snippet" ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={!unlocked}
-                    onClick={() => setSnippetRevealed(true)}
-                    data-testid="unlock-cta"
-                    className={[
-                      "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
-                      unlocked
-                        ? "bg-[#5e6ad2] text-white hover:bg-[#828fff]"
-                        : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]",
-                    ].join(" ")}
-                  >
-                    {unlocked ? <FileText className="size-4" /> : <LockKeyhole className="size-4" />}
-                    {unlocked
-                      ? snippetRevealed
-                        ? t("snippetRevealed")
-                        : t("revealSnippet")
-                      : t("unlockSnippet")}
-                  </button>
-
-                  {snippetRevealed && unlocked ? (
-                    <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#010102]">
-                      <div className="flex items-center gap-2 border-b border-slate-200 px-3.5 py-2.5 dark:border-white/10">
-                        <FileText className="size-3.5 text-slate-600 dark:text-[#8a8f98]" />
-                        <span className="text-xs font-medium text-slate-700 dark:text-[#d0d6e0]">{t("unlockedContent")}</span>
-                      </div>
-                      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-6 text-slate-700 dark:text-[#d0d6e0]">
-                        {link.destinationUrl}
-                      </pre>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <a
-                  href={unlocked ? link.destinationUrl : undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-disabled={!unlocked}
+          {/* Destination */}
+          <div className="mt-6">
+            {link.inputType === "snippet" ? (
+              <>
+                <button
+                  type="button"
+                  disabled={!unlocked}
+                  onClick={() => setSnippetRevealed(true)}
                   data-testid="unlock-cta"
                   className={[
                     "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
                     unlocked
                       ? "bg-[#5e6ad2] text-white hover:bg-[#828fff]"
-                      : "pointer-events-none cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]",
+                      : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]",
                   ].join(" ")}
                 >
-                  {unlocked ? <ExternalLink className="size-4" /> : <LockKeyhole className="size-4" />}
-                  {unlocked
-                    ? link.inputType === "file"
-                      ? t("openFile")
-                      : t("continueToLink")
-                    : t("unlockLink")}
-                </a>
-              )}
+                  {unlocked ? (
+                    <FileText className="size-4" />
+                  ) : (
+                    <LockKeyhole className="size-4" />
+                  )}
 
-              <p className="mt-3 text-center text-[11px] leading-5 text-slate-500 dark:text-[#62666d]">
-                {unlocked ? t("destinationReady") : t("destinationProtected")}
-              </p>
-            </div>
+                  {unlocked
+                    ? snippetRevealed
+                      ? t("snippetRevealed")
+                      : t("revealSnippet")
+                    : t("unlockSnippet")}
+                </button>
+
+                {snippetRevealed && unlocked ? (
+                  <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-6 text-slate-700 dark:border-white/10 dark:bg-[#010102] dark:text-[#d0d6e0]">
+                    {link.destinationUrl}
+                  </pre>
+                ) : null}
+              </>
+            ) : (
+              <a
+                href={unlocked ? link.destinationUrl : undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={!unlocked}
+                data-testid="unlock-cta"
+                className={[
+                  "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
+                  unlocked
+                    ? "bg-[#5e6ad2] text-white hover:bg-[#828fff]"
+                    : "pointer-events-none cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]",
+                ].join(" ")}
+              >
+                {unlocked ? (
+                  <ExternalLink className="size-4" />
+                ) : (
+                  <LockKeyhole className="size-4" />
+                )}
+
+                {unlocked
+                  ? link.inputType === "file"
+                    ? t("openFile")
+                    : t("continueToLink")
+                  : t("unlockLink")}
+              </a>
+            )}
           </div>
         </section>
 
-        <div className="mt-4 flex flex-col items-center justify-between gap-3 text-xs text-slate-500 dark:text-[#62666d] sm:flex-row">
-          <span>{t("protectedBy")}</span>
+        <div className="mt-4 flex justify-center">
           <Link
             href="/member/create"
-            className="rounded-md px-2 py-1.5 font-medium text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-950 dark:text-[#8a8f98] dark:hover:bg-white/5 dark:hover:text-[#d0d6e0]"
+            className="rounded-md px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-950 dark:text-[#8a8f98] dark:hover:bg-white/5 dark:hover:text-[#d0d6e0]"
           >
             {t("createOwn")}
           </Link>

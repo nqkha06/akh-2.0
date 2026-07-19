@@ -7,7 +7,12 @@ import {
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
+import type { MonetizationRouteDto } from "../monetization-levels/dto/monetization-level-config.dto";
 import { CreateLinkDto } from "./dto/create-link.dto";
+import {
+  buildVisitorRouteContext,
+  resolveMonetizationRoute,
+} from "./monetization-route-resolver";
 import { UpdateLinkStatusDto } from "./dto/update-link-status.dto";
 
 const linkInclude = Prisma.validator<Prisma.LinkInclude>()({
@@ -17,6 +22,30 @@ const linkInclude = Prisma.validator<Prisma.LinkInclude>()({
 });
 
 type LinkWithRelations = Prisma.LinkGetPayload<{ include: typeof linkInclude }>;
+
+const publicVisitInclude = Prisma.validator<Prisma.LinkInclude>()({
+  ...linkInclude,
+  user: {
+    select: {
+      monetizationLevel: {
+        select: {
+          status: true,
+          routesJson: true,
+        },
+      },
+    },
+  },
+});
+
+type PublicVisitLink = Prisma.LinkGetPayload<{
+  include: typeof publicVisitInclude;
+}>;
+
+export type LinkVisitorMetadata = {
+  countryCode?: string | null;
+  userAgent?: string | null;
+  ipAddress?: string | null;
+};
 
 type StoredAppearance = {
   coverImageUrl: string | null;
@@ -121,11 +150,11 @@ export class LinksService {
     return this.toResponse(link);
   }
 
-  async recordVisit(slug: string) {
+  async recordVisit(slug: string, visitor: LinkVisitorMetadata = {}) {
     return this.prisma.$transaction(async (prisma) => {
       const current = await prisma.link.findUnique({
         where: { slug },
-        include: linkInclude,
+        include: publicVisitInclude,
       });
 
       if (!current || current.deletedAt) {
@@ -150,10 +179,19 @@ export class LinksService {
       const visited = await prisma.link.update({
         where: { id: current.id },
         data: { clicks: { increment: 1 } },
-        include: linkInclude,
+        include: publicVisitInclude,
       });
 
-      return this.toResponse(visited);
+      const monetizationRedirectUrl = await this.resolveMonetizationRedirect(
+        prisma,
+        visited,
+        visitor,
+      );
+
+      return {
+        ...this.toResponse(visited),
+        monetizationRedirectUrl,
+      };
     });
   }
 
@@ -523,6 +561,51 @@ export class LinksService {
     const destinationUrl = link.destinationUrl || "";
     const legacyPath = this.extractLegacyFilePath(destinationUrl);
     return legacyPath ? `/api/backend${legacyPath.slice(4)}` : destinationUrl;
+  }
+
+  private async resolveMonetizationRedirect(
+    prisma: Prisma.TransactionClient,
+    link: PublicVisitLink,
+    visitor: LinkVisitorMetadata,
+  ) {
+    let level = link.user.monetizationLevel;
+    if (!level || level.status !== "active") {
+      level = await prisma.monetizationLevel.findFirst({
+        where: { isDefault: true, status: "active" },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        select: {
+          status: true,
+          routesJson: true,
+        },
+      });
+    }
+
+    if (!level) return null;
+
+    const routes = this.parseMonetizationRoutes(level.routesJson);
+    const context = buildVisitorRouteContext(visitor);
+    const route = resolveMonetizationRoute(routes, {
+      ...context,
+      visitorKey: `${link.id}|${context.visitorKey}`,
+    });
+
+    return route?.targetUrl ?? null;
+  }
+
+  private parseMonetizationRoutes(value: string): MonetizationRouteDto[] {
+    try {
+      const routes = JSON.parse(value) as unknown;
+      if (!Array.isArray(routes)) return [];
+
+      return routes.filter(
+        (route): route is MonetizationRouteDto =>
+          typeof route === "object" &&
+          route !== null &&
+          typeof (route as MonetizationRouteDto).targetUrl === "string",
+      );
+    } catch {
+      return [];
+    }
   }
 
   private extractLegacyFilePath(destinationUrl: string) {

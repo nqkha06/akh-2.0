@@ -54,27 +54,6 @@ export const linkRows = [
   },
 ];
 
-export const levelRows = [
-  {
-    name: "Level Sub Unlock",
-    cpm: "38,500đ",
-    condition: "Subscribe / Follow hợp lệ",
-    share: "100%",
-  },
-  {
-    name: "Level Note",
-    cpm: "0đ",
-    condition: "Ghi chú hoặc bước phụ",
-    share: "0%",
-  },
-  {
-    name: "Level Premium Campaign",
-    cpm: "52,000đ",
-    condition: "Campaign đã duyệt",
-    share: "120%",
-  },
-];
-
 export const rankingRows = [
   { name: "Creator Max", views: "92,410", revenue: "4,820,000đ", rank: "01" },
   { name: "Minh Studio", views: "74,102", revenue: "3,910,000đ", rank: "02" },

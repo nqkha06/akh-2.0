@@ -8,6 +8,7 @@ import { AuthorizationModule } from "./authorization/authorization.module";
 import { BioPagesModule } from "./bio-pages/bio-pages.module";
 import { FilesModule } from "./files/files.module";
 import { LinksModule } from "./links/links.module";
+import { MonetizationLevelsModule } from "./monetization-levels/monetization-levels.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { SnippetsModule } from "./snippets/snippets.module";
 import { UsersModule } from "./users/users.module";
@@ -24,6 +25,7 @@ import { UsersModule } from "./users/users.module";
     BioPagesModule,
     FilesModule,
     LinksModule,
+    MonetizationLevelsModule,
     SnippetsModule,
     UsersModule,
   ],

@@ -49,6 +49,30 @@ export const permissionCatalog = [
     group: "social-links",
   },
   {
+    key: "monetization-levels.read",
+    name: "Xem cấp độ kiếm tiền",
+    description: "Xem danh sách và cấu hình cấp độ kiếm tiền.",
+    group: "monetization",
+  },
+  {
+    key: "monetization-levels.create",
+    name: "Tạo cấp độ kiếm tiền",
+    description: "Tạo cấp độ kiếm tiền mới.",
+    group: "monetization",
+  },
+  {
+    key: "monetization-levels.update",
+    name: "Sửa cấp độ kiếm tiền",
+    description: "Cập nhật route, rate và trải nghiệm quảng cáo.",
+    group: "monetization",
+  },
+  {
+    key: "monetization-levels.delete",
+    name: "Xóa cấp độ kiếm tiền",
+    description: "Xóa cấp độ kiếm tiền chưa được sử dụng.",
+    group: "monetization",
+  },
+  {
     key: "roles.read",
     name: "Xem phân quyền",
     description: "Xem role và permission.",

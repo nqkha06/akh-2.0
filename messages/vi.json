@@ -217,12 +217,30 @@
         "maximum": "Mật độ tối đa"
       },
       "plans": {
-        "clean": { "title": "Trải nghiệm tối giản", "description": "Ưu tiên trải nghiệm gọn nhẹ cho người truy cập." },
-        "faucet": { "title": "Lưu lượng lớn", "description": "Phù hợp với nguồn traffic có khối lượng truy cập cao." },
-        "low": { "title": "Doanh thu thấp", "description": "Cân bằng nhẹ nhàng giữa doanh thu và trải nghiệm." },
-        "balanced": { "title": "Doanh thu cân bằng", "description": "Một lựa chọn phù hợp cho phần lớn link đang hoạt động." },
-        "high": { "title": "Doanh thu cao", "description": "Tối ưu phần lợi nhuận với luồng truy cập nhiều bước hơn." },
-        "maximum": { "title": "Tối đa doanh thu", "description": "Tối ưu lợi nhuận cho chiến dịch chấp nhận luồng truy cập dài." }
+        "clean": {
+          "title": "Trải nghiệm tối giản",
+          "description": "Ưu tiên trải nghiệm gọn nhẹ cho người truy cập."
+        },
+        "faucet": {
+          "title": "Lưu lượng lớn",
+          "description": "Phù hợp với nguồn traffic có khối lượng truy cập cao."
+        },
+        "low": {
+          "title": "Doanh thu thấp",
+          "description": "Cân bằng nhẹ nhàng giữa doanh thu và trải nghiệm."
+        },
+        "balanced": {
+          "title": "Doanh thu cân bằng",
+          "description": "Một lựa chọn phù hợp cho phần lớn link đang hoạt động."
+        },
+        "high": {
+          "title": "Doanh thu cao",
+          "description": "Tối ưu phần lợi nhuận với luồng truy cập nhiều bước hơn."
+        },
+        "maximum": {
+          "title": "Tối đa doanh thu",
+          "description": "Tối ưu lợi nhuận cho chiến dịch chấp nhận luồng truy cập dài."
+        }
       },
       "title": "Xây dựng các nguồn thu từ nội dung của bạn",
       "description": "Theo dõi điều kiện, ưu tiên các mốc quan trọng và mở khóa thêm cách kiếm tiền khi cộng đồng của bạn phát triển.",
@@ -543,9 +561,63 @@
       "description": "Top creator theo thu nhập, điểm và lượt giới thiệu trong tuần, tháng hoặc toàn thời gian."
     },
     "levels": {
-      "eyebrow": "Commission tier",
-      "title": "Quản lí cấp độ kiếm tiền",
-      "description": "Xem cấp hiện tại, tiến độ thăng cấp và quyền lợi hoa hồng theo từng tier."
+      "eyebrow": "Monetization levels",
+      "title": "Cấp độ kiếm tiền",
+      "description": "So sánh các cấu hình kiếm tiền đang hoạt động, trải nghiệm quảng cáo và rate CPM áp dụng cho social link của bạn.",
+      "overview": "Tổng quan cấp độ kiếm tiền",
+      "activeLevels": "Cấp độ khả dụng",
+      "activeLevelsDescription": "Đang được hệ thống cho phép sử dụng",
+      "currentLevel": "Cấp độ đang sử dụng",
+      "usingSystemDefault": "Đang kế thừa cấu hình mặc định hệ thống",
+      "userSelectedLevel": "Được áp dụng cho toàn bộ link của bạn",
+      "configuredMarkets": "Thị trường có rate",
+      "ratesCount": "{count} rule CPM đang hoạt động",
+      "linksUsingLevels": "Link đang kiếm tiền",
+      "linksUsingLevelsDescription": "Tất cả cùng sử dụng cấp độ đã chọn",
+      "notConfigured": "Chưa cấu hình",
+      "catalogTitle": "Danh sách cấp độ",
+      "catalogDescription": "Các cấu hình dưới đây được quản trị viên kích hoạt và có thể áp dụng cho social link.",
+      "levelNumber": "Cấp độ {number}",
+      "defaultBadge": "Mặc định",
+      "selectedBadge": "Đang sử dụng",
+      "selectLevel": "Sử dụng cấp độ này",
+      "selecting": "Đang cập nhật...",
+      "currentlySelected": "Cấp độ hiện tại",
+      "selectionSuccess": "Đã chuyển sang cấp độ {level}",
+      "selectionFailed": "Không thể cập nhật cấp độ kiếm tiền.",
+      "noDescription": "Chưa có mô tả cho cấp độ này.",
+      "profit": "Lợi nhuận",
+      "steps": "Số bước",
+      "rateRules": "Rate",
+      "visitorExperience": "Trải nghiệm người truy cập",
+      "popup": "Pop-up",
+      "banner": "Banner",
+      "interstitial": "Xen kẽ",
+      "notification": "Thông báo",
+      "density": {
+        "none": "Không hiển thị",
+        "limited": "Giới hạn",
+        "maximum": "Tối đa"
+      },
+      "ratesTitle": "Rate theo thị trường",
+      "ratesDescription": "Base CPM đang hoạt động theo cấp độ, quốc gia và loại thiết bị.",
+      "level": "Cấp độ",
+      "market": "Thị trường",
+      "device": "Thiết bị",
+      "baseCpm": "Base CPM",
+      "dailyLimit": "Giới hạn/ngày",
+      "devices": {
+        "any": "Mọi thiết bị",
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet"
+      },
+      "allMarkets": "Tất cả quốc gia",
+      "unknownMarket": "Không xác định",
+      "unlimited": "Không giới hạn",
+      "noRates": "Chưa có rate CPM nào được kích hoạt.",
+      "emptyTitle": "Chưa có cấp độ khả dụng",
+      "emptyDescription": "Quản trị viên chưa kích hoạt cấu hình kiếm tiền nào. Vui lòng quay lại sau."
     },
     "loyalty": {
       "eyebrow": "Loyalty",
@@ -641,7 +713,12 @@
       "historyDescription": "Các bonus đã được ghi nhận vào ví của bạn.",
       "entries": "{count} mục",
       "dailyLogin": "Đăng nhập hằng ngày",
-      "table": { "type": "Loại", "milestone": "Mốc", "amount": "Số tiền", "date": "Ngày" },
+      "table": {
+        "type": "Loại",
+        "milestone": "Mốc",
+        "amount": "Số tiền",
+        "date": "Ngày"
+      },
       "rewards": {
         "daily": {
           "title": "Đăng nhập hằng ngày",
@@ -714,7 +791,49 @@
   },
   "CreateLink": {
     "actionLabels": {
-      "subscribe": "Đăng ký kênh", "subscribe-notifications": "Đăng ký và bật thông báo", "other-visit": "Truy cập website", "like": "Like video", "comment": "Bình luận video", "like-comment": "Like và bình luận video", "watch": "Xem video", "tiktok-follow": "Theo dõi người dùng", "follow": "Theo dõi người dùng", "reply": "Trả lời bài đăng", "repost": "Đăng lại", "like-page": "Like trang", "like-post": "Like bài đăng", "share": "Chia sẻ bài đăng", "join-server": "Tham gia server", "join-channel": "Tham gia kênh", "follow-artist": "Theo dõi nghệ sĩ", "like-song": "Like bài hát", "follow-streamer": "Theo dõi streamer", "follow-creator": "Theo dõi creator", "connect": "Kết nối", "follow-company": "Theo dõi công ty", "add-user": "Thêm người dùng", "upvote": "Upvote bài đăng", "join-group": "Tham gia nhóm", "follow-curator": "Theo dõi curator", "comment-profile": "Bình luận profile", "favorite-game": "Yêu thích game", "like-game": "Like game", "follow-designer": "Theo dõi designer", "like-shot": "Like shot", "watch-artist": "Theo dõi nghệ sĩ", "favorite-artwork": "Yêu thích tác phẩm", "like-track": "Like track", "repost-track": "Đăng lại track", "follow-producer": "Theo dõi producer", "view-page": "Xem trang", "star-repository": "Star repository", "upvote-product": "Upvote sản phẩm", "follow-maker": "Theo dõi maker", "install-app": "Cài đặt ứng dụng", "visit-page": "Truy cập trang", "like-video": "Like video"
+      "subscribe": "Đăng ký kênh",
+      "subscribe-notifications": "Đăng ký và bật thông báo",
+      "other-visit": "Truy cập website",
+      "like": "Like video",
+      "comment": "Bình luận video",
+      "like-comment": "Like và bình luận video",
+      "watch": "Xem video",
+      "tiktok-follow": "Theo dõi người dùng",
+      "follow": "Theo dõi người dùng",
+      "reply": "Trả lời bài đăng",
+      "repost": "Đăng lại",
+      "like-page": "Like trang",
+      "like-post": "Like bài đăng",
+      "share": "Chia sẻ bài đăng",
+      "join-server": "Tham gia server",
+      "join-channel": "Tham gia kênh",
+      "follow-artist": "Theo dõi nghệ sĩ",
+      "like-song": "Like bài hát",
+      "follow-streamer": "Theo dõi streamer",
+      "follow-creator": "Theo dõi creator",
+      "connect": "Kết nối",
+      "follow-company": "Theo dõi công ty",
+      "add-user": "Thêm người dùng",
+      "upvote": "Upvote bài đăng",
+      "join-group": "Tham gia nhóm",
+      "follow-curator": "Theo dõi curator",
+      "comment-profile": "Bình luận profile",
+      "favorite-game": "Yêu thích game",
+      "like-game": "Like game",
+      "follow-designer": "Theo dõi designer",
+      "like-shot": "Like shot",
+      "watch-artist": "Theo dõi nghệ sĩ",
+      "favorite-artwork": "Yêu thích tác phẩm",
+      "like-track": "Like track",
+      "repost-track": "Đăng lại track",
+      "follow-producer": "Theo dõi producer",
+      "view-page": "Xem trang",
+      "star-repository": "Star repository",
+      "upvote-product": "Upvote sản phẩm",
+      "follow-maker": "Theo dõi maker",
+      "install-app": "Cài đặt ứng dụng",
+      "visit-page": "Truy cập trang",
+      "like-video": "Like video"
     },
     "tabs": { "url": "URL", "file": "File", "snippet": "Snippet" },
     "destinationUrlPlaceholder": "Nhập URL đích*",

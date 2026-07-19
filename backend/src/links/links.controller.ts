@@ -37,8 +37,12 @@ export class LinksController {
 
   @Post(":slug/visit")
   @HttpCode(200)
-  recordVisit(@Param("slug") slug: string) {
-    return this.linksService.recordVisit(slug);
+  recordVisit(@Param("slug") slug: string, @Req() request: Request) {
+    return this.linksService.recordVisit(slug, {
+      countryCode: request.get("x-visitor-country"),
+      userAgent: request.get("user-agent"),
+      ipAddress: request.get("x-visitor-ip") || request.ip,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

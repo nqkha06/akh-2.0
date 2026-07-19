@@ -15,6 +15,87 @@ Tài liệu này dùng để chuyển schema từ Laravel sang NestJS. Nguồn �
 
 ## 2. ERD theo domain
 
+### 2.0. Monetization schema của dự án NestJS hiện tại
+
+Phần này mô tả schema mới đã được triển khai cho tài khoản và `stu_links`. Nó thay thế cách
+tách `levels`, `stu_level_rates` và `stu_level_translations` của hệ Laravel cũ
+bằng hai bảng cấu hình tập trung:
+
+```mermaid
+erDiagram
+    STU_MONETIZATION_LEVELS ||--o{ STU_MONETIZATION_LEVEL_TRANSLATIONS : "level_id (FK)"
+    STU_MONETIZATION_LEVELS o|--o{ USERS : "monetization_level_id (FK)"
+    USERS ||--o{ STU_LINKS : "user_id (FK)"
+
+    STU_MONETIZATION_LEVELS {
+        int id PK
+        string key UK
+        string status
+        boolean is_default
+        int sort_order
+        text routes
+        text rates
+        text meta_data
+        datetime created_at
+        datetime updated_at
+    }
+
+    STU_MONETIZATION_LEVEL_TRANSLATIONS {
+        int id PK
+        int level_id FK
+        string locale
+        string name
+        string description
+    }
+
+    USERS {
+        int id PK
+        int monetization_level_id FK
+    }
+
+    STU_LINKS {
+        int id PK
+        int user_id FK
+        decimal revenue
+    }
+```
+
+- `routes`: JSON array chứa rule chuyển hướng theo quốc gia, thiết bị, trình
+  duyệt, priority và weight. Ba điều kiện dùng `countryMode`, `deviceMode` và
+  `browserMode` với giá trị `include` hoặc `exclude`. Ví dụ `include + VN` chỉ
+  khớp Việt Nam, `exclude + mobile` loại traffic mobile và `exclude + safari`
+  loại Safari. Các điều kiện trong cùng route được kết hợp bằng AND. Dữ liệu cũ
+  thiếu mode được đọc như `include`; không cho phép `exclude` đi cùng
+  `ALL`/`any`.
+- `rates`: JSON array chứa base CPM, currency và daily limit theo tổ hợp quốc
+  gia/thiết bị.
+- `meta_data`: JSON object có version, `profitBps`, `stepCount` và mật độ bốn
+  định dạng quảng cáo.
+- Tên và mô tả được tách sang bảng translation với unique
+  `(level_id, locale)`. UI quản trị hiện yêu cầu tối thiểu `vi` và `en`.
+- Frontend chọn bản dịch theo locale hiện tại của `next-intl`, sau đó fallback
+  về language code, `vi`, `en` và cuối cùng là `key`. Khi sửa `vi`/`en`, các
+  locale bổ sung chưa có tab riêng vẫn được giữ nguyên trong payload.
+- Chỉ có một level mặc định theo quy tắc service. Level mặc định phải `active`.
+- Mỗi user chỉ lựa chọn một level cho toàn bộ link thông qua
+  `users.monetization_level_id`. Giá trị `NULL` kế thừa level `is_default`.
+- `stu_links` không còn lưu level riêng và không thể chọn level khác nhau giữa
+  các link của cùng một user.
+- Không thể xóa level mặc định hoặc level đang được user lựa chọn.
+- Route target URL là URL của website quảng cáo trung gian. API public không
+  trả toàn bộ cấu hình route, chỉ trả URL route đã được resolver chọn.
+- Khi public URL được mở, Next.js chuyển country header, IP và User-Agent sang
+  NestJS. Resolver lấy level active của user hoặc level mặc định, lọc các route
+  `enabled` thỏa đồng thời country/device/browser, chọn priority lớn nhất và
+  phân phối ổn định theo `weight` trong nhóm cùng priority.
+- `destination_url` luôn là đích cuối của link và không bị resolver ghi đè.
+  Khi có route phù hợp, response visit trả thêm `monetizationRedirectUrl`.
+  Next.js chuyển visitor đến URL quảng cáo này và gắn `slug` cùng `dataUrl`.
+- Website quảng cáo gọi `dataUrl` (`GET /api/public/links/:slug` trên Next.js)
+  để lấy dữ liệu link, hiển thị quảng cáo và tiếp tục visitor tới
+  `destinationUrl`. Nếu không có route phù hợp, trang unlock hiện tại được render
+  như bình thường.
+
 ### 2.1. User, thanh toán, rút tiền và chống gian lận
 
 ```mermaid
@@ -120,41 +201,41 @@ erDiagram
 
 Chỉ các quan hệ dưới đây có constraint thật (không tính hai FK của bảng deprecated `withdrawal_status_histories`). Các quan hệ còn lại trong ERD phải được giữ bằng application logic hoặc bổ sung FK sau khi đã làm sạch dữ liệu và đồng nhất kiểu cột.
 
-| Bảng.cột | Tham chiếu | ON DELETE | ON UPDATE |
-|---|---|---:|---:|
-| `balance_transactions.user_id` | `users.id` | CASCADE | NO ACTION |
-| `balance_transactions.user_withdrawal_id` | `user_withdrawals.id` | SET NULL | NO ACTION |
-| `balance_transactions.actor_id` | `users.id` | SET NULL | NO ACTION |
-| `category_translations.category_id` | `categories.id` | CASCADE | NO ACTION |
-| `commissions.user_id` | `users.id` | CASCADE | CASCADE |
-| `commissions.from_user_id` | `users.id` | CASCADE | CASCADE |
-| `fraud_assessments.user_id` | `users.id` | CASCADE | NO ACTION |
-| `fraud_assessments.user_withdrawal_id` | `user_withdrawals.id` | CASCADE | NO ACTION |
-| `fraud_assessments.actor_id` | `users.id` | SET NULL | NO ACTION |
-| `fraud_signals.fraud_assessment_id` | `fraud_assessments.id` | CASCADE | NO ACTION |
-| `loyalty_tier_translations.loyalty_tier_id` | `loyalty_tiers.id` | CASCADE | NO ACTION |
-| `menu_item_translations.menu_item_id` | `menu_items.id` | CASCADE | NO ACTION |
-| `menu_items.menu_id` | `menus.id` | CASCADE | NO ACTION |
-| `menu_items.parent_id` | `menu_items.id` | CASCADE | NO ACTION |
-| `model_has_permissions.permission_id` | `permissions.id` | CASCADE | NO ACTION |
-| `model_has_roles.role_id` | `roles.id` | CASCADE | NO ACTION |
-| `note_daily_stats.user_id` | `users.id` | CASCADE | NO ACTION |
-| `page_translations.page_id` | `pages.id` | CASCADE | NO ACTION |
-| `payment_method_translations.payment_method_id` | `payment_methods.id` | NO ACTION | NO ACTION |
-| `permissions.group_id` | `permission_groups.id` | CASCADE | NO ACTION |
-| `post_translations.post_id` | `posts.id` | CASCADE | NO ACTION |
-| `role_has_permissions.permission_id` | `permissions.id` | CASCADE | NO ACTION |
-| `role_has_permissions.role_id` | `roles.id` | CASCADE | NO ACTION |
-| `social_accounts.user_id` | `users.id` | CASCADE | NO ACTION |
-| `stu_daily_stats.user_id` | `users.id` | CASCADE | NO ACTION |
-| `system_notification_translations.system_notification_id` | `system_notifications.id` | CASCADE | NO ACTION |
-| `telegram_connect_tokens.user_id` | `users.id` | CASCADE | NO ACTION |
-| `user_daily_views.user_id` | `users.id` | CASCADE | NO ACTION |
-| `user_payment_methods.user_id` | `users.id` | CASCADE | NO ACTION |
-| `user_payment_methods.payment_method_id` | `payment_methods.id` | CASCADE | NO ACTION |
-| `user_settings.user_id` | `users.id` | NO ACTION | NO ACTION |
-| `user_telegrams.user_id` | `users.id` | CASCADE | NO ACTION |
-| `users.tier_id` | `loyalty_tiers.id` | SET NULL | NO ACTION |
+| Bảng.cột                                                  | Tham chiếu                | ON DELETE | ON UPDATE |
+| --------------------------------------------------------- | ------------------------- | --------: | --------: |
+| `balance_transactions.user_id`                            | `users.id`                |   CASCADE | NO ACTION |
+| `balance_transactions.user_withdrawal_id`                 | `user_withdrawals.id`     |  SET NULL | NO ACTION |
+| `balance_transactions.actor_id`                           | `users.id`                |  SET NULL | NO ACTION |
+| `category_translations.category_id`                       | `categories.id`           |   CASCADE | NO ACTION |
+| `commissions.user_id`                                     | `users.id`                |   CASCADE |   CASCADE |
+| `commissions.from_user_id`                                | `users.id`                |   CASCADE |   CASCADE |
+| `fraud_assessments.user_id`                               | `users.id`                |   CASCADE | NO ACTION |
+| `fraud_assessments.user_withdrawal_id`                    | `user_withdrawals.id`     |   CASCADE | NO ACTION |
+| `fraud_assessments.actor_id`                              | `users.id`                |  SET NULL | NO ACTION |
+| `fraud_signals.fraud_assessment_id`                       | `fraud_assessments.id`    |   CASCADE | NO ACTION |
+| `loyalty_tier_translations.loyalty_tier_id`               | `loyalty_tiers.id`        |   CASCADE | NO ACTION |
+| `menu_item_translations.menu_item_id`                     | `menu_items.id`           |   CASCADE | NO ACTION |
+| `menu_items.menu_id`                                      | `menus.id`                |   CASCADE | NO ACTION |
+| `menu_items.parent_id`                                    | `menu_items.id`           |   CASCADE | NO ACTION |
+| `model_has_permissions.permission_id`                     | `permissions.id`          |   CASCADE | NO ACTION |
+| `model_has_roles.role_id`                                 | `roles.id`                |   CASCADE | NO ACTION |
+| `note_daily_stats.user_id`                                | `users.id`                |   CASCADE | NO ACTION |
+| `page_translations.page_id`                               | `pages.id`                |   CASCADE | NO ACTION |
+| `payment_method_translations.payment_method_id`           | `payment_methods.id`      | NO ACTION | NO ACTION |
+| `permissions.group_id`                                    | `permission_groups.id`    |   CASCADE | NO ACTION |
+| `post_translations.post_id`                               | `posts.id`                |   CASCADE | NO ACTION |
+| `role_has_permissions.permission_id`                      | `permissions.id`          |   CASCADE | NO ACTION |
+| `role_has_permissions.role_id`                            | `roles.id`                |   CASCADE | NO ACTION |
+| `social_accounts.user_id`                                 | `users.id`                |   CASCADE | NO ACTION |
+| `stu_daily_stats.user_id`                                 | `users.id`                |   CASCADE | NO ACTION |
+| `system_notification_translations.system_notification_id` | `system_notifications.id` |   CASCADE | NO ACTION |
+| `telegram_connect_tokens.user_id`                         | `users.id`                |   CASCADE | NO ACTION |
+| `user_daily_views.user_id`                                | `users.id`                |   CASCADE | NO ACTION |
+| `user_payment_methods.user_id`                            | `users.id`                |   CASCADE | NO ACTION |
+| `user_payment_methods.payment_method_id`                  | `payment_methods.id`      |   CASCADE | NO ACTION |
+| `user_settings.user_id`                                   | `users.id`                | NO ACTION | NO ACTION |
+| `user_telegrams.user_id`                                  | `users.id`                |   CASCADE | NO ACTION |
+| `users.tier_id`                                           | `loyalty_tiers.id`        |  SET NULL | NO ACTION |
 
 Schema hiện tại vô tình có **hai constraint trùng nhau** cùng giữ `user_payment_methods.payment_method_id -> payment_methods.id`. Khi dựng migration NestJS chỉ tạo một FK.
 
@@ -648,38 +729,38 @@ Bảng audit cũ vẫn còn trong database local nhưng code mới đã có migr
 
 Ngoài primary key, các ràng buộc sau ảnh hưởng trực tiếp tới tính đúng đắn nghiệp vụ:
 
-| Bảng | Unique key |
-|---|---|
-| `users` | `(email)` |
-| `social_accounts` | `(provider, provider_id)` |
-| `user_telegrams` | `(telegram_id)` |
-| `telegram_connect_tokens` | `(token_hash)` |
-| `loyalty_tier_translations` | `(loyalty_tier_id, locale)` |
-| `category_translations` | `(category_id, locale)` |
-| `post_translations` | `(post_id, locale)` |
-| `page_translations` | `(page_id, locale)` |
-| `payment_method_translations` | `(payment_method_id, locale)` |
-| `menu_translations` | `(menu_id, locale)` |
-| `menu_item_translations` | `(menu_item_id, locale)` |
-| `system_notification_translations` | `(system_notification_id, locale)` |
-| `note_level_translations` | `(level_id, locale)` |
-| `stu_level_translations` | `(level_id, locale)` |
-| `languages` | `(locale)`, `(code)` |
-| `internal_links` | `(alias)` |
-| `user_daily_views` | `(user_id, view_date)` |
-| `balance_transactions` | `(reference)` |
-| `user_withdrawals` | `(idempotency_key)`; MySQL cho phép nhiều `NULL` |
-| `permission_groups` | `(name)` |
-| `permissions` | `(name, guard_name)` |
-| `roles` | `(name, guard_name)` |
-| `role_has_permissions` | PK `(permission_id, role_id)` |
-| `model_has_roles` | PK `(role_id, model_id, model_type)` |
-| `model_has_permissions` | PK `(permission_id, model_id, model_type)` |
-| `personal_access_tokens` | `(token)` |
-| `geo_countries` | `(slug)` và PK `(abv)` |
-| `system_scheduler_heartbeats` | `(host)` |
-| `system_scheduler_runs` | `(uuid)` |
-| `user_agents` | `(hash)` |
+| Bảng                               | Unique key                                       |
+| ---------------------------------- | ------------------------------------------------ |
+| `users`                            | `(email)`                                        |
+| `social_accounts`                  | `(provider, provider_id)`                        |
+| `user_telegrams`                   | `(telegram_id)`                                  |
+| `telegram_connect_tokens`          | `(token_hash)`                                   |
+| `loyalty_tier_translations`        | `(loyalty_tier_id, locale)`                      |
+| `category_translations`            | `(category_id, locale)`                          |
+| `post_translations`                | `(post_id, locale)`                              |
+| `page_translations`                | `(page_id, locale)`                              |
+| `payment_method_translations`      | `(payment_method_id, locale)`                    |
+| `menu_translations`                | `(menu_id, locale)`                              |
+| `menu_item_translations`           | `(menu_item_id, locale)`                         |
+| `system_notification_translations` | `(system_notification_id, locale)`               |
+| `note_level_translations`          | `(level_id, locale)`                             |
+| `stu_level_translations`           | `(level_id, locale)`                             |
+| `languages`                        | `(locale)`, `(code)`                             |
+| `internal_links`                   | `(alias)`                                        |
+| `user_daily_views`                 | `(user_id, view_date)`                           |
+| `balance_transactions`             | `(reference)`                                    |
+| `user_withdrawals`                 | `(idempotency_key)`; MySQL cho phép nhiều `NULL` |
+| `permission_groups`                | `(name)`                                         |
+| `permissions`                      | `(name, guard_name)`                             |
+| `roles`                            | `(name, guard_name)`                             |
+| `role_has_permissions`             | PK `(permission_id, role_id)`                    |
+| `model_has_roles`                  | PK `(role_id, model_id, model_type)`             |
+| `model_has_permissions`            | PK `(permission_id, model_id, model_type)`       |
+| `personal_access_tokens`           | `(token)`                                        |
+| `geo_countries`                    | `(slug)` và PK `(abv)`                           |
+| `system_scheduler_heartbeats`      | `(host)`                                         |
+| `system_scheduler_runs`            | `(uuid)`                                         |
+| `user_agents`                      | `(hash)`                                         |
 
 Các composite index hiệu năng cao cần tạo lại nguyên thứ tự cột:
 
@@ -694,16 +775,16 @@ Các composite index hiệu năng cao cần tạo lại nguyên thứ tự cột
 
 ## 6. Mapping khuyến nghị sang NestJS/TypeORM
 
-| MySQL | TypeORM/NestJS |
-|---|---|
-| `bigint`, `bigint unsigned` | `type: 'bigint'`; property TypeScript nên là `string` nếu có thể vượt `Number.MAX_SAFE_INTEGER` |
-| `decimal(p,s)` | `type: 'decimal', precision: p, scale: s`; property nên là `string` |
-| `tinyint(1)` | `boolean` nếu cột thực sự là flag; giữ number cho `type`, `device`, mask |
-| `enum(...)` | MySQL enum hoặc varchar + TypeScript enum; giữ đúng tập giá trị hiện tại |
-| `json` | `type: 'json'` |
-| `text/longtext` chứa JSON cũ | Giữ text trong migration đầu; parse/validate ở service hoặc migrate dữ liệu riêng |
-| `timestamp` | `type: 'timestamp'` |
-| `datetime` | `type: 'datetime'` |
+| MySQL                        | TypeORM/NestJS                                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `bigint`, `bigint unsigned`  | `type: 'bigint'`; property TypeScript nên là `string` nếu có thể vượt `Number.MAX_SAFE_INTEGER` |
+| `decimal(p,s)`               | `type: 'decimal', precision: p, scale: s`; property nên là `string`                             |
+| `tinyint(1)`                 | `boolean` nếu cột thực sự là flag; giữ number cho `type`, `device`, mask                        |
+| `enum(...)`                  | MySQL enum hoặc varchar + TypeScript enum; giữ đúng tập giá trị hiện tại                        |
+| `json`                       | `type: 'json'`                                                                                  |
+| `text/longtext` chứa JSON cũ | Giữ text trong migration đầu; parse/validate ở service hoặc migrate dữ liệu riêng               |
+| `timestamp`                  | `type: 'timestamp'`                                                                             |
+| `datetime`                   | `type: 'datetime'`                                                                              |
 
 Tên entity đề xuất dùng PascalCase số ít nhưng luôn khai báo `@Entity({ name: 'table_name' })` để không đổi tên bảng ngoài ý muốn. Với quan hệ polymorphic của Spatie/Sanctum/meta box, không dùng `@ManyToOne` trực tiếp; giữ `type + id` và resolve ở service/repository.
 
@@ -731,13 +812,13 @@ Tên entity đề xuất dùng PascalCase số ít nhưng luôn khai báo `@Enti
 
 ## 9. Phạm vi port đề xuất
 
-| Nhóm | Mặc định |
-|---|---|
-| Core user, loyalty, payment, withdrawal, ledger, fraud | Port |
-| STU/NOTE/internal links, rates, translations, access logs, daily stats | Port |
-| CMS/menu/localization/notification | Port nếu NestJS thay toàn bộ Laravel |
-| RBAC Spatie | Port dữ liệu, map lại authorization trong NestJS |
-| `stu_link_accesses`, `note_link_accesses`, `stu_link_clicks`, `note_statistics` | Port chỉ khi cần lịch sử cũ |
-| Laravel queue/cache/session/migrations | Không port trừ khi có yêu cầu tương thích ngược |
-| `questions`, `user_addresses`, `meta_boxes`, `widgets` | Xác nhận usage trước khi port |
-| `withdrawal_status_histories` | Không port |
+| Nhóm                                                                            | Mặc định                                         |
+| ------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Core user, loyalty, payment, withdrawal, ledger, fraud                          | Port                                             |
+| STU/NOTE/internal links, rates, translations, access logs, daily stats          | Port                                             |
+| CMS/menu/localization/notification                                              | Port nếu NestJS thay toàn bộ Laravel             |
+| RBAC Spatie                                                                     | Port dữ liệu, map lại authorization trong NestJS |
+| `stu_link_accesses`, `note_link_accesses`, `stu_link_clicks`, `note_statistics` | Port chỉ khi cần lịch sử cũ                      |
+| Laravel queue/cache/session/migrations                                          | Không port trừ khi có yêu cầu tương thích ngược  |
+| `questions`, `user_addresses`, `meta_boxes`, `widgets`                          | Xác nhận usage trước khi port                    |
+| `withdrawal_status_histories`                                                   | Không port                                       |

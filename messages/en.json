@@ -217,12 +217,30 @@
         "maximum": "Maximum density"
       },
       "plans": {
-        "clean": { "title": "Minimal experience", "description": "Prioritize a light and simple visitor experience." },
-        "faucet": { "title": "High-volume traffic", "description": "Built for traffic sources with a high volume of visits." },
-        "low": { "title": "Low revenue", "description": "A gentle balance between revenue and experience." },
-        "balanced": { "title": "Balanced revenue", "description": "A practical choice for most active links." },
-        "high": { "title": "High revenue", "description": "Optimize profit with a longer visitor flow." },
-        "maximum": { "title": "Maximum revenue", "description": "Optimize profit for campaigns that accept a longer flow." }
+        "clean": {
+          "title": "Minimal experience",
+          "description": "Prioritize a light and simple visitor experience."
+        },
+        "faucet": {
+          "title": "High-volume traffic",
+          "description": "Built for traffic sources with a high volume of visits."
+        },
+        "low": {
+          "title": "Low revenue",
+          "description": "A gentle balance between revenue and experience."
+        },
+        "balanced": {
+          "title": "Balanced revenue",
+          "description": "A practical choice for most active links."
+        },
+        "high": {
+          "title": "High revenue",
+          "description": "Optimize profit with a longer visitor flow."
+        },
+        "maximum": {
+          "title": "Maximum revenue",
+          "description": "Optimize profit for campaigns that accept a longer flow."
+        }
       },
       "title": "Build revenue streams from your content",
       "description": "Track eligibility, focus on meaningful milestones, and unlock new ways to earn as your audience grows.",
@@ -543,9 +561,63 @@
       "description": "Top creators by revenue, points, and referrals across weekly, monthly, or all-time views."
     },
     "levels": {
-      "eyebrow": "Commission tier",
+      "eyebrow": "Monetization levels",
       "title": "Earning levels",
-      "description": "View your current tier, upgrade progress, and commission benefits by tier."
+      "description": "Compare active monetization settings, advertising experiences, and CPM rates available for your social links.",
+      "overview": "Monetization level overview",
+      "activeLevels": "Available levels",
+      "activeLevelsDescription": "Currently enabled by the platform",
+      "currentLevel": "Current level",
+      "usingSystemDefault": "Inheriting the system default",
+      "userSelectedLevel": "Applied to all of your links",
+      "configuredMarkets": "Rated markets",
+      "ratesCount": "{count} active CPM rules",
+      "linksUsingLevels": "Monetized links",
+      "linksUsingLevelsDescription": "All use your selected level",
+      "notConfigured": "Not configured",
+      "catalogTitle": "Level catalog",
+      "catalogDescription": "These configurations are enabled by administrators and available to social links.",
+      "levelNumber": "Level {number}",
+      "defaultBadge": "Default",
+      "selectedBadge": "In use",
+      "selectLevel": "Use this level",
+      "selecting": "Updating...",
+      "currentlySelected": "Current level",
+      "selectionSuccess": "Switched to the {level} level",
+      "selectionFailed": "Could not update your monetization level.",
+      "noDescription": "No description is available for this level.",
+      "profit": "Profit",
+      "steps": "Steps",
+      "rateRules": "Rates",
+      "visitorExperience": "Visitor experience",
+      "popup": "Pop-up",
+      "banner": "Banner",
+      "interstitial": "Interstitial",
+      "notification": "Notification",
+      "density": {
+        "none": "Hidden",
+        "limited": "Limited",
+        "maximum": "Maximum"
+      },
+      "ratesTitle": "Rates by market",
+      "ratesDescription": "Active base CPM by level, country, and device type.",
+      "level": "Level",
+      "market": "Market",
+      "device": "Device",
+      "baseCpm": "Base CPM",
+      "dailyLimit": "Daily limit",
+      "devices": {
+        "any": "Any device",
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet"
+      },
+      "allMarkets": "All countries",
+      "unknownMarket": "Unknown",
+      "unlimited": "Unlimited",
+      "noRates": "No CPM rates are currently enabled.",
+      "emptyTitle": "No levels are available",
+      "emptyDescription": "Administrators have not enabled a monetization configuration yet. Please check back later."
     },
     "loyalty": {
       "eyebrow": "Loyalty",
@@ -641,7 +713,12 @@
       "historyDescription": "Bonuses that have been credited to your wallet.",
       "entries": "{count} entries",
       "dailyLogin": "Daily login",
-      "table": { "type": "Type", "milestone": "Milestone", "amount": "Amount", "date": "Date" },
+      "table": {
+        "type": "Type",
+        "milestone": "Milestone",
+        "amount": "Amount",
+        "date": "Date"
+      },
       "rewards": {
         "daily": {
           "title": "Daily login",
@@ -714,7 +791,49 @@
   },
   "CreateLink": {
     "actionLabels": {
-      "subscribe": "Subscribe to channel", "subscribe-notifications": "Subscribe & turn on notifications", "other-visit": "Visit website", "like": "Like a video", "comment": "Comment on a video", "like-comment": "Like & comment on video", "watch": "Watch video", "tiktok-follow": "Follow user", "follow": "Follow user", "reply": "Reply to post", "repost": "Repost", "like-page": "Like page", "like-post": "Like post", "share": "Share post", "join-server": "Join server", "join-channel": "Join channel", "follow-artist": "Follow artist", "like-song": "Like song", "follow-streamer": "Follow streamer", "follow-creator": "Follow creator", "connect": "Connect", "follow-company": "Follow company", "add-user": "Add user", "upvote": "Upvote post", "join-group": "Join group", "follow-curator": "Follow curator", "comment-profile": "Comment on profile", "favorite-game": "Favorite game", "like-game": "Like game", "follow-designer": "Follow designer", "like-shot": "Like shot", "watch-artist": "Watch artist", "favorite-artwork": "Favorite artwork", "like-track": "Like track", "repost-track": "Repost track", "follow-producer": "Follow producer", "view-page": "View page", "star-repository": "Star repository", "upvote-product": "Upvote product", "follow-maker": "Follow maker", "install-app": "Install app", "visit-page": "Visit a page", "like-video": "Like video"
+      "subscribe": "Subscribe to channel",
+      "subscribe-notifications": "Subscribe & turn on notifications",
+      "other-visit": "Visit website",
+      "like": "Like a video",
+      "comment": "Comment on a video",
+      "like-comment": "Like & comment on video",
+      "watch": "Watch video",
+      "tiktok-follow": "Follow user",
+      "follow": "Follow user",
+      "reply": "Reply to post",
+      "repost": "Repost",
+      "like-page": "Like page",
+      "like-post": "Like post",
+      "share": "Share post",
+      "join-server": "Join server",
+      "join-channel": "Join channel",
+      "follow-artist": "Follow artist",
+      "like-song": "Like song",
+      "follow-streamer": "Follow streamer",
+      "follow-creator": "Follow creator",
+      "connect": "Connect",
+      "follow-company": "Follow company",
+      "add-user": "Add user",
+      "upvote": "Upvote post",
+      "join-group": "Join group",
+      "follow-curator": "Follow curator",
+      "comment-profile": "Comment on profile",
+      "favorite-game": "Favorite game",
+      "like-game": "Like game",
+      "follow-designer": "Follow designer",
+      "like-shot": "Like shot",
+      "watch-artist": "Watch artist",
+      "favorite-artwork": "Favorite artwork",
+      "like-track": "Like track",
+      "repost-track": "Repost track",
+      "follow-producer": "Follow producer",
+      "view-page": "View page",
+      "star-repository": "Star repository",
+      "upvote-product": "Upvote product",
+      "follow-maker": "Follow maker",
+      "install-app": "Install app",
+      "visit-page": "Visit a page",
+      "like-video": "Like video"
     },
     "tabs": { "url": "URL", "file": "File", "snippet": "Snippet" },
     "destinationUrlPlaceholder": "Enter a destination URL*",

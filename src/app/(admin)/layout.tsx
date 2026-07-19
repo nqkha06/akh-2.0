@@ -35,7 +35,7 @@ export default async function AdminLayout({
             //   } as React.CSSProperties
             // }
           >
-            <AdminSidebar variant="inset" />
+            <AdminSidebar variant="sidebar" />
             <SidebarInset className="min-w-0">{children}</SidebarInset>
           </SidebarProvider>
         </div>

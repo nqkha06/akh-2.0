@@ -165,6 +165,82 @@ const demoLinks = [
   },
 ];
 
+const defaultMonetizationLevels = [
+  {
+    key: "clean",
+    status: "active",
+    isDefault: false,
+    sortOrder: 10,
+    profitBps: 100,
+    stepCount: 1,
+    densities: {
+      popup: "limited",
+      banner: "none",
+      interstitial: "none",
+      notification: "none",
+    },
+    translations: {
+      vi: {
+        name: "Sạch",
+        description:
+          "Trải nghiệm nhẹ, chỉ có quảng cáo pop-up mật độ giới hạn.",
+      },
+      en: {
+        name: "Clean",
+        description: "A light experience with limited popup advertising.",
+      },
+    },
+  },
+  {
+    key: "balanced",
+    status: "active",
+    isDefault: true,
+    sortOrder: 20,
+    profitBps: 300,
+    stepCount: 2,
+    densities: {
+      popup: "limited",
+      banner: "limited",
+      interstitial: "limited",
+      notification: "none",
+    },
+    translations: {
+      vi: {
+        name: "Cân bằng",
+        description: "Cân bằng doanh thu và trải nghiệm của người truy cập.",
+      },
+      en: {
+        name: "Balanced",
+        description: "Balances revenue with the visitor experience.",
+      },
+    },
+  },
+  {
+    key: "maximum",
+    status: "active",
+    isDefault: false,
+    sortOrder: 30,
+    profitBps: 500,
+    stepCount: 3,
+    densities: {
+      popup: "maximum",
+      banner: "maximum",
+      interstitial: "maximum",
+      notification: "limited",
+    },
+    translations: {
+      vi: {
+        name: "Tối đa",
+        description: "Ưu tiên doanh thu với mật độ quảng cáo cao.",
+      },
+      en: {
+        name: "Maximum",
+        description: "Prioritizes revenue with a higher advertising density.",
+      },
+    },
+  },
+] as const;
+
 async function main() {
   const demoPasswordHash = await hash("Demo123!", 12);
 
@@ -195,7 +271,9 @@ async function main() {
       isSystem: true,
     },
   });
-  const permissions = await prisma.permission.findMany({ select: { id: true } });
+  const permissions = await prisma.permission.findMany({
+    select: { id: true },
+  });
   for (const permission of permissions) {
     await prisma.roleHasPermission.upsert({
       where: {
@@ -212,6 +290,40 @@ async function main() {
     });
   }
 
+  const monetizationLevelCount = await prisma.monetizationLevel.count();
+  if (monetizationLevelCount === 0) {
+    for (const level of defaultMonetizationLevels) {
+      await prisma.monetizationLevel.create({
+        data: {
+          key: level.key,
+          status: level.status,
+          isDefault: level.isDefault,
+          sortOrder: level.sortOrder,
+          routesJson: "[]",
+          ratesJson: "[]",
+          metaDataJson: JSON.stringify({
+            version: 1,
+            profitBps: level.profitBps,
+            stepCount: level.stepCount,
+            visitorExperience: level.densities,
+          }),
+          translations: {
+            create: Object.entries(level.translations).map(
+              ([locale, translation]) => ({
+                locale,
+                ...translation,
+              }),
+            ),
+          },
+        },
+      });
+    }
+  }
+  const defaultMonetizationLevel = await prisma.monetizationLevel.findFirst({
+    where: { isDefault: true, status: "active" },
+    select: { id: true },
+  });
+
   const demoUser = await prisma.user.upsert({
     where: { email: "demo@linkicom.local" },
     update: {
@@ -225,8 +337,15 @@ async function main() {
       passwordHash: demoPasswordHash,
       emailVerifiedAt: new Date(),
       status: "active",
+      monetizationLevelId: defaultMonetizationLevel?.id,
     },
   });
+  if (demoUser.monetizationLevelId === null && defaultMonetizationLevel) {
+    await prisma.user.update({
+      where: { id: demoUser.id },
+      data: { monetizationLevelId: defaultMonetizationLevel.id },
+    });
+  }
   await prisma.userHasRole.upsert({
     where: {
       roleId_userId: { roleId: memberRole.id, userId: demoUser.id },
@@ -246,7 +365,8 @@ async function main() {
   for (const link of demoLinks) {
     const { actions } = link;
     const appearanceJson = JSON.stringify({
-      coverImageUrl: "coverImageUrl" in link ? link.coverImageUrl ?? null : null,
+      coverImageUrl:
+        "coverImageUrl" in link ? (link.coverImageUrl ?? null) : null,
       backgroundSettings: {
         selectedBackgroundId: link.selectedBackgroundId ?? null,
         selectedBackgroundName: link.selectedBackgroundName ?? null,
@@ -267,11 +387,15 @@ async function main() {
         ? link.selectedSnippet
         : null;
     const expiresAt =
-      "expiryEnabled" in link && link.expiryEnabled && link.expiryType === "date"
+      "expiryEnabled" in link &&
+      link.expiryEnabled &&
+      link.expiryType === "date"
         ? link.expiryDate
         : null;
     const maxClicks =
-      "expiryEnabled" in link && link.expiryEnabled && link.expiryType === "clicks"
+      "expiryEnabled" in link &&
+      link.expiryEnabled &&
+      link.expiryType === "clicks"
         ? link.maxClicks
         : null;
     const data = {
@@ -280,7 +404,10 @@ async function main() {
       title: link.title,
       subtitle: link.subtitle,
       destinationType: link.inputType,
-      destinationUrl: link.inputType === "snippet" && destinationSnippetId ? null : link.destinationUrl,
+      destinationUrl:
+        link.inputType === "snippet" && destinationSnippetId
+          ? null
+          : link.destinationUrl,
       destinationFileId: null,
       destinationSnippetId,
       appearanceJson,

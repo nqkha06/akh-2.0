@@ -32,6 +32,7 @@ export type LinkDto = {
   maxClicks: number | null;
   clicks: number;
   status: string;
+  monetizationRedirectUrl?: string | null;
   actions: LinkActionDto[];
   backgroundSettings: {
     selectedBackgroundId: string | null;
@@ -49,6 +50,12 @@ export type LinkDto = {
   };
   createdAt: string;
   updatedAt: string;
+};
+
+export type LinkVisitorContext = {
+  countryCode?: string | null;
+  userAgent?: string | null;
+  ipAddress?: string | null;
 };
 
 export type ManagedFileDto = {
@@ -407,11 +414,26 @@ export async function getLink(slug: string) {
   return (await response.json()) as LinkDto;
 }
 
-export async function recordLinkVisit(slug: string) {
+export async function recordLinkVisit(
+  slug: string,
+  visitor: LinkVisitorContext = {},
+) {
+  const headers = new Headers();
+  if (visitor.countryCode) {
+    headers.set("x-visitor-country", visitor.countryCode);
+  }
+  if (visitor.userAgent) {
+    headers.set("user-agent", visitor.userAgent);
+  }
+  if (visitor.ipAddress) {
+    headers.set("x-visitor-ip", visitor.ipAddress);
+  }
+
   const response = await fetch(
     requestApiUrl(`/links/${encodeURIComponent(slug)}/visit`),
     {
       method: "POST",
+      headers,
       cache: "no-store",
       credentials: "include",
     },

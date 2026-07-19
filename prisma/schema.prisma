@@ -8,23 +8,26 @@ datasource db {
 }
 
 model User {
-  id              Int                 @id @default(autoincrement())
-  name            String
-  email           String              @unique
-  emailVerifiedAt DateTime?           @map("email_verified_at")
-  passwordHash    String?             @map("password")
-  avatar          String?
-  status          String              @default("active")
-  tokenVersion    Int                 @default(0) @map("token_version")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  socialAccounts  SocialAccount[]
-  authSessions    AuthSession[]
-  links           Link[]
-  roles           UserHasRole[]
-  permissions     UserHasPermission[]
+  id                  Int                 @id @default(autoincrement())
+  name                String
+  email               String              @unique
+  emailVerifiedAt     DateTime?           @map("email_verified_at")
+  passwordHash        String?             @map("password")
+  avatar              String?
+  status              String              @default("active")
+  tokenVersion        Int                 @default(0) @map("token_version")
+  monetizationLevelId Int?                @map("monetization_level_id")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  socialAccounts      SocialAccount[]
+  authSessions        AuthSession[]
+  links               Link[]
+  roles               UserHasRole[]
+  permissions         UserHasPermission[]
+  monetizationLevel   MonetizationLevel?  @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
 
   @@index([status])
+  @@index([monetizationLevelId])
   @@map("users")
 }
 
@@ -141,7 +144,6 @@ model Link {
   maxClicks            Int?         @map("max_clicks")
   clicks               Int          @default(0)
   status               String       @default("active")
-  levelId              Int?         @map("level_id")
   revenue              Decimal      @default(0)
   createdAt            DateTime     @default(now()) @map("created_at")
   updatedAt            DateTime     @updatedAt @map("updated_at")
@@ -171,6 +173,37 @@ model LinkAction {
 
   @@index([linkId, position])
   @@map("stu_link_actions")
+}
+
+model MonetizationLevel {
+  id           Int                            @id @default(autoincrement())
+  key          String                         @unique
+  status       String                         @default("draft")
+  isDefault    Boolean                        @default(false) @map("is_default")
+  sortOrder    Int                            @default(0) @map("sort_order")
+  routesJson   String                         @default("[]") @map("routes")
+  ratesJson    String                         @default("[]") @map("rates")
+  metaDataJson String                         @default("{}") @map("meta_data")
+  createdAt    DateTime                       @default(now()) @map("created_at")
+  updatedAt    DateTime                       @updatedAt @map("updated_at")
+  translations MonetizationLevelTranslation[]
+  users        User[]
+
+  @@index([status, sortOrder])
+  @@map("stu_monetization_levels")
+}
+
+model MonetizationLevelTranslation {
+  id          Int               @id @default(autoincrement())
+  levelId     Int               @map("level_id")
+  locale      String
+  name        String
+  description String?
+  level       MonetizationLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, locale])
+  @@index([locale])
+  @@map("stu_monetization_level_translations")
 }
 
 model Snippet {

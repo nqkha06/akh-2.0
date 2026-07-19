@@ -8,6 +8,8 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 
+import { resolveMonetizationRoute } from "../links/monetization-route-resolver";
+import type { MonetizationRouteDto } from "../monetization-levels/dto/monetization-level-config.dto";
 import type { PrismaService } from "../prisma/prisma.service";
 import { PermissionsGuard } from "./guards/permissions.guard";
 import { RolesGuard } from "./guards/roles.guard";
@@ -32,8 +34,10 @@ type AuthResponse = {
 const testDatabaseName = `auth-test-${process.pid}.db`;
 const testDatabasePath = join(process.cwd(), "prisma", testDatabaseName);
 process.env.DATABASE_URL = `file:./${testDatabaseName}`;
-process.env.JWT_ACCESS_SECRET = "test-access-secret-that-is-longer-than-thirty-two-characters";
-process.env.JWT_REFRESH_SECRET = "test-refresh-secret-that-is-different-and-long-enough";
+process.env.JWT_ACCESS_SECRET =
+  "test-access-secret-that-is-longer-than-thirty-two-characters";
+process.env.JWT_REFRESH_SECRET =
+  "test-refresh-secret-that-is-different-and-long-enough";
 process.env.JWT_ACCESS_EXPIRES_IN = "15m";
 process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 process.env.FRONTEND_ORIGIN = "http://localhost:3000";
@@ -177,7 +181,10 @@ describe("Authentication E2E", () => {
     });
     const response = await request("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email: "auth@example.com", password: "Secure123" }),
+      body: JSON.stringify({
+        email: "auth@example.com",
+        password: "Secure123",
+      }),
     });
     assert.equal(response.status, 401);
     await prisma.user.update({
@@ -199,10 +206,10 @@ describe("Authentication E2E", () => {
     const payload = decodeJwt(current.body.accessToken);
     delete payload.exp;
     delete payload.iat;
-    const expired = await jwtService.signAsync(
-      payload,
-      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: -1 },
-    );
+    const expired = await jwtService.signAsync(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: -1,
+    });
     const expiredResponse = await request("/api/auth/me", {
       headers: { Authorization: `Bearer ${expired}` },
     });
@@ -301,10 +308,10 @@ describe("Authentication E2E", () => {
     const payload = decodeJwt(current.cookie.split("=")[1]);
     delete payload.exp;
     delete payload.iat;
-    const expired = await jwtService.signAsync(
-      payload,
-      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: -1 },
-    );
+    const expired = await jwtService.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: -1,
+    });
     const expiredResponse = await request("/api/auth/refresh", {
       method: "POST",
       headers: { Cookie: `stu_refresh_token=${expired}` },
@@ -351,7 +358,10 @@ describe("Authentication E2E", () => {
       ).status,
       204,
     );
-    assert.equal((await request("/api/auth/logout", { method: "POST" })).status, 204);
+    assert.equal(
+      (await request("/api/auth/logout", { method: "POST" })).status,
+      204,
+    );
     assert.equal(
       (
         await request("/api/auth/refresh", {
@@ -431,7 +441,10 @@ describe("Admin users CRUD E2E", () => {
       }),
     });
     assert.equal(createdResponse.status, 201);
-    const created = (await createdResponse.json()) as Record<string, unknown> & {
+    const created = (await createdResponse.json()) as Record<
+      string,
+      unknown
+    > & {
       id: number;
     };
     assert.equal(created.email, "managed@example.com");
@@ -526,10 +539,7 @@ describe("Admin users CRUD E2E", () => {
       headers: authorization,
     });
     assert.equal(orResponse.status, 200);
-    assert.equal(
-      ((await orResponse.json()) as { total: number }).total,
-      1,
-    );
+    assert.equal(((await orResponse.json()) as { total: number }).total, 1);
 
     const invalidFilters = new URLSearchParams({
       filters: JSON.stringify([
@@ -633,10 +643,7 @@ describe("Admin social links E2E", () => {
       },
     });
 
-    assert.equal(
-      (await request("/api/admin/social-links")).status,
-      401,
-    );
+    assert.equal((await request("/api/admin/social-links")).status, 401);
 
     const tableQuery = new URLSearchParams({
       page: "1",
@@ -748,10 +755,7 @@ describe("Admin social links E2E", () => {
       { headers: authorization },
     );
     assert.equal(deletedList.status, 200);
-    assert.equal(
-      ((await deletedList.json()) as { total: number }).total,
-      1,
-    );
+    assert.equal(((await deletedList.json()) as { total: number }).total, 1);
 
     const restoredResponse = await request(
       "/api/admin/social-links/bulk/restore",
@@ -773,6 +777,712 @@ describe("Admin social links E2E", () => {
   });
 });
 
+describe("Admin monetization levels E2E", () => {
+  const payload = (key: string, isDefault = false) => ({
+    key,
+    status: "active",
+    isDefault,
+    sortOrder: 10,
+    translations: [
+      {
+        locale: "vi",
+        name: `Cấp độ ${key}`,
+        description: "Mô tả kiểm thử.",
+      },
+      {
+        locale: "en",
+        name: `Level ${key}`,
+        description: "Test description.",
+      },
+    ],
+    metaData: {
+      version: 1,
+      profitBps: 100,
+      stepCount: 1,
+      visitorExperience: {
+        popup: "limited",
+        banner: "none",
+        interstitial: "none",
+        notification: "none",
+      },
+    },
+    routes: [],
+    rates: [],
+  });
+
+  it("supports validated CRUD, translations and a single default level", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    assert.equal((await request("/api/admin/monetization-levels")).status, 401);
+
+    const firstResponse = await request("/api/admin/monetization-levels", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify(payload("test-clean", true)),
+    });
+    assert.equal(firstResponse.status, 201, await firstResponse.clone().text());
+    const first = (await firstResponse.json()) as {
+      id: number;
+      isDefault: boolean;
+      translations: Array<{ locale: string }>;
+    };
+    assert.equal(first.isDefault, true);
+    assert.deepEqual(
+      first.translations.map(({ locale }) => locale),
+      ["en", "vi"],
+    );
+
+    const duplicateResponse = await request("/api/admin/monetization-levels", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify(payload("test-clean")),
+    });
+    assert.equal(duplicateResponse.status, 409);
+
+    const secondResponse = await request("/api/admin/monetization-levels", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        ...payload("test-balanced", true),
+        sortOrder: 20,
+      }),
+    });
+    assert.equal(secondResponse.status, 201);
+    const second = (await secondResponse.json()) as {
+      id: number;
+      isDefault: boolean;
+    };
+    assert.equal(second.isDefault, true);
+    assert.equal(
+      (
+        await prisma.monetizationLevel.findUniqueOrThrow({
+          where: { id: first.id },
+        })
+      ).isDefault,
+      false,
+    );
+
+    const updatedResponse = await request(
+      `/api/admin/monetization-levels/${first.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          routes: [
+            {
+              id: "route-vn-mobile",
+              countryCode: "VN",
+              countryMode: "exclude",
+              deviceType: "mobile",
+              deviceMode: "exclude",
+              browserFamily: "safari",
+              browserMode: "exclude",
+              targetUrl: "https://example.com/vn",
+              priority: 10,
+              weight: 100,
+              enabled: true,
+            },
+          ],
+          rates: [
+            {
+              countryCode: "VN",
+              deviceType: "mobile",
+              baseCpm: "1.2500",
+              currency: "USD",
+              dailyLimit: 1000,
+              enabled: true,
+            },
+          ],
+          metaData: {
+            version: 1,
+            profitBps: 250,
+            stepCount: 2,
+            visitorExperience: {
+              popup: "limited",
+              banner: "limited",
+              interstitial: "none",
+              notification: "none",
+            },
+          },
+        }),
+      },
+    );
+    assert.equal(
+      updatedResponse.status,
+      200,
+      await updatedResponse.clone().text(),
+    );
+    const updated = (await updatedResponse.json()) as {
+      routes: Array<{
+        countryMode: string;
+        deviceMode: string;
+        browserMode: string;
+      }>;
+      rates: unknown[];
+      metaData: { profitBps: number };
+    };
+    assert.equal(updated.routes.length, 1);
+    assert.equal(updated.routes[0]?.countryMode, "exclude");
+    assert.equal(updated.routes[0]?.deviceMode, "exclude");
+    assert.equal(updated.routes[0]?.browserMode, "exclude");
+    assert.equal(updated.rates.length, 1);
+    assert.equal(updated.metaData.profitBps, 250);
+
+    const invalidExcludedCountries = await request(
+      `/api/admin/monetization-levels/${first.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          routes: [
+            {
+              id: "route-invalid-exclusion",
+              countryCode: "ALL",
+              countryMode: "exclude",
+              deviceType: "any",
+              browserFamily: "any",
+              targetUrl: "https://example.com/invalid",
+              priority: 10,
+              weight: 100,
+              enabled: true,
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(invalidExcludedCountries.status, 400);
+
+    const invalidExcludedDevices = await request(
+      `/api/admin/monetization-levels/${first.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          routes: [
+            {
+              id: "route-invalid-device-exclusion",
+              countryCode: "VN",
+              countryMode: "include",
+              deviceType: "any",
+              deviceMode: "exclude",
+              browserFamily: "any",
+              browserMode: "include",
+              targetUrl: "https://example.com/invalid",
+              priority: 10,
+              weight: 100,
+              enabled: true,
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(invalidExcludedDevices.status, 400);
+
+    const invalidExcludedBrowsers = await request(
+      `/api/admin/monetization-levels/${first.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          routes: [
+            {
+              id: "route-invalid-browser-exclusion",
+              countryCode: "VN",
+              countryMode: "include",
+              deviceType: "any",
+              deviceMode: "include",
+              browserFamily: "any",
+              browserMode: "exclude",
+              targetUrl: "https://example.com/invalid",
+              priority: 10,
+              weight: 100,
+              enabled: true,
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(invalidExcludedBrowsers.status, 400);
+
+    const listResponse = await request(
+      "/api/admin/monetization-levels?name=test&page=1&perPage=10",
+      { headers: authorization },
+    );
+    assert.equal(listResponse.status, 200);
+    const listResult = (await listResponse.json()) as {
+      total: number;
+      summary: {
+        activeLevels: number;
+        configuredRoutes: number;
+        configuredRates: number;
+        assignedUsers: number;
+      };
+    };
+    assert.equal(listResult.total, 2);
+    assert.equal(listResult.summary.activeLevels, 2);
+    assert.equal(listResult.summary.configuredRoutes, 1);
+    assert.equal(listResult.summary.configuredRates, 1);
+    assert.equal(listResult.summary.assignedUsers, 0);
+
+    const invalidRates = await request(
+      `/api/admin/monetization-levels/${first.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          rates: [
+            {
+              countryCode: "VN",
+              deviceType: "any",
+              baseCpm: "1.00",
+              currency: "USD",
+              enabled: true,
+            },
+            {
+              countryCode: "VN",
+              deviceType: "any",
+              baseCpm: "2.00",
+              currency: "USD",
+              enabled: true,
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(invalidRates.status, 400);
+
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { email: "auth@example.com" },
+    });
+    const linked = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "monetized-link-test",
+        title: "Monetized link test",
+      },
+    });
+    const memberSession = await login();
+    const memberLevelsResponse = await request(
+      "/api/member/monetization-levels",
+      {
+        headers: {
+          Authorization: `Bearer ${memberSession.body.accessToken}`,
+        },
+      },
+    );
+    assert.equal(
+      memberLevelsResponse.status,
+      200,
+      await memberLevelsResponse.clone().text(),
+    );
+    const memberLevels = (await memberLevelsResponse.json()) as {
+      items: Array<{
+        id: number;
+        rates: unknown[];
+        routes?: unknown[];
+      }>;
+      total: number;
+      selectedLevelId: number | null;
+      effectiveLevelId: number | null;
+      usesSystemDefault: boolean;
+      totalLinks: number;
+    };
+    assert.equal(memberLevels.total, 2);
+    assert.equal(memberLevels.selectedLevelId, null);
+    assert.equal(memberLevels.effectiveLevelId, second.id);
+    assert.equal(memberLevels.usesSystemDefault, true);
+    assert.equal(memberLevels.totalLinks, 1);
+    assert.equal(
+      memberLevels.items.find((level) => level.id === first.id)?.rates.length,
+      1,
+    );
+    assert.equal(
+      "routes" in
+        (memberLevels.items.find((level) => level.id === first.id) ?? {}),
+      false,
+    );
+    const selectFirstResponse = await request(
+      "/api/member/monetization-levels/selection",
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${memberSession.body.accessToken}`,
+        },
+        body: JSON.stringify({ monetizationLevelId: first.id }),
+      },
+    );
+    assert.equal(
+      selectFirstResponse.status,
+      200,
+      await selectFirstResponse.clone().text(),
+    );
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({
+          where: { id: owner.id },
+        })
+      ).monetizationLevelId,
+      first.id,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/monetization-levels/${first.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      409,
+    );
+    const selectSecondResponse = await request(
+      "/api/member/monetization-levels/selection",
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${memberSession.body.accessToken}`,
+        },
+        body: JSON.stringify({ monetizationLevelId: second.id }),
+      },
+    );
+    assert.equal(selectSecondResponse.status, 200);
+    await prisma.link.delete({ where: { id: linked.id } });
+    assert.equal(
+      (
+        await request(`/api/admin/monetization-levels/${first.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/monetization-levels/${second.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      400,
+    );
+  });
+});
+
+describe("Public monetization route resolution E2E", () => {
+  it("uses deterministic weighted selection within the highest priority", () => {
+    const routes: MonetizationRouteDto[] = [
+      {
+        id: "light",
+        countryCode: "ALL",
+        countryMode: "include",
+        deviceType: "any",
+        deviceMode: "include",
+        browserFamily: "any",
+        browserMode: "include",
+        targetUrl: "https://example.com/light",
+        priority: 20,
+        weight: 10,
+        enabled: true,
+      },
+      {
+        id: "heavy",
+        countryCode: "ALL",
+        countryMode: "include",
+        deviceType: "any",
+        deviceMode: "include",
+        browserFamily: "any",
+        browserMode: "include",
+        targetUrl: "https://example.com/heavy",
+        priority: 20,
+        weight: 90,
+        enabled: true,
+      },
+    ];
+    const counts = { light: 0, heavy: 0 };
+
+    for (let index = 0; index < 500; index += 1) {
+      const resolved = resolveMonetizationRoute(routes, {
+        countryCode: "VN",
+        deviceType: "mobile",
+        browserFamily: "chrome",
+        visitorKey: `visitor-${index}`,
+      });
+      assert.ok(resolved);
+      counts[resolved.id as keyof typeof counts] += 1;
+    }
+
+    assert.ok(counts.heavy > counts.light * 4);
+    assert.equal(
+      resolveMonetizationRoute(routes, {
+        countryCode: "VN",
+        deviceType: "mobile",
+        browserFamily: "chrome",
+        visitorKey: "same-visitor",
+      })?.id,
+      resolveMonetizationRoute(routes, {
+        countryCode: "VN",
+        deviceType: "mobile",
+        browserFamily: "chrome",
+        visitorKey: "same-visitor",
+      })?.id,
+    );
+  });
+
+  it("resolves country, device and browser rules with priority and fallback", async () => {
+    const level = await prisma.monetizationLevel.create({
+      data: {
+        key: "public-route-resolution",
+        status: "active",
+        routesJson: JSON.stringify([
+          {
+            id: "fallback",
+            countryCode: "ALL",
+            countryMode: "include",
+            deviceType: "any",
+            deviceMode: "include",
+            browserFamily: "any",
+            browserMode: "include",
+            targetUrl: "https://example.com/fallback",
+            priority: 0,
+            weight: 100,
+            enabled: true,
+          },
+          {
+            id: "not-safari",
+            countryCode: "ALL",
+            countryMode: "include",
+            deviceType: "any",
+            deviceMode: "include",
+            browserFamily: "safari",
+            browserMode: "exclude",
+            targetUrl: "https://example.com/not-safari",
+            priority: 10,
+            weight: 100,
+            enabled: true,
+          },
+          {
+            id: "outside-vn-non-mobile",
+            countryCode: "VN",
+            countryMode: "exclude",
+            deviceType: "mobile",
+            deviceMode: "exclude",
+            browserFamily: "any",
+            browserMode: "include",
+            targetUrl: "https://example.com/outside-vn-non-mobile",
+            priority: 15,
+            weight: 100,
+            enabled: true,
+          },
+          {
+            id: "vn-mobile-chrome",
+            countryCode: "VN",
+            countryMode: "include",
+            deviceType: "mobile",
+            deviceMode: "include",
+            browserFamily: "chrome",
+            browserMode: "include",
+            targetUrl: "https://example.com/vn-mobile-chrome",
+            priority: 20,
+            weight: 100,
+            enabled: true,
+          },
+        ]),
+      },
+    });
+    const owner = await prisma.user.create({
+      data: {
+        name: "Public Route Owner",
+        email: "public-route-owner@example.com",
+        monetizationLevelId: level.id,
+      },
+    });
+    const link = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "public-route-resolution",
+        title: "Public route resolution",
+        destinationType: "url",
+        destinationUrl: "https://example.com/original",
+      },
+    });
+
+    const vnMobileChrome = await request(
+      `/api/links/${link.slug}/visit`,
+      {
+        method: "POST",
+        headers: {
+          "X-Visitor-Country": "VN",
+          "X-Visitor-IP": "203.0.113.10",
+          "User-Agent":
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36",
+        },
+      },
+    );
+    assert.equal(vnMobileChrome.status, 200);
+    const vnMobileChromeBody = (await vnMobileChrome.json()) as {
+      destinationUrl: string;
+      monetizationRedirectUrl: string | null;
+    };
+    assert.equal(
+      vnMobileChromeBody.destinationUrl,
+      "https://example.com/original",
+    );
+    assert.equal(
+      vnMobileChromeBody.monetizationRedirectUrl,
+      "https://example.com/vn-mobile-chrome",
+    );
+
+    const usDesktopFirefox = await request(
+      `/api/links/${link.slug}/visit`,
+      {
+        method: "POST",
+        headers: {
+          "X-Visitor-Country": "US",
+          "X-Visitor-IP": "203.0.113.11",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+        },
+      },
+    );
+    assert.equal(usDesktopFirefox.status, 200);
+    const usDesktopFirefoxBody = (await usDesktopFirefox.json()) as {
+      destinationUrl: string;
+      monetizationRedirectUrl: string | null;
+    };
+    assert.equal(
+      usDesktopFirefoxBody.destinationUrl,
+      "https://example.com/original",
+    );
+    assert.equal(
+      usDesktopFirefoxBody.monetizationRedirectUrl,
+      "https://example.com/outside-vn-non-mobile",
+    );
+
+    const vnDesktopFirefox = await request(
+      `/api/links/${link.slug}/visit`,
+      {
+        method: "POST",
+        headers: {
+          "X-Visitor-Country": "VN",
+          "X-Visitor-IP": "203.0.113.12",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+        },
+      },
+    );
+    assert.equal(vnDesktopFirefox.status, 200);
+    const vnDesktopFirefoxBody = (await vnDesktopFirefox.json()) as {
+      destinationUrl: string;
+      monetizationRedirectUrl: string | null;
+    };
+    assert.equal(
+      vnDesktopFirefoxBody.destinationUrl,
+      "https://example.com/original",
+    );
+    assert.equal(
+      vnDesktopFirefoxBody.monetizationRedirectUrl,
+      "https://example.com/not-safari",
+    );
+
+    const vnDesktopSafari = await request(
+      `/api/links/${link.slug}/visit`,
+      {
+        method: "POST",
+        headers: {
+          "X-Visitor-Country": "VN",
+          "X-Visitor-IP": "203.0.113.13",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 Version/17.5 Safari/605.1.15",
+        },
+      },
+    );
+    assert.equal(vnDesktopSafari.status, 200);
+    const vnDesktopSafariBody = (await vnDesktopSafari.json()) as {
+      destinationUrl: string;
+      monetizationRedirectUrl: string | null;
+    };
+    assert.equal(
+      vnDesktopSafariBody.destinationUrl,
+      "https://example.com/original",
+    );
+    assert.equal(
+      vnDesktopSafariBody.monetizationRedirectUrl,
+      "https://example.com/fallback",
+    );
+
+    assert.equal(
+      (await prisma.link.findUniqueOrThrow({ where: { id: link.id } })).clicks,
+      4,
+    );
+
+    await prisma.link.delete({ where: { id: link.id } });
+    await prisma.user.delete({ where: { id: owner.id } });
+    await prisma.monetizationLevel.delete({ where: { id: level.id } });
+  });
+
+  it("keeps file destinations separate from the monetization redirect", async () => {
+    const level = await prisma.monetizationLevel.create({
+      data: {
+        key: "public-file-route-resolution",
+        status: "active",
+        routesJson: JSON.stringify([
+          {
+            id: "all",
+            countryCode: "ALL",
+            countryMode: "include",
+            deviceType: "any",
+            deviceMode: "include",
+            browserFamily: "any",
+            browserMode: "include",
+            targetUrl: "https://example.com/route",
+            priority: 10,
+            weight: 100,
+            enabled: true,
+          },
+        ]),
+      },
+    });
+    const owner = await prisma.user.create({
+      data: {
+        name: "Public File Route Owner",
+        email: "public-file-route-owner@example.com",
+        monetizationLevelId: level.id,
+      },
+    });
+    const link = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "public-file-route-resolution",
+        title: "Public file route resolution",
+        destinationType: "file",
+        destinationUrl: "https://example.com/original-file",
+      },
+    });
+
+    const response = await request(`/api/links/${link.slug}/visit`, {
+      method: "POST",
+      headers: {
+        "X-Visitor-Country": "VN",
+        "User-Agent": "Mozilla/5.0 Chrome/124.0.0.0",
+      },
+    });
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as {
+      destinationUrl: string;
+      monetizationRedirectUrl: string | null;
+    };
+    assert.equal(body.destinationUrl, "https://example.com/original-file");
+    assert.equal(
+      body.monetizationRedirectUrl,
+      "https://example.com/route",
+    );
+
+    await prisma.link.delete({ where: { id: link.id } });
+    await prisma.user.delete({ where: { id: owner.id } });
+    await prisma.monetizationLevel.delete({ where: { id: level.id } });
+  });
+});
+
 describe("Roles and permissions E2E", () => {
   it("supports role permissions, direct permissions and live permission changes", async () => {
     assert.ok(adminAccessToken);
@@ -787,7 +1497,9 @@ describe("Roles and permissions E2E", () => {
     const permissions = (await permissionsResponse.json()) as Array<{
       key: string;
     }>;
-    assert.ok(permissions.some((permission) => permission.key === "users.read"));
+    assert.ok(
+      permissions.some((permission) => permission.key === "users.read"),
+    );
 
     const createRoleResponse = await request("/api/admin/roles", {
       method: "POST",
@@ -955,7 +1667,8 @@ describe("RolesGuard", () => {
     assert.throws(
       () => guard.canActivate(context as never),
       (error: unknown) =>
-        error instanceof Error && error.constructor.name === "ForbiddenException",
+        error instanceof Error &&
+        error.constructor.name === "ForbiddenException",
     );
   });
 });

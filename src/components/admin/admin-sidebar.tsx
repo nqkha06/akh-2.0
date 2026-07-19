@@ -8,6 +8,7 @@ import {
   IconInnerShadowTop,
   IconLink,
   IconLockAccess,
+  IconMoneybag,
   IconUsers,
 } from "@tabler/icons-react"
 
@@ -23,6 +24,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { Check, ChevronsUpDown, Lock } from "lucide-react"
 
 const data = {
   navMain: [
@@ -43,6 +46,12 @@ const data = {
       url: "/admin/social-links",
       icon: IconLink,
       permission: "links.read",
+    },
+    {
+      title: "Monetization Levels",
+      url: "/admin/monetization-levels",
+      icon: IconMoneybag,
+      permission: "monetization-levels.read",
     },
     {
       title: "Roles & Permissions",
@@ -68,18 +77,40 @@ export function AdminSidebar({
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Link href="/admin">
-                <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Linkicom Admin</span>
-              </Link>
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Lock className="size-4" />
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-medium">Link4Sub</span>
+                <span className="">v1</span>
+              </div>
+              <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width)"
+            align="start"
+          >
+            {/* {versions.map((version) => (
+              <DropdownMenuItem
+                key={version}
+                onSelect={() => setSelectedVersion(version)}
+              >
+                v{version}{" "}
+                {version === selectedVersion && <Check className="ml-auto" />}
+              </DropdownMenuItem>
+            ))} */}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain
