@@ -1,17 +1,18 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { useSession } from "next-auth/react"
 import {
   IconDashboard,
-  IconInnerShadowTop,
   IconLink,
   IconLockAccess,
   IconLanguage,
   IconMoneybag,
   IconCreditCardPay,
+  IconCashBanknote,
+  IconFileDescription,
   IconUsers,
+  IconSettings,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -26,8 +27,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
-import { Check, ChevronsUpDown, Lock } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { ChevronsUpDown, Lock } from "lucide-react"
 
 const data = {
   navMain: [
@@ -50,6 +51,12 @@ const data = {
       permission: "links.read",
     },
     {
+      title: "Pages",
+      url: "/admin/pages",
+      icon: IconFileDescription,
+      permission: "pages.read",
+    },
+    {
       title: "Monetization Levels",
       url: "/admin/monetization-levels",
       icon: IconMoneybag,
@@ -62,10 +69,22 @@ const data = {
       permission: "payment-methods.read",
     },
     {
+      title: "Withdrawals",
+      url: "/admin/withdrawals",
+      icon: IconCashBanknote,
+      permission: "withdrawals.read",
+    },
+    {
       title: "Languages",
       url: "/admin/languages",
       icon: IconLanguage,
       permission: "languages.read",
+    },
+    {
+      title: "Website Settings",
+      url: "/admin/settings/appearance",
+      icon: IconSettings,
+      permission: "settings.read",
     },
     {
       title: "Roles & Permissions",

@@ -24,6 +24,25 @@
 
 .page a { color: inherit; text-decoration: none; }
 
+.referralNotice {
+  margin-top: 16px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(98, 186, 118, 0.25);
+  border-radius: 8px;
+  color: #9bd7a8;
+  background: rgba(39, 166, 68, 0.08);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.referralNotice strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #c2ebca;
+}
+
 .page :focus-visible {
   outline: 2px solid var(--auth-accent-hover);
   outline-offset: 3px;

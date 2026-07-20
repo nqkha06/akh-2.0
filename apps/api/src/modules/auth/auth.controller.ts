@@ -76,7 +76,10 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = await this.authService.loginWithGoogle(body.idToken);
+    const user = await this.authService.loginWithGoogle(
+      body.idToken,
+      body.referralCode,
+    );
     const result = await this.authService.createSession(
       user,
       this.sessionContext(request),

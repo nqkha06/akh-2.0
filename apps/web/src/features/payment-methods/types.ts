@@ -1,3 +1,5 @@
+import type { PublicationStatus } from "@/types/publication-status";
+
 export type PaymentMethodFieldType =
   | "text"
   | "email"
@@ -23,7 +25,7 @@ export type PaymentMethod = {
   id: number;
   withdrawFee: string;
   minWithdrawAmount: string;
-  status: string;
+  status: PublicationStatus;
   translations: PaymentMethodTranslation[];
   userMethodCount?: number;
   createdAt: string;
@@ -33,7 +35,7 @@ export type PaymentMethod = {
 export type PaymentMethodPayload = {
   withdrawFee: string;
   minWithdrawAmount: string;
-  status: "active" | "inactive";
+  status: PublicationStatus;
   translations: PaymentMethodTranslation[];
 };
 

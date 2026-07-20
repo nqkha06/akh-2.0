@@ -7,7 +7,7 @@ export class PublicLanguagesController {
   constructor(private readonly languagesService: LanguagesService) {}
 
   @Get()
-  findEnabled() {
-    return this.languagesService.findEnabled();
+  findPublished() {
+    return this.languagesService.findPublished();
   }
 }

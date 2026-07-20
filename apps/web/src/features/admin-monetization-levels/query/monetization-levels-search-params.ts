@@ -13,9 +13,8 @@ import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
 
 const statuses: MonetizationLevelStatus[] = [
   "draft",
-  "active",
-  "inactive",
-  "archived",
+  "pending",
+  "published",
 ];
 
 export const monetizationLevelsSearchParamsCache = createSearchParamsCache({

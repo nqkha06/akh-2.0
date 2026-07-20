@@ -21,6 +21,8 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { PublicationStatusCard } from "@/components/admin/publication-status-card";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -66,16 +68,11 @@ import type {
 } from "@/features/admin-monetization-levels/types";
 import { getAdminLanguages } from "@/features/languages/api/languages.client";
 import type { Language } from "@/features/languages/types";
+import {
+  publicationStatusOptions,
+  type PublicationStatus,
+} from "@/types/publication-status";
 
-const statusOptions: Array<{
-  value: MonetizationLevelStatus;
-  label: string;
-}> = [
-  { value: "draft", label: "Bản nháp" },
-  { value: "active", label: "Hoạt động" },
-  { value: "inactive", label: "Không hoạt động" },
-  { value: "archived", label: "Lưu trữ" },
-];
 const densityOptions: Array<{
   value: MonetizationAdDensity;
   label: string;
@@ -137,7 +134,7 @@ export function MonetizationLevelEditor({
       regional: "vi-VN",
       flag: "VN",
       isDefault: true,
-      isEnabled: true,
+      status: "published",
       sortOrder: 10,
       isRtl: false,
     },
@@ -150,7 +147,7 @@ export function MonetizationLevelEditor({
       regional: "en-US",
       flag: "US",
       isDefault: false,
-      isEnabled: true,
+      status: "published",
       sortOrder: 20,
       isRtl: false,
     },
@@ -170,7 +167,7 @@ export function MonetizationLevelEditor({
         if (!active) return;
         const relevant = result.items.filter(
           (language) =>
-            language.isEnabled ||
+            language.status === "published" ||
             initialPayload.translations.some(
               ({ locale }) => locale === language.locale,
             ),
@@ -269,10 +266,24 @@ export function MonetizationLevelEditor({
     <>
       <form
         onSubmit={submit}
-        className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-col overflow-hidden rounded-xl border bg-card shadow-sm"
+        className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-6"
       >
-        <div className="flex flex-col gap-4 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex min-w-0 items-start gap-3">
+        <AdminPageHeader
+          title={
+            mode === "update"
+              ? "Chỉnh sửa cấp độ kiếm tiền"
+              : mode === "duplicate"
+                ? "Nhân bản cấp độ kiếm tiền"
+                : "Thêm cấp độ kiếm tiền"
+          }
+          description={
+            mode === "update"
+              ? "Cập nhật nội dung đa ngôn ngữ, trải nghiệm quảng cáo, direct route và rate CPM của cấp độ."
+              : mode === "duplicate"
+                ? "Rà soát key và cấu hình được sao chép trước khi tạo thành một cấp độ mới."
+                : "Thiết lập đầy đủ cấp độ, bản dịch, điều hướng và rate trước khi đưa vào sử dụng."
+          }
+          leading={
             <Button
               type="button"
               variant="outline"
@@ -283,136 +294,126 @@ export function MonetizationLevelEditor({
             >
               <ArrowLeft />
             </Button>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-[-0.03em]">
-                  {mode === "update"
-                    ? "Chỉnh sửa cấp độ kiếm tiền"
-                    : mode === "duplicate"
-                      ? "Nhân bản cấp độ kiếm tiền"
-                      : "Thêm cấp độ kiếm tiền"}
-                </h1>
-                <EditorStatus status={values.status} />
-                {values.isDefault ? (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    Mặc định
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                {mode === "update"
-                  ? "Cập nhật nội dung đa ngôn ngữ, trải nghiệm quảng cáo, direct route và rate CPM của cấp độ."
-                  : mode === "duplicate"
-                    ? "Rà soát key và cấu hình được sao chép trước khi tạo thành một cấp độ mới."
-                    : "Thiết lập đầy đủ cấp độ, bản dịch, điều hướng và rate trước khi đưa vào sử dụng."}
-              </p>
-            </div>
-          </div>
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={requestClose}
-            >
-              Hủy
-            </Button>
-            <SubmitButton saving={saving} disabled={!canSubmit} mode={mode} />
-          </div>
-        </div>
-
-        <Tabs
-          value={activeTab}
-          onValueChange={(tab) => {
-            setActiveTab(tab);
-            setError("");
-          }}
-          className="min-w-0 gap-0"
-        >
-          <div className="overflow-x-auto border-b px-4 sm:px-6">
-            <TabsList
-              variant="line"
-              className="h-12 min-w-max justify-start bg-transparent p-0"
-            >
-              <TabsTrigger value="general">
-                <Settings2 /> Cấu hình chung
-              </TabsTrigger>
-              {languages.map((language) => (
-                <TabsTrigger key={language.id} value={language.locale}>
-                  <Languages /> {language.nativeName || language.name}
-                  <CompletionDot
-                    complete={hasTranslation(values, language.locale)}
-                  />
-                </TabsTrigger>
-              ))}
-              <TabsTrigger value="routes">
-                <RouteIcon /> Routes
-                <CountBadge value={values.routes.length} />
-              </TabsTrigger>
-              <TabsTrigger value="rates">
-                <CircleDollarSign /> Rates
-                <CountBadge value={values.rates.length} />
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <div className="min-w-0 px-4 py-5 sm:px-6 sm:py-6">
-            <TabsContent value="general" className="mt-0">
-              <GeneralFields values={values} setValues={setValues} />
-            </TabsContent>
-            {languages.map((language) => (
-              <TabsContent
-                key={language.id}
-                value={language.locale}
-                className="mt-0"
+          }
+          meta={
+            <>
+              <EditorStatus status={values.status} />
+              {values.isDefault ? (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Mặc định
+                </span>
+              ) : null}
+            </>
+          }
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={requestClose}
               >
-                <TranslationFields
-                  locale={language.locale}
-                  languageName={language.nativeName || language.name}
-                  values={values}
-                  setValues={setValues}
-                />
-              </TabsContent>
-            ))}
-            <TabsContent value="routes" className="mt-0">
-              <RoutesFields values={values} setValues={setValues} />
-            </TabsContent>
-            <TabsContent value="rates" className="mt-0">
-              <RatesFields values={values} setValues={setValues} />
-            </TabsContent>
-          </div>
-        </Tabs>
+                Hủy
+              </Button>
+              <SubmitButton saving={saving} disabled={!canSubmit} mode={mode} />
+            </>
+          }
+        />
 
-        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          {error ? (
-            <div
-              role="alert"
-              className="flex min-w-0 items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-            >
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              <span>{error}</span>
+        <div className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm">
+          <Tabs
+            value={activeTab}
+            onValueChange={(tab) => {
+              setActiveTab(tab);
+              setError("");
+            }}
+            className="min-w-0 gap-0"
+          >
+            <div className="overflow-x-auto border-b px-4 sm:px-6">
+              <TabsList
+                variant="line"
+                className="h-12 min-w-max justify-start bg-transparent p-0"
+              >
+                <TabsTrigger value="general">
+                  <Settings2 /> Cấu hình chung
+                </TabsTrigger>
+                {languages.map((language) => (
+                  <TabsTrigger key={language.id} value={language.locale}>
+                    <Languages /> {language.nativeName || language.name}
+                    <CompletionDot
+                      complete={hasTranslation(values, language.locale)}
+                    />
+                  </TabsTrigger>
+                ))}
+                <TabsTrigger value="routes">
+                  <RouteIcon /> Routes
+                  <CountBadge value={values.routes.length} />
+                </TabsTrigger>
+                <TabsTrigger value="rates">
+                  <CircleDollarSign /> Rates
+                  <CountBadge value={values.rates.length} />
+                </TabsTrigger>
+              </TabsList>
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              {hasChanges
-                ? "Có thay đổi chưa được lưu."
-                : mode === "update"
-                  ? "Cấu hình hiện tại đã đồng bộ."
-                  : mode === "duplicate"
-                    ? "Bản sao chưa được tạo."
-                    : "Cấp độ mới chưa được tạo."}
-            </p>
-          )}
-          <div className="flex shrink-0 justify-end gap-2 sm:hidden">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={requestClose}
-            >
-              Hủy
-            </Button>
-            <SubmitButton saving={saving} disabled={!canSubmit} mode={mode} />
+
+            <div className="min-w-0 px-4 py-5 sm:px-6 sm:py-6">
+              <TabsContent value="general" className="mt-0">
+                <GeneralFields values={values} setValues={setValues} />
+              </TabsContent>
+              {languages.map((language) => (
+                <TabsContent
+                  key={language.id}
+                  value={language.locale}
+                  className="mt-0"
+                >
+                  <TranslationFields
+                    locale={language.locale}
+                    languageName={language.nativeName || language.name}
+                    values={values}
+                    setValues={setValues}
+                  />
+                </TabsContent>
+              ))}
+              <TabsContent value="routes" className="mt-0">
+                <RoutesFields values={values} setValues={setValues} />
+              </TabsContent>
+              <TabsContent value="rates" className="mt-0">
+                <RatesFields values={values} setValues={setValues} />
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            {error ? (
+              <div
+                role="alert"
+                className="flex min-w-0 items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {hasChanges
+                  ? "Có thay đổi chưa được lưu."
+                  : mode === "update"
+                    ? "Cấu hình hiện tại đã đồng bộ."
+                    : mode === "duplicate"
+                      ? "Bản sao chưa được tạo."
+                      : "Cấp độ mới chưa được tạo."}
+              </p>
+            )}
+            <div className="flex shrink-0 justify-end gap-2 sm:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={requestClose}
+              >
+                Hủy
+              </Button>
+              <SubmitButton saving={saving} disabled={!canSubmit} mode={mode} />
+            </div>
           </div>
         </div>
       </form>
@@ -484,25 +485,6 @@ function GeneralFields({ values, setValues }: EditorSectionProps) {
                 }
               />
             </FormField>
-            <FormField label="Trạng thái" htmlFor="monetization-status">
-              <Select
-                value={values.status}
-                onValueChange={(status: MonetizationLevelStatus) =>
-                  setValues((current) => ({ ...current, status }))
-                }
-              >
-                <SelectTrigger id="monetization-status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
             <FormField label="Thứ tự" htmlFor="monetization-sort-order">
               <Input
                 id="monetization-sort-order"
@@ -531,7 +513,7 @@ function GeneralFields({ values, setValues }: EditorSectionProps) {
                     setValues((current) => ({
                       ...current,
                       isDefault,
-                      status: isDefault ? "active" : current.status,
+                      status: isDefault ? "published" : current.status,
                     }))
                   }
                 />
@@ -625,7 +607,18 @@ function GeneralFields({ values, setValues }: EditorSectionProps) {
           </div>
         </section>
       </div>
-      <LevelPreview values={values} />
+      <aside className="space-y-6">
+        <PublicationStatusCard
+          id="monetization-status"
+          status={values.status}
+          disabled={values.isDefault}
+          disabledReason="Cấp độ mặc định luôn phải ở trạng thái xuất bản."
+          onStatusChange={(status: PublicationStatus) =>
+            setValues((current) => ({ ...current, status }))
+          }
+        />
+        <LevelPreview values={values} />
+      </aside>
     </div>
   );
 }
@@ -684,7 +677,7 @@ function LevelPreview({ values }: { values: AdminMonetizationLevelPayload }) {
   const experience = values.metaData.visitorExperience;
 
   return (
-    <aside className="sticky top-0 overflow-hidden rounded-xl border bg-card">
+    <div className="overflow-hidden rounded-xl border bg-card">
       <div className="border-b bg-muted/20 px-4 py-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Live configuration preview
@@ -741,7 +734,7 @@ function LevelPreview({ values }: { values: AdminMonetizationLevelPayload }) {
           </span>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -1462,11 +1455,13 @@ function CompletionDot({ complete }: { complete: boolean }) {
 }
 
 function EditorStatus({ status }: { status: MonetizationLevelStatus }) {
-  const option = statusOptions.find((item) => item.value === status);
+  const option = publicationStatusOptions.find(
+    (item) => item.value === status,
+  );
   return (
     <span
       className={
-        status === "active"
+        status === "published"
           ? "rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
           : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
       }
@@ -1550,10 +1545,10 @@ function validate(
         "Key cần từ 2–50 ký tự, bắt đầu bằng chữ thường và chỉ gồm chữ, số hoặc dấu gạch ngang.",
     };
   }
-  if (values.isDefault && values.status !== "active") {
+  if (values.isDefault && values.status !== "published") {
     return {
       tab: "general",
-      message: "Cấp độ mặc định phải ở trạng thái hoạt động.",
+      message: "Cấp độ mặc định phải ở trạng thái xuất bản.",
     };
   }
   if (values.metaData.profitBps < 0 || values.metaData.profitBps > 10_000) {

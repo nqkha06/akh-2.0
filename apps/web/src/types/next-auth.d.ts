@@ -14,6 +14,7 @@ declare module "next-auth" {
 
   interface Session {
     backendAccessToken?: string;
+    backendAccessTokenExpiresAt?: number;
     authError?: AuthErrorCode;
     user: DefaultSession["user"] & {
       id: string;

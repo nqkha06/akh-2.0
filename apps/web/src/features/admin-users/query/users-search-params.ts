@@ -6,28 +6,24 @@ import {
   parseAsStringEnum,
 } from "nuqs/server";
 
-import type { AdminUser } from "@/features/admin-users/types";
+import {
+  type AdminUserListItem,
+  userStatuses,
+} from "@/features/admin-users/types";
 import { getFiltersStateParser, getSortingStateParser } from "@/lib/parsers";
-
-const statuses = [
-  "active",
-  "inactive",
-  "locked",
-  "suspended",
-  "disabled",
-] as const;
 
 export const usersSearchParamsCache = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(10),
-  sort: getSortingStateParser<AdminUser>().withDefault([
+  sort: getSortingStateParser<AdminUserListItem>().withDefault([
     { id: "createdAt", desc: true },
   ]),
   name: parseAsString.withDefault(""),
   email: parseAsString.withDefault(""),
   role: parseAsArrayOf(parseAsString).withDefault([]),
-  status: parseAsArrayOf(parseAsStringEnum([...statuses])).withDefault([]),
-  filters: getFiltersStateParser<AdminUser>().withDefault([]),
+  status: parseAsArrayOf(parseAsStringEnum([...userStatuses])).withDefault([]),
+  emailVerified: parseAsStringEnum(["verified", "unverified"]),
+  filters: getFiltersStateParser<AdminUserListItem>().withDefault([]),
   joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
 });
 

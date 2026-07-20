@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 
+import { AdminFooter } from "@/components/admin/admin-footer"
+import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import {
   SidebarInset,
@@ -36,7 +38,11 @@ export default async function AdminLayout({
             // }
           >
             <AdminSidebar variant="sidebar" />
-            <SidebarInset className="min-w-0">{children}</SidebarInset>
+            <SidebarInset className="min-w-0">
+              <AdminHeader />
+              {children}
+              <AdminFooter />
+            </SidebarInset>
           </SidebarProvider>
         </div>
       </TooltipProvider>

@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,24 +67,17 @@ export function AuthorizationManager({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="font-medium text-[13px] text-muted-foreground tracking-[0.4px]">
-            IDENTITY & ACCESS
-          </p>
-          <h2 className="mt-2 font-semibold text-2xl tracking-[-0.6px]">
-            Roles & Permissions
-          </h2>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Phân quyền theo role và cộng thêm quyền trực tiếp cho từng user.
-          </p>
-        </div>
-        {canCreate ? (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus /> Thêm role
-          </Button>
-        ) : null}
-      </div>
+      <AdminPageHeader
+        title="Roles & Permissions"
+        description="Phân quyền theo role và cộng thêm quyền trực tiếp cho từng user."
+        actions={
+          canCreate ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus /> Thêm role
+            </Button>
+          ) : null
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <Card className="h-fit">

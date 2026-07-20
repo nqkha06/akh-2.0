@@ -1,22 +1,14 @@
 import "server-only";
 
 import type { MemberMonetizationLevelsResponse } from "@/features/member-monetization-levels/types";
-import { getServerSession } from "@/lib/auth/server-session";
-
-const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+import { serverApiFetch } from "@/lib/auth/server-access";
 
 export async function getMemberMonetizationLevels(): Promise<MemberMonetizationLevelsResponse> {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên thành viên không hợp lệ.");
-  }
-
-  const response = await fetch(`${apiUrl}/member/monetization-levels`, {
-    headers: {
-      Authorization: `Bearer ${session.backendAccessToken}`,
-    },
-    cache: "no-store",
-  });
+  const response = await serverApiFetch(
+    "/member/monetization-levels",
+    { cache: "no-store" },
+    "/member/levels",
+  );
 
   if (!response.ok) {
     throw new Error(await readApiError(response));

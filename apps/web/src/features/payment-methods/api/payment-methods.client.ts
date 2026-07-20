@@ -38,6 +38,10 @@ export async function getAdminPaymentMethods() {
   );
 }
 
+export async function getAdminPaymentMethod(id: number) {
+  return request<PaymentMethod>(`/admin/payment-methods/${id}`);
+}
+
 export async function createAdminPaymentMethod(
   payload: PaymentMethodPayload,
 ) {

@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -9,6 +10,11 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+
+import {
+  publicationStatuses,
+  type PublicationStatus,
+} from "../../../common/constants/publication-status";
 
 export class CreateLanguageDto {
   @IsString()
@@ -41,8 +47,8 @@ export class CreateLanguageDto {
   @IsBoolean()
   isDefault!: boolean;
 
-  @IsBoolean()
-  isEnabled!: boolean;
+  @IsIn(publicationStatuses)
+  status!: PublicationStatus;
 
   @Type(() => Number)
   @IsInt()

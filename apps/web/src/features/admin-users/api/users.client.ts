@@ -1,44 +1,64 @@
 "use client";
 
 import type {
-  AdminUser,
-  AdminUserPayload,
+  AdminUserDetail,
+  CreateAdminUserPayload,
+  UpdateAdminUserPayload,
+  UserStatus,
 } from "@/features/admin-users/types";
 import { authenticatedApiFetch } from "@/lib/api-client";
 
-export async function createAdminUser(
-  payload: AdminUserPayload & { password: string },
-) {
-  return request<AdminUser>("/admin/users", {
+export function createAdminUser(payload: CreateAdminUserPayload) {
+  return request<AdminUserDetail>("/admin/users", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateAdminUser(
-  id: number,
-  payload: AdminUserPayload,
-  currentUserId: number,
-) {
-  const body: Partial<AdminUserPayload> = { ...payload };
-  if (!body.password) delete body.password;
-  if (id === currentUserId) {
-    delete body.roles;
-    delete body.permissions;
-  }
-
-  return request<AdminUser>(`/admin/users/${id}`, {
+export function updateAdminUser(id: number, payload: UpdateAdminUserPayload) {
+  return request<AdminUserDetail>(`/admin/users/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
 }
 
-export async function deleteAdminUser(id: number) {
-  return request<{ id: number; deleted: true }>(`/admin/users/${id}`, {
-    method: "DELETE",
+export function updateAdminUserStatus(id: number, status: UserStatus) {
+  return request<AdminUserDetail>(`/admin/users/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
   });
+}
+
+export function updateAdminUsersStatus(ids: number[], status: UserStatus) {
+  return request<{ updated: number }>("/admin/users/bulk/status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, status }),
+  });
+}
+
+export function deleteAdminUsers(ids: number[]) {
+  return request<{ deleted: number }>("/admin/users/bulk", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export function verifyAdminUserEmail(id: number) {
+  return request<AdminUserDetail>(`/admin/users/${id}/verify-email`, {
+    method: "POST",
+  });
+}
+
+export function revokeAdminUserSessions(id: number) {
+  return request<{ id: number; revokedSessions: number }>(
+    `/admin/users/${id}/revoke-sessions`,
+    { method: "POST" },
+  );
 }
 
 async function request<T>(path: string, init: RequestInit) {

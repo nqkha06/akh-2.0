@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 
-import { AdminHeader } from "@/components/admin/admin-header";
 import { getMonetizationLevel } from "@/features/admin-monetization-levels/api/monetization-levels.server";
 import { MonetizationLevelEditor } from "@/features/admin-monetization-levels/components/monetization-level-editor";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -22,11 +21,8 @@ export default async function EditMonetizationLevelPage({
   if (!level) notFound();
 
   return (
-    <>
-      <AdminHeader title={`Chỉnh sửa ${level.displayName}`} />
-      <main className="flex min-w-0 flex-1 flex-col px-4 py-4 lg:px-6 lg:py-6">
-        <MonetizationLevelEditor level={level} />
-      </main>
-    </>
+    <main className="flex min-w-0 flex-1 flex-col px-4 py-4 lg:px-6 lg:py-6">
+      <MonetizationLevelEditor level={level} />
+    </main>
   );
 }

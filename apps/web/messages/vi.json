@@ -632,13 +632,16 @@
     "referrals": {
       "eyebrow": "Referral",
       "title": "Giới thiệu",
-      "description": "Mời bạn bè tham gia Rekonise và nhận hoa hồng từ hoạt động kiếm tiền của họ.",
+      "description": "Mời bạn bè tham gia Linkicom và nhận hoa hồng sau mỗi lượt rút tiền thành công của họ.",
       "share": "Chia sẻ link",
       "commissionRate": "5% hoa hồng",
+      "commissionRateValue": "{rate}% hoa hồng",
       "context": "Chia sẻ link giới thiệu, mời creator mới và theo dõi người đã kích hoạt hoặc đang tạo doanh thu tại một nơi.",
+      "paidOnlyContext": "Hoa hồng chỉ được cộng khi yêu cầu rút tiền của referral chuyển sang Đã thanh toán. Yêu cầu đang chờ, bị từ chối hoặc đã hủy không phát sinh hoa hồng.",
       "summary": "Tổng quan giới thiệu",
       "totalReferrals": "Tổng lượt giới thiệu",
       "commissionLabel": "Tỷ lệ hoa hồng",
+      "totalCommission": "Tổng hoa hồng",
       "signupBonus": "Thưởng mỗi lượt đăng ký",
       "shareTitle": "Chia sẻ link giới thiệu",
       "shareDescription": "Đặt link trong bio, nội dung hoặc tin nhắn riêng để mời creator mới vào nền tảng.",
@@ -662,7 +665,7 @@
         "signupTitle": "Bạn bè đăng ký",
         "signupDescription": "Người được mời tạo tài khoản qua link của bạn.",
         "earnTitle": "Nhận hoa hồng",
-        "earnDescription": "Hoa hồng được ghi nhận khi referral có doanh thu."
+        "earnDescription": "Mỗi withdrawal được thanh toán thành công sẽ cộng 5% trên số tiền thực nhận vào số dư của bạn."
       },
       "inviteTitle": "Mời qua email",
       "inviteDescription": "Dán các email ngăn cách bằng dấu phẩy; hệ thống sẽ mở email client với lời mời sẵn sàng.",
@@ -694,7 +697,15 @@
         "totalEarnings": "Tổng hoa hồng"
       },
       "emptyTitle": "Chưa có referral nào",
-      "emptyDescription": "Chia sẻ link giới thiệu — khi bạn bè đăng ký, họ sẽ xuất hiện ở đây cùng phần hoa hồng của bạn."
+      "emptyDescription": "Chia sẻ link giới thiệu — khi bạn bè đăng ký, họ sẽ xuất hiện ở đây cùng phần hoa hồng của bạn.",
+      "earningStatus": "Đã phát sinh hoa hồng",
+      "waitingStatus": "Chờ withdrawal thành công",
+      "withdrawalsCount": "{count} lượt rút thành công",
+      "recentTitle": "Hoa hồng gần đây",
+      "recentDescription": "Mỗi dòng tương ứng với một withdrawal đã được thanh toán thành công.",
+      "withdrawalReference": "Withdrawal #{id}",
+      "rateApplied": "Tỷ lệ {rate}%",
+      "recentEmpty": "Chưa có withdrawal thành công nào phát sinh hoa hồng."
     },
     "rewards": {
       "description": "Nhận bonus khi dùng nền tảng: đăng nhập mỗi ngày, phát triển lượt click và mời bạn bè.",

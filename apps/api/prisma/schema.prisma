@@ -8,27 +8,38 @@ datasource db {
 }
 
 model User {
-  id                  Int                 @id @default(autoincrement())
-  name                String
-  email               String              @unique
-  emailVerifiedAt     DateTime?           @map("email_verified_at")
-  passwordHash        String?             @map("password")
-  avatar              String?
-  status              String              @default("active")
-  tokenVersion        Int                 @default(0) @map("token_version")
-  monetizationLevelId Int?                @map("monetization_level_id")
-  createdAt           DateTime            @default(now()) @map("created_at")
-  updatedAt           DateTime            @updatedAt @map("updated_at")
-  socialAccounts      SocialAccount[]
-  authSessions        AuthSession[]
-  links               Link[]
-  roles               UserHasRole[]
-  permissions         UserHasPermission[]
-  monetizationLevel   MonetizationLevel?  @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
-  paymentMethods      UserPaymentMethod[]
+  id                   Int                 @id @default(autoincrement())
+  name                 String
+  email                String              @unique
+  emailVerifiedAt      DateTime?           @map("email_verified_at")
+  passwordHash         String?             @map("password")
+  avatar               String?
+  status               String              @default("active")
+  balance              Decimal             @default(0)
+  referralCode         String?             @unique @map("referral_code")
+  referredById         Int?                @map("referred_by")
+  tokenVersion         Int                 @default(0) @map("token_version")
+  monetizationLevelId  Int?                @map("monetization_level_id")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  socialAccounts       SocialAccount[]
+  authSessions         AuthSession[]
+  links                Link[]
+  roles                UserHasRole[]
+  permissions          UserHasPermission[]
+  monetizationLevel    MonetizationLevel?  @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
+  paymentMethods       UserPaymentMethod[]
+  withdrawals          UserWithdrawal[]    @relation("MemberWithdrawals")
+  processedWithdrawals UserWithdrawal[]    @relation("ProcessedWithdrawals")
+  referrer             User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals            User[]              @relation("UserReferrals")
+  commissionsReceived  Commission[]        @relation("CommissionRecipient")
+  commissionsGenerated Commission[]        @relation("CommissionSource")
+  updatedWebsiteSettings WebsiteSettings[]  @relation("WebsiteSettingsUpdatedBy")
 
   @@index([status])
   @@index([monetizationLevelId])
+  @@index([referredById])
   @@map("users")
 }
 
@@ -211,7 +222,7 @@ model PaymentMethod {
   id                Int                        @id @default(autoincrement())
   withdrawFee       Decimal                    @default(0) @map("withdraw_fee")
   minWithdrawAmount Decimal                    @default(0) @map("min_withdraw_amount")
-  status            String                     @default("active")
+  status            String                     @default("draft")
   createdAt         DateTime                   @default(now()) @map("created_at")
   updatedAt         DateTime                   @updatedAt @map("updated_at")
   translations      PaymentMethodTranslation[]
@@ -235,18 +246,64 @@ model PaymentMethodTranslation {
 }
 
 model UserPaymentMethod {
-  id              Int           @id @default(autoincrement())
-  userId          Int           @map("user_id")
-  paymentMethodId Int           @map("payment_method_id")
-  detailsJson     String        @map("details")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+  id              Int              @id @default(autoincrement())
+  userId          Int              @map("user_id")
+  paymentMethodId Int              @map("payment_method_id")
+  detailsJson     String           @map("details")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethod    @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+  withdrawals     UserWithdrawal[]
 
   @@index([userId])
   @@index([paymentMethodId])
   @@map("user_payment_methods")
+}
+
+model UserWithdrawal {
+  id                  Int                @id @default(autoincrement())
+  userId              Int                @map("user_id")
+  userPaymentMethodId Int?               @map("user_payment_method_id")
+  amount              Decimal
+  feeAmount           Decimal            @default(0) @map("fee_amount")
+  netAmount           Decimal            @map("net_amount")
+  status              String             @default("pending")
+  paymentSnapshotJson String             @map("payment_snapshot")
+  idempotencyKey      String             @unique @map("idempotency_key")
+  statusReason        String?            @map("status_reason")
+  processedById       Int?               @map("processed_by_id")
+  processedAt         DateTime?          @map("processed_at")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  user                User               @relation("MemberWithdrawals", fields: [userId], references: [id], onDelete: Restrict)
+  userPaymentMethod   UserPaymentMethod? @relation(fields: [userPaymentMethodId], references: [id], onDelete: SetNull)
+  processedBy         User?              @relation("ProcessedWithdrawals", fields: [processedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([processedById])
+  @@map("user_withdrawals")
+}
+
+model Commission {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @map("user_id")
+  fromUserId         Int      @map("from_user_id")
+  amount             Decimal
+  rate               Decimal
+  commissionableType String   @map("commissionable_type")
+  commissionableId   Int      @map("commissionable_id")
+  note               String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  user               User     @relation("CommissionRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser           User     @relation("CommissionSource", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@unique([commissionableType, commissionableId])
+  @@index([userId, createdAt])
+  @@index([fromUserId, createdAt])
+  @@map("commissions")
 }
 
 model Language {
@@ -258,12 +315,12 @@ model Language {
   regional   String?
   flag       String?
   isDefault  Boolean @default(false) @map("is_default")
-  isEnabled  Boolean @default(true) @map("is_enabled")
+  status     String  @default("draft")
   sortOrder  Int     @default(0) @map("order")
   isRtl      Boolean @default(false) @map("is_rtl")
 
   @@index([isDefault])
-  @@index([isEnabled, sortOrder])
+  @@index([status, sortOrder])
   @@map("languages")
 }
 
@@ -295,10 +352,85 @@ model ManagedFile {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   destinationLinks Link[]
+  featuredPages    Page[]
+  websiteLogoLight WebsiteSettings[] @relation("WebsiteLogoLight")
+  websiteLogoDark  WebsiteSettings[] @relation("WebsiteLogoDark")
+  websiteLogoIcon  WebsiteSettings[] @relation("WebsiteLogoIcon")
+  websiteFavicon   WebsiteSettings[] @relation("WebsiteFavicon")
+  websiteOgImage   WebsiteSettings[] @relation("WebsiteOgImage")
 
   @@index([createdAt])
   @@index([deletedAt])
   @@index([status])
+}
+
+model WebsiteSettings {
+  id                 Int          @id @default(1)
+  siteName           String       @default("Linkicom") @map("site_name")
+  siteShortName      String?      @map("site_short_name")
+  siteDescription    String?      @map("site_description")
+  siteTagline        String?      @map("site_tagline")
+  siteUrl            String?      @map("site_url")
+  logoLightId        String?      @map("logo_light_id")
+  logoDarkId         String?      @map("logo_dark_id")
+  logoIconId         String?      @map("logo_icon_id")
+  faviconId          String?      @map("favicon_id")
+  defaultOgImageId   String?      @map("default_og_image_id")
+  socialLinksJson    String       @default("[]") @map("social_links")
+  contactEmail       String?      @map("contact_email")
+  supportEmail       String?      @map("support_email")
+  phone              String?
+  address            String?
+  workingHours       String?      @map("working_hours")
+  mapUrl             String?      @map("map_url")
+  updatedById        Int?         @map("updated_by_id")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  logoLight          ManagedFile? @relation("WebsiteLogoLight", fields: [logoLightId], references: [id], onDelete: SetNull)
+  logoDark           ManagedFile? @relation("WebsiteLogoDark", fields: [logoDarkId], references: [id], onDelete: SetNull)
+  logoIcon           ManagedFile? @relation("WebsiteLogoIcon", fields: [logoIconId], references: [id], onDelete: SetNull)
+  favicon            ManagedFile? @relation("WebsiteFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
+  defaultOgImage     ManagedFile? @relation("WebsiteOgImage", fields: [defaultOgImageId], references: [id], onDelete: SetNull)
+  updatedBy          User?        @relation("WebsiteSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([logoLightId])
+  @@index([logoDarkId])
+  @@index([logoIconId])
+  @@index([faviconId])
+  @@index([defaultOgImageId])
+  @@index([updatedById])
+  @@map("website_settings")
+}
+
+model Page {
+  id              Int          @id @default(autoincrement())
+  title           String
+  slug            String       @unique
+  excerpt         String?
+  contentJson     String       @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}") @map("content_json")
+  contentHtml     String       @default("") @map("content_html")
+  status          String       @default("DRAFT")
+  featuredImageId String?      @map("featured_image_id")
+  seoTitle        String?      @map("seo_title")
+  seoDescription  String?      @map("seo_description")
+  seoKeywords     String?      @map("seo_keywords")
+  canonicalUrl    String?      @map("canonical_url")
+  robotsIndex     Boolean      @default(true) @map("robots_index")
+  robotsFollow    Boolean      @default(true) @map("robots_follow")
+  sortOrder       Int          @default(0) @map("sort_order")
+  publishedAt     DateTime?    @map("published_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+  featuredImage   ManagedFile? @relation(fields: [featuredImageId], references: [id], onDelete: SetNull)
+
+  @@index([status, sortOrder])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([publishedAt])
+  @@index([deletedAt])
+  @@index([featuredImageId])
+  @@map("pages")
 }
 
 model BioPage {

@@ -25,7 +25,7 @@ const publicLanguageSelect = {
   sortOrder: true,
 } satisfies Prisma.LanguageSelect;
 
-type EnabledLanguagesResult = {
+type PublishedLanguagesResult = {
   items: Array<
     Prisma.LanguageGetPayload<{ select: typeof publicLanguageSelect }>
   >;
@@ -34,8 +34,8 @@ type EnabledLanguagesResult = {
 
 @Injectable()
 export class LanguagesService implements OnModuleInit {
-  private enabledCache:
-    | { expiresAt: number; value: EnabledLanguagesResult }
+  private publishedCache:
+    | { expiresAt: number; value: PublishedLanguagesResult }
     | undefined;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -53,7 +53,7 @@ export class LanguagesService implements OnModuleInit {
         regional: "vi-VN",
         flag: "VN",
         isDefault: count === 0,
-        isEnabled: true,
+        status: "published",
         sortOrder: 10,
         isRtl: false,
       },
@@ -68,7 +68,7 @@ export class LanguagesService implements OnModuleInit {
         code: "en",
         regional: "en-US",
         flag: "US",
-        isEnabled: true,
+        status: "published",
         sortOrder: 20,
         isRtl: false,
       },
@@ -80,7 +80,7 @@ export class LanguagesService implements OnModuleInit {
     if (!defaultLanguage) {
       await this.prisma.language.update({
         where: { locale: "vi" },
-        data: { isDefault: true, isEnabled: true },
+        data: { isDefault: true, status: "published" },
       });
     }
   }
@@ -97,12 +97,12 @@ export class LanguagesService implements OnModuleInit {
     };
   }
 
-  async findEnabled() {
-    if (this.enabledCache && this.enabledCache.expiresAt > Date.now()) {
-      return this.enabledCache.value;
+  async findPublished() {
+    if (this.publishedCache && this.publishedCache.expiresAt > Date.now()) {
+      return this.publishedCache.value;
     }
     const items = await this.prisma.language.findMany({
-      where: { isEnabled: true },
+      where: { status: "published" },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       select: publicLanguageSelect,
     });
@@ -113,7 +113,7 @@ export class LanguagesService implements OnModuleInit {
         items[0]?.locale ??
         null,
     };
-    this.enabledCache = {
+    this.publishedCache = {
       expiresAt: Date.now() + 5 * 60_000,
       value,
     };
@@ -127,9 +127,9 @@ export class LanguagesService implements OnModuleInit {
   }
 
   async create(dto: CreateLanguageDto) {
-    if (dto.isDefault && !dto.isEnabled) {
+    if (dto.isDefault && dto.status !== "published") {
       throw new BadRequestException(
-        "Ngôn ngữ mặc định phải ở trạng thái hoạt động.",
+        "Ngôn ngữ mặc định phải ở trạng thái xuất bản.",
       );
     }
     try {
@@ -144,7 +144,7 @@ export class LanguagesService implements OnModuleInit {
           data: this.normalizeCreate(dto),
         });
       });
-      this.invalidateEnabledCache();
+      this.invalidatePublishedCache();
       return language;
     } catch (error) {
       this.rethrowUnique(error);
@@ -160,10 +160,10 @@ export class LanguagesService implements OnModuleInit {
       );
     }
     const nextIsDefault = dto.isDefault ?? existing.isDefault;
-    const nextIsEnabled = dto.isEnabled ?? existing.isEnabled;
-    if (nextIsDefault && !nextIsEnabled) {
+    const nextStatus = dto.status ?? existing.status;
+    if (nextIsDefault && nextStatus !== "published") {
       throw new BadRequestException(
-        "Ngôn ngữ mặc định phải ở trạng thái hoạt động.",
+        "Ngôn ngữ mặc định phải ở trạng thái xuất bản.",
       );
     }
     if (dto.locale && dto.locale !== existing.locale) {
@@ -194,9 +194,7 @@ export class LanguagesService implements OnModuleInit {
             ...(dto.isDefault !== undefined
               ? { isDefault: dto.isDefault }
               : {}),
-            ...(dto.isEnabled !== undefined
-              ? { isEnabled: dto.isEnabled }
-              : {}),
+            ...(dto.status !== undefined ? { status: dto.status } : {}),
             ...(dto.sortOrder !== undefined
               ? { sortOrder: dto.sortOrder }
               : {}),
@@ -204,7 +202,7 @@ export class LanguagesService implements OnModuleInit {
           },
         });
       });
-      this.invalidateEnabledCache();
+      this.invalidatePublishedCache();
       return language;
     } catch (error) {
       this.rethrowUnique(error);
@@ -221,10 +219,10 @@ export class LanguagesService implements OnModuleInit {
       });
       return transaction.language.update({
         where: { id: language.id },
-        data: { isDefault: true, isEnabled: true },
+        data: { isDefault: true, status: "published" },
       });
     });
-    this.invalidateEnabledCache();
+    this.invalidatePublishedCache();
     return result;
   }
 
@@ -247,7 +245,7 @@ export class LanguagesService implements OnModuleInit {
         }),
       ),
     );
-    this.invalidateEnabledCache();
+    this.invalidatePublishedCache();
     return this.findAllForAdmin();
   }
 
@@ -258,7 +256,7 @@ export class LanguagesService implements OnModuleInit {
     }
     await this.assertLocaleIsUnused(language.locale);
     await this.prisma.language.delete({ where: { id } });
-    this.invalidateEnabledCache();
+    this.invalidatePublishedCache();
     return { success: true, id };
   }
 
@@ -294,7 +292,7 @@ export class LanguagesService implements OnModuleInit {
 
   async getDefaultLocale() {
     const language = await this.prisma.language.findFirst({
-      where: { isDefault: true, isEnabled: true },
+      where: { isDefault: true, status: "published" },
       select: { locale: true },
     });
     return language?.locale ?? "vi";
@@ -309,7 +307,7 @@ export class LanguagesService implements OnModuleInit {
       regional: dto.regional || null,
       flag: dto.flag || null,
       isDefault: dto.isDefault,
-      isEnabled: dto.isEnabled,
+      status: dto.status,
       sortOrder: dto.sortOrder,
       isRtl: dto.isRtl,
     };
@@ -336,7 +334,7 @@ export class LanguagesService implements OnModuleInit {
     }
   }
 
-  private invalidateEnabledCache() {
-    this.enabledCache = undefined;
+  private invalidatePublishedCache() {
+    this.publishedCache = undefined;
   }
 }

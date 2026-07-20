@@ -29,17 +29,10 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -93,8 +86,27 @@ export function MemberPaymentMethodsManager() {
   }, []);
 
   React.useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void getMemberPaymentMethods()
+      .then((result) => {
+        if (active) setData(result);
+      })
+      .catch((loadError) => {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Không thể tải phương thức thanh toán.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -120,6 +132,20 @@ export function MemberPaymentMethodsManager() {
           Không nhập mật khẩu, mã OTP, PIN hoặc mã bảo mật thẻ.
         </p>
       </div>
+
+      {editorOpen ? (
+        <MemberPaymentMethodEditor
+          key={editing?.id ?? "new"}
+          catalog={data?.catalog ?? []}
+          defaultLocale={data?.defaultLocale ?? "vi"}
+          account={editing}
+          onClose={() => {
+            setEditorOpen(false);
+            setEditing(null);
+          }}
+          onSaved={() => void load()}
+        />
+      ) : null}
 
       {loading ? (
         <div className="flex min-h-56 items-center justify-center gap-2 rounded-xl border bg-card text-sm text-muted-foreground">
@@ -160,8 +186,8 @@ export function MemberPaymentMethodsManager() {
                         </CardDescription>
                       </div>
                     </div>
-                    {account.paymentMethod.status !== "active" ? (
-                      <Badge variant="outline">Tạm ngưng</Badge>
+                    {account.paymentMethod.status !== "published" ? (
+                      <Badge variant="outline">Chưa xuất bản</Badge>
                     ) : null}
                   </div>
                 </CardHeader>
@@ -186,7 +212,7 @@ export function MemberPaymentMethodsManager() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={account.paymentMethod.status !== "active"}
+                      disabled={account.paymentMethod.status !== "published"}
                       onClick={() => {
                         setEditing(account);
                         setEditorOpen(true);
@@ -227,17 +253,6 @@ export function MemberPaymentMethodsManager() {
         </div>
       )}
 
-      <MemberPaymentMethodEditor
-        catalog={data?.catalog ?? []}
-        defaultLocale={data?.defaultLocale ?? "vi"}
-        account={editing}
-        open={editorOpen}
-        onOpenChange={(open) => {
-          setEditorOpen(open);
-          if (!open) setEditing(null);
-        }}
-        onSaved={() => void load()}
-      />
       <DeleteMemberPaymentMethodDialog
         account={deleting}
         onOpenChange={(open) => {
@@ -253,20 +268,27 @@ function MemberPaymentMethodEditor({
   catalog,
   defaultLocale,
   account,
-  open,
-  onOpenChange,
+  onClose,
   onSaved,
 }: {
   catalog: PaymentMethod[];
   defaultLocale: string;
   account: UserPaymentMethod | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   onSaved: () => void;
 }) {
-  const [methodId, setMethodId] = React.useState("");
-  const [details, setDetails] = React.useState<Record<string, string>>({});
+  const [methodId, setMethodId] = React.useState(
+    account
+      ? String(account.paymentMethodId)
+      : catalog[0]
+        ? String(catalog[0].id)
+        : "",
+  );
+  const [details, setDetails] = React.useState<Record<string, string>>(
+    account ? { ...account.details } : {},
+  );
   const [saving, setSaving] = React.useState(false);
+  const editorRef = React.useRef<HTMLDivElement>(null);
   const locale = useLocale();
   const selectedMethod =
     account?.paymentMethod ??
@@ -277,15 +299,13 @@ function MemberPaymentMethodEditor({
     : null;
 
   React.useEffect(() => {
-    if (!open) return;
-    if (account) {
-      setMethodId(String(account.paymentMethodId));
-      setDetails(account.details);
-    } else {
-      setMethodId(catalog[0] ? String(catalog[0].id) : "");
-      setDetails({});
-    }
-  }, [account, catalog, open]);
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -312,7 +332,7 @@ function MemberPaymentMethodEditor({
           ? "Đã cập nhật phương thức thanh toán."
           : "Đã thêm phương thức thanh toán.",
       );
-      onOpenChange(false);
+      onClose();
       onSaved();
     } catch (saveError) {
       toast.error(
@@ -326,18 +346,27 @@ function MemberPaymentMethodEditor({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>
-            {account ? "Cập nhật tài khoản nhận tiền" : "Thêm tài khoản nhận tiền"}
-          </DialogTitle>
-          <DialogDescription>
-            Chỉ cung cấp thông tin định danh tài khoản nhận. Không nhập mật khẩu
-            hoặc mã xác thực.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="space-y-5" onSubmit={submit}>
+    <Card ref={editorRef} className="gap-0 rounded-2xl py-0">
+      <CardHeader className="border-b px-5 py-5 sm:px-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle>
+              {account
+                ? "Cập nhật tài khoản nhận tiền"
+                : "Thêm tài khoản nhận tiền"}
+            </CardTitle>
+            <CardDescription className="mt-1.5 leading-5">
+              Chỉ cung cấp thông tin định danh tài khoản nhận. Không nhập mật
+              khẩu hoặc mã xác thực.
+            </CardDescription>
+          </div>
+          <Badge variant="outline">
+            {account ? "Chỉnh sửa" : "Tài khoản mới"}
+          </Badge>
+        </div>
+      </CardHeader>
+      <form onSubmit={submit}>
+        <CardContent className="grid gap-5 px-5 py-5 sm:grid-cols-2 sm:px-6">
           <div className="space-y-2">
             <Label>Loại phương thức</Label>
             {account ? (
@@ -421,24 +450,23 @@ function MemberPaymentMethodEditor({
               </div>
             );
           })}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={() => onOpenChange(false)}
-            >
-              Hủy
-            </Button>
-            <Button type="submit" disabled={saving || !selectedMethod}>
-              {saving ? <LoaderCircle className="animate-spin" /> : null}
-              {saving ? "Đang lưu..." : "Lưu phương thức"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </CardContent>
+        <CardFooter className="justify-end gap-2 border-t px-5 py-4 sm:px-6">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={saving}
+            onClick={onClose}
+          >
+            Hủy
+          </Button>
+          <Button type="submit" disabled={saving || !selectedMethod}>
+            {saving ? <LoaderCircle className="animate-spin" /> : null}
+            {saving ? "Đang lưu..." : "Lưu phương thức"}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
 

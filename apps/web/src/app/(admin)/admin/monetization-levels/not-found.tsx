@@ -1,13 +1,10 @@
 import Link from "next/link";
 
-import { AdminHeader } from "@/components/admin/admin-header";
 import { Button } from "@/components/ui/button";
 
 export default function MonetizationLevelNotFound() {
   return (
-    <>
-      <AdminHeader title="Monetization Levels" />
-      <main className="grid min-w-0 flex-1 place-items-center p-6">
+    <main className="grid min-w-0 flex-1 place-items-center p-6">
         <div className="max-w-md rounded-xl border bg-card p-6 text-center shadow-sm">
           <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
             404 · Level not found
@@ -23,6 +20,5 @@ export default function MonetizationLevelNotFound() {
           </Button>
         </div>
       </main>
-    </>
   );
 }

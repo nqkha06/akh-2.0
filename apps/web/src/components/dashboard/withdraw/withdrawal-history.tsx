@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AlertCircle, Ban, CheckCircle2, ChevronRight, CircleAlert, Clock3, Copy, Download, MoreHorizontal, RefreshCcw, SearchX, ShieldAlert } from "lucide-react";
+import { AlertCircle, Ban, CheckCircle2, ChevronRight, CircleAlert, Clock3, Copy, Download, MoreHorizontal, RefreshCcw, SearchX } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,11 +15,11 @@ import type { WithdrawalController } from "./use-withdrawal-controller";
 import { formatCurrency, formatDateTime } from "./use-withdrawal-controller";
 
 const statusConfig: Record<WithdrawalStatus, { label: string; icon: typeof Clock3; className: string }> = {
+  pending: { label: "Chờ xử lý", icon: Clock3, className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   processing: { label: "Đang xử lý", icon: Clock3, className: "border-border bg-muted text-foreground" },
   paid: { label: "Đã thanh toán", icon: CheckCircle2, className: "border-primary/20 bg-primary/10 text-primary" },
-  failed: { label: "Thất bại", icon: CircleAlert, className: "border-destructive/20 bg-destructive/10 text-destructive" },
+  rejected: { label: "Đã từ chối", icon: CircleAlert, className: "border-destructive/20 bg-destructive/10 text-destructive" },
   cancelled: { label: "Đã hủy", icon: Ban, className: "border-border bg-muted text-muted-foreground" },
-  verification_required: { label: "Cần xác minh", icon: ShieldAlert, className: "border-primary/20 bg-primary/10 text-primary" },
 };
 
 export function WithdrawalStatusBadge({ status }: { status: WithdrawalStatus }) {
@@ -34,7 +34,7 @@ export function WithdrawalHistoryFilters({ controller }: { controller: Withdrawa
   const sortLabel = controller.sort === "newest" ? "Mới nhất" : "Cũ nhất";
   return (
     <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
-      <Select value={controller.statusFilter} onValueChange={(value) => controller.setStatusFilter(value as WithdrawalStatus | "all")}><SelectTrigger aria-label="Lọc theo trạng thái" className="h-9 w-full sm:w-[150px]"><SelectValue>{statusLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">Mọi trạng thái</SelectItem><SelectItem value="processing">Đang xử lý</SelectItem><SelectItem value="paid">Đã thanh toán</SelectItem><SelectItem value="failed">Thất bại</SelectItem><SelectItem value="cancelled">Đã hủy</SelectItem><SelectItem value="verification_required">Cần xác minh</SelectItem></SelectContent></Select>
+      <Select value={controller.statusFilter} onValueChange={(value) => controller.setStatusFilter(value as WithdrawalStatus | "all")}><SelectTrigger aria-label="Lọc theo trạng thái" className="h-9 w-full sm:w-[150px]"><SelectValue>{statusLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">Mọi trạng thái</SelectItem><SelectItem value="pending">Chờ xử lý</SelectItem><SelectItem value="processing">Đang xử lý</SelectItem><SelectItem value="paid">Đã thanh toán</SelectItem><SelectItem value="rejected">Đã từ chối</SelectItem><SelectItem value="cancelled">Đã hủy</SelectItem></SelectContent></Select>
       <Select value={controller.dateFilter} onValueChange={(value) => controller.setDateFilter(value as "all" | "30d" | "90d")}><SelectTrigger aria-label="Lọc theo thời gian" className="h-9 w-full sm:w-[135px]"><SelectValue>{dateLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">Mọi thời gian</SelectItem><SelectItem value="30d">30 ngày qua</SelectItem><SelectItem value="90d">90 ngày qua</SelectItem></SelectContent></Select>
       <Select value={controller.sort} onValueChange={(value) => controller.setSort(value as "newest" | "oldest")}><SelectTrigger aria-label="Sắp xếp" className="h-9 w-full sm:w-[130px]"><SelectValue>{sortLabel}</SelectValue></SelectTrigger><SelectContent><SelectItem value="newest">Mới nhất</SelectItem><SelectItem value="oldest">Cũ nhất</SelectItem></SelectContent></Select>
     </div>

@@ -14,12 +14,9 @@ import {
   ValidateNested,
 } from "class-validator";
 
-export const monetizationStatuses = [
-  "draft",
-  "active",
-  "inactive",
-  "archived",
-] as const;
+import { publicationStatuses } from "../../../common/constants/publication-status";
+
+export const monetizationStatuses = publicationStatuses;
 export const adDensities = ["none", "limited", "maximum"] as const;
 export const deviceTypes = ["any", "desktop", "mobile", "tablet"] as const;
 export const routeMatchModes = ["include", "exclude"] as const;

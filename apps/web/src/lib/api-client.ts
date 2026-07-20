@@ -238,6 +238,7 @@ export async function registerAccount(payload: {
   name: string;
   email: string;
   password: string;
+  referralCode?: string;
 }) {
   const response = await fetch(requestApiUrl("/auth/register"), {
     method: "POST",

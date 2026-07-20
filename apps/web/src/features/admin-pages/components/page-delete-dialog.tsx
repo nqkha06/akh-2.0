@@ -13,31 +13,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteAdminUser } from "@/features/admin-users/api/users.client";
-import type { AdminUser } from "@/features/admin-users/types";
+import { deleteAdminPages } from "@/features/admin-pages/api/pages.client";
+import type { AdminPageListItem } from "@/features/admin-pages/types";
 
-export function DeleteUserDialog({
-  user,
+export function PageDeleteDialog({
+  pages,
   onOpenChange,
   onSuccess,
 }: {
-  user: AdminUser | null;
+  pages: AdminPageListItem[];
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
   const [deleting, setDeleting] = React.useState(false);
 
   async function remove() {
-    if (!user) return;
+    if (!pages.length) return;
     setDeleting(true);
     try {
-      await deleteAdminUser(user.id);
-      toast.success("Đã xóa người dùng.");
+      const result = await deleteAdminPages(pages.map((page) => page.id));
+      toast.success(`Đã xóa ${result.deleted} trang.`);
       onOpenChange(false);
       onSuccess();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Không thể xóa người dùng.",
+        error instanceof Error ? error.message : "Không thể xóa trang.",
       );
     } finally {
       setDeleting(false);
@@ -46,16 +46,15 @@ export function DeleteUserDialog({
 
   return (
     <AlertDialog
-      open={Boolean(user)}
+      open={pages.length > 0}
       onOpenChange={(open) => !deleting && onOpenChange(open)}
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xóa người dùng?</AlertDialogTitle>
+          <AlertDialogTitle>Xóa {pages.length} trang?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tài khoản <strong className="text-foreground">{user?.email}</strong>{" "}
-            sẽ bị xóa vĩnh viễn. Người dùng đang sở hữu nội dung sẽ không thể
-            xóa.
+            Trang sẽ bị ẩn khỏi danh sách và không còn truy cập được. Thao tác
+            này dùng cơ chế xóa mềm để bảo toàn dữ liệu.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -65,7 +64,7 @@ export function DeleteUserDialog({
             disabled={deleting}
             onClick={() => void remove()}
           >
-            {deleting ? "Đang xóa..." : "Xóa người dùng"}
+            {deleting ? "Đang xóa..." : "Xóa trang"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -3,13 +3,11 @@ import "server-only"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 
+import { readAuthError } from "@/lib/auth/auth-errors"
 import {
-  AUTH_ERROR_CODES,
-  isTerminalAuthError,
-  readAuthError,
-  type AuthErrorCode,
-} from "@/lib/auth/auth-errors"
-import { getServerSession } from "@/lib/auth/server-session"
+  requireFreshServerSession,
+  serverApiFetch,
+} from "@/lib/auth/server-access"
 
 export interface CurrentBackendUser {
   id: number
@@ -21,86 +19,33 @@ export interface CurrentBackendUser {
   permissions?: string[]
 }
 
-const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "")
-
-function getLoginUrl(callbackUrl: string, reason?: string) {
-  const searchParams = new URLSearchParams({ callbackUrl })
-
-  if (reason) {
-    searchParams.set("reason", reason)
-  }
-
-  return `/login?${searchParams.toString()}`
-}
-
 type CurrentUserResult =
-  | { user: CurrentBackendUser; errorCode?: never; message?: never }
-  | { user: null; errorCode?: AuthErrorCode; message: string }
+  | { user: CurrentBackendUser; message?: never }
+  | { user: null; message: string }
 
 const fetchCurrentUser = cache(async function fetchCurrentUser(
-  accessToken: string,
+  callbackUrl: string,
 ): Promise<CurrentUserResult> {
-  if (!backendApiUrl) {
-    throw new Error(
-      "Missing API_INTERNAL_URL environment variable.",
-    )
-  }
-
-  try {
-    const response = await fetch(`${backendApiUrl}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    })
-
-    if (!response.ok) {
-      const error = await readAuthError(response)
-      return {
-        user: null,
-        errorCode: error.code,
-        message: error.message,
-      }
-    }
-
-    return {
-      user: (await response.json()) as CurrentBackendUser,
-    }
-  } catch {
+  const response = await serverApiFetch(
+    "/auth/me",
+    { cache: "no-store" },
+    callbackUrl,
+  )
+  if (!response.ok) {
+    const error = await readAuthError(response)
     return {
       user: null,
-      errorCode: AUTH_ERROR_CODES.NETWORK_ERROR,
-      message: "Không thể kết nối dịch vụ xác thực.",
+      message: error.message,
     }
+  }
+  return {
+    user: (await response.json()) as CurrentBackendUser,
   }
 })
 
 export async function requireMember(callbackUrl = "/member") {
-  const session = await getServerSession()
-
-  if (!session?.user) {
-    redirect(getLoginUrl(callbackUrl))
-  }
-  if (isTerminalAuthError(session.authError)) {
-    redirect(getLoginUrl(callbackUrl, "session-expired"))
-  }
-  if (!session.backendAccessToken) {
-    redirect(getLoginUrl(callbackUrl))
-  }
-  if (session.authError) {
-    throw new Error(
-      `Dịch vụ xác thực tạm thời không khả dụng (${session.authError}).`,
-    )
-  }
-
-  const currentUserResult = await fetchCurrentUser(session.backendAccessToken)
-
-  if (
-    !currentUserResult.user &&
-    isTerminalAuthError(currentUserResult.errorCode)
-  ) {
-    redirect(getLoginUrl(callbackUrl, "session-expired"))
-  }
+  const session = await requireFreshServerSession(callbackUrl)
+  const currentUserResult = await fetchCurrentUser(callbackUrl)
   if (!currentUserResult.user) {
     throw new Error(currentUserResult.message)
   }

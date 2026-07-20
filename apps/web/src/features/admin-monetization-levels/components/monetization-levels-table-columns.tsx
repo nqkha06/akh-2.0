@@ -25,18 +25,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AdminMonetizationLevel } from "@/features/admin-monetization-levels/types";
+import { publicationStatusOptions } from "@/types/publication-status";
 
 export type MonetizationLevelRowAction = {
   row: Row<AdminMonetizationLevel>;
   variant: "delete";
 };
-
-const statusOptions = [
-  { label: "Bản nháp", value: "draft" },
-  { label: "Hoạt động", value: "active" },
-  { label: "Không hoạt động", value: "inactive" },
-  { label: "Lưu trữ", value: "archived" },
-];
 
 export function getMonetizationLevelsTableColumns({
   locale,
@@ -160,7 +154,10 @@ export function getMonetizationLevelsTableColumns({
       meta: {
         label: "Trạng thái",
         variant: "multiSelect",
-        options: statusOptions,
+        options: publicationStatusOptions.map(({ label, value }) => ({
+          label,
+          value,
+        })),
         icon: CircleDashed,
       },
       enableColumnFilter: true,
@@ -269,12 +266,13 @@ function localizedLevelName(level: AdminMonetizationLevel, locale: string) {
 }
 
 function StatusBadge({ status }: { status: AdminMonetizationLevel["status"] }) {
-  if (status === "active") {
+  if (status === "published") {
     return (
-      <Badge className="bg-emerald-600 hover:bg-emerald-600">Hoạt động</Badge>
+      <Badge className="bg-emerald-600 hover:bg-emerald-600">Xuất bản</Badge>
     );
   }
-  if (status === "draft") return <Badge variant="secondary">Bản nháp</Badge>;
-  if (status === "archived") return <Badge variant="outline">Lưu trữ</Badge>;
-  return <Badge variant="outline">Không hoạt động</Badge>;
+  if (status === "pending") {
+    return <Badge variant="secondary">Chờ xử lý</Badge>;
+  }
+  return <Badge variant="outline">Nháp</Badge>;
 }

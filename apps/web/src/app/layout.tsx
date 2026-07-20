@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server"
 import { AppProviders } from "@/components/providers/app-providers"
 import { cn } from "@/lib/utils"
 import NextTopLoader from "nextjs-toploader";
+import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server"
 
 import "./globals.css"
 
@@ -20,10 +21,37 @@ const inter = Inter({
   display: "swap",
 })
 
-export const metadata: Metadata = {
-  title: "Linkicom — One link. More momentum.",
-  description:
-    "Create link-in-bio pages, verified social unlocks and protected content experiences that turn creator traffic into real growth.",
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSiteSettings()
+  const title = settings.siteTagline
+    ? `${settings.siteName} — ${settings.siteTagline}`
+    : settings.siteName
+  const ogImage =
+    settings.siteUrl && settings.branding.defaultOgImage
+      ? new URL(
+          settings.branding.defaultOgImage.downloadUrl,
+          settings.siteUrl,
+        ).toString()
+      : undefined
+
+  return {
+    metadataBase: settings.siteUrl ? new URL(settings.siteUrl) : undefined,
+    title,
+    description: settings.siteDescription || undefined,
+    applicationName: settings.siteName,
+    icons: {
+      icon: settings.branding.favicon?.downloadUrl,
+      apple: settings.branding.logoIcon?.downloadUrl,
+    },
+    openGraph: {
+      title,
+      description: settings.siteDescription || undefined,
+      siteName: settings.siteName,
+      type: "website",
+      url: settings.siteUrl || undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+  }
 }
 
 export default async function RootLayout({

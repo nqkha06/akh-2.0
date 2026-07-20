@@ -166,10 +166,12 @@ export function AuthScreen({
   mode,
   googleEnabled = false,
   redirectTo = "/member",
+  referralCode,
 }: {
   mode: AuthMode;
   googleEnabled?: boolean;
   redirectTo?: string;
+  referralCode?: string;
 }) {
   const router = useRouter();
   const copy = pageCopy[mode];
@@ -210,6 +212,7 @@ export function AuthScreen({
           name: String(formData.get("name") || ""),
           email: String(formData.get("email") || ""),
           password: String(formData.get("password") || ""),
+          referralCode,
         });
       }
 
@@ -250,6 +253,18 @@ export function AuthScreen({
     }
 
     setIsSubmitting(true);
+    if (referralCode) {
+      const referralResponse = await fetch("/api/auth/referral", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralCode }),
+      });
+      if (!referralResponse.ok) {
+        setMessage("Không thể lưu mã giới thiệu. Vui lòng thử lại.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
     await signIn("google", { redirectTo });
   }
 
@@ -270,6 +285,13 @@ export function AuthScreen({
             <span className={styles.kicker}>{copy.kicker}</span>
             <h1>{copy.title}</h1>
             <p className={styles.description}>{copy.description}</p>
+            {mode === "register" && referralCode ? (
+              <div className={styles.referralNotice}>
+                <UserRound size={16} />
+                Bạn đang đăng ký qua mã giới thiệu{" "}
+                <strong>{referralCode}</strong>.
+              </div>
+            ) : null}
 
             {mode !== "forgot" && (
               <>

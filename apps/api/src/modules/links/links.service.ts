@@ -569,9 +569,9 @@ export class LinksService {
     visitor: LinkVisitorMetadata,
   ) {
     let level = link.user.monetizationLevel;
-    if (!level || level.status !== "active") {
+    if (!level || level.status !== "published") {
       level = await prisma.monetizationLevel.findFirst({
-        where: { isDefault: true, status: "active" },
+        where: { isDefault: true, status: "published" },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         select: {
           status: true,

@@ -39,7 +39,7 @@ export class MonetizationLevelsService {
   async findAvailableForMember(userId: number) {
     const [records, user, totalLinks] = await this.prisma.$transaction([
       this.prisma.monetizationLevel.findMany({
-        where: { status: "active" },
+        where: { status: "published" },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         include: levelInclude,
       }),
@@ -52,11 +52,11 @@ export class MonetizationLevelsService {
     if (!user) {
       throw new NotFoundException("Không tìm thấy tài khoản.");
     }
-    const selectedLevelIsActive = records.some(
+    const selectedLevelIsPublished = records.some(
       (record) => record.id === user.monetizationLevelId,
     );
     const defaultLevel = records.find((record) => record.isDefault);
-    const effectiveLevelId = selectedLevelIsActive
+    const effectiveLevelId = selectedLevelIsPublished
       ? user.monetizationLevelId
       : (defaultLevel?.id ?? null);
     const defaultLocale = await this.languagesService.getDefaultLocale();
@@ -67,7 +67,7 @@ export class MonetizationLevelsService {
       selectedLevelId: user.monetizationLevelId,
       effectiveLevelId,
       usesSystemDefault:
-        user.monetizationLevelId === null || !selectedLevelIsActive,
+        user.monetizationLevelId === null || !selectedLevelIsPublished,
       totalLinks,
       defaultLocale,
     };
@@ -75,12 +75,12 @@ export class MonetizationLevelsService {
 
   async selectForMember(userId: number, monetizationLevelId: number) {
     const level = await this.prisma.monetizationLevel.findFirst({
-      where: { id: monetizationLevelId, status: "active" },
+      where: { id: monetizationLevelId, status: "published" },
       select: { id: true },
     });
     if (!level) {
       throw new BadRequestException(
-        "Cấp độ kiếm tiền không tồn tại hoặc chưa được kích hoạt.",
+        "Cấp độ kiếm tiền không tồn tại hoặc chưa được xuất bản.",
       );
     }
 
@@ -153,8 +153,8 @@ export class MonetizationLevelsService {
       pageCount,
       totalPages: pageCount,
       summary: {
-        activeLevels: summaryRecords.filter(
-          (record) => record.status === "active",
+        publishedLevels: summaryRecords.filter(
+          (record) => record.status === "published",
         ).length,
         configuredRoutes: summaryRecords.reduce(
           (sum, record) =>
@@ -189,7 +189,7 @@ export class MonetizationLevelsService {
 
   async create(dto: CreateMonetizationLevelDto) {
     await this.validateConfiguration(dto);
-    this.assertDefaultIsActive(dto.isDefault, dto.status);
+    this.assertDefaultIsPublished(dto.isDefault, dto.status);
 
     try {
       const record = await this.prisma.$transaction(async (transaction) => {
@@ -235,7 +235,7 @@ export class MonetizationLevelsService {
 
     const nextStatus = dto.status ?? existing.status;
     const nextIsDefault = dto.isDefault ?? existing.isDefault;
-    this.assertDefaultIsActive(nextIsDefault, nextStatus);
+    this.assertDefaultIsPublished(nextIsDefault, nextStatus);
     if (existing.isDefault && dto.isDefault === false) {
       throw new BadRequestException(
         "Hãy đặt một cấp độ khác làm mặc định trước khi bỏ cấp độ hiện tại.",
@@ -391,10 +391,10 @@ export class MonetizationLevelsService {
     }
   }
 
-  private assertDefaultIsActive(isDefault: boolean, status: string) {
-    if (isDefault && status !== "active") {
+  private assertDefaultIsPublished(isDefault: boolean, status: string) {
+    if (isDefault && status !== "published") {
       throw new BadRequestException(
-        "Cấp độ mặc định phải ở trạng thái hoạt động.",
+        "Cấp độ mặc định phải ở trạng thái xuất bản.",
       );
     }
   }

@@ -15,9 +15,13 @@ import {
   ValidateNested,
 } from "class-validator";
 
-const sortableColumns = ["createdAt", "name", "email", "status"] as const;
-const statuses = ["active", "inactive", "locked", "suspended", "disabled"] as const;
-const filterableColumns = ["name", "email", "role", "status", "createdAt"] as const;
+import {
+  USER_FILTERABLE_COLUMNS,
+  USER_FILTER_OPERATORS,
+  USER_SORTABLE_COLUMNS,
+  USER_STATUSES,
+} from "../users.constants";
+
 const filterVariants = [
   "text",
   "number",
@@ -27,22 +31,6 @@ const filterVariants = [
   "boolean",
   "select",
   "multiSelect",
-] as const;
-const filterOperators = [
-  "iLike",
-  "notILike",
-  "eq",
-  "ne",
-  "inArray",
-  "notInArray",
-  "isEmpty",
-  "isNotEmpty",
-  "lt",
-  "lte",
-  "gt",
-  "gte",
-  "isBetween",
-  "isRelativeToToday",
 ] as const;
 
 function parseCsv(value: unknown) {
@@ -60,16 +48,16 @@ function parseJson(value: unknown) {
 }
 
 export class UserSortDto {
-  @IsIn(sortableColumns)
-  id!: (typeof sortableColumns)[number];
+  @IsIn(USER_SORTABLE_COLUMNS)
+  id!: (typeof USER_SORTABLE_COLUMNS)[number];
 
   @IsBoolean()
   desc!: boolean;
 }
 
 export class UserFilterDto {
-  @IsIn(filterableColumns)
-  id!: (typeof filterableColumns)[number];
+  @IsIn(USER_FILTERABLE_COLUMNS)
+  id!: (typeof USER_FILTERABLE_COLUMNS)[number];
 
   @IsDefined()
   value!: string | string[];
@@ -77,8 +65,8 @@ export class UserFilterDto {
   @IsIn(filterVariants)
   variant!: (typeof filterVariants)[number];
 
-  @IsIn(filterOperators)
-  operator!: (typeof filterOperators)[number];
+  @IsIn(USER_FILTER_OPERATORS)
+  operator!: (typeof USER_FILTER_OPERATORS)[number];
 
   @IsString()
   @MaxLength(64)
@@ -114,9 +102,13 @@ export class ListUsersQueryDto {
   @IsOptional()
   @Transform(({ value }) => parseCsv(value))
   @IsArray()
-  @ArrayMaxSize(statuses.length)
-  @IsIn(statuses, { each: true })
-  status?: Array<(typeof statuses)[number]>;
+  @ArrayMaxSize(USER_STATUSES.length)
+  @IsIn(USER_STATUSES, { each: true })
+  status?: Array<(typeof USER_STATUSES)[number]>;
+
+  @IsOptional()
+  @IsIn(["verified", "unverified"])
+  emailVerified?: "verified" | "unverified";
 
   @IsOptional()
   @Type(() => Number)
@@ -174,8 +166,8 @@ export class ListUsersQueryDto {
 
   /** Legacy sort keys retained for existing clients. */
   @IsOptional()
-  @IsIn(sortableColumns)
-  sortBy: (typeof sortableColumns)[number] = "createdAt";
+  @IsIn(USER_SORTABLE_COLUMNS)
+  sortBy: (typeof USER_SORTABLE_COLUMNS)[number] = "createdAt";
 
   @IsOptional()
   @IsIn(["asc", "desc"])

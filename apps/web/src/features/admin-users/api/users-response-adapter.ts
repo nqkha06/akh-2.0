@@ -8,7 +8,8 @@ export function adaptUsersResponse(
 ): UsersTableData {
   return {
     data: response.items,
-    pageCount: Math.ceil(response.total / response.limit),
+    pageCount:
+      response.pageCount || Math.max(1, Math.ceil(response.total / response.limit)),
     total: response.total,
   };
 }

@@ -13,7 +13,16 @@ export function proxy(request: NextRequest) {
     ),
   );
 
-  if (hasSessionCookie) return NextResponse.next();
+  if (hasSessionCookie) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(
+      "x-stu-protected-url",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
 
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set(

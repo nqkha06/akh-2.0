@@ -1,3 +1,5 @@
+import type { PublicationStatus } from "@/types/publication-status";
+
 export type Language = {
   id: number;
   name: string;
@@ -7,7 +9,7 @@ export type Language = {
   regional: string | null;
   flag: string | null;
   isDefault: boolean;
-  isEnabled: boolean;
+  status: PublicationStatus;
   sortOrder: number;
   isRtl: boolean;
 };
@@ -22,8 +24,8 @@ export type LanguagesResponse = {
 
 export type PublicLanguagesResponse = {
   items: Array<
-    Omit<Language, "isEnabled"> & {
-      isEnabled?: never;
+    Omit<Language, "status"> & {
+      status?: never;
     }
   >;
   defaultLocale: string | null;

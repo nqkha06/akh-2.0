@@ -56,6 +56,7 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import type { ReferralsDashboard } from "@/features/referrals/types";
 import {
   Select,
   SelectContent,
@@ -84,7 +85,11 @@ type NotificationKey = "account" | "activity" | "revenue" | "product" | "push";
 
 const inputClassName = "h-11 rounded-lg border-border bg-background shadow-none sm:h-10";
 
-export function AccountView() {
+export function AccountView({
+  referrals,
+}: {
+  referrals: ReferralsDashboard;
+}) {
   const t = useTranslations("Account");
   const { data: session } = useSession();
   const hydratedProfile = useRef(false);
@@ -128,10 +133,7 @@ export function AccountView() {
     () => displayName.split(/\s+/).filter(Boolean).slice(-2).map((part) => part[0]?.toUpperCase()).join("") || "LI",
     [displayName],
   );
-  const referralLink = useMemo(
-    () => `https://linkicom.io/ref/${session?.user?.id?.slice(0, 8) || "creator"}`,
-    [session?.user?.id],
-  );
+  const referralLink = referrals.referralUrl;
   const passwordIsLongEnough = password.next.length >= 8;
   const passwordHasNumber = /\d/.test(password.next);
   const passwordsMatch = Boolean(password.next) && password.next === password.confirm;
@@ -513,8 +515,16 @@ export function AccountView() {
             </InputGroup>
 
             <div className="mt-5 grid overflow-hidden rounded-lg border border-border sm:grid-cols-2">
-              <ReferralMetric icon={UsersRound} label={t("referral.people")} value="0" />
-              <ReferralMetric icon={CircleDollarSign} label={t("referral.commission")} value="5%" />
+              <ReferralMetric
+                icon={UsersRound}
+                label={t("referral.people")}
+                value={referrals.summary.totalReferrals.toLocaleString()}
+              />
+              <ReferralMetric
+                icon={CircleDollarSign}
+                label={t("referral.commission")}
+                value={`${Number(referrals.commissionRate).toLocaleString()}%`}
+              />
             </div>
 
             <CardActions>

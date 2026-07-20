@@ -1,5 +1,6 @@
-export type MonetizationLevelStatus =
-  "draft" | "active" | "inactive" | "archived";
+import type { PublicationStatus } from "@/types/publication-status";
+
+export type MonetizationLevelStatus = PublicationStatus;
 export type MonetizationAdDensity = "none" | "limited" | "maximum";
 export type MonetizationDeviceType = "any" | "desktop" | "mobile" | "tablet";
 export type MonetizationRouteMatchMode = "include" | "exclude";
@@ -77,7 +78,7 @@ export type NestPaginatedMonetizationLevelsResponse = {
 };
 
 export type MonetizationLevelsSummary = {
-  activeLevels: number;
+  publishedLevels: number;
   configuredRoutes: number;
   configuredRates: number;
   assignedUsers: number;

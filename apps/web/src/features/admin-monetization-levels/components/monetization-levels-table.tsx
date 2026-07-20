@@ -75,8 +75,8 @@ export function MonetizationLevelsTable({
         />
         <SummaryCard
           icon={Activity}
-          label="Đang hoạt động"
-          value={summary.activeLevels}
+          label="Đã xuất bản"
+          value={summary.publishedLevels}
           description="Có thể gán cho link"
         />
         <SummaryCard

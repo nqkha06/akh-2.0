@@ -162,6 +162,21 @@ export class FilesController {
     return this.filesService.remove(id);
   }
 
+  @Get("public/:id/download")
+  @Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+  async downloadPublic(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { file, stream } = await this.filesService.downloadPublic(id);
+    res.set({
+      "Content-Type": file.mimeType,
+      "Content-Length": file.size.toString(),
+      "Content-Disposition": `inline; filename="${encodeURIComponent(file.name)}"`,
+    });
+    return stream;
+  }
+
   @Get(":id/download")
   @Header("Cache-Control", "private, max-age=0")
   async download(

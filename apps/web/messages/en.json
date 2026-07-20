@@ -632,13 +632,16 @@
     "referrals": {
       "eyebrow": "Referral",
       "title": "Referrals",
-      "description": "Invite friends to join Rekonise and earn commission from their creator activity.",
+      "description": "Invite friends to join Linkicom and earn commission after each successful withdrawal.",
       "share": "Share link",
       "commissionRate": "5% commission",
+      "commissionRateValue": "{rate}% commission",
       "context": "Share your referral link, bring new creators to the platform, and track who is active or generating earnings in one place.",
+      "paidOnlyContext": "Commission is credited only after a referral withdrawal becomes Paid. Pending, rejected, or cancelled requests do not earn commission.",
       "summary": "Referral summary",
       "totalReferrals": "Total referrals",
       "commissionLabel": "Commission rate",
+      "totalCommission": "Total commission",
       "signupBonus": "Bonus per signup",
       "shareTitle": "Share your referral link",
       "shareDescription": "Use this link in your bio, content, or private outreach to bring new creators to the platform.",
@@ -662,7 +665,7 @@
         "signupTitle": "Friends sign up",
         "signupDescription": "Invited creators create an account through your link.",
         "earnTitle": "Earn commission",
-        "earnDescription": "Commission is recorded when a referral earns revenue."
+        "earnDescription": "Every successfully paid withdrawal credits 5% of the net payout to your available balance."
       },
       "inviteTitle": "Invite by email",
       "inviteDescription": "Paste comma-separated emails; we will open your email client with an invitation ready.",
@@ -694,7 +697,15 @@
         "totalEarnings": "Total commission"
       },
       "emptyTitle": "No referrals yet",
-      "emptyDescription": "Share your referral link — once friends sign up, they will appear here with your commission share."
+      "emptyDescription": "Share your referral link — once friends sign up, they will appear here with your commission share.",
+      "earningStatus": "Commission earned",
+      "waitingStatus": "Waiting for successful withdrawal",
+      "withdrawalsCount": "{count} successful withdrawals",
+      "recentTitle": "Recent commission",
+      "recentDescription": "Each entry represents one withdrawal that was paid successfully.",
+      "withdrawalReference": "Withdrawal #{id}",
+      "rateApplied": "{rate}% rate",
+      "recentEmpty": "No successful withdrawal has generated commission yet."
     },
     "rewards": {
       "description": "Earn bonuses by using the platform: log in daily, grow your clicks, and invite friends.",

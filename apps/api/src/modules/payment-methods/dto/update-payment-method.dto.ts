@@ -10,6 +10,10 @@ import {
   ValidateNested,
 } from "class-validator";
 
+import {
+  publicationStatuses,
+  type PublicationStatus,
+} from "../../../common/constants/publication-status";
 import { PaymentMethodTranslationDto } from "./payment-method-translation.dto";
 
 export class UpdatePaymentMethodDto {
@@ -24,8 +28,8 @@ export class UpdatePaymentMethodDto {
   minWithdrawAmount?: string;
 
   @IsOptional()
-  @IsIn(["active", "inactive"])
-  status?: "active" | "inactive";
+  @IsIn(publicationStatuses)
+  status?: PublicationStatus;
 
   @IsOptional()
   @IsArray()

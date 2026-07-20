@@ -16,6 +16,7 @@ import {
   extractRefreshToken,
   refreshBackendSession,
 } from "@/lib/auth/refresh-session";
+import { REFERRAL_COOKIE_NAME } from "@/lib/auth/referral-cookie";
 
 const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
 if (!backendApiUrl) {
@@ -159,19 +160,21 @@ function createAuthConfig(request?: NextRequest): NextAuthConfig {
         }
 
         if (account?.provider === "google" && account.id_token) {
+          const referralCode = request?.cookies.get(
+            REFERRAL_COOKIE_NAME,
+          )?.value;
           const result = await requestBackendAuth("/auth/google", {
             idToken: account.id_token,
+            ...(referralCode ? { referralCode } : {}),
           });
           if (!result) throw new Error("BACKEND_GOOGLE_AUTH_FAILED");
           return applyBackendResult(token, result);
         }
 
-        const expiresAt = Number(token.backendAccessTokenExpiresAt || 0);
-        const shouldRefresh =
-          trigger === "update" ||
-          !expiresAt ||
-          Date.now() >= expiresAt - 30_000;
-        if (!shouldRefresh) return token;
+        // Refresh is a state-changing operation because NestJS rotates the
+        // refresh token. Only an explicit update from a Route Handler may do
+        // it; auth() inside a Server Component cannot persist the new cookie.
+        if (trigger !== "update") return token;
 
         if (!token.backendRefreshToken) {
           token.authError = AUTH_ERROR_CODES.SESSION_NOT_FOUND;
@@ -209,9 +212,13 @@ function createAuthConfig(request?: NextRequest): NextAuthConfig {
 
         if (exposeBackendState) {
           session.backendAccessToken = String(token.backendAccessToken || "");
+          session.backendAccessTokenExpiresAt = Number(
+            token.backendAccessTokenExpiresAt || 0,
+          );
           session.authError = token.authError;
         } else {
           delete session.backendAccessToken;
+          delete session.backendAccessTokenExpiresAt;
           delete session.authError;
         }
         return session;

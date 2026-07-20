@@ -1,13 +1,23 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
-  CalendarIcon,
+  Ban,
+  CalendarDays,
+  CheckCircle2,
   CircleDashed,
   Ellipsis,
+  Eye,
+  KeyRound,
+  LockKeyhole,
+  MailCheck,
+  Pencil,
   Shield,
+  Trash2,
   UserRound,
+  WalletCards,
 } from "lucide-react";
+import Link from "next/link";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,50 +31,68 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AdminUser } from "@/features/admin-users/types";
-import type { DataTableRowAction } from "@/types/data-table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { UserStatusBadge } from "@/features/admin-users/components/user-status-badge";
+import type {
+  AdminUserListItem,
+  UserStatus,
+} from "@/features/admin-users/types";
+import { userStatusOptions } from "@/features/admin-users/user-status";
+import { formatDate } from "@/lib/format";
 
-const statusOptions = [
-  { label: "Hoạt động", value: "active" },
-  { label: "Không hoạt động", value: "inactive" },
-  { label: "Đã khóa", value: "locked" },
-  { label: "Tạm ngưng", value: "suspended" },
-  { label: "Vô hiệu hóa", value: "disabled" },
-];
+export type UserRowAction = {
+  row: Row<AdminUserListItem>;
+  variant: "delete" | "verify-email" | "revoke-sessions";
+};
 
 export function getUsersTableColumns({
   currentUserId,
-  canDelete,
   canUpdate,
+  canDelete,
+  canManageStatus,
+  canVerifyEmail,
+  canRevokeSessions,
   roleOptions,
+  onStatusChange,
   setRowAction,
 }: {
   currentUserId: number;
-  canDelete: boolean;
   canUpdate: boolean;
+  canDelete: boolean;
+  canManageStatus: boolean;
+  canVerifyEmail: boolean;
+  canRevokeSessions: boolean;
   roleOptions: Array<{ label: string; value: string; icon: typeof Shield }>;
-  setRowAction: React.Dispatch<
-    React.SetStateAction<DataTableRowAction<AdminUser> | null>
-  >;
-}): ColumnDef<AdminUser>[] {
+  onStatusChange: (user: AdminUserListItem, status: UserStatus) => void;
+  setRowAction: React.Dispatch<React.SetStateAction<UserRowAction | null>>;
+}): ColumnDef<AdminUserListItem>[] {
   return [
     {
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          aria-label="Select all"
+          aria-label="Chọn tất cả người dùng trên trang hiện tại"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(value) =>
+            table.toggleAllPageRowsSelected(Boolean(value))
+          }
         />
       ),
       cell: ({ row }) => (
         <Checkbox
-          aria-label="Select row"
+          aria-label={`Chọn ${row.original.name}`}
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          disabled={!row.getCanSelect()}
+          onClick={(event) => event.stopPropagation()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
         />
       ),
       enableHiding: false,
@@ -78,8 +106,8 @@ export function getUsersTableColumns({
         <DataTableColumnHeader column={column} label="Người dùng" />
       ),
       cell: ({ row }) => (
-        <div className="flex min-w-56 items-center gap-3">
-          <Avatar className="size-9 rounded-lg border">
+        <div className="flex min-w-64 max-w-[28rem] items-center gap-3">
+          <Avatar className="size-9 shrink-0 rounded-lg border">
             <AvatarImage
               src={row.original.avatar || undefined}
               alt={row.original.name}
@@ -90,22 +118,33 @@ export function getUsersTableColumns({
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="truncate font-medium text-sm">
-                {row.original.name}
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={`/admin/users/${row.original.id}`}
+                      className="block truncate font-medium text-sm hover:text-primary hover:underline hover:underline-offset-4"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.original.name}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>{row.original.name}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {row.original.id === currentUserId ? (
                 <Badge variant="outline">Bạn</Badge>
               ) : null}
             </div>
-            <span className="block truncate text-muted-foreground text-xs">
+            <p className="truncate text-muted-foreground text-xs">
               {row.original.email}
-            </span>
+            </p>
           </div>
         </div>
       ),
       meta: {
-        label: "Tên",
-        placeholder: "Lọc theo tên...",
+        label: "Tên hoặc email",
+        placeholder: "Tìm tên hoặc email...",
         variant: "text",
         icon: UserRound,
       },
@@ -116,6 +155,18 @@ export function getUsersTableColumns({
       accessorKey: "email",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} label="Email" />
+      ),
+      cell: ({ row }) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block max-w-64 truncate text-sm">
+                {row.original.email}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{row.original.email}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       ),
       meta: {
         label: "Email",
@@ -132,7 +183,7 @@ export function getUsersTableColumns({
         <DataTableColumnHeader column={column} label="Role" />
       ),
       cell: ({ row }) => (
-        <div className="flex max-w-56 flex-wrap gap-1">
+        <div className="flex max-w-60 flex-wrap gap-1">
           {row.original.roles.map((role) => (
             <Badge key={role.id} variant="outline">
               {role.name}
@@ -155,25 +206,41 @@ export function getUsersTableColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} label="Trạng thái" />
       ),
-      cell: ({ row }) => <UserStatusCell status={row.original.status} />,
+      cell: ({ row }) => <UserStatusBadge status={row.original.status} />,
       meta: {
         label: "Trạng thái",
         variant: "multiSelect",
-        options: statusOptions,
+        options: userStatusOptions,
         icon: CircleDashed,
       },
       enableColumnFilter: true,
     },
     {
-      id: "linksCount",
-      accessorKey: "linksCount",
-      header: "Nội dung",
-      enableSorting: false,
+      id: "balance",
+      accessorKey: "balance",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Số dư" />
+      ),
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap font-medium tabular-nums">
+          {formatBalance(row.original.balance)}
+        </span>
+      ),
+      meta: {
+        label: "Số dư",
+        placeholder: "Lọc theo số dư...",
+        variant: "number",
+        icon: WalletCards,
+      },
+      enableColumnFilter: true,
     },
     {
       id: "activeSessionsCount",
       accessorKey: "activeSessionsCount",
       header: "Phiên",
+      cell: ({ row }) => (
+        <span className="tabular-nums">{row.original.activeSessionsCount}</span>
+      ),
       enableSorting: false,
     },
     {
@@ -183,14 +250,50 @@ export function getUsersTableColumns({
         <DataTableColumnHeader column={column} label="Ngày tạo" />
       ),
       cell: ({ row }) => (
-        <span className="whitespace-nowrap text-muted-foreground text-xs">
-          {formatDate(row.original.createdAt)}
-        </span>
+        <time
+          dateTime={row.original.createdAt}
+          className="whitespace-nowrap text-muted-foreground text-xs"
+        >
+          {formatDate(row.original.createdAt, {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </time>
       ),
       meta: {
         label: "Ngày tạo",
         variant: "dateRange",
-        icon: CalendarIcon,
+        icon: CalendarDays,
+      },
+      enableColumnFilter: true,
+    },
+    {
+      id: "updatedAt",
+      accessorKey: "updatedAt",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Cập nhật" />
+      ),
+      cell: ({ row }) => (
+        <time
+          dateTime={row.original.updatedAt}
+          className="whitespace-nowrap text-muted-foreground text-xs"
+        >
+          {formatDate(row.original.updatedAt, {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </time>
+      ),
+      meta: {
+        label: "Ngày cập nhật",
+        variant: "dateRange",
+        icon: CalendarDays,
       },
       enableColumnFilter: true,
     },
@@ -198,64 +301,97 @@ export function getUsersTableColumns({
       id: "actions",
       enableHiding: false,
       enableSorting: false,
-      cell: ({ row }) =>
-        canDelete || canUpdate ? (
+      cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label="Open menu"
+              aria-label={`Mở menu ${row.original.name}`}
               variant="ghost"
               className="flex size-8 p-0 data-[state=open]:bg-muted"
+              onClick={(event) => event.stopPropagation()}
             >
               <Ellipsis />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent
+            align="end"
+            className="w-56"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <DropdownMenuItem asChild>
+              <Link href={`/admin/users/${row.original.id}`}>
+                <Eye /> Xem chi tiết
+              </Link>
+            </DropdownMenuItem>
             {canUpdate ? (
-              <DropdownMenuItem
-                onSelect={() => setRowAction({ row, variant: "update" })}
-              >
-                Chỉnh sửa
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/users/${row.original.id}/edit`}>
+                  <Pencil /> Chỉnh sửa
+                </Link>
               </DropdownMenuItem>
             ) : null}
-            {canUpdate && canDelete ? <DropdownMenuSeparator /> : null}
-            {canDelete ? (
+            {canManageStatus && row.original.id !== currentUserId ? (
+              <>
+                <DropdownMenuSeparator />
+                {row.original.status === "active" ? (
+                  <>
+                    <DropdownMenuItem
+                      onSelect={() => onStatusChange(row.original, "inactive")}
+                    >
+                      <Ban /> Vô hiệu hóa
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => onStatusChange(row.original, "locked")}
+                    >
+                      <LockKeyhole /> Khóa tài khoản
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onSelect={() => onStatusChange(row.original, "active")}
+                  >
+                    <CheckCircle2 /> Kích hoạt
+                  </DropdownMenuItem>
+                )}
+              </>
+            ) : null}
+            {canVerifyEmail && !row.original.emailVerified ? (
               <DropdownMenuItem
-                variant="destructive"
-                disabled={row.original.id === currentUserId}
-                onSelect={() => setRowAction({ row, variant: "delete" })}
+                onSelect={() =>
+                  setRowAction({ row, variant: "verify-email" })
+                }
               >
-                Xóa người dùng
+                <MailCheck /> Xác minh email
               </DropdownMenuItem>
+            ) : null}
+            {canRevokeSessions &&
+            row.original.id !== currentUserId &&
+            row.original.activeSessionsCount > 0 ? (
+              <DropdownMenuItem
+                onSelect={() =>
+                  setRowAction({ row, variant: "revoke-sessions" })
+                }
+              >
+                <KeyRound /> Thu hồi phiên đăng nhập
+              </DropdownMenuItem>
+            ) : null}
+            {canDelete ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={row.original.id === currentUserId}
+                  onSelect={() => setRowAction({ row, variant: "delete" })}
+                >
+                  <Trash2 /> Xóa người dùng
+                </DropdownMenuItem>
+              </>
             ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
-        ) : null,
+      ),
     },
   ];
-}
-
-function UserStatusCell({ status }: { status: string }) {
-  if (status === "active") {
-    return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-        Hoạt động
-      </Badge>
-    );
-  }
-
-  const labels: Record<string, string> = {
-    inactive: "Không hoạt động",
-    locked: "Đã khóa",
-    suspended: "Tạm ngưng",
-    disabled: "Vô hiệu hóa",
-  };
-
-  return (
-    <Badge variant="outline" className="bg-muted text-muted-foreground">
-      {labels[status] || status}
-    </Badge>
-  );
 }
 
 function initials(name: string) {
@@ -269,10 +405,12 @@ function initials(name: string) {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+function formatBalance(value: string) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return `${value} ₫`;
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(amount);
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,16 +19,10 @@ import { LogOut, Moon, Settings, Sun, UserRound } from "lucide-react"
 import { useTheme } from "next-themes"
 
 type AdminHeaderProps = {
-  title?: string
   userName?: string
-  avatarUrl?: string
 }
 
-export function AdminHeader({
-  title = "Dashboard",
-  userName = "User",
-  avatarUrl,
-}: AdminHeaderProps) {
+export function AdminHeader({ userName = "User" }: AdminHeaderProps) {
   const avatarFallback = userName
     .trim()
     .split(/\s+/)
@@ -43,13 +36,6 @@ export function AdminHeader({
     <header className="flex  border-b border-border h-(--header-height) shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex  min-w-0 flex-1 items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1 border border-border" />
-
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
-
-        <h1 className="truncate text-base font-medium">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2 px-4 lg:px-6">
@@ -88,9 +74,6 @@ export function AdminHeader({
                   src="https://github.com/shadcn.png"
                   alt="@shadcn"
                 />
-                {/* {avatarUrl && (
-                  <AvatarImage src={avatarUrl} alt={userName} />
-                )} */}
                 <AvatarFallback>{avatarFallback || "U"}</AvatarFallback>
               </Avatar>
             </Button>

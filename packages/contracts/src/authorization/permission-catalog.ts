@@ -30,6 +30,30 @@ export const permissionCatalog = [
     group: "users",
   },
   {
+    key: "users.manage-status",
+    name: "Quản lý trạng thái người dùng",
+    description: "Kích hoạt, vô hiệu hóa, khóa hoặc tạm ngưng tài khoản.",
+    group: "users",
+  },
+  {
+    key: "users.manage-roles",
+    name: "Quản lý quyền người dùng",
+    description: "Gán role và permission trực tiếp cho người dùng.",
+    group: "users",
+  },
+  {
+    key: "users.verify-email",
+    name: "Xác minh email người dùng",
+    description: "Cho phép quản trị viên xác minh email thủ công.",
+    group: "users",
+  },
+  {
+    key: "users.revoke-sessions",
+    name: "Thu hồi phiên người dùng",
+    description: "Đăng xuất người dùng khỏi tất cả thiết bị.",
+    group: "users",
+  },
+  {
     key: "links.read",
     name: "Xem social link",
     description: "Xem danh sách và chi tiết social link của hệ thống.",
@@ -47,6 +71,36 @@ export const permissionCatalog = [
     name: "Xóa social link",
     description: "Đưa social link vào thùng rác.",
     group: "social-links",
+  },
+  {
+    key: "pages.read",
+    name: "Xem trang nội dung",
+    description: "Xem danh sách, chi tiết và bản xem trước trang nội dung.",
+    group: "pages",
+  },
+  {
+    key: "pages.create",
+    name: "Tạo trang nội dung",
+    description: "Tạo trang nội dung mới.",
+    group: "pages",
+  },
+  {
+    key: "pages.update",
+    name: "Sửa trang nội dung",
+    description: "Cập nhật nội dung, SEO và trạng thái trang.",
+    group: "pages",
+  },
+  {
+    key: "pages.delete",
+    name: "Xóa trang nội dung",
+    description: "Chuyển trang nội dung vào thùng rác.",
+    group: "pages",
+  },
+  {
+    key: "pages.publish",
+    name: "Xuất bản trang nội dung",
+    description: "Xuất bản một hoặc nhiều trang nội dung.",
+    group: "pages",
   },
   {
     key: "monetization-levels.read",
@@ -97,6 +151,18 @@ export const permissionCatalog = [
     group: "payments",
   },
   {
+    key: "withdrawals.read",
+    name: "Xem yêu cầu rút tiền",
+    description: "Xem danh sách và chi tiết yêu cầu rút tiền.",
+    group: "payments",
+  },
+  {
+    key: "withdrawals.process",
+    name: "Xử lý yêu cầu rút tiền",
+    description: "Tiếp nhận, hoàn tất hoặc từ chối yêu cầu rút tiền.",
+    group: "payments",
+  },
+  {
     key: "languages.read",
     name: "Xem ngôn ngữ",
     description: "Xem danh mục ngôn ngữ của hệ thống.",
@@ -119,6 +185,18 @@ export const permissionCatalog = [
     name: "Xóa ngôn ngữ",
     description: "Xóa ngôn ngữ chưa có nội dung liên quan.",
     group: "localization",
+  },
+  {
+    key: "settings.read",
+    name: "Xem cài đặt website",
+    description: "Xem thông tin, nhận diện và liên hệ của website.",
+    group: "settings",
+  },
+  {
+    key: "settings.update",
+    name: "Sửa cài đặt website",
+    description: "Cập nhật thông tin, nhận diện và liên hệ của website.",
+    group: "settings",
   },
   {
     key: "roles.read",

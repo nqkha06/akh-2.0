@@ -9,6 +9,10 @@ import {
   ValidateNested,
 } from "class-validator";
 
+import {
+  publicationStatuses,
+  type PublicationStatus,
+} from "../../../common/constants/publication-status";
 import { PaymentMethodTranslationDto } from "./payment-method-translation.dto";
 
 export class CreatePaymentMethodDto {
@@ -20,8 +24,8 @@ export class CreatePaymentMethodDto {
   @Matches(/^\d{1,18}(?:\.\d{1,10})?$/)
   minWithdrawAmount!: string;
 
-  @IsIn(["active", "inactive"])
-  status!: "active" | "inactive";
+  @IsIn(publicationStatuses)
+  status!: PublicationStatus;
 
   @IsArray()
   @ArrayMinSize(1)

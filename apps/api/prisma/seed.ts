@@ -167,7 +167,7 @@ const demoLinks = [
 const defaultMonetizationLevels = [
   {
     key: "clean",
-    status: "active",
+    status: "published",
     isDefault: false,
     sortOrder: 10,
     profitBps: 100,
@@ -192,7 +192,7 @@ const defaultMonetizationLevels = [
   },
   {
     key: "balanced",
-    status: "active",
+    status: "published",
     isDefault: true,
     sortOrder: 20,
     profitBps: 300,
@@ -216,7 +216,7 @@ const defaultMonetizationLevels = [
   },
   {
     key: "maximum",
-    status: "active",
+    status: "published",
     isDefault: false,
     sortOrder: 30,
     profitBps: 500,
@@ -251,7 +251,7 @@ async function main() {
       code: "vi",
       regional: "vi-VN",
       flag: "VN",
-      isEnabled: true,
+      status: "published",
       sortOrder: 10,
       isRtl: false,
     },
@@ -263,7 +263,7 @@ async function main() {
       regional: "vi-VN",
       flag: "VN",
       isDefault: true,
-      isEnabled: true,
+      status: "published",
       sortOrder: 10,
       isRtl: false,
     },
@@ -276,7 +276,7 @@ async function main() {
       code: "en",
       regional: "en-US",
       flag: "US",
-      isEnabled: true,
+      status: "published",
       sortOrder: 20,
       isRtl: false,
     },
@@ -287,7 +287,7 @@ async function main() {
       code: "en",
       regional: "en-US",
       flag: "US",
-      isEnabled: true,
+      status: "published",
       sortOrder: 20,
       isRtl: false,
     },
@@ -369,7 +369,7 @@ async function main() {
     }
   }
   const defaultMonetizationLevel = await prisma.monetizationLevel.findFirst({
-    where: { isDefault: true, status: "active" },
+    where: { isDefault: true, status: "published" },
     select: { id: true },
   });
 

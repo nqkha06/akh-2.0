@@ -119,7 +119,7 @@ export class PaymentMethodsService {
     const record = await this.findRecord(id);
     if (record._count.userMethods > 0) {
       throw new ConflictException(
-        "Phương thức đang được thành viên sử dụng. Hãy chuyển sang trạng thái không hoạt động thay vì xóa.",
+        "Phương thức đang được thành viên sử dụng. Hãy chuyển về nháp hoặc chờ xử lý thay vì xóa.",
       );
     }
     await this.prisma.paymentMethod.delete({ where: { id } });
@@ -129,7 +129,7 @@ export class PaymentMethodsService {
   async findDashboardForMember(userId: number) {
     const [catalog, accounts] = await this.prisma.$transaction([
       this.prisma.paymentMethod.findMany({
-        where: { status: "active" },
+        where: { status: "published" },
         orderBy: { id: "asc" },
         include: { translations: { orderBy: { locale: "asc" } } },
       }),
@@ -160,7 +160,7 @@ export class PaymentMethodsService {
   }
 
   async createForMember(userId: number, dto: CreateUserPaymentMethodDto) {
-    const method = await this.findActiveMethod(dto.paymentMethodId);
+    const method = await this.findPublishedMethod(dto.paymentMethodId);
     const details = this.validateDetails(method, dto.details);
     const account = await this.prisma.userPaymentMethod.create({
       data: {
@@ -196,9 +196,9 @@ export class PaymentMethodsService {
     if (!account) {
       throw new NotFoundException("Không tìm thấy phương thức thanh toán.");
     }
-    if (account.paymentMethod.status !== "active") {
+    if (account.paymentMethod.status !== "published") {
       throw new BadRequestException(
-        "Phương thức này đang tạm ngưng và không thể cập nhật.",
+        "Phương thức này chưa được xuất bản và không thể cập nhật.",
       );
     }
     const details = this.validateDetails(account.paymentMethod, dto.details);
@@ -240,14 +240,14 @@ export class PaymentMethodsService {
     return record;
   }
 
-  private async findActiveMethod(id: number) {
+  private async findPublishedMethod(id: number) {
     const record = await this.prisma.paymentMethod.findFirst({
-      where: { id, status: "active" },
+      where: { id, status: "published" },
       include: { translations: true },
     });
     if (!record) {
       throw new BadRequestException(
-        "Phương thức thanh toán không tồn tại hoặc đang tạm ngưng.",
+        "Phương thức thanh toán không tồn tại hoặc chưa được xuất bản.",
       );
     }
     return record;

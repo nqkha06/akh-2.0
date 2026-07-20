@@ -50,7 +50,9 @@ import {
   SiYoutube,
 } from "@icons-pack/react-simple-icons";
 import { useState } from "react";
+import Image from "next/image";
 import styles from "@/app/page.module.css";
+import type { PublicSiteSettings } from "@/features/site-settings/types";
 
 const easing = [0.22, 1, 0.36, 1] as const;
 
@@ -76,16 +78,41 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
   );
 }
 
-function Logo() {
+function Logo({ settings }: { settings: PublicSiteSettings }) {
+  const lightLogo = settings.branding.logoLight;
+  const darkLogo = settings.branding.logoDark;
   return (
-    <a className={styles.logo} href="#top" aria-label="Linkicom home">
-      <span className={styles.logoMark} aria-hidden="true"><i /><i /></span>
-      <span>Linkicom</span>
+    <a className={styles.logo} href="#top" aria-label={`${settings.siteName} home`}>
+      {lightLogo ? (
+        <span className="relative block h-9 w-32">
+          <Image
+            src={lightLogo.downloadUrl}
+            alt={settings.siteName}
+            fill
+            unoptimized
+            className={`object-contain object-left ${darkLogo ? "dark:hidden" : ""}`}
+          />
+          {darkLogo ? (
+            <Image
+              src={darkLogo.downloadUrl}
+              alt={settings.siteName}
+              fill
+              unoptimized
+              className="hidden object-contain object-left dark:block"
+            />
+          ) : null}
+        </span>
+      ) : (
+        <>
+          <span className={styles.logoMark} aria-hidden="true"><i /><i /></span>
+          <span>{settings.siteName}</span>
+        </>
+      )}
     </a>
   );
 }
 
-export function Navbar() {
+export function Navbar({ settings }: { settings: PublicSiteSettings }) {
   const [open, setOpen] = useState(false);
   const links = [
     ["How it works", "#how-it-works"],
@@ -97,7 +124,7 @@ export function Navbar() {
   return (
     <header className={styles.navbar}>
       <nav className={styles.navInner} aria-label="Main navigation">
-        <Logo />
+        <Logo settings={settings} />
         <div className={styles.navLinks}>
           {links.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
         </div>
@@ -373,7 +400,7 @@ function BrowserShell({ title, children }: { title: string; children: React.Reac
 }
 
 function BioPreview() {
-  return <BrowserShell title="page-editor"><div className={styles.editorLayout}><aside><Logo /><span className={styles.editorActive}>Page</span><span>Links</span><span>Appearance</span><span>Settings</span></aside><main><div className={styles.editorHeader}><div><small>PAGE EDITOR</small><b>Creator page</b></div><button>Publish changes</button></div><div className={styles.editorForm}><label>Profile title<span>Alex Makes</span></label><label>Bio<span>Design systems, resources &amp; weekly notes.</span></label><div className={styles.editorLinkRow}><span><Link2 size={16} /></span><div><b>My design toolkit</b><small>linkicom.io/alex/toolkit</small></div><Eye size={16} /></div><div className={styles.editorLinkRow}><span><LockKeyhole size={16} /></span><div><b>Creator launch pack</b><small>2 unlock actions</small></div><Eye size={16} /></div></div></main><div className={styles.editorPhone}><div className={styles.previewAvatar}>AM</div><b>@alexmakes</b><p>Design systems &amp; weekly notes</p><span>My design toolkit</span><span>Creator launch pack <LockKeyhole size={12} /></span></div></div></BrowserShell>;
+  return <BrowserShell title="page-editor"><div className={styles.editorLayout}><aside><span className={styles.logo}>Linkicom</span><span className={styles.editorActive}>Page</span><span>Links</span><span>Appearance</span><span>Settings</span></aside><main><div className={styles.editorHeader}><div><small>PAGE EDITOR</small><b>Creator page</b></div><button>Publish changes</button></div><div className={styles.editorForm}><label>Profile title<span>Alex Makes</span></label><label>Bio<span>Design systems, resources &amp; weekly notes.</span></label><div className={styles.editorLinkRow}><span><Link2 size={16} /></span><div><b>My design toolkit</b><small>linkicom.io/alex/toolkit</small></div><Eye size={16} /></div><div className={styles.editorLinkRow}><span><LockKeyhole size={16} /></span><div><b>Creator launch pack</b><small>2 unlock actions</small></div><Eye size={16} /></div></div></main><div className={styles.editorPhone}><div className={styles.previewAvatar}>AM</div><b>@alexmakes</b><p>Design systems &amp; weekly notes</p><span>My design toolkit</span><span>Creator launch pack <LockKeyhole size={12} /></span></div></div></BrowserShell>;
 }
 
 function UnlockPreview() {
@@ -497,7 +524,7 @@ export function FinalCTA() {
   );
 }
 
-export function Footer() {
+export function Footer({ settings }: { settings: PublicSiteSettings }) {
   const columns = [
     ["Product", "Features", "Creator pages", "Unlock actions", "Analytics"],
     ["Resources", "Help center", "Creator guide", "Examples", "Status"],
@@ -507,18 +534,35 @@ export function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={`${styles.container} ${styles.footerGrid}`}>
-        <div className={styles.footerBrand}><Logo /><p>One link for everything you create — and every action that helps you grow.</p></div>
+        <div className={styles.footerBrand}>
+          <Logo settings={settings} />
+          <p>{settings.siteDescription || settings.siteTagline}</p>
+          {settings.contact.email ? <a href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a> : null}
+          {settings.contact.phone ? <a href={`tel:${settings.contact.phone}`}>{settings.contact.phone}</a> : null}
+          {settings.contact.address ? <p>{settings.contact.address}</p> : null}
+          {settings.contact.workingHours ? <p>{settings.contact.workingHours}</p> : null}
+          {settings.contact.mapUrl ? <a href={settings.contact.mapUrl} target="_blank" rel="noreferrer">View map</a> : null}
+          {settings.socialLinks.length ? (
+            <div className="mt-3 flex flex-wrap gap-3">
+              {settings.socialLinks.map((link) => (
+                <a key={link.platform} href={link.url} target="_blank" rel="noreferrer">
+                  {link.platform}
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
         {columns.map(([title, ...links]) => <div className={styles.footerColumn} key={title}><strong>{title}</strong>{links.map((link) => <a href="#top" key={link}>{link}</a>)}</div>)}
       </div>
-      <div className={`${styles.container} ${styles.footerBottom}`}><span>© 2026 Linkicom. All rights reserved.</span><span>Built for creators, from first click to real connection.</span></div>
+      <div className={`${styles.container} ${styles.footerBottom}`}><span>© 2026 {settings.siteName}. All rights reserved.</span><span>{settings.siteTagline || "Built for creators, from first click to real connection."}</span></div>
     </footer>
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ settings }: { settings: PublicSiteSettings }) {
   return (
     <main className={styles.page}>
-      <Navbar />
+      <Navbar settings={settings} />
       <HeroSection />
       <IntegrationStrip />
       <ProcessTimeline />
@@ -527,7 +571,7 @@ export function LandingPage() {
       <SocialProofSection />
       <UseCaseTabs />
       <FinalCTA />
-      <Footer />
+      <Footer settings={settings} />
     </main>
   );
 }

@@ -7,26 +7,17 @@ import type {
   AdminMonetizationLevel,
   NestPaginatedMonetizationLevelsResponse,
 } from "@/features/admin-monetization-levels/types";
-import { getServerSession } from "@/lib/auth/server-session";
-
-const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+import { serverApiFetch } from "@/lib/auth/server-access";
 
 export async function getMonetizationLevelsTableData(
   state: MonetizationLevelsTableQuery,
 ) {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.");
-  }
-
-  const response = await fetch(
-    `${apiUrl}/admin/monetization-levels?${serializeMonetizationLevelsQuery(state)}`,
+  const response = await serverApiFetch(
+    `/admin/monetization-levels?${serializeMonetizationLevelsQuery(state)}`,
     {
-      headers: {
-        Authorization: `Bearer ${session.backendAccessToken}`,
-      },
       cache: "no-store",
     },
+    "/admin/monetization-levels",
   );
   if (!response.ok) throw new Error(await readApiError(response));
 
@@ -38,17 +29,11 @@ export async function getMonetizationLevelsTableData(
 export async function getMonetizationLevel(
   id: number,
 ): Promise<AdminMonetizationLevel | null> {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.");
-  }
-
-  const response = await fetch(`${apiUrl}/admin/monetization-levels/${id}`, {
-    headers: {
-      Authorization: `Bearer ${session.backendAccessToken}`,
-    },
-    cache: "no-store",
-  });
+  const response = await serverApiFetch(
+    `/admin/monetization-levels/${id}`,
+    { cache: "no-store" },
+    `/admin/monetization-levels/${id}/edit`,
+  );
 
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(await readApiError(response));

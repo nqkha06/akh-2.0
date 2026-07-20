@@ -9,7 +9,13 @@ export const metadata: Metadata = {
   description: "Tạo tài khoản Linkicom miễn phí.",
 };
 
-export default async function RegisterPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const session = await auth();
   if (session?.user && session.backendAccessToken && !session.authError) {
     redirect("/member");
@@ -18,6 +24,19 @@ export default async function RegisterPage() {
   const googleEnabled = Boolean(
     process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
   );
+  const rawReferralCode = (await searchParams).ref;
+  const referralCode = (
+    Array.isArray(rawReferralCode) ? rawReferralCode[0] : rawReferralCode
+  )
+    ?.trim()
+    .toLowerCase()
+    .slice(0, 32);
 
-  return <AuthScreen mode="register" googleEnabled={googleEnabled} />;
+  return (
+    <AuthScreen
+      mode="register"
+      googleEnabled={googleEnabled}
+      referralCode={referralCode}
+    />
+  );
 }

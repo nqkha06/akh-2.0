@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   ServiceUnavailableException,
@@ -48,28 +49,60 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    try {
-      const user = await this.prisma.user.create({
-        data: {
-          name: dto.name.trim(),
-          email: this.normalizeEmail(dto.email),
-          passwordHash: await hash(dto.password, 12),
-          status: "active",
-          roles: {
-            create: { role: { connect: { key: "member" } } },
+    const email = this.normalizeEmail(dto.email);
+    const referrer = dto.referralCode
+      ? await this.prisma.user.findFirst({
+          where: {
+            referralCode: dto.referralCode,
+            status: "active",
           },
-        },
-      });
-      return this.toPublicUser(await this.toAuthenticatedUser(user));
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        throw new ConflictException("Email đã được sử dụng.");
-      }
-      throw error;
+          select: { id: true },
+        })
+      : null;
+    if (dto.referralCode && !referrer) {
+      throw new BadRequestException(
+        "Mã giới thiệu không tồn tại hoặc không còn hiệu lực.",
+      );
     }
+    const passwordHash = await hash(dto.password, 12);
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        const user = await this.prisma.user.create({
+          data: {
+            name: dto.name.trim(),
+            email,
+            passwordHash,
+            status: "active",
+            referralCode: this.generateReferralCode(),
+            referredById: referrer?.id,
+            roles: {
+              create: { role: { connect: { key: "member" } } },
+            },
+          },
+        });
+        return this.toPublicUser(await this.toAuthenticatedUser(user));
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          const emailExists = await this.prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+          if (emailExists) {
+            throw new ConflictException("Email đã được sử dụng.");
+          }
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new ServiceUnavailableException(
+      "Không thể tạo mã giới thiệu. Vui lòng thử lại.",
+    );
   }
 
   async validateCredentials(emailInput: string, password: string) {
@@ -230,7 +263,7 @@ export class AuthService {
     ]);
   }
 
-  async loginWithGoogle(idToken: string) {
+  async loginWithGoogle(idToken: string, referralCode?: string) {
     const clientId = this.configService.get<string>("AUTH_GOOGLE_ID");
 
     if (!clientId) {
@@ -260,6 +293,7 @@ export class AuthService {
       email,
       name: payload.name?.trim() || email.split("@")[0],
       avatar: payload.picture || null,
+      referralCode,
     });
 
     if (user.status !== "active") {
@@ -354,6 +388,10 @@ export class AuthService {
     return createHash("sha256").update(token).digest("hex");
   }
 
+  private generateReferralCode() {
+    return randomUUID().replaceAll("-", "").slice(0, 12);
+  }
+
   private hashesEqual(left: string, right: string) {
     const leftBuffer = Buffer.from(left);
     const rightBuffer = Buffer.from(right);
@@ -386,6 +424,7 @@ export class AuthService {
     email: string;
     name: string;
     avatar: string | null;
+    referralCode?: string;
   }) {
     const linkedAccount = await this.prisma.socialAccount.findUnique({
       where: {
@@ -405,6 +444,22 @@ export class AuthService {
           where: { email: input.email },
         });
 
+        const referrer =
+          !existingUser && input.referralCode
+            ? await prisma.user.findFirst({
+                where: {
+                  referralCode: input.referralCode,
+                  status: "active",
+                },
+                select: { id: true },
+              })
+            : null;
+        if (!existingUser && input.referralCode && !referrer) {
+          throw new BadRequestException(
+            "Mã giới thiệu không tồn tại hoặc không còn hiệu lực.",
+          );
+        }
+
         const user = existingUser
           ? await prisma.user.update({
               where: { id: existingUser.id },
@@ -419,6 +474,8 @@ export class AuthService {
                 name: input.name,
                 avatar: input.avatar,
                 emailVerifiedAt: new Date(),
+                referralCode: this.generateReferralCode(),
+                referredById: referrer?.id,
                 roles: {
                   create: { role: { connect: { key: "member" } } },
                 },

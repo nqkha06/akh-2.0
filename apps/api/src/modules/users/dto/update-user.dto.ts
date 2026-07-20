@@ -7,10 +7,13 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   MaxLength,
   MinLength,
 } from "class-validator";
+
+import { USER_STATUSES, type UserStatus } from "../users.constants";
 
 export class UpdateUserDto {
   @IsOptional()
@@ -29,13 +32,12 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
-  @IsString()
-  @MinLength(8)
-  @MaxLength(128)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-    message: "Mật khẩu phải có chữ hoa, chữ thường và chữ số.",
-  })
-  password?: string;
+  @IsUrl(
+    { protocols: ["http", "https"], require_protocol: true },
+    { message: "Avatar phải là URL HTTP(S) hợp lệ." },
+  )
+  @MaxLength(2048)
+  avatar?: string | null;
 
   @IsOptional()
   @IsArray()
@@ -54,6 +56,6 @@ export class UpdateUserDto {
   permissions?: string[];
 
   @IsOptional()
-  @IsIn(["active", "inactive", "locked", "suspended", "disabled"])
-  status?: "active" | "inactive" | "locked" | "suspended" | "disabled";
+  @IsIn(USER_STATUSES)
+  status?: UserStatus;
 }

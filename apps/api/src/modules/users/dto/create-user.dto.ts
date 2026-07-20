@@ -3,14 +3,18 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   MaxLength,
   MinLength,
 } from "class-validator";
+
+import { USER_STATUSES, type UserStatus } from "../users.constants";
 
 export class CreateUserDto {
   @IsString()
@@ -25,6 +29,14 @@ export class CreateUserDto {
     typeof value === "string" ? value.trim().toLowerCase() : value,
   )
   email!: string;
+
+  @IsOptional()
+  @IsUrl(
+    { protocols: ["http", "https"], require_protocol: true },
+    { message: "Avatar phải là URL HTTP(S) hợp lệ." },
+  )
+  @MaxLength(2048)
+  avatar?: string;
 
   @IsString()
   @MinLength(8)
@@ -49,6 +61,10 @@ export class CreateUserDto {
   @Matches(/^[a-z][a-z0-9.-]{1,99}$/, { each: true })
   permissions: string[] = [];
 
-  @IsIn(["active", "inactive", "locked", "suspended", "disabled"])
-  status!: "active" | "inactive" | "locked" | "suspended" | "disabled";
+  @IsIn(USER_STATUSES)
+  status!: UserStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  emailVerified = false;
 }

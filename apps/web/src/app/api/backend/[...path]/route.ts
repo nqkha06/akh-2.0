@@ -1,6 +1,6 @@
 import type { Session } from "next-auth"
-import type { NextAuthRequest } from "next-auth"
-import { NextResponse } from "next/server"
+import { revalidatePath, revalidateTag } from "next/cache"
+import { NextResponse, type NextRequest } from "next/server"
 
 import { auth, unstable_update } from "@/auth"
 import {
@@ -8,6 +8,7 @@ import {
   isTerminalAuthError,
   readAuthError,
 } from "@/lib/auth/auth-errors"
+import { accessTokenNeedsRefresh } from "@/lib/auth/server-access"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -28,7 +29,7 @@ type RouteContext = {
   params: Promise<{ path?: string[] }>
 }
 
-const handler = auth(async (request, context) => {
+async function handler(request: NextRequest, context: RouteContext) {
   if (!isTrustedBrowserRequest(request)) {
     return NextResponse.json(
       {
@@ -40,7 +41,19 @@ const handler = auth(async (request, context) => {
     )
   }
 
-  const { path = [] } = await (context as RouteContext).params
+  const session = await auth()
+  if (!session?.user) {
+    return authErrorResponse(
+      401,
+      AUTH_ERROR_CODES.SESSION_NOT_FOUND,
+      "Bạn cần đăng nhập để thực hiện thao tác này.",
+    )
+  }
+  if (session.authError && isTerminalAuthError(session.authError)) {
+    return sessionErrorResponse(session)
+  }
+
+  const { path = [] } = await context.params
   if (path.length === 0) {
     return authErrorResponse(
       404,
@@ -61,11 +74,33 @@ const handler = auth(async (request, context) => {
   }
 
   const requestBody = await readRequestBody(request)
+  let activeSession = session
+  let refreshAttempted = false
+
+  if (
+    !activeSession.backendAccessToken ||
+    accessTokenNeedsRefresh(activeSession)
+  ) {
+    refreshAttempted = true
+    const refreshedSession = await refreshServerSession()
+    if (!refreshedSession?.backendAccessToken || refreshedSession.authError) {
+      return refreshedSession?.authError
+        ? sessionErrorResponse(refreshedSession)
+        : authErrorResponse(
+            503,
+            AUTH_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
+            "Dịch vụ xác thực tạm thời không khả dụng.",
+            true,
+          )
+    }
+    activeSession = refreshedSession
+  }
+
   const firstResponse = await safelyCallBackend(
     request,
     relativePath,
     requestBody,
-    request.auth?.backendAccessToken,
+    activeSession.backendAccessToken,
   )
   if (!firstResponse) {
     return authErrorResponse(
@@ -77,13 +112,14 @@ const handler = auth(async (request, context) => {
   }
 
   if (firstResponse.status !== 401) {
+    invalidateSiteSettings(request, relativePath, firstResponse)
     return forwardBackendResponse(firstResponse, request.method)
   }
 
   const firstError = await readAuthError(firstResponse)
   if (
     firstError.code === AUTH_ERROR_CODES.ACCESS_TOKEN_EXPIRED &&
-    request.auth?.user
+    !refreshAttempted
   ) {
     const refreshedSession = await refreshServerSession()
     if (refreshedSession?.backendAccessToken && !refreshedSession.authError) {
@@ -101,6 +137,7 @@ const handler = auth(async (request, context) => {
           true,
         )
       }
+      invalidateSiteSettings(request, relativePath, retriedResponse)
       return forwardBackendResponse(retriedResponse, request.method)
     }
 
@@ -109,20 +146,23 @@ const handler = auth(async (request, context) => {
     }
   }
 
-  if (request.auth?.authError) {
-    return sessionErrorResponse(request.auth)
-  }
-
-  if (!request.auth?.user) {
-    return authErrorResponse(
-      401,
-      AUTH_ERROR_CODES.SESSION_NOT_FOUND,
-      "Bạn cần đăng nhập để thực hiện thao tác này.",
-    )
-  }
-
   return forwardBackendResponse(firstResponse, request.method)
-})
+}
+
+function invalidateSiteSettings(
+  request: NextRequest,
+  relativePath: string,
+  response: Response,
+) {
+  if (
+    request.method === "PATCH" &&
+    relativePath === "admin/settings/appearance" &&
+    response.ok
+  ) {
+    revalidateTag("public-site-settings", "max")
+    revalidatePath("/", "layout")
+  }
+}
 
 export {
   handler as DELETE,
@@ -148,7 +188,7 @@ async function readRequestBody(request: Request) {
   return request.arrayBuffer()
 }
 
-function isTrustedBrowserRequest(request: NextAuthRequest) {
+function isTrustedBrowserRequest(request: NextRequest) {
   if (request.method === "GET" || request.method === "HEAD") {
     return true
   }
@@ -162,7 +202,7 @@ function isTrustedBrowserRequest(request: NextAuthRequest) {
 }
 
 async function safelyCallBackend(
-  request: NextAuthRequest,
+  request: NextRequest,
   relativePath: string,
   body: ArrayBuffer | undefined,
   accessToken?: string,
@@ -175,7 +215,7 @@ async function safelyCallBackend(
 }
 
 async function callBackend(
-  request: NextAuthRequest,
+  request: NextRequest,
   relativePath: string,
   body: ArrayBuffer | undefined,
   accessToken?: string,

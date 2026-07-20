@@ -448,6 +448,7 @@ describe("Admin users CRUD E2E", () => {
       id: number;
     };
     assert.equal(created.email, "managed@example.com");
+    assert.equal(created.balance, "0");
     assert.equal("passwordHash" in created, false);
     assert.equal("refreshTokenHash" in created, false);
 
@@ -566,6 +567,70 @@ describe("Admin users CRUD E2E", () => {
     });
     assert.equal(detail.status, 200);
 
+    const systemFieldUpdate = await request(
+      `/api/admin/users/${created.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ createdAt: new Date().toISOString() }),
+      },
+    );
+    assert.equal(systemFieldUpdate.status, 400);
+
+    const verifyEmail = await request(
+      `/api/admin/users/${created.id}/verify-email`,
+      {
+        method: "POST",
+        headers: authorization,
+      },
+    );
+    assert.equal(verifyEmail.status, 201, await verifyEmail.clone().text());
+    assert.equal(
+      ((await verifyEmail.json()) as { emailVerified: boolean }).emailVerified,
+      true,
+    );
+    const verifiedFilter = new URLSearchParams({
+      filters: JSON.stringify([
+        {
+          id: "emailVerifiedAt",
+          value: "true",
+          variant: "boolean",
+          operator: "eq",
+          filterId: "verified-filter",
+        },
+      ]),
+    });
+    const verifiedList = await request(
+      `/api/admin/users?${verifiedFilter}`,
+      { headers: authorization },
+    );
+    assert.equal(verifiedList.status, 200);
+    assert.ok(
+      ((await verifiedList.json()) as { items: Array<{ id: number }> }).items
+        .some((user) => user.id === created.id),
+    );
+
+    const deactivate = await request(
+      `/api/admin/users/${created.id}/status`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ status: "inactive" }),
+      },
+    );
+    assert.equal(deactivate.status, 200);
+    assert.equal(
+      ((await deactivate.json()) as { status: string }).status,
+      "inactive",
+    );
+    const reactivate = await request("/api/admin/users/bulk/status", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({ ids: [created.id], status: "active" }),
+    });
+    assert.equal(reactivate.status, 200);
+    assert.deepEqual(await reactivate.json(), { updated: 1 });
+
     const updatedResponse = await request(`/api/admin/users/${created.id}`, {
       method: "PATCH",
       headers: authorization,
@@ -580,6 +645,37 @@ describe("Admin users CRUD E2E", () => {
     const updated = (await updatedResponse.json()) as Record<string, unknown>;
     assert.equal(updated.name, "Managed User Updated");
     assert.equal(updated.role, "admin");
+
+    const revokeSessions = await request(
+      `/api/admin/users/${created.id}/revoke-sessions`,
+      {
+        method: "POST",
+        headers: authorization,
+      },
+    );
+    assert.equal(revokeSessions.status, 201);
+
+    const bulkCreatedResponse = await request("/api/admin/users", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        name: "Bulk Managed User",
+        email: "bulk-managed@example.com",
+        password: "Managed123",
+        roles: ["member"],
+        permissions: [],
+        status: "active",
+      }),
+    });
+    assert.equal(bulkCreatedResponse.status, 201);
+    const bulkCreated = (await bulkCreatedResponse.json()) as { id: number };
+    const bulkDelete = await request("/api/admin/users/bulk", {
+      method: "DELETE",
+      headers: authorization,
+      body: JSON.stringify({ ids: [bulkCreated.id] }),
+    });
+    assert.equal(bulkDelete.status, 200);
+    assert.deepEqual(await bulkDelete.json(), { deleted: 1 });
 
     const selfDemote = await request(`/api/admin/users/${currentUser.id}`, {
       method: "PATCH",
@@ -777,10 +873,326 @@ describe("Admin social links E2E", () => {
   });
 });
 
+describe("Admin pages CRUD E2E", () => {
+  const document = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: "Nội dung kiểm thử Pages." }],
+      },
+    ],
+  };
+
+  it("supports validated CRUD, tablecn queries, lifecycle, sanitization and soft delete", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    assert.equal((await request("/api/admin/pages")).status, 401);
+
+    const createResponse = await request("/api/admin/pages", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        title: "Chính sách Bảo mật",
+        contentJson: document,
+        contentHtml:
+          '<h1 onclick="alert(1)">An toàn</h1><script>alert(1)</script><a href="javascript:alert(1)">Link</a>',
+        excerpt: "Trang kiểm thử.",
+        status: "DRAFT",
+        robotsIndex: true,
+        robotsFollow: true,
+        sortOrder: 10,
+      }),
+    });
+    assert.equal(createResponse.status, 201, await createResponse.clone().text());
+    const created = (await createResponse.json()) as {
+      id: number;
+      slug: string;
+      status: string;
+      contentJson: { type: string };
+      contentHtml: string;
+      publishedAt: string | null;
+    };
+    assert.equal(created.slug, "chinh-sach-bao-mat");
+    assert.equal(created.status, "DRAFT");
+    assert.equal(created.contentJson.type, "doc");
+    assert.equal(created.publishedAt, null);
+    assert.equal(created.contentHtml.includes("<script"), false);
+    assert.equal(created.contentHtml.includes("onclick"), false);
+    assert.equal(created.contentHtml.includes("javascript:"), false);
+
+    const duplicateResponse = await request("/api/admin/pages", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        title: "Trùng slug",
+        slug: "CHINH SACH BAO MAT",
+        contentJson: document,
+        contentHtml: "<p>Duplicate</p>",
+      }),
+    });
+    assert.equal(duplicateResponse.status, 409);
+
+    const secondResponse = await request("/api/admin/pages", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        title: "Điều khoản sử dụng",
+        slug: "dieu-khoan-su-dung",
+        contentJson: document,
+        contentHtml: "<p>Điều khoản.</p>",
+        status: "DRAFT",
+        sortOrder: 20,
+      }),
+    });
+    assert.equal(secondResponse.status, 201);
+    const second = (await secondResponse.json()) as { id: number };
+
+    const tableQuery = new URLSearchParams({
+      page: "1",
+      perPage: "1",
+      search: "chinh-sach",
+      sort: JSON.stringify([{ id: "title", desc: false }]),
+      filters: JSON.stringify([
+        {
+          id: "status",
+          value: ["DRAFT"],
+          variant: "multiSelect",
+          operator: "inArray",
+          filterId: "page-status-filter",
+        },
+        {
+          id: "title",
+          value: "Chính sách",
+          variant: "text",
+          operator: "iLike",
+          filterId: "page-title-filter",
+        },
+      ]),
+      joinOperator: "and",
+    });
+    const listResponse = await request(`/api/admin/pages?${tableQuery}`, {
+      headers: authorization,
+    });
+    assert.equal(listResponse.status, 200, await listResponse.clone().text());
+    const list = (await listResponse.json()) as {
+      items: Array<{ id: number; contentHtml?: string }>;
+      total: number;
+      pageCount: number;
+      perPage: number;
+    };
+    assert.equal(list.total, 1);
+    assert.equal(list.pageCount, 1);
+    assert.equal(list.perPage, 1);
+    assert.equal(list.items[0]?.id, created.id);
+    assert.equal("contentHtml" in list.items[0]!, false);
+
+    const invalidQuery = new URLSearchParams({
+      sort: JSON.stringify([{ id: "contentHtml", desc: true }]),
+      filters: JSON.stringify([
+        {
+          id: "deletedAt",
+          value: "x",
+          variant: "text",
+          operator: "iLike",
+          filterId: "private-field",
+        },
+      ]),
+    });
+    assert.equal(
+      (
+        await request(`/api/admin/pages?${invalidQuery}`, {
+          headers: authorization,
+        })
+      ).status,
+      400,
+    );
+
+    const updateResponse = await request(
+      `/api/admin/pages/${created.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          title: "Chính sách quyền riêng tư",
+          slug: "quyen-rieng-tu",
+          contentJson: document,
+          contentHtml: "<p>Nội dung đã cập nhật.</p>",
+          seoTitle: "SEO privacy",
+          canonicalUrl: "https://example.com/quyen-rieng-tu",
+        }),
+      },
+    );
+    assert.equal(updateResponse.status, 200);
+    const updated = (await updateResponse.json()) as {
+      slug: string;
+      seoTitle: string;
+    };
+    assert.equal(updated.slug, "quyen-rieng-tu");
+    assert.equal(updated.seoTitle, "SEO privacy");
+
+    const publishResponse = await request(
+      `/api/admin/pages/${created.id}/status`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      },
+    );
+    assert.equal(publishResponse.status, 200);
+    const published = (await publishResponse.json()) as {
+      status: string;
+      publishedAt: string;
+    };
+    assert.equal(published.status, "PUBLISHED");
+    assert.ok(published.publishedAt);
+
+    const draftResponse = await request(
+      `/api/admin/pages/${created.id}/status`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ status: "DRAFT" }),
+      },
+    );
+    assert.equal(draftResponse.status, 200);
+    const drafted = (await draftResponse.json()) as {
+      status: string;
+      publishedAt: string;
+      contentHtml: string;
+    };
+    assert.equal(drafted.status, "DRAFT");
+    assert.equal(drafted.publishedAt, published.publishedAt);
+    assert.equal(drafted.contentHtml, "<p>Nội dung đã cập nhật.</p>");
+
+    const adminRole = await prisma.role.findUniqueOrThrow({
+      where: { key: "admin" },
+    });
+    const publishPermission = await prisma.permission.findUniqueOrThrow({
+      where: { key: "pages.publish" },
+    });
+    await prisma.roleHasPermission.delete({
+      where: {
+        roleId_permissionId: {
+          roleId: adminRole.id,
+          permissionId: publishPermission.id,
+        },
+      },
+    });
+    const deniedPublish = await request(
+      `/api/admin/pages/${created.id}/status`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      },
+    );
+    assert.equal(deniedPublish.status, 403);
+    await prisma.roleHasPermission.create({
+      data: {
+        roleId: adminRole.id,
+        permissionId: publishPermission.id,
+      },
+    });
+
+    const bulkArchive = await request("/api/admin/pages/bulk/status", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        ids: [created.id, second.id, second.id],
+        status: "ARCHIVED",
+      }),
+    });
+    assert.equal(bulkArchive.status, 200);
+    assert.deepEqual(await bulkArchive.json(), { updated: 2 });
+
+    const restored = await request("/api/admin/pages/bulk/status", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        ids: [created.id, second.id],
+        status: "DRAFT",
+      }),
+    });
+    assert.equal(restored.status, 200);
+    assert.deepEqual(await restored.json(), { updated: 2 });
+
+    const deletePermission = await prisma.permission.findUniqueOrThrow({
+      where: { key: "pages.delete" },
+    });
+    await prisma.roleHasPermission.delete({
+      where: {
+        roleId_permissionId: {
+          roleId: adminRole.id,
+          permissionId: deletePermission.id,
+        },
+      },
+    });
+    const deniedDelete = await request("/api/admin/pages/bulk", {
+      method: "DELETE",
+      headers: authorization,
+      body: JSON.stringify({ ids: [created.id] }),
+    });
+    assert.equal(deniedDelete.status, 403);
+    await prisma.roleHasPermission.create({
+      data: {
+        roleId: adminRole.id,
+        permissionId: deletePermission.id,
+      },
+    });
+
+    const deleteResponse = await request("/api/admin/pages/bulk", {
+      method: "DELETE",
+      headers: authorization,
+      body: JSON.stringify({ ids: [created.id, second.id] }),
+    });
+    assert.equal(deleteResponse.status, 200);
+    assert.deepEqual(await deleteResponse.json(), { deleted: 2 });
+    assert.equal(
+      (
+        await request(`/api/admin/pages/${created.id}`, {
+          headers: authorization,
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await request("/api/admin/pages?search=quyen-rieng-tu", {
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+    const deletedList = await request(
+      "/api/admin/pages?search=quyen-rieng-tu",
+      { headers: authorization },
+    );
+    assert.equal(
+      ((await deletedList.json()) as { total: number }).total,
+      0,
+    );
+    assert.equal(
+      (
+        await request("/api/admin/pages/987654321", {
+          headers: authorization,
+        })
+      ).status,
+      404,
+    );
+
+    await prisma.page.deleteMany({
+      where: { id: { in: [created.id, second.id] } },
+    });
+  });
+});
+
 describe("Admin monetization levels E2E", () => {
   const payload = (key: string, isDefault = false) => ({
     key,
-    status: "active",
+    status: "published",
     isDefault,
     sortOrder: 10,
     translations: [
@@ -1014,14 +1426,14 @@ describe("Admin monetization levels E2E", () => {
     const listResult = (await listResponse.json()) as {
       total: number;
       summary: {
-        activeLevels: number;
+        publishedLevels: number;
         configuredRoutes: number;
         configuredRates: number;
         assignedUsers: number;
       };
     };
     assert.equal(listResult.total, 2);
-    assert.equal(listResult.summary.activeLevels, 2);
+    assert.equal(listResult.summary.publishedLevels, 2);
     assert.equal(listResult.summary.configuredRoutes, 1);
     assert.equal(listResult.summary.configuredRates, 1);
     assert.equal(listResult.summary.assignedUsers, 0);
@@ -1232,7 +1644,7 @@ describe("Public monetization route resolution E2E", () => {
     const level = await prisma.monetizationLevel.create({
       data: {
         key: "public-route-resolution",
-        status: "active",
+        status: "published",
         routesJson: JSON.stringify([
           {
             id: "fallback",
@@ -1424,7 +1836,7 @@ describe("Public monetization route resolution E2E", () => {
     const level = await prisma.monetizationLevel.create({
       data: {
         key: "public-file-route-resolution",
-        status: "active",
+        status: "published",
         routesJson: JSON.stringify([
           {
             id: "all",
@@ -1483,6 +1895,99 @@ describe("Public monetization route resolution E2E", () => {
   });
 });
 
+describe("Website settings E2E", () => {
+  it("protects admin settings, validates input and exposes only public fields", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+
+    assert.equal(
+      (await request("/api/admin/settings/appearance")).status,
+      401,
+    );
+
+    const updateResponse = await request("/api/admin/settings/appearance", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        siteName: "STU Test",
+        siteShortName: "STU",
+        siteDescription: "Website settings integration test.",
+        siteTagline: "Settings without restart.",
+        siteUrl: "https://example.com",
+        logoLightId: null,
+        logoDarkId: null,
+        logoIconId: null,
+        faviconId: null,
+        defaultOgImageId: null,
+        socialLinks: [
+          {
+            platform: "github",
+            url: "https://github.com/example",
+            isActive: true,
+            sortOrder: 0,
+          },
+          {
+            platform: "facebook",
+            url: "https://facebook.com/example",
+            isActive: false,
+            sortOrder: 1,
+          },
+        ],
+        contactEmail: "contact@example.com",
+        supportEmail: null,
+        phone: null,
+        address: null,
+        workingHours: null,
+        mapUrl: null,
+      }),
+    });
+    assert.equal(
+      updateResponse.status,
+      200,
+      await updateResponse.clone().text(),
+    );
+    const adminBody = (await updateResponse.json()) as {
+      siteName: string;
+      socialLinks: Array<{ platform: string }>;
+    };
+    assert.equal(adminBody.siteName, "STU Test");
+    assert.equal(adminBody.socialLinks.length, 2);
+
+    const publicResponse = await request("/api/site-config");
+    assert.equal(publicResponse.status, 200);
+    const publicBody = (await publicResponse.json()) as {
+      siteName: string;
+      socialLinks: Array<{ platform: string }>;
+      updatedById?: number;
+    };
+    assert.equal(publicBody.siteName, "STU Test");
+    assert.deepEqual(
+      publicBody.socialLinks.map((link) => link.platform),
+      ["github"],
+    );
+    assert.equal("updatedById" in publicBody, false);
+
+    const invalidResponse = await request("/api/admin/settings/appearance", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        ...adminBody,
+        siteUrl: "not-a-url",
+        socialLinks: [],
+        contactEmail: null,
+        supportEmail: null,
+        phone: null,
+        address: null,
+        workingHours: null,
+        mapUrl: null,
+      }),
+    });
+    assert.equal(invalidResponse.status, 400);
+  });
+});
+
 describe("Roles and permissions E2E", () => {
   it("supports role permissions, direct permissions and live permission changes", async () => {
     assert.ok(adminAccessToken);
@@ -1530,7 +2035,11 @@ describe("Roles and permissions E2E", () => {
         status: "active",
       }),
     });
-    assert.equal(createManagerResponse.status, 201);
+    assert.equal(
+      createManagerResponse.status,
+      201,
+      await createManagerResponse.clone().text(),
+    );
     const managerUser = (await createManagerResponse.json()) as { id: number };
     const manager = await loginAs(
       "permission-manager@example.com",
@@ -1617,6 +2126,30 @@ describe("Roles and permissions E2E", () => {
     assert.equal(createdByManager.status, 201);
     const managedUser = (await createdByManager.json()) as { id: number };
 
+    const privilegeEscalation = await request("/api/admin/users", {
+      method: "POST",
+      headers: managerAuthorization,
+      body: JSON.stringify({
+        name: "Escalation Attempt",
+        email: "escalation-attempt@example.com",
+        password: "Escalate123",
+        roles: ["admin"],
+        permissions: [],
+        status: "active",
+      }),
+    });
+    assert.equal(privilegeEscalation.status, 403);
+    assert.equal(
+      (
+        await request(`/api/admin/users/${managedUser.id}/status`, {
+          method: "PATCH",
+          headers: managerAuthorization,
+          body: JSON.stringify({ status: "disabled" }),
+        })
+      ).status,
+      403,
+    );
+
     assert.equal(
       (
         await request(`/api/admin/roles/${role.id}`, {
@@ -1651,7 +2184,7 @@ describe("Roles and permissions E2E", () => {
 });
 
 describe("Languages E2E", () => {
-  it("manages enabled locales and preserves exactly one default", async () => {
+  it("manages published locales and preserves exactly one default", async () => {
     assert.ok(adminAccessToken);
     const authorization = {
       Authorization: `Bearer ${adminAccessToken}`,
@@ -1667,7 +2200,7 @@ describe("Languages E2E", () => {
         regional: "ja-JP",
         flag: "JP",
         isDefault: false,
-        isEnabled: true,
+        status: "published",
         sortOrder: 30,
         isRtl: false,
       }),
@@ -1689,7 +2222,7 @@ describe("Languages E2E", () => {
             locale: "ja",
             code: "jx",
             isDefault: false,
-            isEnabled: true,
+            status: "published",
             sortOrder: 40,
             isRtl: false,
           }),
@@ -1712,7 +2245,7 @@ describe("Languages E2E", () => {
         await request(`/api/admin/languages/${japanese.id}`, {
           method: "PATCH",
           headers: authorization,
-          body: JSON.stringify({ isEnabled: false }),
+          body: JSON.stringify({ status: "draft" }),
         })
       ).status,
       400,
@@ -1732,7 +2265,7 @@ describe("Languages E2E", () => {
         body: JSON.stringify({
           withdrawFee: "0",
           minWithdrawAmount: "1000",
-          status: "active",
+          status: "published",
           translations: [
             {
               locale: "vi",
@@ -1759,7 +2292,7 @@ describe("Languages E2E", () => {
         body: JSON.stringify({
           withdrawFee: "0",
           minWithdrawAmount: "1000",
-          status: "active",
+          status: "published",
           translations: [
             {
               locale: "ja",
@@ -1881,7 +2414,7 @@ describe("Payment methods E2E", () => {
       body: JSON.stringify({
         withdrawFee: "5.25",
         minWithdrawAmount: "100000",
-        status: "active",
+        status: "published",
         translations,
       }),
     });
@@ -2042,6 +2575,391 @@ describe("Payment methods E2E", () => {
       ).status,
       200,
     );
+  });
+});
+
+describe("Withdrawals E2E", () => {
+  it("debits once, handles idempotency and refunds only cancelled or rejected requests", async () => {
+    assert.ok(adminAccessToken);
+    const adminAuthorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    const referrerRegistration = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: "withdrawal-referrer@example.com",
+        name: "Withdrawal Referrer",
+        password: "Secure123",
+      }),
+    });
+    assert.equal(referrerRegistration.status, 201);
+    const referrer = await prisma.user.findUniqueOrThrow({
+      where: { email: "withdrawal-referrer@example.com" },
+    });
+    assert.ok(referrer.referralCode);
+    const referrerSession = await loginAs(
+      "withdrawal-referrer@example.com",
+      "Secure123",
+    );
+    const referrerAuthorization = {
+      Authorization: `Bearer ${referrerSession.body.accessToken}`,
+    };
+
+    const registration = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: "withdrawal-owner@example.com",
+        name: "Withdrawal Owner",
+        password: "Secure123",
+        referralCode: referrer.referralCode,
+      }),
+    });
+    assert.equal(registration.status, 201);
+    const member = await loginAs(
+      "withdrawal-owner@example.com",
+      "Secure123",
+    );
+    const memberAuthorization = {
+      Authorization: `Bearer ${member.body.accessToken}`,
+    };
+    const owner = await prisma.user.update({
+      where: { email: "withdrawal-owner@example.com" },
+      data: { balance: "1000000" },
+    });
+    const method = await prisma.paymentMethod.create({
+      data: {
+        withdrawFee: "10000",
+        minWithdrawAmount: "100000",
+        status: "published",
+        translations: {
+          create: {
+            locale: "vi",
+            name: "Ngân hàng kiểm thử",
+            fieldsJson: "[]",
+          },
+        },
+      },
+    });
+    const account = await prisma.userPaymentMethod.create({
+      data: {
+        userId: owner.id,
+        paymentMethodId: method.id,
+        detailsJson: JSON.stringify({
+          account_name: "Withdrawal Owner",
+          account_number: "123456789",
+        }),
+      },
+    });
+
+    const estimate = await request("/api/member/withdrawals/estimate", {
+      method: "POST",
+      headers: memberAuthorization,
+      body: JSON.stringify({
+        amount: "300000",
+        userPaymentMethodId: account.id,
+      }),
+    });
+    assert.equal(estimate.status, 201, await estimate.clone().text());
+    assert.deepEqual(await estimate.json(), {
+      requestedAmount: "300000",
+      feeAmount: "10000",
+      netAmount: "290000",
+    });
+
+    const firstPayload = {
+      amount: "300000",
+      userPaymentMethodId: account.id,
+      idempotencyKey: "withdrawal-test-key-0001",
+    };
+    const firstResponse = await request("/api/member/withdrawals", {
+      method: "POST",
+      headers: memberAuthorization,
+      body: JSON.stringify(firstPayload),
+    });
+    assert.equal(firstResponse.status, 201, await firstResponse.clone().text());
+    const first = (await firstResponse.json()) as {
+      id: number;
+      status: string;
+      netAmount: string;
+    };
+    assert.equal(first.status, "pending");
+    assert.equal(first.netAmount, "290000");
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })
+      ).balance.toString(),
+      "700000",
+    );
+
+    const duplicate = await request("/api/member/withdrawals", {
+      method: "POST",
+      headers: memberAuthorization,
+      body: JSON.stringify(firstPayload),
+    });
+    assert.equal(duplicate.status, 201);
+    assert.equal(((await duplicate.json()) as { id: number }).id, first.id);
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })
+      ).balance.toString(),
+      "700000",
+    );
+
+    const createRequest = async (key: string, amount: string) => {
+      const response = await request("/api/member/withdrawals", {
+        method: "POST",
+        headers: memberAuthorization,
+        body: JSON.stringify({
+          amount,
+          userPaymentMethodId: account.id,
+          idempotencyKey: key,
+        }),
+      });
+      assert.equal(response.status, 201, await response.clone().text());
+      return (await response.json()) as { id: number; status: string };
+    };
+
+    const paid = await createRequest("withdrawal-test-key-0002", "200000");
+    assert.equal(
+      (
+        await request(`/api/admin/withdrawals/${paid.id}/process`, {
+          method: "PATCH",
+          headers: adminAuthorization,
+        })
+      ).status,
+      200,
+    );
+    const paidResponse = await request(
+      `/api/admin/withdrawals/${paid.id}/paid`,
+      { method: "PATCH", headers: adminAuthorization },
+    );
+    assert.equal(paidResponse.status, 200);
+    assert.equal(
+      ((await paidResponse.json()) as { status: string }).status,
+      "paid",
+    );
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: referrer.id } })
+      ).balance.toString(),
+      "9500",
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/withdrawals/${paid.id}/paid`, {
+          method: "PATCH",
+          headers: adminAuthorization,
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: referrer.id } })
+      ).balance.toString(),
+      "9500",
+    );
+
+    const rejected = await createRequest(
+      "withdrawal-test-key-0003",
+      "100000",
+    );
+    const rejectResponse = await request(
+      `/api/admin/withdrawals/${rejected.id}/reject`,
+      {
+        method: "PATCH",
+        headers: adminAuthorization,
+        body: JSON.stringify({ statusReason: "Thông tin nhận tiền không đúng." }),
+      },
+    );
+    assert.equal(rejectResponse.status, 200);
+    const rejectedBody = (await rejectResponse.json()) as {
+      status: string;
+      statusReason: string;
+      processedBy: { id: number };
+      processedAt: string;
+    };
+    assert.equal(rejectedBody.status, "rejected");
+    assert.equal(
+      rejectedBody.statusReason,
+      "Thông tin nhận tiền không đúng.",
+    );
+    assert.ok(rejectedBody.processedBy.id);
+    assert.ok(rejectedBody.processedAt);
+
+    const cancelResponse = await request(
+      `/api/member/withdrawals/${first.id}/cancel`,
+      { method: "PATCH", headers: memberAuthorization },
+    );
+    assert.equal(cancelResponse.status, 200);
+    assert.equal(
+      ((await cancelResponse.json()) as { status: string }).status,
+      "cancelled",
+    );
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })
+      ).balance.toString(),
+      "800000",
+    );
+    assert.equal(
+      (
+        await request(`/api/member/withdrawals/${first.id}/cancel`, {
+          method: "PATCH",
+          headers: memberAuthorization,
+        })
+      ).status,
+      409,
+    );
+
+    const secondPaid = await createRequest(
+      "withdrawal-test-key-0004",
+      "100000",
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/withdrawals/${secondPaid.id}/process`, {
+          method: "PATCH",
+          headers: adminAuthorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/withdrawals/${secondPaid.id}/paid`, {
+          method: "PATCH",
+          headers: adminAuthorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await prisma.user.findUniqueOrThrow({ where: { id: referrer.id } })
+      ).balance.toString(),
+      "14000",
+    );
+    const commissions = await prisma.commission.findMany({
+      where: { userId: referrer.id },
+      orderBy: { amount: "asc" },
+    });
+    assert.equal(commissions.length, 2);
+    assert.deepEqual(
+      commissions.map((commission) => [
+        commission.amount.toString(),
+        commission.rate.toString(),
+        commission.commissionableType,
+      ]),
+      [
+        ["4500", "5", "user_withdrawal"],
+        ["9500", "5", "user_withdrawal"],
+      ],
+    );
+
+    const dashboardResponse = await request(
+      "/api/member/withdrawals/dashboard",
+      { headers: memberAuthorization },
+    );
+    assert.equal(dashboardResponse.status, 200);
+    const dashboard = (await dashboardResponse.json()) as {
+      availableBalance: string;
+      pendingBalance: string;
+      totalReceived: string;
+      withdrawals: unknown[];
+    };
+    assert.equal(dashboard.availableBalance, "700000");
+    assert.equal(dashboard.pendingBalance, "0");
+    assert.equal(dashboard.totalReceived, "280000");
+    assert.equal(dashboard.withdrawals.length, 4);
+
+    const referralsDashboardResponse = await request(
+      "/api/member/referrals/dashboard",
+      { headers: referrerAuthorization },
+    );
+    assert.equal(
+      referralsDashboardResponse.status,
+      200,
+      await referralsDashboardResponse.clone().text(),
+    );
+    const referralsDashboard = (await referralsDashboardResponse.json()) as {
+      commissionRate: string;
+      summary: {
+        totalReferrals: number;
+        totalCommission: string;
+        successfulWithdrawals: number;
+      };
+      referrals: Array<{
+        id: number;
+        successfulWithdrawals: number;
+        totalCommission: string;
+      }>;
+      recentCommissions: Array<{
+        amount: string;
+        withdrawalId: number;
+      }>;
+    };
+    assert.equal(referralsDashboard.commissionRate, "5.00");
+    assert.deepEqual(referralsDashboard.summary, {
+      totalReferrals: 1,
+      totalCommission: "14000",
+      successfulWithdrawals: 2,
+    });
+    assert.equal(referralsDashboard.referrals[0]?.id, owner.id);
+    assert.equal(
+      referralsDashboard.referrals[0]?.successfulWithdrawals,
+      2,
+    );
+    assert.equal(referralsDashboard.referrals[0]?.totalCommission, "14000");
+    assert.deepEqual(
+      new Set(
+        referralsDashboard.recentCommissions.map(
+          (commission) => commission.withdrawalId,
+        ),
+      ),
+      new Set([paid.id, secondPaid.id]),
+    );
+
+    const adminListResponse = await request(
+      "/api/admin/withdrawals?status=paid,rejected&search=Withdrawal%20Owner&sortBy=amount&sortOrder=asc&page=1&perPage=10",
+      { headers: adminAuthorization },
+    );
+    assert.equal(
+      adminListResponse.status,
+      200,
+      await adminListResponse.clone().text(),
+    );
+    const adminList = (await adminListResponse.json()) as {
+      items: Array<{ amount: string; status: string }>;
+      total: number;
+      pageCount: number;
+    };
+    assert.equal(adminList.total, 3);
+    assert.equal(adminList.pageCount, 1);
+    assert.deepEqual(
+      adminList.items
+        .map((item) => [item.amount, item.status])
+        .sort(([leftAmount, leftStatus], [rightAmount, rightStatus]) =>
+          `${leftAmount}:${leftStatus}`.localeCompare(
+            `${rightAmount}:${rightStatus}`,
+          ),
+        ),
+      [
+        ["100000", "paid"],
+        ["100000", "rejected"],
+        ["200000", "paid"],
+      ].sort(([leftAmount, leftStatus], [rightAmount, rightStatus]) =>
+        `${leftAmount}:${leftStatus}`.localeCompare(
+          `${rightAmount}:${rightStatus}`,
+        ),
+      ),
+    );
+
+    await prisma.userWithdrawal.deleteMany({ where: { userId: owner.id } });
+    await prisma.userPaymentMethod.delete({ where: { id: account.id } });
+    await prisma.paymentMethod.delete({ where: { id: method.id } });
+    await prisma.user.delete({ where: { id: owner.id } });
+    await prisma.user.delete({ where: { id: referrer.id } });
   });
 });
 

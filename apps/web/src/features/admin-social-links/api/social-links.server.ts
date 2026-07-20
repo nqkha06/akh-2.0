@@ -4,26 +4,17 @@ import { serializeAdminSocialLinksQuery } from "@/features/admin-social-links/ap
 import { adaptAdminSocialLinksResponse } from "@/features/admin-social-links/api/social-links-response-adapter"
 import type { AdminSocialLinksTableQuery } from "@/features/admin-social-links/query/social-links-search-params"
 import type { NestPaginatedAdminSocialLinksResponse } from "@/features/admin-social-links/types"
-import { getServerSession } from "@/lib/auth/server-session"
-
-const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "")
+import { serverApiFetch } from "@/lib/auth/server-access"
 
 export async function getAdminSocialLinksTableData(
   state: AdminSocialLinksTableQuery,
 ) {
-  const session = await getServerSession()
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.")
-  }
-
-  const response = await fetch(
-    `${apiUrl}/admin/social-links?${serializeAdminSocialLinksQuery(state)}`,
+  const response = await serverApiFetch(
+    `/admin/social-links?${serializeAdminSocialLinksQuery(state)}`,
     {
-      headers: {
-        Authorization: `Bearer ${session.backendAccessToken}`,
-      },
       cache: "no-store",
     },
+    "/admin/social-links",
   )
 
   if (!response.ok) {

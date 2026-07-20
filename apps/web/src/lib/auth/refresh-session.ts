@@ -51,6 +51,7 @@ export class BackendRefreshError extends Error {
 }
 
 const refreshRequests = new Map<string, Promise<BackendAuthResult>>()
+const SUCCESS_RESULT_GRACE_MS = 10_000
 
 export function extractRefreshToken(setCookie: string | null) {
   if (!setCookie) return null
@@ -68,12 +69,21 @@ export function refreshBackendSession(refreshToken: string) {
   const request = executeRefresh(refreshToken)
   refreshRequests.set(requestKey, request)
 
-  const clearRequest = () => {
-    if (refreshRequests.get(requestKey) === request) {
-      refreshRequests.delete(requestKey)
-    }
-  }
-  void request.then(clearRequest, clearRequest)
+  void request.then(
+    () => {
+      const timer = setTimeout(() => {
+        if (refreshRequests.get(requestKey) === request) {
+          refreshRequests.delete(requestKey)
+        }
+      }, SUCCESS_RESULT_GRACE_MS)
+      timer.unref()
+    },
+    () => {
+      if (refreshRequests.get(requestKey) === request) {
+        refreshRequests.delete(requestKey)
+      }
+    },
+  )
 
   return request
 }

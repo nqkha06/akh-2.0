@@ -217,6 +217,28 @@ export class FilesService {
     };
   }
 
+  async downloadPublic(idOrAlias: string) {
+    const file = await this.prisma.managedFile.findFirst({
+      where: {
+        OR: [{ id: idOrAlias }, { alias: idOrAlias }],
+        deletedAt: null,
+        isPublic: true,
+        status: "completed",
+      },
+    });
+    if (!file) {
+      throw new NotFoundException("Không tìm thấy ảnh public.");
+    }
+    const updatedFile = await this.prisma.managedFile.update({
+      where: { id: file.id },
+      data: { downloadCount: { increment: 1 } },
+    });
+    return {
+      file: this.toResponse(updatedFile),
+      stream: new StreamableFile(createReadStream(file.path)),
+    };
+  }
+
   async forceRemoveLocalFile(path: string) {
     try {
       await unlink(path);

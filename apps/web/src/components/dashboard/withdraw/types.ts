@@ -1,9 +1,9 @@
 export type WithdrawalStatus =
+  | "pending"
   | "processing"
   | "paid"
-  | "failed"
-  | "cancelled"
-  | "verification_required";
+  | "rejected"
+  | "cancelled";
 
 export type PayoutMethod = {
   id: string;
@@ -67,10 +67,14 @@ export type WithdrawalEstimate = {
 export type CreateWithdrawalPayload = {
   amount: number;
   payoutMethodId: string;
+  idempotencyKey: string;
 };
 
 export interface WithdrawalDataSource {
   getDashboard(): Promise<WithdrawalDashboardData>;
-  estimate(payload: CreateWithdrawalPayload): Promise<WithdrawalEstimate>;
+  estimate(
+    payload: Omit<CreateWithdrawalPayload, "idempotencyKey">,
+  ): Promise<WithdrawalEstimate>;
   create(payload: CreateWithdrawalPayload): Promise<WithdrawalTransaction>;
+  cancel(id: string): Promise<WithdrawalTransaction>;
 }

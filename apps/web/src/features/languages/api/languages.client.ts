@@ -34,6 +34,10 @@ export function getAdminLanguages() {
   return request<LanguagesResponse>("/admin/languages");
 }
 
+export function getAdminLanguage(id: number) {
+  return request<Language>(`/admin/languages/${id}`);
+}
+
 export function createLanguage(payload: LanguagePayload) {
   return request<Language>("/admin/languages", {
     method: "POST",

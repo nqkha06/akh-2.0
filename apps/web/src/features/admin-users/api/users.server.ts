@@ -4,25 +4,19 @@ import { adaptUsersResponse } from "@/features/admin-users/api/users-response-ad
 import { serializeUsersTableQuery } from "@/features/admin-users/api/users-query-serializer";
 import type { UsersTableQuery } from "@/features/admin-users/query/users-search-params";
 import type {
+  AdminUserDetail,
   NestPaginatedUsersResponse,
   UsersAccessOptions,
 } from "@/features/admin-users/types";
-import { getServerSession } from "@/lib/auth/server-session";
-
-const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+import { serverApiFetch } from "@/lib/auth/server-access";
 
 export async function getUsersTableData(state: UsersTableQuery) {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.");
-  }
-
-  const response = await fetch(
-    `${apiUrl}/admin/users?${serializeUsersTableQuery(state)}`,
+  const response = await serverApiFetch(
+    `/admin/users?${serializeUsersTableQuery(state)}`,
     {
-      headers: { Authorization: `Bearer ${session.backendAccessToken}` },
       cache: "no-store",
     },
+    "/admin/users",
   );
 
   if (!response.ok) {
@@ -35,16 +29,24 @@ export async function getUsersTableData(state: UsersTableQuery) {
 }
 
 export async function getUsersAccessOptions() {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.");
-  }
-  const response = await fetch(`${apiUrl}/admin/users/access-options`, {
-    headers: { Authorization: `Bearer ${session.backendAccessToken}` },
-    cache: "no-store",
-  });
+  const response = await serverApiFetch(
+    "/admin/users/access-options",
+    { cache: "no-store" },
+    "/admin/users",
+  );
   if (!response.ok) throw new Error(await readApiError(response));
   return (await response.json()) as UsersAccessOptions;
+}
+
+export async function getAdminUser(id: number) {
+  const response = await serverApiFetch(
+    `/admin/users/${id}`,
+    { cache: "no-store" },
+    `/admin/users/${id}`,
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(await readApiError(response));
+  return (await response.json()) as AdminUserDetail;
 }
 
 async function readApiError(response: Response) {

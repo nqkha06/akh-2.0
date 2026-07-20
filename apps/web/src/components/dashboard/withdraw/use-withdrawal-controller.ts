@@ -54,11 +54,13 @@ export function useWithdrawalController() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [detailTransaction, setDetailTransaction] = useState<WithdrawalTransaction>();
+  const [cancelling, setCancelling] = useState(false);
   const [statusFilter, setStatusFilter] = useState<WithdrawalStatus | "all">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "30d" | "90d">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [historyAnchor] = useState(() => Date.now());
   const estimateRequestRef = useRef(0);
+  const idempotencyKeyRef = useRef("");
 
   const load = useCallback(async () => {
     try {
@@ -144,13 +146,20 @@ export function useWithdrawalController() {
 
   const requestConfirmation = () => {
     if (!formValid) return;
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
     setSubmitError("");
     setConfirmationOpen(true);
   };
 
   const confirmWithdrawal = async () => {
     if (!data || !formValid || submitting) return;
-    const payload: CreateWithdrawalPayload = { amount, payoutMethodId: selectedMethodId };
+    const payload: CreateWithdrawalPayload = {
+      amount,
+      payoutMethodId: selectedMethodId,
+      idempotencyKey: idempotencyKeyRef.current,
+    };
     try {
       setSubmitting(true);
       setSubmitError("");
@@ -165,10 +174,42 @@ export function useWithdrawalController() {
       setSuccessTransaction(transaction);
       setAmountInput("");
       setEstimate(undefined);
+      idempotencyKeyRef.current = "";
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Không thể tạo yêu cầu rút tiền.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const cancelWithdrawal = async (transaction: WithdrawalTransaction) => {
+    if (!data || !transaction.canCancel || cancelling) return;
+    try {
+      setCancelling(true);
+      const cancelled = await withdrawalDataSource.cancel(transaction.id);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              availableBalance:
+                current.availableBalance + transaction.requestedAmount,
+              pendingBalance: Math.max(
+                0,
+                current.pendingBalance - transaction.requestedAmount,
+              ),
+              transactions: current.transactions.map((item) =>
+                item.id === cancelled.id ? cancelled : item,
+              ),
+            }
+          : current,
+      );
+      setDetailTransaction(cancelled);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Không thể hủy yêu cầu.",
+      );
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -202,6 +243,7 @@ export function useWithdrawalController() {
     submitting,
     submitError,
     detailTransaction,
+    cancelling,
     filteredTransactions,
     statusFilter,
     dateFilter,
@@ -215,6 +257,7 @@ export function useWithdrawalController() {
     confirmWithdrawal,
     setSuccessTransaction,
     setDetailTransaction,
+    cancelWithdrawal,
     setStatusFilter,
     setDateFilter,
     setSort,

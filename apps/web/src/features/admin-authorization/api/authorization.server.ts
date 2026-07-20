@@ -5,21 +5,12 @@ import type {
   AdminRole,
   AuthorizationData,
 } from "@/features/admin-authorization/types";
-import { getServerSession } from "@/lib/auth/server-session";
-
-const apiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+import { serverApiFetch } from "@/lib/auth/server-access";
 
 export async function getAuthorizationData(): Promise<AuthorizationData> {
-  const session = await getServerSession();
-  if (!apiUrl || !session?.backendAccessToken) {
-    throw new Error("Phiên quản trị không hợp lệ.");
-  }
-  const headers = {
-    Authorization: `Bearer ${session.backendAccessToken}`,
-  };
   const [rolesResponse, permissionsResponse] = await Promise.all([
-    fetch(`${apiUrl}/admin/roles`, { headers, cache: "no-store" }),
-    fetch(`${apiUrl}/admin/permissions`, { headers, cache: "no-store" }),
+    serverApiFetch("/admin/roles", {}, "/admin/roles"),
+    serverApiFetch("/admin/permissions", {}, "/admin/roles"),
   ]);
   if (!rolesResponse.ok) throw new Error(await readApiError(rolesResponse));
   if (!permissionsResponse.ok) {
