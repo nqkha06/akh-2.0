@@ -1,0 +1,15 @@
+{
+  "name": "@stu/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./next-js": "./next-js.js"
+  },
+  "dependencies": {
+    "eslint-config-next": "^16.2.6"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@stu/typescript-config",
+  "version": "1.0.0",
+  "private": true,
+  "files": [
+    "*.json"
+  ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./nextjs.json": "./nextjs.json",
+    "./nestjs.json": "./nestjs.json"
+  }
+}

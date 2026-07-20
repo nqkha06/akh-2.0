@@ -1,0 +1,32 @@
+import { Type } from "class-transformer";
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsIn,
+  IsString,
+  Matches,
+  ValidateNested,
+} from "class-validator";
+
+import { PaymentMethodTranslationDto } from "./payment-method-translation.dto";
+
+export class CreatePaymentMethodDto {
+  @IsString()
+  @Matches(/^\d{1,18}(?:\.\d{1,10})?$/)
+  withdrawFee!: string;
+
+  @IsString()
+  @Matches(/^\d{1,18}(?:\.\d{1,10})?$/)
+  minWithdrawAmount!: string;
+
+  @IsIn(["active", "inactive"])
+  status!: "active" | "inactive";
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => PaymentMethodTranslationDto)
+  translations!: PaymentMethodTranslationDto[];
+}

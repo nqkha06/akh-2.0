@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int                 @id @default(autoincrement())
+  name                String
+  email               String              @unique
+  emailVerifiedAt     DateTime?           @map("email_verified_at")
+  passwordHash        String?             @map("password")
+  avatar              String?
+  status              String              @default("active")
+  tokenVersion        Int                 @default(0) @map("token_version")
+  monetizationLevelId Int?                @map("monetization_level_id")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  socialAccounts      SocialAccount[]
+  authSessions        AuthSession[]
+  links               Link[]
+  roles               UserHasRole[]
+  permissions         UserHasPermission[]
+  monetizationLevel   MonetizationLevel?  @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
+  paymentMethods      UserPaymentMethod[]
+
+  @@index([status])
+  @@index([monetizationLevelId])
+  @@map("users")
+}
+
+model Role {
+  id          Int                 @id @default(autoincrement())
+  key         String              @unique
+  name        String
+  description String?
+  isSystem    Boolean             @default(false) @map("is_system")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  permissions RoleHasPermission[]
+  users       UserHasRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int                 @id @default(autoincrement())
+  key         String              @unique
+  name        String
+  description String?
+  group       String
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  roles       RoleHasPermission[]
+  users       UserHasPermission[]
+
+  @@index([group])
+  @@map("permissions")
+}
+
+model RoleHasPermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_has_permissions")
+}
+
+model UserHasRole {
+  roleId    Int      @map("role_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, userId])
+  @@index([userId])
+  @@map("user_has_roles")
+}
+
+model UserHasPermission {
+  permissionId Int        @map("permission_id")
+  userId       Int        @map("user_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([permissionId, userId])
+  @@index([userId])
+  @@map("user_has_permissions")
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           Int       @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  rotationCounter  Int       @default(0) @map("rotation_counter")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model SocialAccount {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+model Link {
+  id                   Int          @id @default(autoincrement())
+  userId               Int          @map("user_id")
+  slug                 String       @unique
+  title                String
+  subtitle             String?
+  destinationType      String       @default("url") @map("destination_type")
+  destinationUrl       String?      @map("destination_url")
+  destinationFileId    String?      @map("destination_file_id")
+  destinationSnippetId String?      @map("destination_snippet_id")
+  appearanceJson       String       @default("{}") @map("appearance")
+  expiresAt            DateTime?    @map("expires_at")
+  maxClicks            Int?         @map("max_clicks")
+  clicks               Int          @default(0)
+  status               String       @default("active")
+  revenue              Decimal      @default(0)
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+  deletedAt            DateTime?    @map("deleted_at")
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destinationFile      ManagedFile? @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
+  destinationSnippet   Snippet?     @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
+  actions              LinkAction[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("stu_links")
+}
+
+model LinkAction {
+  id        Int      @id @default(autoincrement())
+  linkId    Int      @map("link_id")
+  platform  String
+  action    String
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, position])
+  @@map("stu_link_actions")
+}
+
+model MonetizationLevel {
+  id           Int                            @id @default(autoincrement())
+  key          String                         @unique
+  status       String                         @default("draft")
+  isDefault    Boolean                        @default(false) @map("is_default")
+  sortOrder    Int                            @default(0) @map("sort_order")
+  routesJson   String                         @default("[]") @map("routes")
+  ratesJson    String                         @default("[]") @map("rates")
+  metaDataJson String                         @default("{}") @map("meta_data")
+  createdAt    DateTime                       @default(now()) @map("created_at")
+  updatedAt    DateTime                       @updatedAt @map("updated_at")
+  translations MonetizationLevelTranslation[]
+  users        User[]
+
+  @@index([status, sortOrder])
+  @@map("stu_monetization_levels")
+}
+
+model MonetizationLevelTranslation {
+  id          Int               @id @default(autoincrement())
+  levelId     Int               @map("level_id")
+  locale      String
+  name        String
+  description String?
+  level       MonetizationLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@unique([levelId, locale])
+  @@index([locale])
+  @@map("stu_monetization_level_translations")
+}
+
+model PaymentMethod {
+  id                Int                        @id @default(autoincrement())
+  withdrawFee       Decimal                    @default(0) @map("withdraw_fee")
+  minWithdrawAmount Decimal                    @default(0) @map("min_withdraw_amount")
+  status            String                     @default("active")
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+  translations      PaymentMethodTranslation[]
+  userMethods       UserPaymentMethod[]
+
+  @@index([status])
+  @@map("payment_methods")
+}
+
+model PaymentMethodTranslation {
+  id              Int           @id @default(autoincrement())
+  locale          String
+  paymentMethodId Int           @map("payment_method_id")
+  name            String?
+  fieldsJson      String?       @map("fields")
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentMethodId, locale])
+  @@index([locale])
+  @@map("payment_method_translations")
+}
+
+model UserPaymentMethod {
+  id              Int           @id @default(autoincrement())
+  userId          Int           @map("user_id")
+  paymentMethodId Int           @map("payment_method_id")
+  detailsJson     String        @map("details")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([paymentMethodId])
+  @@map("user_payment_methods")
+}
+
+model Language {
+  id         Int     @id @default(autoincrement())
+  name       String
+  nativeName String? @map("native_name")
+  locale     String  @unique
+  code       String  @unique
+  regional   String?
+  flag       String?
+  isDefault  Boolean @default(false) @map("is_default")
+  isEnabled  Boolean @default(true) @map("is_enabled")
+  sortOrder  Int     @default(0) @map("order")
+  isRtl      Boolean @default(false) @map("is_rtl")
+
+  @@index([isDefault])
+  @@index([isEnabled, sortOrder])
+  @@map("languages")
+}
+
+model Snippet {
+  id               String   @id @default(cuid())
+  name             String
+  content          String
+  copies           Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  destinationLinks Link[]
+
+  @@index([createdAt])
+}
+
+model ManagedFile {
+  id               String    @id @default(cuid())
+  alias            String    @unique
+  name             String
+  originalName     String
+  extension        String?
+  mimeType         String
+  size             Int
+  path             String
+  isPublic         Boolean   @default(true)
+  downloadCount    Int       @default(0)
+  status           String    @default("completed")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  destinationLinks Link[]
+
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([status])
+}
+
+model BioPage {
+  id                   String   @id @default(cuid())
+  slug                 String   @unique
+  name                 String
+  title                String?
+  status               String   @default("published")
+  buttonStyle          String   @default("rounded")
+  backgroundColor      String   @default("#ffffff")
+  backgroundImage      String?
+  backgroundMediaType  String?
+  backgroundMediaUrl   String?
+  selectedBackgroundId String?
+  socialLinksJson      String   @default("[]")
+  customLinksJson      String   @default("[]")
+  widgetsJson          String   @default("[]")
+  hiddenLinksJson      String   @default("[]")
+  views                Int      @default(0)
+  clicks               Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+}
