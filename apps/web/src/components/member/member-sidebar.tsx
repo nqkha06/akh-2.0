@@ -1,6 +1,6 @@
 "use client"
 
-import { SidebarAccountMenu } from "./user-menu"
+import { cn } from "@/lib/utils"
 import { SidebarBrand } from "./sidebar-brand"
 import { SidebarNavigation } from "./sidebar-navigation"
 
@@ -20,6 +20,7 @@ export function MemberSidebar({
     >
       <SidebarBrand collapsed={collapsed} onToggle={onToggle} />
       <SidebarNavigation collapsed={collapsed} canAccess={canAccess} />
+
     </aside>
   )
 }

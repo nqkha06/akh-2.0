@@ -1,14 +1,20 @@
 "use client"
 
 import Image from "next/image"
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FilePickerCredenza } from "@/components/file-picker-credenza"
+import { FILE_CREATED_EVENT } from "@/components/dashboard/files/events"
 import { SnippetPickerCredenza } from "./snippet-picker-credenza"
+import {
+  getSiteHost,
+  useSiteBrand,
+} from "@/features/site-settings/components/site-brand-provider"
+import { LINK_CREATED_EVENT } from "@/features/links/events"
 import {
   Credenza,
   CredenzaBody,
@@ -32,9 +38,9 @@ import {
   checkLinkAliasAvailability,
   createSnippet,
   createLink,
-  getFileDownloadUrl,
   getFilePreviewUrl,
   getFiles,
+  getLinks,
   getSnippets,
   uploadFile,
   updateLink,
@@ -46,33 +52,23 @@ import {
   Link,
   FileCode2,
   FileImage,
-  MessageCircle,
   MessageSquare,
   PlayCircle,
-  Share2,
-  Repeat2,
-  ThumbsUp,
   UserPlus,
-  Eye,
   ExternalLink,
-  UsersRound,
   Plus,
   Trash2,
   ChevronDown,
   ChevronUp,
   Settings,
   Clock,
+  History,
   X,
   Check,
   Loader2,
   Lock,
-  Heart,
   type LucideIcon,
   Building2,
-  Star,
-  Download,
-  Radio,
-  Bell,
   StarIcon,
   ChevronsUpDown,
   ChevronsDown,
@@ -590,6 +586,11 @@ interface SocialAction {
   isValid: boolean
 }
 
+type MostUsedAction = Omit<SocialAction, "id" | "isValid"> & {
+  count: number
+  lastUsedAt: number
+}
+
 type AliasCheckStatus = "idle" | "checking" | "available" | "taken" | "invalid" | "error"
 
 function toPlatformKey(platform: string): keyof typeof socialPlatforms {
@@ -604,6 +605,17 @@ function isValidUrl(value: string) {
     return url.protocol === "http:" || url.protocol === "https:"
   } catch {
     return false
+  }
+}
+
+function formatActionTarget(value: string) {
+  try {
+    const url = new URL(value)
+    const segments = url.pathname.split("/").filter(Boolean)
+    const target = segments.at(-1)
+    return target ? decodeURIComponent(target) : url.hostname.replace(/^www\./, "")
+  } catch {
+    return value
   }
 }
 
@@ -817,12 +829,16 @@ export default function SocialLinksGenerator({
   embedded = false,
   initialLink,
   onSaved,
+  actionHistory,
 }: {
   embedded?: boolean
   initialLink?: LinkDto
   onSaved?: (link: LinkDto) => void
+  actionHistory?: LinkDto[]
 } = {}) {
   const t = useTranslations("CreateLink")
+  const brand = useSiteBrand()
+  const siteHost = getSiteHost(brand)
   const initialInputType =
     initialLink?.inputType === "file" || initialLink?.inputType === "snippet"
       ? initialLink.inputType
@@ -841,7 +857,6 @@ export default function SocialLinksGenerator({
   const [inputType, setInputType] = useState<"url" | "file" | "snippet">(initialInputType)
   const [selectedFile, setSelectedFile] = useState<string>(initialLink?.selectedFile || "")
   const [selectedFileName, setSelectedFileName] = useState(initialLink?.selectedFile || "")
-  const [selectedFileUrl, setSelectedFileUrl] = useState(initialInputType === "file" ? initialLink?.destinationUrl || "" : "")
   const [availableFiles, setAvailableFiles] = useState<ManagedFileDto[]>([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [fileUploading, setFileUploading] = useState(false)
@@ -909,13 +924,30 @@ export default function SocialLinksGenerator({
   const [expiryValidationNow, setExpiryValidationNow] = useState(() => Date.now())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [validationAttempted, setValidationAttempted] = useState(false)
   const [createdLink, setCreatedLink] = useState<LinkDto | null>(null)
+  const [fetchedActionHistory, setFetchedActionHistory] = useState<LinkDto[]>([])
+
+  useEffect(() => {
+    if (actionHistory !== undefined) return
+    let active = true
+    void getLinks()
+      .then((links) => {
+        if (active) setFetchedActionHistory(links)
+      })
+      .catch(() => {
+        if (active) setFetchedActionHistory([])
+      })
+    return () => {
+      active = false
+    }
+  }, [actionHistory])
   const isEditing = Boolean(initialLink)
 
   const loadAvailableFiles = useCallback(async () => {
     try {
       setFilesLoading(true)
-      const response = await getFiles({ sort: "date", direction: "desc" })
+      const response = await getFiles({ sort: "date", direction: "desc", limit: 100 })
       setAvailableFiles(response.items)
       setFileError("")
     } catch (error) {
@@ -929,10 +961,10 @@ export default function SocialLinksGenerator({
     void Promise.resolve().then(loadAvailableFiles)
 
     const handleFileCreated = () => void loadAvailableFiles()
-    window.addEventListener("STU:file-created", handleFileCreated)
+    window.addEventListener(FILE_CREATED_EVENT, handleFileCreated)
 
     return () => {
-      window.removeEventListener("STU:file-created", handleFileCreated)
+      window.removeEventListener(FILE_CREATED_EVENT, handleFileCreated)
     }
   }, [loadAvailableFiles])
 
@@ -1018,6 +1050,29 @@ export default function SocialLinksGenerator({
     setIsActionModalOpen(false)
   }
 
+  const addUsedAction = (usedAction: MostUsedAction) => {
+    actionIdRef.current += 1
+    setActions((current) => {
+      const alreadyAdded = current.some(
+        (action) =>
+          action.platform === usedAction.platform &&
+          action.action === usedAction.action &&
+          action.url.trim().toLowerCase() === usedAction.url.trim().toLowerCase(),
+      )
+      if (alreadyAdded) return current
+      return [
+        ...current,
+        {
+          id: `action-${actionIdRef.current}`,
+          platform: usedAction.platform,
+          action: usedAction.action,
+          url: usedAction.url,
+          isValid: isValidUrl(usedAction.url),
+        },
+      ]
+    })
+  }
+
   const updateActionUrl = (actionId: string, url: string) => {
     setActions((current) =>
       current.map((action) =>
@@ -1064,7 +1119,6 @@ export default function SocialLinksGenerator({
   const selectStoredFile = (file: ManagedFileDto) => {
     setSelectedFile(file.id)
     setSelectedFileName(file.name)
-    setSelectedFileUrl(getFileDownloadUrl(file))
     setIsFileDialogOpen(false)
   }
 
@@ -1142,7 +1196,7 @@ export default function SocialLinksGenerator({
       setCoverImageUrl(getFilePreviewUrl(uploaded))
       setCoverFileError("")
       setIsCoverImageDialogOpen(false)
-      window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }))
+      window.dispatchEvent(new CustomEvent(FILE_CREATED_EVENT, { detail: uploaded }))
     } catch (error) {
       setCoverFileError(error instanceof Error ? error.message : t("uploadCoverFailed"))
     } finally {
@@ -1181,14 +1235,13 @@ export default function SocialLinksGenerator({
       for (const file of files) {
         const uploaded = await uploadFile(file)
         uploadedFiles.push(uploaded)
-        window.dispatchEvent(new CustomEvent("STU:file-created", { detail: uploaded }))
+        window.dispatchEvent(new CustomEvent(FILE_CREATED_EVENT, { detail: uploaded }))
       }
 
       const selectedUpload = uploadedFiles[0]
       setAvailableFiles((current) => [...uploadedFiles, ...current])
       setSelectedFile(selectedUpload.id)
       setSelectedFileName(selectedUpload.name)
-      setSelectedFileUrl(getFileDownloadUrl(selectedUpload))
       setIsFileDialogOpen(false)
       setFileError("")
     } catch (error) {
@@ -1206,7 +1259,6 @@ export default function SocialLinksGenerator({
   const clearSelectedFile = () => {
     setSelectedFile("")
     setSelectedFileName("")
-    setSelectedFileUrl("")
   }
 
   const resetEffects = () => {
@@ -1245,7 +1297,7 @@ export default function SocialLinksGenerator({
   }
 
   const isDestinationUrlValid = destinationUrl.length > 0 && isValidUrl(destinationUrl)
-  const isFileDestinationValid = selectedFile.length > 0 && selectedFileUrl.length > 0
+  const isFileDestinationValid = selectedFile.length > 0
   const isSnippetDestinationValid = selectedSnippet.length > 0
   const isDestinationValid =
     inputType === "url"
@@ -1315,6 +1367,48 @@ export default function SocialLinksGenerator({
     return action.label.toLowerCase().includes(normalizedSearch) || platform.toLowerCase().includes(normalizedSearch)
   })
   const filteredPopularActions = filterPopularActions(actionSearch, actionCategory)
+  const mostUsedActions = useMemo(() => {
+    const usage = new Map<string, MostUsedAction>()
+    for (const link of actionHistory ?? fetchedActionHistory) {
+      const lastUsedAt = new Date(link.updatedAt).getTime()
+      for (const action of link.actions) {
+        if (!isValidUrl(action.url)) continue
+        const platform = toPlatformKey(action.platform)
+        if (
+          !socialPlatforms[platform].actions.some(
+            (catalogAction) => catalogAction.id === action.action,
+          )
+        ) {
+          continue
+        }
+        const key = `${platform}:${action.action}:${action.url.trim().toLowerCase()}`
+        const existing = usage.get(key)
+        usage.set(key, {
+          platform,
+          action: action.action,
+          url: action.url.trim(),
+          count: (existing?.count ?? 0) + 1,
+          lastUsedAt: Math.max(existing?.lastUsedAt ?? 0, lastUsedAt),
+        })
+      }
+    }
+
+    return Array.from(usage.values())
+      .filter(
+        (usedAction) =>
+          !actions.some(
+            (action) =>
+              action.platform === usedAction.platform &&
+              action.action === usedAction.action &&
+              action.url.trim().toLowerCase() === usedAction.url.toLowerCase(),
+          ),
+      )
+      .sort(
+        (left, right) =>
+          right.count - left.count || right.lastUsedAt - left.lastUsedAt,
+      )
+      .slice(0, 8)
+  }, [actionHistory, actions, fetchedActionHistory])
 
   const selectedBackgroundName = sameAsCoverImage && coverImageUrl
     ? "Cover image"
@@ -1330,7 +1424,7 @@ export default function SocialLinksGenerator({
     title: title.trim(),
     destinationUrl:
       inputType === "file"
-        ? selectedFileUrl
+        ? ""
         : inputType === "snippet"
           ? ""
           : destinationUrl.trim(),
@@ -1371,7 +1465,12 @@ export default function SocialLinksGenerator({
   })
 
   const handleCreateLink = async () => {
-    if (!canCreateLink || isSubmitting) {
+    if (isSubmitting) {
+      return
+    }
+    setValidationAttempted(true)
+    if (!canCreateLink) {
+      if (!isExpiryValid) setExpiresOpen(true)
       return
     }
 
@@ -1418,7 +1517,7 @@ export default function SocialLinksGenerator({
       }
       onSaved?.(link)
       window.dispatchEvent(
-        new CustomEvent("Rekonise:link-created", {
+        new CustomEvent(LINK_CREATED_EVENT, {
           detail: link,
         }),
       )
@@ -1480,23 +1579,41 @@ export default function SocialLinksGenerator({
               <TabsContent value="url" className="mt-4 space-y-3">
                 <div>
                   <Input
+                    aria-describedby={
+                      !isDestinationUrlValid && (validationAttempted || destinationUrl.length > 0)
+                        ? "destination-url-error"
+                        : undefined
+                    }
+                    aria-invalid={
+                      !isDestinationUrlValid && (validationAttempted || destinationUrl.length > 0)
+                    }
                     placeholder={t("destinationUrlPlaceholder")}
                     value={destinationUrl}
                     onChange={(e) => setDestinationUrl(e.target.value)}
-                    className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${destinationUrl.length > 0 && !isDestinationUrlValid ? "border-destructive" : ""
+                    className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${!isDestinationUrlValid && (validationAttempted || destinationUrl.length > 0) ? "border-destructive" : ""
                       }`}
                   />
-                  {destinationUrl.length > 0 && !isDestinationUrlValid && (
-                    <p className="mt-1 text-sm text-destructive">{t("invalidUrl")}</p>
+                  {!isDestinationUrlValid && (validationAttempted || destinationUrl.length > 0) && (
+                    <p id="destination-url-error" className="mt-1 text-sm text-destructive">
+                      {destinationUrl.trim() ? t("invalidUrl") : t("destinationRequired")}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Input
+                    aria-describedby={validationAttempted && !isTitleValid ? "url-title-error" : undefined}
+                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
+                    className={cn(
+                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
+                      validationAttempted && !isTitleValid && "border-destructive",
+                    )}
                   />
+                  {validationAttempted && !isTitleValid ? (
+                    <p id="url-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
+                  ) : null}
                 </div>
               </TabsContent>
 
@@ -1506,7 +1623,12 @@ export default function SocialLinksGenerator({
                   <button
                     type="button"
                     onClick={() => setIsFileDialogOpen(true)}
-                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30"
+                    aria-describedby={validationAttempted && !isFileDestinationValid ? "file-destination-error" : undefined}
+                    data-invalid={validationAttempted && !isFileDestinationValid || undefined}
+                    className={cn(
+                      "flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30",
+                      validationAttempted && !isFileDestinationValid && "border-destructive",
+                    )}
                   >
                     <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
                       <FileImage className="h-5 w-5" />
@@ -1544,13 +1666,24 @@ export default function SocialLinksGenerator({
                     )}
                   </button>
                 </div>
+                {validationAttempted && !isFileDestinationValid ? (
+                  <p id="file-destination-error" className="text-sm text-destructive">{t("fileRequired")}</p>
+                ) : null}
                 <div>
                   <Input
+                    aria-describedby={validationAttempted && !isTitleValid ? "file-title-error" : undefined}
+                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
+                    className={cn(
+                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
+                      validationAttempted && !isTitleValid && "border-destructive",
+                    )}
                   />
+                  {validationAttempted && !isTitleValid ? (
+                    <p id="file-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
+                  ) : null}
                 </div>
               </TabsContent>
 
@@ -1560,7 +1693,12 @@ export default function SocialLinksGenerator({
                   <button
                     type="button"
                     onClick={openSnippetDialog}
-                    className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30"
+                    aria-describedby={validationAttempted && !isSnippetDestinationValid ? "snippet-destination-error" : undefined}
+                    data-invalid={validationAttempted && !isSnippetDestinationValid || undefined}
+                    className={cn(
+                      "flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg border border-border bg-background px-3 text-left text-foreground transition-colors hover:border-foreground/20 hover:bg-muted/30",
+                      validationAttempted && !isSnippetDestinationValid && "border-destructive",
+                    )}
                   >
                     <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
                       <MessageSquare className="h-5 w-5" />
@@ -1598,14 +1736,25 @@ export default function SocialLinksGenerator({
                     )}
                   </button>
                 </div>
+                {validationAttempted && !isSnippetDestinationValid ? (
+                  <p id="snippet-destination-error" className="text-sm text-destructive">{t("snippetRequired")}</p>
+                ) : null}
 
                 <div>
                   <Input
+                    aria-describedby={validationAttempted && !isTitleValid ? "snippet-title-error" : undefined}
+                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
+                    className={cn(
+                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
+                      validationAttempted && !isTitleValid && "border-destructive",
+                    )}
                   />
+                  {validationAttempted && !isTitleValid ? (
+                    <p id="snippet-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
+                  ) : null}
                 </div>
               </TabsContent>
             </Tabs>
@@ -1743,9 +1892,54 @@ export default function SocialLinksGenerator({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 px-4 py-4 sm:px-5">
+            {mostUsedActions.length > 0 ? (
+              <div className="flex flex-col rounded-xl border border-border bg-muted/20 p-4">
+                <div className="mb-3 flex items-center gap-2 text-muted-foreground">
+                  <History className="size-4" aria-hidden="true" />
+                  <span className="text-sm font-medium">{t("mostUsed")}</span>
+                </div>
+                <div className="flex max-h-28 flex-wrap gap-2 overflow-auto">
+                  {mostUsedActions.map((usedAction) => {
+                    const UsedActionIcon = getActionIcon(
+                      usedAction.platform,
+                      usedAction.action,
+                    )
+                    const target = formatActionTarget(usedAction.url)
+                    const label = getActionLabel(
+                      usedAction.platform,
+                      usedAction.action,
+                    )
+                    return (
+                      <button
+                        key={`${usedAction.platform}:${usedAction.action}:${usedAction.url}`}
+                        type="button"
+                        onClick={() => addUsedAction(usedAction)}
+                        aria-label={t("addUsedAction", { target, action: label })}
+                        className="group relative flex min-w-0 max-w-full flex-col overflow-hidden rounded-lg border border-border bg-background px-3 py-2 text-left text-sm transition-colors hover:border-foreground/20 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Plus className="absolute left-2 size-4 -translate-x-1 scale-75 text-primary opacity-0 transition-all group-hover:translate-x-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:scale-100 group-focus-visible:opacity-100" />
+                          <span className="flex min-w-0 items-center gap-2 transition-transform group-hover:translate-x-5 group-focus-visible:translate-x-5">
+                            <UsedActionIcon className={`size-4 shrink-0 ${getPlatformIconClass(usedAction.platform)}`} />
+                            <span className="max-w-48 truncate font-medium text-foreground">{target}</span>
+                          </span>
+                        </span>
+                        <span className="max-h-0 overflow-hidden text-xs text-muted-foreground opacity-0 transition-all group-hover:mt-1 group-hover:max-h-6 group-hover:opacity-100 group-focus-visible:mt-1 group-focus-visible:max-h-6 group-focus-visible:opacity-100">
+                          {label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
+
             {actions.map((action, index) => {
               const platform = socialPlatforms[action.platform]
               const Icon = getActionIcon(action.platform, action.action)
+              const showActionUrlError =
+                !action.isValid && (validationAttempted || action.url.length > 0)
+              const actionErrorId = `action-url-error-${action.id}`
               return (
                 <div key={action.id} className="space-y-2 rounded-lg border border-border bg-muted/15 p-3">
                   <div className="flex items-center justify-between">
@@ -1770,14 +1964,18 @@ export default function SocialLinksGenerator({
                   </div>
                   <div>
                     <Input
+                      aria-describedby={showActionUrlError ? actionErrorId : undefined}
+                      aria-invalid={showActionUrlError}
                       placeholder={t("enterPlatformUrl", { platform: platform.name.toLowerCase() })}
                       value={action.url}
                       onChange={(e) => updateActionUrl(action.id, e.target.value)}
-                      className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${action.url.length > 0 && !action.isValid ? "border-destructive" : ""
+                      className={`h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground ${showActionUrlError ? "border-destructive" : ""
                         }`}
                     />
-                    {action.url.length > 0 && !action.isValid && (
-                      <p className="mt-1 text-sm text-destructive">{t("invalidInput")}</p>
+                    {showActionUrlError && (
+                      <p id={actionErrorId} className="mt-1 text-sm text-destructive">
+                        {action.url.trim() ? t("invalidInput") : t("actionUrlRequired")}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -2007,6 +2205,9 @@ export default function SocialLinksGenerator({
                 </CredenzaFooter>
               </CredenzaContent>
             </Credenza>
+            {validationAttempted && totalActions === 0 ? (
+              <p className="text-sm text-destructive">{t("actionRequired")}</p>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -2438,7 +2639,9 @@ export default function SocialLinksGenerator({
                         ? "border-red-300"
                         : "border-border"
                   } ${isEditing ? "opacity-70" : ""}`}>
-                    <span className="text-sm text-muted-foreground">linkicom.io/l/</span>
+                    <span className="text-sm text-muted-foreground">
+                      {siteHost ? `${siteHost}/l/` : "/l/"}
+                    </span>
                     <Input
                       placeholder={t("aliasPlaceholder")}
                       value={customAlias}
@@ -2572,28 +2775,41 @@ export default function SocialLinksGenerator({
                       <div>
                         <label className="mb-2 block text-sm font-medium text-foreground">{t("expiryDate")}</label>
                         <Input
+                          aria-describedby={validationAttempted && !isExpiryValid ? "expiry-date-error" : undefined}
+                          aria-invalid={validationAttempted && !isExpiryValid}
                           type="date"
                           value={expiryDate}
                           onChange={(e) => {
                             setExpiryDate(e.target.value)
                             setExpiryValidationNow(Date.now())
                           }}
-                          className="h-10 rounded-lg border-border bg-background shadow-none"
+                          className={cn(
+                            "h-10 rounded-lg border-border bg-background shadow-none",
+                            validationAttempted && !isExpiryValid && "border-destructive",
+                          )}
                           min={getLocalDateInputValue(new Date(expiryValidationNow))}
                         />
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-medium text-foreground">{t("expiryTime")}</label>
                         <Input
+                          aria-describedby={validationAttempted && !isExpiryValid ? "expiry-date-error" : undefined}
+                          aria-invalid={validationAttempted && !isExpiryValid}
                           type="time"
                           value={expiryTime}
                           onChange={(e) => {
                             setExpiryTime(e.target.value)
                             setExpiryValidationNow(Date.now())
                           }}
-                          className="h-10 rounded-lg border-border bg-background shadow-none"
+                          className={cn(
+                            "h-10 rounded-lg border-border bg-background shadow-none",
+                            validationAttempted && !isExpiryValid && "border-destructive",
+                          )}
                         />
                       </div>
+                      {validationAttempted && !isExpiryValid ? (
+                        <p id="expiry-date-error" className="text-sm text-destructive">{t("expiryRequired")}</p>
+                      ) : null}
                       {expiryDate && (
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                           <p className="text-sm text-primary">
@@ -2610,14 +2826,22 @@ export default function SocialLinksGenerator({
                       <div>
                         <label className="mb-2 block text-sm font-medium text-foreground">{t("maximumClicks")}</label>
                         <Input
+                          aria-describedby={validationAttempted && !isExpiryValid ? "expiry-clicks-error" : undefined}
+                          aria-invalid={validationAttempted && !isExpiryValid}
                           type="number"
                           placeholder={t("maximumClicksPlaceholder")}
                           value={maxClicks}
                           onChange={(e) => setMaxClicks(e.target.value)}
-                          className="h-10 rounded-lg border-border bg-background shadow-none"
+                          className={cn(
+                            "h-10 rounded-lg border-border bg-background shadow-none",
+                            validationAttempted && !isExpiryValid && "border-destructive",
+                          )}
                           min="1"
                         />
                       </div>
+                      {validationAttempted && !isExpiryValid ? (
+                        <p id="expiry-clicks-error" className="text-sm text-destructive">{t("expiryRequired")}</p>
+                      ) : null}
                       {maxClicks && (
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                           <p className="text-sm text-primary">
@@ -2645,7 +2869,7 @@ export default function SocialLinksGenerator({
           <Button
             className={`h-9 rounded-lg px-4 font-medium shadow-none ${canCreateLink ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground"
               }`}
-            disabled={!canCreateLink || isSubmitting}
+            disabled={isSubmitting}
             onClick={handleCreateLink}
           >
             {isSubmitting ? (isEditing ? t("saving") : t("creating")) : isEditing ? t("saveChanges") : t("create")}
@@ -2820,19 +3044,6 @@ export default function SocialLinksGenerator({
               </div>
             )}
 
-            {!canCreateLink && (
-              <div className="space-y-1 text-left text-xs text-slate-600 dark:text-[#8a8f98]">
-                {!isTitleValid && <p>• {t("titleRequired")}</p>}
-                {inputType === "url" && !isDestinationUrlValid && <p>• {t("destinationRequired")}</p>}
-                {inputType === "file" && !isFileDestinationValid && <p>• {t("fileRequired")}</p>}
-                {inputType === "snippet" && !isSnippetDestinationValid && <p>• {t("snippetRequired")}</p>}
-                {totalActions === 0 && <p>• {t("actionRequired")}</p>}
-                {totalActions > 0 && completedActions < totalActions && (
-                  <p>• {t("completeAllActions")}</p>
-                )}
-                {!isExpiryValid && <p>• {t("expiryRequired")}</p>}
-              </div>
-            )}
           </Card>
         </Card>
       </div>

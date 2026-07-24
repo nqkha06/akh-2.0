@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
 
 import { AppProviders } from "@/components/providers/app-providers"
+import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import NextTopLoader from "nextjs-toploader";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server"
@@ -60,6 +61,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const locale = await getLocale()
+  const settings = await getPublicSiteSettings()
 
   return (
     <html
@@ -78,9 +80,17 @@ export default async function RootLayout({
           speed={200}
           zIndex={9999}
         />
-        <NextIntlClientProvider>
-          <AppProviders>{children}</AppProviders>
-        </NextIntlClientProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          themes={["light", "dark"]}
+          disableTransitionOnChange
+        >
+          <NextIntlClientProvider>
+            <AppProviders settings={settings}>{children}</AppProviders>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -37,7 +37,7 @@ type RawWithdrawal = {
 };
 
 type RawDashboard = {
-  currency: "VND";
+  currency: string;
   availableBalance: string;
   pendingBalance: string;
   totalReceived: string;

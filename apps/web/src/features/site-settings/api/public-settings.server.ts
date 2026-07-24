@@ -7,7 +7,7 @@ import type { PublicSiteSettings } from "@/features/site-settings/types";
 export const PUBLIC_SITE_SETTINGS_TAG = "public-site-settings";
 
 const fallback: PublicSiteSettings = {
-  siteName: "Linkicom",
+  siteName: process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "Website",
   siteShortName: null,
   siteDescription:
     "Create link-in-bio pages, verified social unlocks and protected content experiences that turn creator traffic into real growth.",

@@ -3,7 +3,6 @@
 import type { Table } from "@tanstack/react-table";
 import {
   Archive,
-  FilePlus2,
   RotateCcw,
   Search,
   Send,
@@ -11,7 +10,6 @@ import {
   X,
 } from "lucide-react";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -43,10 +41,8 @@ import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 export function PagesTable({
   data,
   pageCount,
-  total,
 }: AdminPagesTableData) {
   const permissions = useAdminPermissions();
-  const canCreate = permissions.includes("pages.create");
   const canUpdate = permissions.includes("pages.update");
   const canDelete = permissions.includes("pages.delete");
   const canPublish = permissions.includes("pages.publish");
@@ -120,25 +116,6 @@ export function PagesTable({
 
   return (
     <div className="flex min-w-0 w-full flex-col gap-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Content registry
-          </p>
-          <h2 className="mt-1 text-lg font-semibold">Danh sách Pages</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total.toLocaleString("vi-VN")} trang theo bộ lọc hiện tại.
-          </p>
-        </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/admin/pages/create">
-              <FilePlus2 /> Tạo Page
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-
       <DataTable
         table={table}
         emptyMessage="Không tìm thấy trang phù hợp."

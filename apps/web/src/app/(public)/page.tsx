@@ -1,7 +1,19 @@
 import { LandingPage } from "@/components/landing/landing-page";
+import { getLocale } from "next-intl/server";
+import { getPublicMenus } from "@/features/admin-menus/api/public-menus.server";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
 
 export default async function Home() {
-  const settings = await getPublicSiteSettings();
-  return <LandingPage settings={settings} />;
+  const locale = await getLocale();
+  const [settings, menus] = await Promise.all([
+    getPublicSiteSettings(),
+    getPublicMenus(locale, [
+      "header-primary",
+      "header-actions",
+      "mobile-primary",
+      "footer-primary",
+      "footer-legal",
+    ]),
+  ]);
+  return <LandingPage menus={menus.menus} settings={settings} />;
 }

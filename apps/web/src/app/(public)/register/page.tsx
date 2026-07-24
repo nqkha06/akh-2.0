@@ -3,11 +3,15 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { AuthScreen } from "@/components/auth/auth-screen";
+import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
 
-export const metadata: Metadata = {
-  title: "Tạo tài khoản — Linkicom",
-  description: "Tạo tài khoản Linkicom miễn phí.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSiteSettings();
+  return {
+    title: `Tạo tài khoản — ${settings.siteName}`,
+    description: `Tạo tài khoản ${settings.siteName} miễn phí.`,
+  };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

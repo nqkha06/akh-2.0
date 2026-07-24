@@ -47,7 +47,7 @@ export class PagesController {
   }
 
   @Post()
-  @Permissions("pages.create")
+  @Permissions("pages.create", "admin-media.read")
   create(@Req() request: AdminRequest, @Body() dto: CreatePageDto) {
     return this.pagesService.create(dto, request.user);
   }
@@ -68,7 +68,7 @@ export class PagesController {
   }
 
   @Patch(":id")
-  @Permissions("pages.update")
+  @Permissions("pages.update", "admin-media.read")
   update(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdatePageDto,

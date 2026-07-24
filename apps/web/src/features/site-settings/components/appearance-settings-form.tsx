@@ -28,7 +28,7 @@ import {
 } from "react-hook-form";
 import { toast } from "sonner";
 
-import { ManagedImagePicker } from "@/components/media/managed-image-picker";
+import { AdminMediaPicker } from "@/components/admin-media/admin-media-picker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -68,7 +68,7 @@ import {
   type AdminWebsiteSettings,
   type SiteMedia,
 } from "@/features/site-settings/types";
-import type { ManagedFileDto } from "@/lib/api-client";
+import type { AdminMedia } from "@/features/admin-media/types";
 
 const platformLabels = {
   facebook: "Facebook",
@@ -185,17 +185,17 @@ export function AppearanceSettingsForm({
     setSubmitError("");
   }
 
-  function chooseMedia(field: MediaField, file: ManagedFileDto) {
+  function chooseMedia(field: MediaField, file: AdminMedia) {
     form.setValue(field, file.id, { shouldDirty: true, shouldValidate: true });
     setMedia((current) => ({
       ...current,
       [field]: {
         id: file.id,
-        alias: file.alias,
-        name: file.name,
+        alias: file.id,
+        name: file.fileName,
         mimeType: file.mimeType,
         extension: file.extension,
-        downloadUrl: `/api/site-assets/${file.id}`,
+        downloadUrl: file.url,
       },
     }));
   }
@@ -457,12 +457,12 @@ export function AppearanceSettingsForm({
         </div>
       </form>
 
-      <ManagedImagePicker
+      <AdminMediaPicker
         open={pickerField !== null}
         onOpenChange={(open) => {
           if (!open) setPickerField(null);
         }}
-        selectedFileId={pickerField ? form.getValues(pickerField) : null}
+        selectedId={pickerField ? form.getValues(pickerField) : null}
         title="Chọn ảnh nhận diện"
         onSelect={(file) => {
           if (pickerField) chooseMedia(pickerField, file);

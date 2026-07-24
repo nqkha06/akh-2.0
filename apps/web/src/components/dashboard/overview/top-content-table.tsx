@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 
 import type { ContentStatus, TopContentItem } from "./types";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
-const currencyFormatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 const statusLabel: Record<ContentStatus, string> = {
   active: "Đang hoạt động",
@@ -54,6 +54,7 @@ function RowActions({ item }: { item: TopContentItem }) {
 }
 
 export function TopContentTable({ items }: { items: TopContentItem[] }) {
+  const { formatCurrency } = useMemberCurrency();
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card" aria-labelledby="top-content-title">
       <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
@@ -89,7 +90,7 @@ export function TopContentTable({ items }: { items: TopContentItem[] }) {
                 <TableCell className="text-right font-medium tabular-nums text-foreground">{numberFormatter.format(item.visits)}</TableCell>
                 <TableCell className="text-right font-medium tabular-nums text-foreground">{numberFormatter.format(item.unlocks)}</TableCell>
                 <TableCell className="text-right font-medium tabular-nums text-foreground">{item.conversion.toLocaleString("vi-VN")}%</TableCell>
-                <TableCell className="text-right font-medium tabular-nums text-foreground">{currencyFormatter.format(item.revenue)}</TableCell>
+                <TableCell className="text-right font-medium tabular-nums text-foreground">{formatCurrency(item.revenue, { sourceCurrency: item.revenueCurrency })}</TableCell>
                 <TableCell className="pr-3"><RowActions item={item} /></TableCell>
               </TableRow>
             ))}
@@ -126,4 +127,3 @@ export function TopContentTable({ items }: { items: TopContentItem[] }) {
     </section>
   );
 }
-

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,6 +14,8 @@ import {
 } from "lucide-react";
 
 import styles from "./system-status-page.module.css";
+import { SiteBrandLink } from "@/components/site-brand";
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 
 export type StatusKind = "default404" | "linkNotFound" | "violation" | "deleted" | "unavailable";
 
@@ -44,7 +48,7 @@ const statusContent = {
     code: "403",
     eyebrow: "Nội dung bị hạn chế",
     title: "Link đã bị vô hiệu hoá.",
-    description: "Link này không còn khả dụng vì vi phạm tiêu chuẩn cộng đồng hoặc chính sách sử dụng của Linkicom.",
+    description: "Link này không còn khả dụng vì vi phạm tiêu chuẩn cộng đồng hoặc chính sách sử dụng của hệ thống.",
     Icon: ShieldAlert,
     label: "Policy violation",
     primary: "Về trang chủ",
@@ -79,15 +83,11 @@ const statusContent = {
 } as const;
 
 function Logo() {
-  return (
-    <Link className={styles.logo} href="/" aria-label="Linkicom home">
-      <span className={styles.logoMark} aria-hidden="true"><i /><i /></span>
-      Linkicom
-    </Link>
-  );
+  return <SiteBrandLink className={styles.logo} logoClassName={styles.logoMark} />;
 }
 
 export function SystemStatusPage({ kind }: { kind: StatusKind }) {
+  const brand = useSiteBrand();
   const content = statusContent[kind];
   const Icon = content.Icon;
 
@@ -109,7 +109,7 @@ export function SystemStatusPage({ kind }: { kind: StatusKind }) {
           <div className={styles.orbitOne} /><div className={styles.orbitTwo} />
           <div className={styles.statePanel}>
             <span className={styles.stateIcon}><Icon size={35} /></span>
-            <small>LINKICOM PUBLIC LINK</small>
+            <small>{brand.siteName.toLocaleUpperCase()} PUBLIC LINK</small>
             <strong>{content.label}</strong>
             <div className={styles.fakeUrl}><span><FileX2 size={14} /></span><i /><i /></div>
             <div className={styles.stateLine}><span /><span /><span /></div>
@@ -117,7 +117,7 @@ export function SystemStatusPage({ kind }: { kind: StatusKind }) {
           <span className={styles.sparkle}><Sparkles size={21} /></span>
         </div>
       </section>
-      <footer className={styles.footer}><span>© 2026 Linkicom</span><span>Creator links, protected.</span></footer>
+      <footer className={styles.footer}><span>© {new Date().getFullYear()} {brand.siteName}</span><span>Creator links, protected.</span></footer>
     </main>
   );
 }

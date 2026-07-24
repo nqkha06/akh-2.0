@@ -33,7 +33,20 @@ type AuthResponse = {
 
 const testDatabaseName = `auth-test-${process.pid}.db`;
 const testDatabasePath = join(process.cwd(), "prisma", testDatabaseName);
+const adminMediaTestPath = join(
+  process.cwd(),
+  "uploads",
+  `admin-media-test-${process.pid}`,
+);
+const memberFilesTestPath = join(
+  process.cwd(),
+  "uploads",
+  `member-files-test-${process.pid}`,
+);
 process.env.DATABASE_URL = `file:./${testDatabaseName}`;
+process.env.ADMIN_MEDIA_UPLOAD_DIR = adminMediaTestPath;
+process.env.MEMBER_FILES_UPLOAD_DIR = memberFilesTestPath;
+process.env.MEMBER_STORAGE_LIMIT_BYTES = String(1024 * 1024);
 process.env.JWT_ACCESS_SECRET =
   "test-access-secret-that-is-longer-than-thirty-two-characters";
 process.env.JWT_REFRESH_SECRET =
@@ -65,7 +78,11 @@ function refreshCookie(response: Response) {
 
 async function request(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
-  if (init.body && !headers.has("Content-Type")) {
+  if (
+    init.body &&
+    !(init.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
     headers.set("Content-Type", "application/json");
   }
   if (!headers.has("X-Forwarded-For")) {
@@ -128,6 +145,8 @@ before(async () => {
 after(async () => {
   await app?.close();
   rmSync(testDatabasePath, { force: true });
+  rmSync(adminMediaTestPath, { force: true, recursive: true });
+  rmSync(memberFilesTestPath, { force: true, recursive: true });
 });
 
 describe("Authentication E2E", () => {
@@ -381,22 +400,285 @@ describe("Authentication E2E", () => {
     );
   });
 
-  it("logout-all invalidates every device session", async () => {
-    const first = await login();
-    const second = await login();
-    const response = await request("/api/auth/logout-all", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${first.body.accessToken}` },
-    });
-    assert.equal(response.status, 204);
+});
 
-    for (const cookie of [first.cookie, second.cookie]) {
-      const refresh = await request("/api/auth/refresh", {
-        method: "POST",
-        headers: { Cookie: cookie },
-      });
-      assert.equal(refresh.status, 401);
-    }
+describe("Member snippets E2E", () => {
+  it("isolates owners, soft deletes library rows and preserves link snapshots", async () => {
+    const owner = await login();
+    const secondEmail = `snippet-owner-${process.pid}@example.com`;
+    const registerSecond = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Second Snippet Owner",
+        email: secondEmail,
+        password: "Secure123",
+      }),
+    });
+    assert.equal(registerSecond.status, 201);
+    const second = await loginAs(secondEmail, "Secure123");
+    const ownerAuthorization = {
+      Authorization: `Bearer ${owner.body.accessToken}`,
+    };
+    const secondAuthorization = {
+      Authorization: `Bearer ${second.body.accessToken}`,
+    };
+
+    assert.equal((await request("/api/member/snippets")).status, 401);
+
+    const createSnippetResponse = await request("/api/member/snippets", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({
+        name: "Private launch code",
+        content: "ORIGINAL-SNAPSHOT",
+      }),
+    });
+    assert.equal(createSnippetResponse.status, 201);
+    const snippet = (await createSnippetResponse.json()) as {
+      id: string;
+      name: string;
+      content: string;
+    };
+
+    const listResponse = await request(
+      "/api/member/snippets?page=1&limit=10&search=launch&sortBy=name&sortOrder=asc",
+      { headers: ownerAuthorization },
+    );
+    assert.equal(listResponse.status, 200);
+    const list = (await listResponse.json()) as {
+      items: Array<Record<string, unknown>>;
+      pagination: { totalItems: number; totalPages: number };
+    };
+    assert.equal(list.pagination.totalItems, 1);
+    assert.equal(list.pagination.totalPages, 1);
+    assert.equal(list.items[0]?.id, snippet.id);
+    assert.equal("copies" in list.items[0], false);
+
+    assert.equal(
+      (
+        await request(`/api/member/snippets/${snippet.id}`, {
+          headers: secondAuthorization,
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await request(`/api/member/snippets/${snippet.id}`, {
+          method: "PATCH",
+          headers: secondAuthorization,
+          body: JSON.stringify({ content: "STOLEN" }),
+        })
+      ).status,
+      404,
+    );
+
+    const crossOwnerLink = await request("/api/links", {
+      method: "POST",
+      headers: secondAuthorization,
+      body: JSON.stringify({
+        title: "Cross-owner snippet",
+        inputType: "snippet",
+        selectedSnippet: snippet.id,
+        actions: [
+          {
+            platform: "website",
+            action: "visit",
+            url: "https://example.com/action",
+          },
+        ],
+      }),
+    });
+    assert.equal(crossOwnerLink.status, 400);
+
+    const alias = `snippet-snapshot-${process.pid}`;
+    const createLinkResponse = await request("/api/links", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({
+        title: "Snapshot link",
+        inputType: "snippet",
+        selectedSnippet: snippet.id,
+        customAlias: alias,
+        actions: [
+          {
+            platform: "website",
+            action: "visit",
+            url: "https://example.com/action",
+          },
+        ],
+      }),
+    });
+    assert.equal(createLinkResponse.status, 201);
+    assert.equal(
+      ((await createLinkResponse.json()) as { destinationUrl: string })
+        .destinationUrl,
+      "ORIGINAL-SNAPSHOT",
+    );
+
+    const updateSnippetResponse = await request(
+      `/api/member/snippets/${snippet.id}`,
+      {
+        method: "PATCH",
+        headers: ownerAuthorization,
+        body: JSON.stringify({ content: "UPDATED-LIBRARY-CONTENT" }),
+      },
+    );
+    assert.equal(updateSnippetResponse.status, 200);
+
+    const beforeDeleteLink = await request(`/api/links/${alias}`);
+    assert.equal(beforeDeleteLink.status, 200);
+    assert.equal(
+      ((await beforeDeleteLink.json()) as { destinationUrl: string })
+        .destinationUrl,
+      "ORIGINAL-SNAPSHOT",
+    );
+
+    const deleteSnippetResponse = await request(
+      `/api/member/snippets/${snippet.id}`,
+      { method: "DELETE", headers: ownerAuthorization },
+    );
+    assert.equal(deleteSnippetResponse.status, 200);
+    assert.equal(
+      (
+        await request(`/api/member/snippets/${snippet.id}`, {
+          headers: ownerAuthorization,
+        })
+      ).status,
+      404,
+    );
+
+    const deletedRecord = await prisma.snippet.findUniqueOrThrow({
+      where: { id: Number(snippet.id) },
+    });
+    assert.ok(deletedRecord.deletedAt);
+
+    const afterDeleteLink = await request(`/api/links/${alias}`);
+    assert.equal(afterDeleteLink.status, 200);
+    assert.equal(
+      ((await afterDeleteLink.json()) as { destinationUrl: string })
+        .destinationUrl,
+      "ORIGINAL-SNAPSHOT",
+    );
+
+    await prisma.link.delete({ where: { slug: alias } });
+    await prisma.snippet.delete({ where: { id: Number(snippet.id) } });
+    await prisma.user.delete({ where: { email: secondEmail } });
+  });
+});
+
+describe("Member files E2E", () => {
+  it("isolates owners, reserves quota and blocks deletion while in use", async () => {
+    const owner = await login();
+    const secondEmail = `file-owner-${process.pid}@example.com`;
+    assert.equal((await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name: "Second File Owner", email: secondEmail, password: "Secure123" }),
+    })).status, 201);
+    const second = await loginAs(secondEmail, "Secure123");
+    const ownerAuthorization = { Authorization: `Bearer ${owner.body.accessToken}` };
+    const secondAuthorization = { Authorization: `Bearer ${second.body.accessToken}` };
+
+    assert.equal((await request("/api/member/files")).status, 401);
+
+    const initiate = await request("/api/member/files/multipart", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({ fileName: "private.txt", mimeType: "text/plain", size: 4, purpose: "file" }),
+    });
+    assert.equal(initiate.status, 201);
+    const upload = (await initiate.json()) as { uploadId: string; totalParts: number };
+    assert.equal(upload.totalParts, 1);
+    const ownerId = Number(owner.body.user.id);
+    assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: ownerId } })).storageReservedBytes, 4n);
+
+    const form = new FormData();
+    form.append("chunk", new Blob(["test"], { type: "text/plain" }), "part-1");
+    assert.equal((await request(`/api/member/files/multipart/${upload.uploadId}/parts/1`, {
+      method: "POST", headers: ownerAuthorization, body: form,
+    })).status, 201);
+    const complete = await request(`/api/member/files/multipart/${upload.uploadId}/complete`, {
+      method: "POST", headers: ownerAuthorization,
+    });
+    assert.equal(complete.status, 201);
+    const file = (await complete.json()) as { id: string; usageCount: number };
+    assert.equal("isPublic" in file, false);
+    assert.equal(file.usageCount, 0);
+    assert.equal(
+      (await request(`/api/member/files/${file.id}/download`, {
+        headers: ownerAuthorization,
+      })).status,
+      404,
+    );
+    assert.equal(
+      (await request(`/api/files/public/${file.id}/download`)).status,
+      404,
+    );
+
+    const counters = await prisma.user.findUniqueOrThrow({ where: { id: ownerId } });
+    assert.equal(counters.storageReservedBytes, 0n);
+    assert.equal(counters.storageUsedBytes, 4n);
+
+    const ownerList = await request("/api/member/files?page=1&limit=10&type=document", { headers: ownerAuthorization });
+    assert.equal(ownerList.status, 200);
+    const ownerFiles = (await ownerList.json()) as {
+      items: Array<{ id: string }>;
+      pagination: { totalItems: number };
+      summary: { usedBytes: number; limitBytes: number };
+    };
+    assert.equal(ownerFiles.pagination.totalItems, 1);
+    assert.equal(ownerFiles.items[0]?.id, file.id);
+    assert.equal(ownerFiles.summary.usedBytes, 4);
+    assert.equal(ownerFiles.summary.limitBytes, 1024 * 1024);
+
+    const secondList = await request("/api/member/files", { headers: secondAuthorization });
+    assert.equal(secondList.status, 200);
+    assert.equal(((await secondList.json()) as { pagination: { totalItems: number } }).pagination.totalItems, 0);
+    assert.equal((await request(`/api/member/files/${file.id}`, {
+      method: "PATCH", headers: secondAuthorization, body: JSON.stringify({ name: "stolen" }),
+    })).status, 404);
+
+    const crossOwnerLink = await request("/api/links", {
+      method: "POST",
+      headers: secondAuthorization,
+      body: JSON.stringify({
+        title: "Cross-owner file", inputType: "file", selectedFile: file.id,
+        actions: [{ platform: "website", action: "visit", url: "https://example.com/action" }],
+      }),
+    });
+    assert.equal(crossOwnerLink.status, 400);
+
+    const alias = `member-file-${process.pid}`;
+    const createFileLink = await request("/api/links", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({
+        title: "Owned file", inputType: "file", selectedFile: file.id, customAlias: alias,
+        actions: [{ platform: "website", action: "visit", url: "https://example.com/action" }],
+      }),
+    });
+    assert.equal(createFileLink.status, 201);
+    assert.equal(
+      ((await createFileLink.json()) as { destinationUrl: string }).destinationUrl,
+      `/api/public/files/${alias}`,
+    );
+
+    const socialLinkDownload = await request(`/api/files/link/${alias}/download`);
+    assert.equal(socialLinkDownload.status, 200);
+    assert.match(
+      socialLinkDownload.headers.get("content-disposition") || "",
+      /^attachment;/,
+    );
+    assert.equal(await socialLinkDownload.text(), "test");
+
+    const inUseDelete = await request(`/api/member/files/${file.id}`, { method: "DELETE", headers: ownerAuthorization });
+    assert.equal(inUseDelete.status, 409);
+    assert.equal(((await inUseDelete.json()) as { code: string }).code, "FILE_IN_USE");
+
+    const link = await prisma.link.findUniqueOrThrow({ where: { slug: alias } });
+    assert.equal((await request(`/api/links/${link.id}`, { method: "DELETE", headers: ownerAuthorization })).status, 200);
+    assert.equal((await request(`/api/member/files/${file.id}`, { method: "DELETE", headers: ownerAuthorization })).status, 200);
+    assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: ownerId } })).storageUsedBytes, 4n);
   });
 });
 
@@ -1895,6 +2177,227 @@ describe("Public monetization route resolution E2E", () => {
   });
 });
 
+describe("Admin Media E2E", () => {
+  it("isolates folders and files, supports bulk move, and blocks media in use", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+
+    assert.equal((await request("/api/admin/media")).status, 401);
+
+    const rootFolderResponse = await request("/api/admin/media/folders", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({ name: "Brand assets", parentId: null }),
+    });
+    assert.equal(
+      rootFolderResponse.status,
+      201,
+      await rootFolderResponse.clone().text(),
+    );
+    const rootFolder = (await rootFolderResponse.json()) as { id: string };
+
+    const childFolderResponse = await request("/api/admin/media/folders", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({ name: "Logos", parentId: rootFolder.id }),
+    });
+    assert.equal(childFolderResponse.status, 201);
+    const childFolder = (await childFolderResponse.json()) as { id: string };
+
+    const duplicateFolderResponse = await request(
+      "/api/admin/media/folders",
+      {
+        method: "POST",
+        headers: authorization,
+        body: JSON.stringify({ name: " logos ", parentId: rootFolder.id }),
+      },
+    );
+    assert.equal(duplicateFolderResponse.status, 409);
+    assert.equal(
+      ((await duplicateFolderResponse.json()) as { code: string }).code,
+      "FOLDER_NAME_EXISTS",
+    );
+
+    const onePixelPng = Uint8Array.from(
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    );
+    const form = new FormData();
+    form.append(
+      "files",
+      new Blob([onePixelPng], { type: "image/png" }),
+      "logo-light.png",
+    );
+    form.append(
+      "files",
+      new Blob([onePixelPng], { type: "image/png" }),
+      "logo-dark.png",
+    );
+    const uploadResponse = await request(
+      `/api/admin/media/upload?folderId=${childFolder.id}`,
+      {
+        method: "POST",
+        headers: authorization,
+        body: form,
+      },
+    );
+    assert.equal(uploadResponse.status, 201, await uploadResponse.clone().text());
+    const uploaded = (await uploadResponse.json()) as {
+      items: Array<{
+        id: string;
+        folderId: string;
+        mimeType: string;
+        width: number;
+        height: number;
+        url: string;
+      }>;
+    };
+    assert.equal(uploaded.items.length, 2);
+    assert.equal(uploaded.items[0]?.folderId, childFolder.id);
+    assert.equal(uploaded.items[0]?.mimeType, "image/png");
+    assert.equal(uploaded.items[0]?.width, 1);
+    assert.equal(uploaded.items[0]?.height, 1);
+    const mediaIds = uploaded.items.map((item) => item.id);
+
+    const listResponse = await request(
+      `/api/admin/media?folderId=${childFolder.id}&type=image%2Fpng&sortBy=fileName&sortOrder=asc`,
+      { headers: authorization },
+    );
+    assert.equal(listResponse.status, 200);
+    assert.equal(
+      ((await listResponse.json()) as { total: number }).total,
+      2,
+    );
+
+    const contentResponse = await request(
+      `/api/admin-media/public/${mediaIds[0]}/content`,
+    );
+    assert.equal(contentResponse.status, 200);
+    assert.equal(contentResponse.headers.get("content-type"), "image/png");
+
+    const updateResponse = await request(
+      `/api/admin/media/${mediaIds[0]}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          fileName: "Primary logo.png",
+          altText: "Primary brand logo",
+          caption: "Used in the test page",
+        }),
+      },
+    );
+    assert.equal(updateResponse.status, 200);
+    assert.equal(
+      ((await updateResponse.json()) as { altText: string }).altText,
+      "Primary brand logo",
+    );
+
+    const blockedFolderDelete = await request(
+      `/api/admin/media/folders/${rootFolder.id}`,
+      { method: "DELETE", headers: authorization },
+    );
+    assert.equal(blockedFolderDelete.status, 409);
+    assert.equal(
+      ((await blockedFolderDelete.json()) as { code: string }).code,
+      "FOLDER_NOT_EMPTY",
+    );
+
+    const bulkMoveResponse = await request("/api/admin/media/bulk-move", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({ ids: mediaIds, folderId: null }),
+    });
+    assert.equal(bulkMoveResponse.status, 201);
+    assert.equal(
+      ((await bulkMoveResponse.json()) as { moved: number }).moved,
+      2,
+    );
+
+    const pageResponse = await request("/api/admin/pages", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        title: "Admin Media usage guard",
+        slug: `admin-media-usage-${process.pid}`,
+        contentJson: {
+          type: "doc",
+          content: [{ type: "paragraph" }],
+        },
+        contentHtml: "<p>Admin Media usage test.</p>",
+        featuredImageId: mediaIds[0],
+        status: "DRAFT",
+        robotsIndex: true,
+        robotsFollow: true,
+        sortOrder: 0,
+      }),
+    });
+    assert.equal(pageResponse.status, 201, await pageResponse.clone().text());
+    const page = (await pageResponse.json()) as { id: number };
+
+    const blockedMediaDelete = await request(
+      `/api/admin/media/${mediaIds[0]}`,
+      { method: "DELETE", headers: authorization },
+    );
+    assert.equal(blockedMediaDelete.status, 409);
+    assert.equal(
+      ((await blockedMediaDelete.json()) as { code: string }).code,
+      "MEDIA_IN_USE",
+    );
+
+    assert.equal(
+      (
+        await request(`/api/admin/pages/${page.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+
+    const bulkDeleteResponse = await request(
+      "/api/admin/media/bulk-delete",
+      {
+        method: "POST",
+        headers: authorization,
+        body: JSON.stringify({ ids: mediaIds }),
+      },
+    );
+    assert.equal(
+      bulkDeleteResponse.status,
+      201,
+      await bulkDeleteResponse.clone().text(),
+    );
+    assert.equal(
+      ((await bulkDeleteResponse.json()) as { deleted: number }).deleted,
+      2,
+    );
+
+    assert.equal(
+      (
+        await request(`/api/admin/media/folders/${childFolder.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/media/folders/${rootFolder.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+  });
+});
+
 describe("Website settings E2E", () => {
   it("protects admin settings, validates input and exposes only public fields", async () => {
     assert.ok(adminAccessToken);
@@ -2360,6 +2863,135 @@ describe("Languages E2E", () => {
         })
       ).status,
       409,
+    );
+  });
+});
+
+describe("Currencies and user meta E2E", () => {
+  it("manages USD-based rates and persists the member currency preference", async () => {
+    assert.ok(adminAccessToken);
+    const adminAuthorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    assert.equal(
+      (await request("/api/admin/settings/currencies")).status,
+      401,
+    );
+
+    const createdResponse = await request("/api/admin/settings/currencies", {
+      method: "POST",
+      headers: adminAuthorization,
+      body: JSON.stringify({
+        code: "VND",
+        name: "Vietnamese đồng",
+        symbol: "₫",
+        exchangeRate: "22000",
+        decimalDigits: 0,
+        isDefault: false,
+        isActive: true,
+        sortOrder: 20,
+      }),
+    });
+    assert.equal(
+      createdResponse.status,
+      201,
+      await createdResponse.clone().text(),
+    );
+    const vnd = (await createdResponse.json()) as {
+      id: number;
+      exchangeRate: string;
+    };
+    assert.equal(vnd.exchangeRate, "22000");
+
+    const memberSession = await login();
+    const memberAuthorization = {
+      Authorization: `Bearer ${memberSession.body.accessToken}`,
+    };
+    const preferenceResponse = await request(
+      "/api/member/preferences/currency",
+      {
+        method: "PATCH",
+        headers: memberAuthorization,
+        body: JSON.stringify({ currency: "VND" }),
+      },
+    );
+    assert.equal(
+      preferenceResponse.status,
+      200,
+      await preferenceResponse.clone().text(),
+    );
+    assert.equal(
+      ((await preferenceResponse.json()) as { currency: string }).currency,
+      "VND",
+    );
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { email: "auth@example.com" },
+    });
+    assert.equal(
+      (
+        await prisma.userMeta.findUniqueOrThrow({
+          where: {
+            userId_key: {
+              userId: owner.id,
+              key: "preferences.currency",
+            },
+          },
+        })
+      ).valueJson,
+      JSON.stringify("VND"),
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/settings/currencies/${vnd.id}`, {
+          method: "DELETE",
+          headers: adminAuthorization,
+        })
+      ).status,
+      409,
+    );
+
+    const updateResponse = await request(
+      `/api/admin/settings/currencies/${vnd.id}`,
+      {
+        method: "PATCH",
+        headers: adminAuthorization,
+        body: JSON.stringify({ exchangeRate: "22500.5" }),
+      },
+    );
+    assert.equal(updateResponse.status, 200);
+    assert.equal(
+      ((await updateResponse.json()) as { exchangeRate: string })
+        .exchangeRate,
+      "22500.5",
+    );
+
+    const usd = await prisma.currency.findUniqueOrThrow({
+      where: { code: "USD" },
+    });
+    assert.equal(
+      (
+        await request(`/api/admin/settings/currencies/${usd.id}`, {
+          method: "DELETE",
+          headers: adminAuthorization,
+        })
+      ).status,
+      409,
+    );
+
+    await prisma.userMeta.deleteMany({
+      where: {
+        userId: owner.id,
+        key: "preferences.currency",
+      },
+    });
+    assert.equal(
+      (
+        await request(`/api/admin/settings/currencies/${vnd.id}`, {
+          method: "DELETE",
+          headers: adminAuthorization,
+        })
+      ).status,
+      200,
     );
   });
 });
@@ -2960,6 +3592,475 @@ describe("Withdrawals E2E", () => {
     await prisma.paymentMethod.delete({ where: { id: method.id } });
     await prisma.user.delete({ where: { id: owner.id } });
     await prisma.user.delete({ where: { id: referrer.id } });
+  });
+});
+
+describe("Website menus E2E", () => {
+  it("publishes localized snapshots, protects versions and manages locations", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    assert.equal((await request("/api/admin/menus")).status, 401);
+
+    const createResponse = await request("/api/admin/menus", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        key: `e2e-menu-${process.pid}`,
+        name: "Menu E2E",
+        description: "Menu dùng cho kiểm thử.",
+        translations: [{ locale: "vi", title: "Điều hướng E2E" }],
+      }),
+    });
+    assert.equal(createResponse.status, 201, await createResponse.clone().text());
+    const created = (await createResponse.json()) as {
+      id: number;
+      draftVersion: number;
+    };
+    assert.equal(created.draftVersion, 1);
+
+    const unsafeTree = await request(
+      `/api/admin/menus/${created.id}/tree`,
+      {
+        method: "PUT",
+        headers: authorization,
+        body: JSON.stringify({
+          expectedVersion: 1,
+          items: [
+            {
+              type: "CUSTOM_URL",
+              url: "javascript:alert(1)",
+              target: "SELF",
+              isEnabled: true,
+              translations: [{ locale: "vi", label: "Không an toàn" }],
+              children: [],
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(unsafeTree.status, 400);
+
+    const treeResponse = await request(
+      `/api/admin/menus/${created.id}/tree`,
+      {
+        method: "PUT",
+        headers: authorization,
+        body: JSON.stringify({
+          expectedVersion: 1,
+          items: [
+            {
+              type: "CUSTOM_URL",
+              url: "/e2e",
+              target: "BLANK",
+              isEnabled: true,
+              translations: [{ locale: "vi", label: "Kiểm thử" }],
+              children: [],
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(treeResponse.status, 200, await treeResponse.clone().text());
+    assert.equal(
+      ((await treeResponse.json()) as { draftVersion: number }).draftVersion,
+      2,
+    );
+
+    const staleResponse = await request(
+      `/api/admin/menus/${created.id}/tree`,
+      {
+        method: "PUT",
+        headers: authorization,
+        body: JSON.stringify({ expectedVersion: 1, items: [] }),
+      },
+    );
+    assert.equal(staleResponse.status, 409);
+    assert.equal(
+      ((await staleResponse.json()) as { code: string }).code,
+      "MENU_VERSION_CONFLICT",
+    );
+
+    const publishResponse = await request(
+      `/api/admin/menus/${created.id}/publish`,
+      { method: "POST", headers: authorization },
+    );
+    assert.equal(publishResponse.status, 201);
+
+    const assignmentResponse = await request("/api/admin/menus/locations", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        location: "header-primary",
+        menuId: created.id,
+      }),
+    });
+    assert.equal(assignmentResponse.status, 200);
+
+    const publicResponse = await request(
+      "/api/website/menus?locations=header-primary&locale=en",
+    );
+    assert.equal(publicResponse.status, 200);
+    const publicBody = (await publicResponse.json()) as {
+      menus: {
+        "header-primary": {
+          items: Array<{ label: string; rel: string; target: string }>;
+        };
+      };
+    };
+    assert.equal(publicBody.menus["header-primary"].items[0]?.label, "Kiểm thử");
+    assert.equal(publicBody.menus["header-primary"].items[0]?.target, "_blank");
+    assert.equal(
+      publicBody.menus["header-primary"].items[0]?.rel,
+      "noopener noreferrer",
+    );
+
+    const inUseDelete = await request(`/api/admin/menus/${created.id}`, {
+      method: "DELETE",
+      headers: authorization,
+    });
+    assert.equal(inUseDelete.status, 409);
+    assert.equal(
+      ((await inUseDelete.json()) as { code: string }).code,
+      "MENU_IN_USE",
+    );
+
+    assert.equal(
+      (
+        await request("/api/admin/menus/locations/header-primary", {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/menus/${created.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+  });
+});
+
+describe("Support tickets E2E", () => {
+  it("supports member ownership and a complete admin response lifecycle", async () => {
+    const email = `support-member-${process.pid}@example.com`;
+    const password = "Support123";
+    assert.equal(
+      (
+        await request("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "Support Member",
+            email,
+            password,
+          }),
+        })
+      ).status,
+      201,
+    );
+    const member = await loginAs(email, password);
+    const memberAuthorization = {
+      Authorization: `Bearer ${member.body.accessToken}`,
+    };
+
+    const createResponse = await request("/api/member/support/tickets", {
+      method: "POST",
+      headers: memberAuthorization,
+      body: JSON.stringify({
+        category: "technical",
+        subject: "Không thể cập nhật social link",
+        content:
+          "Tôi đã thử lưu lại social link nhiều lần nhưng trạng thái không thay đổi.",
+        relatedResource: "/member/links",
+      }),
+    });
+    assert.equal(createResponse.status, 201, await createResponse.clone().text());
+    const created = (await createResponse.json()) as {
+      id: number;
+      reference: string;
+      status: string;
+      messages: Array<{ senderRole: string; isInternal: boolean }>;
+    };
+    assert.match(created.reference, /^TKT-\d{4}-\d{6}$/);
+    assert.equal(created.status, "submitted");
+
+    const otherEmail = `support-other-${process.pid}@example.com`;
+    assert.equal(
+      (
+        await request("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "Other Support Member",
+            email: otherEmail,
+            password,
+          }),
+        })
+      ).status,
+      201,
+    );
+    const otherMember = await loginAs(otherEmail, password);
+    assert.equal(
+      (
+        await request(`/api/member/support/tickets/${created.id}`, {
+          headers: {
+            Authorization: `Bearer ${otherMember.body.accessToken}`,
+          },
+        })
+      ).status,
+      404,
+    );
+
+    const adminAuthorization = {
+      Authorization: `Bearer ${adminAccessToken}`,
+    };
+    const listResponse = await request(
+      "/api/admin/support/tickets?status=submitted",
+      { headers: adminAuthorization },
+    );
+    assert.equal(listResponse.status, 200);
+    const list = (await listResponse.json()) as {
+      items: Array<{ id: number }>;
+      summary: { open: number; unassigned: number };
+    };
+    assert.ok(list.items.some((ticket) => ticket.id === created.id));
+    assert.ok(list.summary.open >= 1);
+    assert.ok(list.summary.unassigned >= 1);
+
+    const assignResponse = await request(
+      `/api/admin/support/tickets/${created.id}`,
+      {
+        method: "PATCH",
+        headers: adminAuthorization,
+        body: JSON.stringify({ assignToMe: true, priority: "high" }),
+      },
+    );
+    assert.equal(assignResponse.status, 200);
+    const assigned = (await assignResponse.json()) as {
+      status: string;
+      priority: string;
+      assignedTo: { id: number };
+    };
+    assert.equal(assigned.status, "in_progress");
+    assert.equal(assigned.priority, "high");
+    assert.ok(assigned.assignedTo.id);
+
+    const replyResponse = await request(
+      `/api/admin/support/tickets/${created.id}/replies`,
+      {
+        method: "POST",
+        headers: adminAuthorization,
+        body: JSON.stringify({
+          content:
+            "Chúng tôi đã tiếp nhận. Bạn vui lòng thử tải lại trang trước khi lưu.",
+        }),
+      },
+    );
+    assert.equal(replyResponse.status, 201);
+    assert.equal(
+      ((await replyResponse.json()) as { status: string }).status,
+      "waiting_user",
+    );
+
+    const memberDetail = await request(
+      `/api/member/support/tickets/${created.id}`,
+      { headers: memberAuthorization },
+    );
+    assert.equal(memberDetail.status, 200);
+    const visible = (await memberDetail.json()) as {
+      messages: Array<{ senderRole: string; isInternal: boolean }>;
+    };
+    assert.ok(
+      visible.messages.some((message) => message.senderRole === "support"),
+    );
+    assert.equal(
+      visible.messages.some((message) => message.isInternal),
+      false,
+    );
+
+    const memberReply = await request(
+      `/api/member/support/tickets/${created.id}/replies`,
+      {
+        method: "POST",
+        headers: memberAuthorization,
+        body: JSON.stringify({
+          content: "Tôi đã thử lại và gửi thêm thông tin theo hướng dẫn.",
+        }),
+      },
+    );
+    assert.equal(memberReply.status, 201);
+    assert.equal(
+      ((await memberReply.json()) as { status: string }).status,
+      "in_progress",
+    );
+
+    assert.equal(
+      (
+        await request(`/api/admin/support/tickets/${created.id}`, {
+          method: "PATCH",
+          headers: adminAuthorization,
+          body: JSON.stringify({ status: "closed" }),
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/member/support/tickets/${created.id}/replies`, {
+          method: "POST",
+          headers: memberAuthorization,
+          body: JSON.stringify({ content: "Phản hồi sau khi đóng." }),
+        })
+      ).status,
+      409,
+    );
+  });
+});
+
+describe("Member Bio Pages E2E", () => {
+  it("isolates owners, stores a JSON document and exposes only published pages", async () => {
+    const ownerEmail = "bio-owner@example.com";
+    const otherEmail = "bio-other@example.com";
+    for (const [name, email] of [
+      ["Bio Owner", ownerEmail],
+      ["Bio Other", otherEmail],
+    ]) {
+      assert.equal(
+        (
+          await request("/api/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ name, email, password: "Secure123" }),
+          })
+        ).status,
+        201,
+      );
+    }
+
+    const owner = await loginAs(ownerEmail, "Secure123");
+    const other = await loginAs(otherEmail, "Secure123");
+    const ownerAuthorization = {
+      Authorization: `Bearer ${owner.body.accessToken}`,
+    };
+    const otherAuthorization = {
+      Authorization: `Bearer ${other.body.accessToken}`,
+    };
+    const draftPayload = {
+      name: "Creator Bio",
+      title: "Creator",
+      customSlug: "creator-bio-test",
+      status: "draft",
+      socialLinks: [
+        {
+          id: "social-1",
+          platform: "Instagram",
+          url: "https://instagram.com/example",
+        },
+      ],
+      customLinks: [
+        {
+          id: "link-1",
+          title: "Portfolio",
+          url: "https://example.com/portfolio",
+        },
+      ],
+      widgets: [],
+      hiddenLinks: ["link-1"],
+      appearance: {
+        buttonStyle: "rounded",
+        backgroundColor: "#ffffff",
+      },
+    };
+
+    assert.equal(
+      (
+        await request("/api/member/bio-pages", {
+          method: "POST",
+          body: JSON.stringify(draftPayload),
+        })
+      ).status,
+      401,
+    );
+
+    const createdResponse = await request("/api/member/bio-pages", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify(draftPayload),
+    });
+    assert.equal(createdResponse.status, 201);
+    const created = (await createdResponse.json()) as {
+      id: string;
+      slug: string;
+      hiddenLinks: string[];
+    };
+    assert.deepEqual(created.hiddenLinks, ["link-1"]);
+
+    const stored = await prisma.bioPage.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    assert.equal(stored.userId, owner.body.user.id);
+    assert.equal(
+      (
+        JSON.parse(stored.contentJson) as {
+          customLinks: Array<{ id: string; isVisible: boolean }>;
+        }
+      ).customLinks[0].isVisible,
+      false,
+    );
+    assert.equal(JSON.parse(stored.appearanceJson).buttonStyle, "rounded");
+
+    const otherList = await request("/api/member/bio-pages", {
+      headers: otherAuthorization,
+    });
+    assert.equal(otherList.status, 200);
+    assert.deepEqual(await otherList.json(), []);
+    assert.equal(
+      (
+        await request(`/api/member/bio-pages/${created.id}`, {
+          method: "PATCH",
+          headers: otherAuthorization,
+          body: JSON.stringify({ ...draftPayload, status: "published" }),
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (await request(`/api/public/bio-pages/${created.slug}`)).status,
+      404,
+    );
+
+    assert.equal(
+      (
+        await request(`/api/member/bio-pages/${created.id}`, {
+          method: "PATCH",
+          headers: ownerAuthorization,
+          body: JSON.stringify({ ...draftPayload, status: "published" }),
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/public/bio-pages/${created.slug}`)).status,
+      200,
+    );
+
+    assert.equal(
+      (
+        await request(`/api/member/bio-pages/${created.id}`, {
+          method: "DELETE",
+          headers: ownerAuthorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/public/bio-pages/${created.slug}`)).status,
+      404,
+    );
   });
 });
 

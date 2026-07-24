@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { FilesController } from "./files.controller";
+import { FilesController, PublicFilesController } from "./files.controller";
 import { FilesService } from "./files.service";
 import {
   LocalMultipartUploadStorage,
@@ -8,7 +8,7 @@ import {
 } from "./multipart-upload.storage";
 
 @Module({
-  controllers: [FilesController],
+  controllers: [FilesController, PublicFilesController],
   providers: [
     FilesService,
     LocalMultipartUploadStorage,

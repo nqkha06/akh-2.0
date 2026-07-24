@@ -27,6 +27,10 @@ import {
 
 import { BioWidgetEmbed } from "@/components/bio-widget-embed";
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
+import {
+  getSiteHost,
+  useSiteBrand,
+} from "@/features/site-settings/components/site-brand-provider";
 import { trackBioClick, type BioPageDto } from "@/lib/api-client";
 
 function getSocialIcon(platform: string) {
@@ -270,6 +274,8 @@ function getLinkButtonStyle(buttonStyle: string): React.CSSProperties | undefine
 }
 
 export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
+  const brand = useSiteBrand();
+  const siteHost = getSiteHost(brand);
   const visibleLinks = bioPage.customLinks.filter(
     (link) => !bioPage.hiddenLinks.includes(link.id),
   );
@@ -310,7 +316,9 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
               {getInitials(bioPage.name)}
             </div>
             <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{bioPage.name}</h1>
-            <p className="mt-2 text-sm font-semibold text-slate-500">rekonise.bio/{bioPage.slug}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              {siteHost ? `${siteHost}/b/` : "/b/"}{bioPage.slug}
+            </p>
             {bioPage.title ? <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-slate-700">{bioPage.title}</p> : null}
             {bioPage.socialLinks.length > 0 ? (
               <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -390,7 +398,7 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
           </div>
           <footer className="border-t pt-4">
             <p className="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Powered by Rekonise Bio
+              Powered by {brand.siteName}
             </p>
           </footer>
         </div>

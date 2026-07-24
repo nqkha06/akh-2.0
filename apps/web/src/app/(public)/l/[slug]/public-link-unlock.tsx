@@ -263,7 +263,7 @@ export function PublicLinkUnlock({
 }) {
   const t = useTranslations("PublicLink");
   const createT = useTranslations("CreateLink");
-  const storageKey = `stu-unlock:${link.slug}`;
+  const storageKey = `site:unlock:${link.slug}`;
 
   const countdownIntervalIdsRef = useRef<
     Map<string, number>

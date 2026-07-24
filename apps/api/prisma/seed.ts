@@ -403,12 +403,29 @@ async function main() {
     create: { roleId: memberRole.id, userId: demoUser.id },
   });
 
+  const demoSnippetIds = new Map<string, number>();
   for (const snippet of demoSnippets) {
-    await prisma.snippet.upsert({
-      where: { id: snippet.id },
-      update: snippet,
-      create: snippet,
+    const existing = await prisma.snippet.findFirst({
+      where: { userId: demoUser.id, name: snippet.name },
+      orderBy: { id: "asc" },
     });
+    const record = existing
+      ? await prisma.snippet.update({
+          where: { id: existing.id },
+          data: {
+            name: snippet.name,
+            content: snippet.content,
+            deletedAt: null,
+          },
+        })
+      : await prisma.snippet.create({
+          data: {
+            userId: demoUser.id,
+            name: snippet.name,
+            content: snippet.content,
+          },
+        });
+    demoSnippetIds.set(snippet.id, record.id);
   }
 
   for (const link of demoLinks) {
@@ -431,10 +448,13 @@ async function main() {
         },
       },
     });
-    const destinationSnippetId =
+    const destinationSnippetKey =
       link.inputType === "snippet" && "selectedSnippet" in link
         ? link.selectedSnippet
         : null;
+    const destinationSnippetId = destinationSnippetKey
+      ? demoSnippetIds.get(destinationSnippetKey) ?? null
+      : null;
     const expiresAt =
       "expiryEnabled" in link &&
       link.expiryEnabled &&
@@ -459,6 +479,11 @@ async function main() {
           : link.destinationUrl,
       destinationFileId: null,
       destinationSnippetId,
+      destinationSnippetContent:
+        link.inputType === "snippet" && destinationSnippetKey
+          ? demoSnippets.find((snippet) => snippet.id === destinationSnippetKey)
+              ?.content ?? null
+          : null,
       appearanceJson,
       expiresAt,
       maxClicks,

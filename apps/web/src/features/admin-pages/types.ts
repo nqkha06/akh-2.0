@@ -2,10 +2,10 @@ export type PageStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export type PageFeaturedImage = {
   id: string;
-  alias: string;
-  name: string;
+  fileName: string;
   mimeType: string;
-  extension: string | null;
+  extension: string;
+  url: string;
 };
 
 export type AdminPage = {

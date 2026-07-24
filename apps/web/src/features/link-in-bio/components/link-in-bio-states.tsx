@@ -15,7 +15,6 @@ export function LinkInBioEmptyState({ onCreate }: { onCreate: () => void }) {
         <p className="mt-2 text-sm leading-6 text-muted-foreground">Tạo một trang để chia sẻ liên kết, mạng xã hội và nội dung từ một địa chỉ duy nhất.</p>
         <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
           <Button type="button" onClick={onCreate} className="h-10 rounded-lg shadow-none"><Plus className="size-4" />Tạo trang đầu tiên</Button>
-          <Button asChild variant="outline" className="h-10 rounded-lg shadow-none"><Link href="/member/support">Xem hướng dẫn</Link></Button>
         </div>
       </div>
     </div>

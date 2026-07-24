@@ -53,10 +53,3 @@ export const linkRows = [
     status: "Nháp",
   },
 ];
-
-export const rankingRows = [
-  { name: "Creator Max", views: "92,410", revenue: "4,820,000đ", rank: "01" },
-  { name: "Minh Studio", views: "74,102", revenue: "3,910,000đ", rank: "02" },
-  { name: "Linh Tools", views: "58,339", revenue: "2,640,000đ", rank: "03" },
-  { name: "Bạn", views: "4", revenue: "154đ", rank: "84" },
-];

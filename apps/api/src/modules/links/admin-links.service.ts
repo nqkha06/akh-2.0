@@ -512,7 +512,12 @@ export class AdminLinksService {
       destinationType: link.destinationType,
       destinationUrl: link.destinationUrl,
       destinationFile: link.destinationFile,
-      destinationSnippet: link.destinationSnippet,
+      destinationSnippet: link.destinationSnippet
+        ? {
+            ...link.destinationSnippet,
+            id: String(link.destinationSnippet.id),
+          }
+        : null,
       clicks: link.clicks,
       revenue: link.revenue.toString(),
       actionsCount: link.actions.length,

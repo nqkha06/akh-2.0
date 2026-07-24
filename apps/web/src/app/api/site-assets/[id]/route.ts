@@ -12,7 +12,7 @@ export async function GET(
   }
   const { id } = await context.params;
   const response = await fetch(
-    `${backendApiUrl}/files/public/${encodeURIComponent(id)}/download`,
+    `${backendApiUrl}/admin-media/public/${encodeURIComponent(id)}/content`,
     { headers: { accept: request.headers.get("accept") || "image/*" } },
   );
   const headers = new Headers();

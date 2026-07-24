@@ -1,34 +1,80 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import type { Request } from "express";
 
+import type { AuthenticatedUser } from "../auth/auth.types";
+import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { BioPagesService } from "./bio-pages.service";
 import { CreateBioPageDto } from "./dto/create-bio-page.dto";
 
-@Controller("bio-pages")
-export class BioPagesController {
+type AuthenticatedRequest = Request & { user: AuthenticatedUser };
+
+@Controller("member/bio-pages")
+@UseGuards(JwtAccessGuard)
+export class MemberBioPagesController {
   constructor(private readonly bioPagesService: BioPagesService) {}
 
   @Post()
-  create(@Body() createBioPageDto: CreateBioPageDto) {
-    return this.bioPagesService.create(createBioPageDto);
-  }
-
-  @Patch(":id")
-  update(@Param("id") id: string, @Body() updateBioPageDto: CreateBioPageDto) {
-    return this.bioPagesService.update(id, updateBioPageDto);
+  create(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: CreateBioPageDto,
+  ) {
+    return this.bioPagesService.create(request.user.id, dto);
   }
 
   @Get()
-  findAll() {
-    return this.bioPagesService.findAll();
+  findAll(@Req() request: AuthenticatedRequest) {
+    return this.bioPagesService.findAll(request.user.id);
   }
 
-  @Post(":slug/click")
-  trackClick(@Param("slug") slug: string) {
-    return this.bioPagesService.trackClick(slug);
+  @Get(":id")
+  findOne(
+    @Req() request: AuthenticatedRequest,
+    @Param("id") id: string,
+  ) {
+    return this.bioPagesService.findOneForMember(request.user.id, id);
   }
+
+  @Patch(":id")
+  update(
+    @Req() request: AuthenticatedRequest,
+    @Param("id") id: string,
+    @Body() dto: CreateBioPageDto,
+  ) {
+    return this.bioPagesService.update(request.user.id, id, dto);
+  }
+
+  @Delete(":id")
+  remove(
+    @Req() request: AuthenticatedRequest,
+    @Param("id") id: string,
+  ) {
+    return this.bioPagesService.remove(request.user.id, id);
+  }
+}
+
+@Controller("public/bio-pages")
+export class PublicBioPagesController {
+  constructor(private readonly bioPagesService: BioPagesService) {}
 
   @Get(":slug")
   findOne(@Param("slug") slug: string) {
-    return this.bioPagesService.findOne(slug);
+    return this.bioPagesService.findPublic(slug);
+  }
+
+  @Post(":slug/click")
+  @HttpCode(200)
+  trackClick(@Param("slug") slug: string) {
+    return this.bioPagesService.trackClick(slug);
   }
 }

@@ -17,10 +17,10 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 import type { WithdrawalController } from "./use-withdrawal-controller";
-import { formatCurrency, formatDateTime } from "./use-withdrawal-controller";
+import { formatDateTime } from "./use-withdrawal-controller";
 import { WithdrawalStatusBadge } from "./withdrawal-history";
 
-function TransactionAmounts({ requested, fee, net }: { requested: number; fee: number; net: number }) {
+function TransactionAmounts({ requested, fee, net, formatCurrency }: { requested: number; fee: number; net: number; formatCurrency: (value: number) => string }) {
   return (
     <dl className="space-y-3 text-sm">
       <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Số tiền yêu cầu</dt><dd className="font-medium tabular-nums">{formatCurrency(requested)}</dd></div>
@@ -32,7 +32,7 @@ function TransactionAmounts({ requested, fee, net }: { requested: number; fee: n
 }
 
 export function WithdrawalConfirmationDialog({ controller }: { controller: WithdrawalController }) {
-  const { confirmationOpen, submitting, submitError, amount, estimate, selectedMethod, data, setConfirmationOpen, confirmWithdrawal } = controller;
+  const { confirmationOpen, submitting, submitError, amount, estimate, selectedMethod, data, setConfirmationOpen, confirmWithdrawal, formatCurrency } = controller;
   if (!estimate || !selectedMethod) return null;
   return (
     <AlertDialog open={confirmationOpen} onOpenChange={(open) => { if (!submitting) setConfirmationOpen(open); }}>
@@ -42,7 +42,7 @@ export function WithdrawalConfirmationDialog({ controller }: { controller: Withd
           <AlertDialogDescription>Kiểm tra kỹ thông tin trước khi gửi yêu cầu.</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-5">
-          <div className="rounded-md border border-border bg-muted/20 p-4"><TransactionAmounts requested={amount} fee={estimate.feeAmount ?? 0} net={estimate.netAmount ?? 0} /></div>
+          <div className="rounded-md border border-border bg-muted/20 p-4"><TransactionAmounts requested={amount} fee={estimate.feeAmount ?? 0} net={estimate.netAmount ?? 0} formatCurrency={formatCurrency} /></div>
           <div><p className="text-xs font-medium text-muted-foreground">Nhận qua</p><p className="mt-1 text-sm font-medium">{selectedMethod.provider} {selectedMethod.maskedAccount}</p><p className="mt-0.5 text-sm text-muted-foreground">{selectedMethod.accountHolder}</p></div>
           {data?.processingEstimate ? <div><p className="text-xs font-medium text-muted-foreground">Thời gian dự kiến</p><p className="mt-1 flex items-center gap-2 text-sm"><Clock3 className="size-4 text-muted-foreground" />{data.processingEstimate}</p></div> : null}
           {submitError ? <Alert variant="destructive"><CircleAlert /><AlertTitle>Không thể gửi yêu cầu</AlertTitle><AlertDescription>{submitError}</AlertDescription></Alert> : null}
@@ -58,6 +58,7 @@ export function WithdrawalConfirmationDialog({ controller }: { controller: Withd
 
 export function WithdrawalSuccessDialog({ controller }: { controller: WithdrawalController }) {
   const transaction = controller.successTransaction;
+  const { formatCurrency } = controller;
   if (!transaction) return null;
   const viewHistory = () => {
     controller.setSuccessTransaction(undefined);
@@ -87,6 +88,7 @@ export function WithdrawalSuccessDialog({ controller }: { controller: Withdrawal
 
 export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalController }) {
   const transaction = controller.detailTransaction;
+  const { formatCurrency } = controller;
   const copyId = async () => { if (!transaction) return; await navigator.clipboard.writeText(transaction.id); toast.success("Đã sao chép mã giao dịch."); };
   if (!transaction) return null;
   return (
@@ -100,7 +102,7 @@ export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalCo
           <section><p className="text-xs font-medium text-muted-foreground">Trạng thái hiện tại</p><div className="mt-2"><WithdrawalStatusBadge status={transaction.status} /></div>{transaction.status === "processing" ? <p className="mt-3 text-sm leading-6 text-muted-foreground">Yêu cầu đang được kiểm tra và chuyển đến đơn vị thanh toán.</p> : null}</section>
           {transaction.failureReason ? <Alert variant="destructive"><CircleAlert /><AlertTitle>Lý do xử lý</AlertTitle><AlertDescription>{transaction.failureReason}</AlertDescription></Alert> : null}
           <Separator />
-          <TransactionAmounts requested={transaction.requestedAmount} fee={transaction.feeAmount} net={transaction.netAmount} />
+          <TransactionAmounts requested={transaction.requestedAmount} fee={transaction.feeAmount} net={transaction.netAmount} formatCurrency={formatCurrency} />
           <Separator />
           <dl className="space-y-4 text-sm">
             <div><dt className="text-xs text-muted-foreground">Phương thức nhận tiền</dt><dd className="mt-1 font-medium">{transaction.method.provider} {transaction.method.maskedAccount}</dd><dd className="mt-0.5 text-muted-foreground">{transaction.method.accountHolder}</dd></div>

@@ -8,39 +8,72 @@ datasource db {
 }
 
 model User {
-  id                   Int                 @id @default(autoincrement())
-  name                 String
-  email                String              @unique
-  emailVerifiedAt      DateTime?           @map("email_verified_at")
-  passwordHash         String?             @map("password")
-  avatar               String?
-  status               String              @default("active")
-  balance              Decimal             @default(0)
-  referralCode         String?             @unique @map("referral_code")
-  referredById         Int?                @map("referred_by")
-  tokenVersion         Int                 @default(0) @map("token_version")
-  monetizationLevelId  Int?                @map("monetization_level_id")
-  createdAt            DateTime            @default(now()) @map("created_at")
-  updatedAt            DateTime            @updatedAt @map("updated_at")
-  socialAccounts       SocialAccount[]
-  authSessions         AuthSession[]
-  links                Link[]
-  roles                UserHasRole[]
-  permissions          UserHasPermission[]
-  monetizationLevel    MonetizationLevel?  @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
-  paymentMethods       UserPaymentMethod[]
-  withdrawals          UserWithdrawal[]    @relation("MemberWithdrawals")
-  processedWithdrawals UserWithdrawal[]    @relation("ProcessedWithdrawals")
-  referrer             User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals            User[]              @relation("UserReferrals")
-  commissionsReceived  Commission[]        @relation("CommissionRecipient")
-  commissionsGenerated Commission[]        @relation("CommissionSource")
-  updatedWebsiteSettings WebsiteSettings[]  @relation("WebsiteSettingsUpdatedBy")
+  id                       Int                       @id @default(autoincrement())
+  name                     String
+  email                    String                    @unique
+  emailVerifiedAt          DateTime?                 @map("email_verified_at")
+  passwordHash             String?                   @map("password")
+  avatar                   String?
+  status                   String                    @default("active")
+  balance                  Decimal                   @default(0)
+  referralCode             String?                   @unique @map("referral_code")
+  referredById             Int?                      @map("referred_by")
+  tokenVersion             Int                       @default(0) @map("token_version")
+  monetizationLevelId      Int?                      @map("monetization_level_id")
+  storageLimitBytes        BigInt?                   @map("storage_limit_bytes")
+  storageUsedBytes         BigInt                    @default(0) @map("storage_used_bytes")
+  storageReservedBytes     BigInt                    @default(0) @map("storage_reserved_bytes")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  socialAccounts           SocialAccount[]
+  authSessions             AuthSession[]
+  links                    Link[]
+  snippets                 Snippet[]
+  memberFiles              MemberFile[]
+  memberFileUploads        MemberFileUpload[]
+  roles                    UserHasRole[]
+  permissions              UserHasPermission[]
+  monetizationLevel        MonetizationLevel?        @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
+  paymentMethods           UserPaymentMethod[]
+  withdrawals              UserWithdrawal[]          @relation("MemberWithdrawals")
+  processedWithdrawals     UserWithdrawal[]          @relation("ProcessedWithdrawals")
+  referrer                 User?                     @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals                User[]                    @relation("UserReferrals")
+  commissionsReceived      Commission[]              @relation("CommissionRecipient")
+  commissionsGenerated     Commission[]              @relation("CommissionSource")
+  updatedWebsiteSettings   WebsiteSettings[]         @relation("WebsiteSettingsUpdatedBy")
+  uploadedAdminMedia       AdminMedia[]              @relation("AdminMediaUploadedBy")
+  createdAdminMediaFolders AdminMediaFolder[]        @relation("AdminMediaFolderCreatedBy")
+  createdWebsiteMenus      WebsiteMenu[]             @relation("WebsiteMenuCreatedBy")
+  updatedWebsiteMenus      WebsiteMenu[]             @relation("WebsiteMenuUpdatedBy")
+  updatedMenuLocations     WebsiteMenuLocation[]     @relation("WebsiteMenuLocationUpdatedBy")
+  supportTickets           SupportTicket[]           @relation("SupportTicketOwner")
+  assignedSupportTickets   SupportTicket[]           @relation("SupportTicketAssignee")
+  supportMessages          SupportTicketMessage[]
+  supportAttachments       SupportTicketAttachment[]
+  meta                     UserMeta[]
+  bioPages                 BioPage[]
 
   @@index([status])
   @@index([monetizationLevelId])
   @@index([referredById])
   @@map("users")
+}
+
+model UserMeta {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  key       String
+  valueJson String   @map("value_json")
+  valueType String   @default("json") @map("value_type")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([key])
+  @@index([userId, updatedAt])
+  @@map("user_meta")
 }
 
 model Role {
@@ -142,28 +175,29 @@ model SocialAccount {
 }
 
 model Link {
-  id                   Int          @id @default(autoincrement())
-  userId               Int          @map("user_id")
-  slug                 String       @unique
-  title                String
-  subtitle             String?
-  destinationType      String       @default("url") @map("destination_type")
-  destinationUrl       String?      @map("destination_url")
-  destinationFileId    String?      @map("destination_file_id")
-  destinationSnippetId String?      @map("destination_snippet_id")
-  appearanceJson       String       @default("{}") @map("appearance")
-  expiresAt            DateTime?    @map("expires_at")
-  maxClicks            Int?         @map("max_clicks")
-  clicks               Int          @default(0)
-  status               String       @default("active")
-  revenue              Decimal      @default(0)
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @updatedAt @map("updated_at")
-  deletedAt            DateTime?    @map("deleted_at")
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  destinationFile      ManagedFile? @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
-  destinationSnippet   Snippet?     @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
-  actions              LinkAction[]
+  id                        Int          @id @default(autoincrement())
+  userId                    Int          @map("user_id")
+  slug                      String       @unique
+  title                     String
+  subtitle                  String?
+  destinationType           String       @default("url") @map("destination_type")
+  destinationUrl            String?      @map("destination_url")
+  destinationFileId         Int?         @map("destination_file_id")
+  destinationSnippetId      Int?         @map("destination_snippet_id")
+  destinationSnippetContent String?      @map("destination_snippet_content")
+  appearanceJson            String       @default("{}") @map("appearance")
+  expiresAt                 DateTime?    @map("expires_at")
+  maxClicks                 Int?         @map("max_clicks")
+  clicks                    Int          @default(0)
+  status                    String       @default("active")
+  revenue                   Decimal      @default(0)
+  createdAt                 DateTime     @default(now()) @map("created_at")
+  updatedAt                 DateTime     @updatedAt @map("updated_at")
+  deletedAt                 DateTime?    @map("deleted_at")
+  user                      User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destinationFile           MemberFile?  @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
+  destinationSnippet        Snippet?     @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
+  actions                   LinkAction[]
 
   @@index([userId])
   @@index([userId, status])
@@ -324,34 +358,208 @@ model Language {
   @@map("languages")
 }
 
-model Snippet {
-  id               String   @id @default(cuid())
-  name             String
-  content          String
-  copies           Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  destinationLinks Link[]
+model Currency {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  name          String
+  symbol        String
+  exchangeRate  Decimal  @default(1) @map("exchange_rate")
+  decimalDigits Int      @default(2) @map("decimal_digits")
+  isBase        Boolean  @default(false) @map("is_base")
+  isDefault     Boolean  @default(false) @map("is_default")
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  @@index([createdAt])
+  @@index([isBase])
+  @@index([isDefault])
+  @@index([isActive, sortOrder])
+  @@map("currencies")
 }
 
-model ManagedFile {
-  id               String    @id @default(cuid())
-  alias            String    @unique
+model WebsiteMenu {
+  id                    Int                      @id @default(autoincrement())
+  key                   String                   @unique
+  name                  String
+  description           String?
+  status                String                   @default("draft")
+  draftVersion          Int                      @default(1) @map("draft_version")
+  publishedVersion      Int                      @default(0) @map("published_version")
+  publishedSnapshotJson String?                  @map("published_snapshot_json")
+  publishedAt           DateTime?                @map("published_at")
+  createdById           Int?                     @map("created_by_id")
+  updatedById           Int?                     @map("updated_by_id")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+  deletedAt             DateTime?                @map("deleted_at")
+  createdBy             User?                    @relation("WebsiteMenuCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy             User?                    @relation("WebsiteMenuUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  translations          WebsiteMenuTranslation[]
+  items                 WebsiteMenuItem[]
+  locations             WebsiteMenuLocation[]
+
+  @@index([status, updatedAt])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("website_menus")
+}
+
+model WebsiteMenuTranslation {
+  id        Int         @id @default(autoincrement())
+  menuId    Int         @map("menu_id")
+  locale    String
+  title     String?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  menu      WebsiteMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, locale])
+  @@index([locale])
+  @@map("website_menu_translations")
+}
+
+model WebsiteMenuItem {
+  id           Int                          @id @default(autoincrement())
+  menuId       Int                          @map("menu_id")
+  parentId     Int?                         @map("parent_id")
+  pageId       Int?                         @map("page_id")
+  type         String                       @default("CUSTOM_URL")
+  url          String?
+  target       String                       @default("SELF")
+  rel          String?
+  iconKey      String?                      @map("icon_key")
+  isEnabled    Boolean                      @default(true) @map("is_enabled")
+  sortOrder    Int                          @default(0) @map("sort_order")
+  createdAt    DateTime                     @default(now()) @map("created_at")
+  updatedAt    DateTime                     @updatedAt @map("updated_at")
+  deletedAt    DateTime?                    @map("deleted_at")
+  menu         WebsiteMenu                  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent       WebsiteMenuItem?             @relation("WebsiteMenuItemTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     WebsiteMenuItem[]            @relation("WebsiteMenuItemTree")
+  page         Page?                        @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  translations WebsiteMenuItemTranslation[]
+
+  @@index([menuId, parentId, sortOrder])
+  @@index([pageId])
+  @@index([deletedAt])
+  @@map("website_menu_items")
+}
+
+model WebsiteMenuItemTranslation {
+  id          Int             @id @default(autoincrement())
+  menuItemId  Int             @map("menu_item_id")
+  locale      String
+  label       String
+  title       String?
+  ariaLabel   String?         @map("aria_label")
+  urlOverride String?         @map("url_override")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  menuItem    WebsiteMenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, locale])
+  @@index([locale])
+  @@map("website_menu_item_translations")
+}
+
+model WebsiteMenuLocation {
+  location    String      @id
+  menuId      Int         @map("menu_id")
+  updatedById Int?        @map("updated_by_id")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  menu        WebsiteMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  updatedBy   User?       @relation("WebsiteMenuLocationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([menuId])
+  @@index([updatedById])
+  @@map("website_menu_locations")
+}
+
+model Snippet {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
   name             String
-  originalName     String
-  extension        String?
-  mimeType         String
-  size             Int
-  path             String
-  isPublic         Boolean   @default(true)
-  downloadCount    Int       @default(0)
-  status           String    @default("completed")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  content          String
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
   destinationLinks Link[]
+
+  @@index([userId, deletedAt, createdAt])
+  @@index([userId, name])
+  @@map("snippets")
+}
+
+model MemberFile {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  alias            String
+  name             String
+  originalName     String    @map("original_name")
+  extension        String?
+  mimeType         String    @map("mime_type")
+  size             Int
+  storageKey       String    @map("storage_key")
+  purpose          String    @default("file")
+  downloadCount    Int       @default(0) @map("download_count")
+  status           String    @default("completed")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destinationLinks Link[]
+
+  @@unique([userId, alias])
+  @@index([userId, deletedAt, createdAt])
+  @@index([userId, mimeType])
+  @@index([userId, status])
+  @@index([storageKey])
+  @@map("member_files")
+}
+
+model MemberFileUpload {
+  id           String   @id
+  userId       Int      @map("user_id")
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  purpose      String   @default("file")
+  storageKey   String   @map("storage_key")
+  status       String   @default("initiated")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@map("member_file_uploads")
+}
+
+model AdminMedia {
+  id               String            @id @default(cuid())
+  folderId         String?           @map("folder_id")
+  fileName         String            @map("file_name")
+  originalName     String            @map("original_name")
+  mimeType         String            @map("mime_type")
+  extension        String
+  size             Int
+  storageKey       String            @unique @map("storage_key")
+  url              String
+  thumbnailUrl     String?           @map("thumbnail_url")
+  width            Int?
+  height           Int?
+  altText          String?           @map("alt_text")
+  caption          String?
+  uploadedBy       Int?              @map("uploaded_by")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  folder           AdminMediaFolder? @relation(fields: [folderId], references: [id], onDelete: Restrict)
+  uploader         User?             @relation("AdminMediaUploadedBy", fields: [uploadedBy], references: [id], onDelete: SetNull)
   featuredPages    Page[]
   websiteLogoLight WebsiteSettings[] @relation("WebsiteLogoLight")
   websiteLogoDark  WebsiteSettings[] @relation("WebsiteLogoDark")
@@ -359,39 +567,132 @@ model ManagedFile {
   websiteFavicon   WebsiteSettings[] @relation("WebsiteFavicon")
   websiteOgImage   WebsiteSettings[] @relation("WebsiteOgImage")
 
+  @@index([folderId])
   @@index([createdAt])
+  @@index([mimeType])
   @@index([deletedAt])
-  @@index([status])
+  @@index([uploadedBy])
+  @@map("admin_media")
+}
+
+model AdminMediaFolder {
+  id             String             @id @default(cuid())
+  name           String
+  normalizedName String             @map("normalized_name")
+  parentId       String?            @map("parent_id")
+  parentScope    String             @map("parent_scope")
+  createdBy      Int?               @map("created_by")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  deletedAt      DateTime?          @map("deleted_at")
+  parent         AdminMediaFolder?  @relation("AdminMediaFolderTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children       AdminMediaFolder[] @relation("AdminMediaFolderTree")
+  media          AdminMedia[]
+  creator        User?              @relation("AdminMediaFolderCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([parentScope, normalizedName])
+  @@index([parentId])
+  @@index([deletedAt])
+  @@index([createdBy])
+  @@map("admin_media_folders")
+}
+
+model SupportTicket {
+  id              Int                       @id @default(autoincrement())
+  reference       String                    @unique
+  userId          Int                       @map("user_id")
+  assignedToId    Int?                      @map("assigned_to_id")
+  subject         String
+  category        String
+  status          String                    @default("submitted")
+  priority        String                    @default("normal")
+  relatedResource String?                   @map("related_resource")
+  technicalInfo   String?                   @map("technical_info")
+  lastMessageAt   DateTime                  @default(now()) @map("last_message_at")
+  resolvedAt      DateTime?                 @map("resolved_at")
+  closedAt        DateTime?                 @map("closed_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+  deletedAt       DateTime?                 @map("deleted_at")
+  user            User                      @relation("SupportTicketOwner", fields: [userId], references: [id], onDelete: Restrict)
+  assignedTo      User?                     @relation("SupportTicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages        SupportTicketMessage[]
+  attachments     SupportTicketAttachment[]
+
+  @@index([userId, deletedAt, lastMessageAt])
+  @@index([status, priority, lastMessageAt])
+  @@index([assignedToId, status])
+  @@index([category])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id          Int                       @id @default(autoincrement())
+  ticketId    Int                       @map("ticket_id")
+  authorId    Int?                      @map("author_id")
+  authorRole  String                    @map("author_role")
+  content     String
+  isInternal  Boolean                   @default(false) @map("is_internal")
+  createdAt   DateTime                  @default(now()) @map("created_at")
+  editedAt    DateTime?                 @map("edited_at")
+  deletedAt   DateTime?                 @map("deleted_at")
+  ticket      SupportTicket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User?                     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  attachments SupportTicketAttachment[]
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
+  @@map("support_ticket_messages")
+}
+
+model SupportTicketAttachment {
+  id           String                @id @default(cuid())
+  ticketId     Int                   @map("ticket_id")
+  messageId    Int?                  @map("message_id")
+  uploadedById Int?                  @map("uploaded_by_id")
+  fileName     String                @map("file_name")
+  mimeType     String                @map("mime_type")
+  size         Int
+  storageKey   String                @unique @map("storage_key")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  ticket       SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message      SupportTicketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploadedBy   User?                 @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([messageId])
+  @@index([uploadedById])
+  @@map("support_ticket_attachments")
 }
 
 model WebsiteSettings {
-  id                 Int          @id @default(1)
-  siteName           String       @default("Linkicom") @map("site_name")
-  siteShortName      String?      @map("site_short_name")
-  siteDescription    String?      @map("site_description")
-  siteTagline        String?      @map("site_tagline")
-  siteUrl            String?      @map("site_url")
-  logoLightId        String?      @map("logo_light_id")
-  logoDarkId         String?      @map("logo_dark_id")
-  logoIconId         String?      @map("logo_icon_id")
-  faviconId          String?      @map("favicon_id")
-  defaultOgImageId   String?      @map("default_og_image_id")
-  socialLinksJson    String       @default("[]") @map("social_links")
-  contactEmail       String?      @map("contact_email")
-  supportEmail       String?      @map("support_email")
-  phone              String?
-  address            String?
-  workingHours       String?      @map("working_hours")
-  mapUrl             String?      @map("map_url")
-  updatedById        Int?         @map("updated_by_id")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
-  logoLight          ManagedFile? @relation("WebsiteLogoLight", fields: [logoLightId], references: [id], onDelete: SetNull)
-  logoDark           ManagedFile? @relation("WebsiteLogoDark", fields: [logoDarkId], references: [id], onDelete: SetNull)
-  logoIcon           ManagedFile? @relation("WebsiteLogoIcon", fields: [logoIconId], references: [id], onDelete: SetNull)
-  favicon            ManagedFile? @relation("WebsiteFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
-  defaultOgImage     ManagedFile? @relation("WebsiteOgImage", fields: [defaultOgImageId], references: [id], onDelete: SetNull)
-  updatedBy          User?        @relation("WebsiteSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id               Int         @id @default(1)
+  siteName         String      @default("Linkicom") @map("site_name")
+  siteShortName    String?     @map("site_short_name")
+  siteDescription  String?     @map("site_description")
+  siteTagline      String?     @map("site_tagline")
+  siteUrl          String?     @map("site_url")
+  logoLightId      String?     @map("logo_light_id")
+  logoDarkId       String?     @map("logo_dark_id")
+  logoIconId       String?     @map("logo_icon_id")
+  faviconId        String?     @map("favicon_id")
+  defaultOgImageId String?     @map("default_og_image_id")
+  socialLinksJson  String      @default("[]") @map("social_links")
+  contactEmail     String?     @map("contact_email")
+  supportEmail     String?     @map("support_email")
+  phone            String?
+  address          String?
+  workingHours     String?     @map("working_hours")
+  mapUrl           String?     @map("map_url")
+  updatedById      Int?        @map("updated_by_id")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  logoLight        AdminMedia? @relation("WebsiteLogoLight", fields: [logoLightId], references: [id], onDelete: SetNull)
+  logoDark         AdminMedia? @relation("WebsiteLogoDark", fields: [logoDarkId], references: [id], onDelete: SetNull)
+  logoIcon         AdminMedia? @relation("WebsiteLogoIcon", fields: [logoIconId], references: [id], onDelete: SetNull)
+  favicon          AdminMedia? @relation("WebsiteFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
+  defaultOgImage   AdminMedia? @relation("WebsiteOgImage", fields: [defaultOgImageId], references: [id], onDelete: SetNull)
+  updatedBy        User?       @relation("WebsiteSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@index([logoLightId])
   @@index([logoDarkId])
@@ -403,26 +704,27 @@ model WebsiteSettings {
 }
 
 model Page {
-  id              Int          @id @default(autoincrement())
-  title           String
-  slug            String       @unique
-  excerpt         String?
-  contentJson     String       @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}") @map("content_json")
-  contentHtml     String       @default("") @map("content_html")
-  status          String       @default("DRAFT")
-  featuredImageId String?      @map("featured_image_id")
-  seoTitle        String?      @map("seo_title")
-  seoDescription  String?      @map("seo_description")
-  seoKeywords     String?      @map("seo_keywords")
-  canonicalUrl    String?      @map("canonical_url")
-  robotsIndex     Boolean      @default(true) @map("robots_index")
-  robotsFollow    Boolean      @default(true) @map("robots_follow")
-  sortOrder       Int          @default(0) @map("sort_order")
-  publishedAt     DateTime?    @map("published_at")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-  deletedAt       DateTime?    @map("deleted_at")
-  featuredImage   ManagedFile? @relation(fields: [featuredImageId], references: [id], onDelete: SetNull)
+  id               Int               @id @default(autoincrement())
+  title            String
+  slug             String            @unique
+  excerpt          String?
+  contentJson      String            @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}") @map("content_json")
+  contentHtml      String            @default("") @map("content_html")
+  status           String            @default("DRAFT")
+  featuredImageId  String?           @map("featured_image_id")
+  seoTitle         String?           @map("seo_title")
+  seoDescription   String?           @map("seo_description")
+  seoKeywords      String?           @map("seo_keywords")
+  canonicalUrl     String?           @map("canonical_url")
+  robotsIndex      Boolean           @default(true) @map("robots_index")
+  robotsFollow     Boolean           @default(true) @map("robots_follow")
+  sortOrder        Int               @default(0) @map("sort_order")
+  publishedAt      DateTime?         @map("published_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  featuredImage    AdminMedia?       @relation(fields: [featuredImageId], references: [id], onDelete: SetNull)
+  websiteMenuItems WebsiteMenuItem[]
 
   @@index([status, sortOrder])
   @@index([createdAt])
@@ -434,26 +736,25 @@ model Page {
 }
 
 model BioPage {
-  id                   String   @id @default(cuid())
-  slug                 String   @unique
-  name                 String
-  title                String?
-  status               String   @default("published")
-  buttonStyle          String   @default("rounded")
-  backgroundColor      String   @default("#ffffff")
-  backgroundImage      String?
-  backgroundMediaType  String?
-  backgroundMediaUrl   String?
-  selectedBackgroundId String?
-  socialLinksJson      String   @default("[]")
-  customLinksJson      String   @default("[]")
-  widgetsJson          String   @default("[]")
-  hiddenLinksJson      String   @default("[]")
-  views                Int      @default(0)
-  clicks               Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id             String    @id @default(cuid())
+  userId         Int?      @map("user_id")
+  slug           String    @unique
+  name           String
+  title          String?
+  status         String    @default("published")
+  contentJson    String    @default("{\"socialLinks\":[],\"customLinks\":[],\"widgets\":[]}") @map("content_json")
+  appearanceJson String    @default("{\"buttonStyle\":\"rounded\",\"backgroundColor\":\"#ffffff\"}") @map("appearance_json")
+  views          Int       @default(0)
+  clicks         Int       @default(0)
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
+  @@index([userId, status, deletedAt])
+  @@index([userId, updatedAt])
+  @@index([status, deletedAt])
   @@index([createdAt])
-  @@index([status])
+  @@map("bio_pages")
 }

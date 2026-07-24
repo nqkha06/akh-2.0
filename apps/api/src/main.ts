@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 
 import { AppModule } from "./app.module";
+import { setupSwagger } from "./config/swagger";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -38,7 +39,14 @@ async function bootstrap() {
     }),
   );
 
+  const swagger = setupSwagger(app, configService);
   await app.listen(port);
+
+  if (swagger) {
+    const appUrl = await app.getUrl();
+    console.log(`Swagger UI: ${appUrl}${swagger.uiPath}`);
+    console.log(`OpenAPI JSON: ${appUrl}${swagger.jsonPath}`);
+  }
 }
 
 void bootstrap();

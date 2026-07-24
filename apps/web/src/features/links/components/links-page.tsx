@@ -8,8 +8,10 @@ import {
   CircleDollarSign,
   CircleSlash,
   Filter,
+  Globe2,
   Home,
   Link2,
+  LoaderCircle,
   Megaphone,
   MonitorSmartphone,
   MousePointerClick,
@@ -46,8 +48,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SocialLinksGenerator from "@/features/link-creation/components/link-creator";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
+import { selectMemberMonetizationLevel } from "@/features/member-monetization-levels/api/levels.client";
+import type {
+  MemberMonetizationLevel,
+  MemberMonetizationLevelsResponse,
+} from "@/features/member-monetization-levels/types";
 import { getLinks, type LinkDto } from "@/lib/api-client";
+import { toast } from "sonner";
 import { LinkCard } from "./link-card";
+import { LINK_CREATED_EVENT } from "../events";
 import { filterLinks, sortLinks } from "../lib/filter-links";
 import {
   defaultLinkFilters,
@@ -64,6 +74,16 @@ const linksTabs: Array<{ id: LinksTab; labelKey: string; icon: LucideIcon }> = [
   { id: "monetization", labelKey: "tabs.monetization", icon: CircleDollarSign },
 ];
 
+const emptyMonetizationLevels: MemberMonetizationLevelsResponse = {
+  items: [],
+  total: 0,
+  selectedLevelId: null,
+  effectiveLevelId: null,
+  usesSystemDefault: true,
+  totalLinks: 0,
+  defaultLocale: "vi",
+};
+
 function useMediaQuery(query: string) {
   return useSyncExternalStore(
     (onStoreChange) => {
@@ -76,7 +96,11 @@ function useMediaQuery(query: string) {
   );
 }
 
-export function LinksView() {
+export function LinksView({
+  monetizationLevels = emptyMonetizationLevels,
+}: {
+  monetizationLevels?: MemberMonetizationLevelsResponse;
+}) {
   const t = useTranslations("Links");
   const locale = useLocale();
   const [activeTab, setActiveTab] = useState<LinksTab>("overview");
@@ -107,8 +131,8 @@ export function LinksView() {
   useEffect(() => {
     void Promise.resolve().then(loadLinks);
     const refreshLinks = () => void loadLinks();
-    window.addEventListener("Rekonise:link-created", refreshLinks);
-    return () => window.removeEventListener("Rekonise:link-created", refreshLinks);
+    window.addEventListener(LINK_CREATED_EVENT, refreshLinks);
+    return () => window.removeEventListener(LINK_CREATED_EVENT, refreshLinks);
   }, [loadLinks]);
 
   const platformOptions = useMemo(
@@ -148,18 +172,9 @@ export function LinksView() {
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-6">
       <PageHeader
-        eyebrow={t("management")}
         title={t("socialLinks")}
         description={t("description")}
-        action={
-          <Button
-            type="button"
-            className="h-10 w-full rounded-lg px-4 shadow-none sm:w-auto"
-            onClick={() => setActiveTab("create")}
-          >
-            <Plus />{t("createNew")}
-          </Button>
-        }
+
       />
 
       <LinksTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -331,11 +346,11 @@ export function LinksView() {
 
       {activeTab === "create" ? (
         <section aria-label={t("tabs.create")}>
-          <SocialLinksGenerator embedded />
+          <SocialLinksGenerator embedded actionHistory={links} />
         </section>
       ) : null}
 
-      {activeTab === "monetization" ? <MonetizationPanel /> : null}
+      {activeTab === "monetization" ? <MonetizationPanel {...monetizationLevels} /> : null}
     </div>
   );
 }
@@ -368,53 +383,57 @@ function LinksTabs({ activeTab, onChange }: { activeTab: LinksTab; onChange: (ta
   );
 }
 
-type MonetizationPlanId = "clean" | "faucet" | "low" | "balanced" | "high" | "maximum";
-type AdDensity = "none" | "limited" | "maximum";
-
-const monetizationPlans: Array<{
-  id: MonetizationPlanId;
-  profit: string;
-  steps: number;
-  ads: Record<"popup" | "banner" | "interstitial" | "notification", AdDensity>;
-}> = [
-  { id: "clean", profit: "1%", steps: 1, ads: { popup: "limited", banner: "none", interstitial: "none", notification: "none" } },
-  { id: "faucet", profit: "20%", steps: 5, ads: { popup: "maximum", banner: "maximum", interstitial: "none", notification: "none" } },
-  { id: "low", profit: "20%", steps: 2, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
-  { id: "balanced", profit: "50%", steps: 3, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
-  { id: "high", profit: "80%", steps: 4, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
-  { id: "maximum", profit: "100%", steps: 5, ads: { popup: "limited", banner: "maximum", interstitial: "none", notification: "none" } },
-];
-
 const adTypes = ["popup", "banner", "interstitial", "notification"] as const;
-const payoutRates = [
-  { country: "unitedStates", code: "US", desktopBase: 12, mobileBase: 12 },
-  { country: "canada", code: "CA", desktopBase: 11, mobileBase: 11 },
-  { country: "unitedKingdom", code: "GB", desktopBase: 10, mobileBase: 10 },
-  { country: "germany", code: "DE", desktopBase: 8, mobileBase: 8 },
-  { country: "france", code: "FR", desktopBase: 8, mobileBase: 8 },
-  { country: "vietnam", code: "VN", desktopBase: 1.8, mobileBase: 1.5 },
-] as const;
 
-function MonetizationPanel() {
+function MonetizationPanel({
+  items,
+  effectiveLevelId,
+  defaultLocale,
+}: MemberMonetizationLevelsResponse) {
   const t = useTranslations("Links");
-  const [currentPlanId, setCurrentPlanId] = useState<MonetizationPlanId>("high");
-  const [pendingPlanId, setPendingPlanId] = useState<MonetizationPlanId | null>(null);
+  const locale = useLocale();
+  const { formatCurrency } = useMemberCurrency();
+  const initialPlanId = effectiveLevelId ?? items.find((plan) => plan.isDefault)?.id ?? items[0]?.id ?? null;
+  const [currentPlanId, setCurrentPlanId] = useState<number | null>(initialPlanId);
+  const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const currentPlan = monetizationPlans.find((plan) => plan.id === currentPlanId) ?? monetizationPlans[0];
-  const pendingPlan = monetizationPlans.find((plan) => plan.id === pendingPlanId) ?? null;
-  const profitShare = Number.parseInt(currentPlan.profit, 10) / 100;
-  const formatCpm = (value: number) => `$${(value * profitShare).toFixed(2)}`;
+  const [selectingPlanId, setSelectingPlanId] = useState<number | null>(null);
+  const currentPlan = items.find((plan) => plan.id === currentPlanId) ?? items[0] ?? null;
+  const pendingPlan = items.find((plan) => plan.id === pendingPlanId) ?? null;
+  const currentContent = currentPlan ? localizedPlan(currentPlan, locale, defaultLocale) : null;
+  const currentProfit = currentPlan ? formatProfit(currentPlan.metaData.profitBps, locale) : "—";
+  const payoutRates = currentPlan ? groupPayoutRates(currentPlan) : [];
 
   const closeEnrollment = () => {
     setPendingPlanId(null);
     setAgreedToTerms(false);
   };
 
-  const enroll = () => {
-    if (!pendingPlan || !agreedToTerms) return;
-    setCurrentPlanId(pendingPlan.id);
-    closeEnrollment();
+  const enroll = async () => {
+    if (!pendingPlan || !agreedToTerms || selectingPlanId !== null) return;
+    setSelectingPlanId(pendingPlan.id);
+    try {
+      const result = await selectMemberMonetizationLevel(pendingPlan.id);
+      setCurrentPlanId(result.monetizationLevelId);
+      toast.success(t("monetization.selectionSuccess", {
+        plan: localizedPlan(pendingPlan, locale, defaultLocale).name,
+      }));
+      closeEnrollment();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("monetization.selectionFailed"));
+    } finally {
+      setSelectingPlanId(null);
+    }
   };
+
+  if (!currentPlan) {
+    return (
+      <Card className="gap-0 rounded-xl border-dashed border-border bg-card px-5 py-10 text-center shadow-none">
+        <CardTitle>{t("monetization.emptyTitle")}</CardTitle>
+        <CardDescription className="mt-2">{t("monetization.emptyDescription")}</CardDescription>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -422,11 +441,11 @@ function MonetizationPanel() {
         <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
           <Check className="size-4 shrink-0 text-primary" />
           <span>{t("monetization.currentPlan")}</span>
-          <strong className="truncate text-foreground">{t(`monetization.plans.${currentPlan.id}.title`)}</strong>
+          <strong className="truncate text-foreground">{currentContent?.name}</strong>
           <span className="hidden text-border sm:inline">·</span>
-          <span className="hidden sm:inline">{t("monetization.contextProfit", { profit: currentPlan.profit })}</span>
+          <span className="hidden sm:inline">{t("monetization.contextProfit", { profit: currentProfit })}</span>
           <span className="hidden text-border sm:inline">·</span>
-          <span className="hidden sm:inline">{t("monetization.contextSteps", { steps: currentPlan.steps })}</span>
+          <span className="hidden sm:inline">{t("monetization.contextSteps", { steps: currentPlan.metaData.stepCount })}</span>
         </div>
         <p className="mt-2 text-xs leading-5 text-muted-foreground sm:mt-0 sm:ml-auto sm:max-w-md sm:text-right">
           {t("monetization.contextHint")}
@@ -435,8 +454,10 @@ function MonetizationPanel() {
 
       <section aria-labelledby="monetization-plans" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <h2 id="monetization-plans" className="sr-only">{t("monetization.plansTitle")}</h2>
-        {monetizationPlans.map((plan) => {
+        {items.map((plan) => {
           const isCurrent = plan.id === currentPlanId;
+          const content = localizedPlan(plan, locale, defaultLocale);
+          const profit = formatProfit(plan.metaData.profitBps, locale);
           return (
             <Card
               key={plan.id}
@@ -445,8 +466,8 @@ function MonetizationPanel() {
               <CardHeader className="px-5 pt-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <CardTitle className="text-lg tracking-[-0.02em]">{t(`monetization.plans.${plan.id}.title`)}</CardTitle>
-                    <CardDescription className="mt-1 leading-5">{t(`monetization.plans.${plan.id}.description`)}</CardDescription>
+                    <CardTitle className="text-lg tracking-[-0.02em]">{content.name}</CardTitle>
+                    <CardDescription className="mt-1 leading-5">{content.description}</CardDescription>
                   </div>
                   {isCurrent ? <Badge className="shrink-0">{t("monetization.active")}</Badge> : null}
                 </div>
@@ -456,18 +477,18 @@ function MonetizationPanel() {
                 <div className="grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-muted/20">
                   <div className="px-3 py-3">
                     <p className="text-xs text-muted-foreground">{t("monetization.profit")}</p>
-                    <p className="mt-1 text-xl font-semibold tracking-[-0.02em] text-foreground">{plan.profit}</p>
+                    <p className="mt-1 text-xl font-semibold tracking-[-0.02em] text-foreground">{profit}</p>
                   </div>
                   <div className="px-3 py-3">
                     <p className="text-xs text-muted-foreground">{t("monetization.steps")}</p>
-                    <p className="mt-1 text-xl font-semibold tracking-[-0.02em] text-foreground">{plan.steps}</p>
+                    <p className="mt-1 text-xl font-semibold tracking-[-0.02em] text-foreground">{plan.metaData.stepCount}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <p className="text-xs font-medium text-muted-foreground">{t("monetization.visitorExperience")}</p>
                   {adTypes.map((adType) => {
-                    const density = plan.ads[adType];
+                    const density = plan.metaData.visitorExperience[adType];
                     const isDisabled = density === "none";
                     return (
                       <div key={adType} className="flex items-center gap-3">
@@ -504,7 +525,7 @@ function MonetizationPanel() {
             <CardTitle>{t("monetization.payoutTitle")}</CardTitle>
             <CardDescription className="mt-1 leading-5">{t("monetization.payoutDescription")}</CardDescription>
           </div>
-          <Badge variant="secondary" className="w-fit">{t("monetization.contextProfit", { profit: currentPlan.profit })}</Badge>
+          <Badge variant="secondary" className="w-fit">{t("monetization.contextProfit", { profit: currentProfit })}</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -519,17 +540,22 @@ function MonetizationPanel() {
               </thead>
               <tbody className="divide-y divide-border">
                 {payoutRates.map((rate) => (
-                  <tr key={rate.country} className="hover:bg-muted/15">
+                  <tr key={rate.countryCode} className="hover:bg-muted/15">
                     <td className="px-5 py-3 sm:px-6">
                       <div className="flex items-center gap-3">
-                        <span className="grid size-7 place-items-center rounded-md border border-border bg-muted/20 text-[10px] font-semibold text-muted-foreground">{rate.code}</span>
-                        <span className="font-medium text-foreground">{t(`monetization.countries.${rate.country}`)}</span>
+                        <CountryFlag code={rate.countryCode} />
+                        <span className="font-medium text-foreground">{countryName(rate.countryCode, locale, t)}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-right font-medium tabular-nums text-foreground sm:px-6">{formatCpm(rate.desktopBase)}</td>
-                    <td className="px-5 py-3 text-right font-medium tabular-nums text-foreground sm:px-6">{formatCpm(rate.mobileBase)}</td>
+                    <td className="px-5 py-3 text-right font-medium tabular-nums text-foreground sm:px-6">{formatPayoutRates(rate.desktop, currentPlan.metaData.profitBps, formatCurrency)}</td>
+                    <td className="px-5 py-3 text-right font-medium tabular-nums text-foreground sm:px-6">{formatPayoutRates(rate.mobileAndTablet, currentPlan.metaData.profitBps, formatCurrency)}</td>
                   </tr>
                 ))}
+                {payoutRates.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-5 py-8 text-center text-sm text-muted-foreground sm:px-6">{t("monetization.noRates")}</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -542,8 +568,8 @@ function MonetizationPanel() {
       <AlertDialog open={Boolean(pendingPlan)} onOpenChange={(open) => !open && closeEnrollment()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("monetization.confirmTitle", { plan: pendingPlan ? t(`monetization.plans.${pendingPlan.id}.title`) : "" })}</AlertDialogTitle>
-            <AlertDialogDescription>{t("monetization.confirmDescription", { profit: pendingPlan?.profit ?? "", steps: pendingPlan?.steps ?? 0 })}</AlertDialogDescription>
+            <AlertDialogTitle>{t("monetization.confirmTitle", { plan: pendingPlan ? localizedPlan(pendingPlan, locale, defaultLocale).name : "" })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("monetization.confirmDescription", { profit: pendingPlan ? formatProfit(pendingPlan.metaData.profitBps, locale) : "", steps: pendingPlan?.metaData.stepCount ?? 0 })}</AlertDialogDescription>
           </AlertDialogHeader>
           <Label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/20 p-3 text-sm font-normal leading-5 text-muted-foreground">
             <Checkbox checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked === true)} />
@@ -551,11 +577,118 @@ function MonetizationPanel() {
           </Label>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={closeEnrollment}>{t("monetization.cancel")}</AlertDialogCancel>
-            <AlertDialogAction disabled={!agreedToTerms} onClick={enroll}>{t("monetization.confirmEnroll")}</AlertDialogAction>
+            <AlertDialogAction
+              disabled={!agreedToTerms || selectingPlanId !== null}
+              onClick={(event) => {
+                event.preventDefault();
+                void enroll();
+              }}
+            >
+              {selectingPlanId !== null ? <LoaderCircle className="animate-spin motion-reduce:animate-none" /> : null}
+              {t("monetization.confirmEnroll")}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+type MemberRate = MemberMonetizationLevel["rates"][number];
+
+function localizedPlan(level: MemberMonetizationLevel, locale: string, defaultLocale: string) {
+  const normalizedLocale = locale.toLowerCase();
+  const normalizedDefault = defaultLocale.toLowerCase();
+  const translation =
+    level.translations.find((item) => item.locale.toLowerCase() === normalizedLocale) ??
+    level.translations.find((item) => item.locale.toLowerCase() === normalizedLocale.split("-")[0]) ??
+    level.translations.find((item) => item.locale.toLowerCase() === normalizedDefault) ??
+    level.translations.find((item) => item.locale.toLowerCase() === normalizedDefault.split("-")[0]) ??
+    level.translations.find((item) => item.locale.toLowerCase() === "en") ??
+    level.translations[0];
+
+  return {
+    name: translation?.name ?? level.key,
+    description: translation?.description ?? "",
+  };
+}
+
+function formatProfit(profitBps: number, locale: string) {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(profitBps / 100)}%`;
+}
+
+function groupPayoutRates(level: MemberMonetizationLevel) {
+  const countryCodes = Array.from(new Set(level.rates.map((rate) => rate.countryCode)));
+
+  return countryCodes.map((countryCode) => {
+    const rates = level.rates.filter((rate) => rate.countryCode === countryCode);
+    const anyRate = rates.find((rate) => rate.deviceType === "any");
+    const desktop = rates.find((rate) => rate.deviceType === "desktop") ?? anyRate;
+    const mobile = rates.find((rate) => rate.deviceType === "mobile") ?? anyRate;
+    const tablet = rates.find((rate) => rate.deviceType === "tablet") ?? anyRate;
+
+    return {
+      countryCode,
+      desktop: desktop ? [desktop] : [],
+      mobileAndTablet: uniqueRates([mobile, tablet].filter((rate): rate is MemberRate => Boolean(rate))),
+    };
+  });
+}
+
+function uniqueRates(rates: MemberRate[]) {
+  return rates.filter(
+    (rate, index) =>
+      rates.findIndex(
+        (candidate) => candidate.baseCpm === rate.baseCpm && candidate.currency === rate.currency,
+      ) === index,
+  );
+}
+
+function formatPayoutRates(
+  rates: MemberRate[],
+  profitBps: number,
+  formatCurrency: ReturnType<typeof useMemberCurrency>["formatCurrency"],
+) {
+  if (rates.length === 0) return "—";
+  const profitShare = profitBps / 10_000;
+
+  return rates
+    .map((rate) => {
+      const baseCpm = Number(rate.baseCpm);
+      if (!Number.isFinite(baseCpm)) return "—";
+      return formatCurrency(baseCpm * profitShare, {
+        sourceCurrency: rate.currency,
+      });
+    })
+    .join(" / ");
+}
+
+function countryName(
+  countryCode: string,
+  locale: string,
+  t: ReturnType<typeof useTranslations<"Links">>,
+) {
+  if (countryCode === "ALL") return t("monetization.allMarkets");
+  if (countryCode === "ZZ") return t("monetization.unknownMarket");
+  return new Intl.DisplayNames([locale], { type: "region" }).of(countryCode) ?? countryCode;
+}
+
+function CountryFlag({ code }: { code: string }) {
+  if (code === "ALL") {
+    return (
+      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-primary/15 bg-primary/10 text-primary">
+        <Globe2 className="size-4" aria-hidden="true" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-muted/20">
+      <span
+        aria-hidden="true"
+        className={`fi fi-${code === "ZZ" ? "xx" : code.toLowerCase()} rounded-[2px] shadow-sm ring-1 ring-black/5`}
+      />
+    </span>
   );
 }
 

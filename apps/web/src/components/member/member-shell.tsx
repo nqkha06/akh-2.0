@@ -7,7 +7,7 @@ import { MemberHeader } from "./member-header"
 import { MemberSidebar } from "./member-sidebar"
 import { MobileSidebar } from "./mobile-sidebar"
 
-const SIDEBAR_STORAGE_KEY = "rekonise:sidebar-collapsed"
+const SIDEBAR_STORAGE_KEY = "member:sidebar-collapsed"
 
 export function MemberShell({
   children,

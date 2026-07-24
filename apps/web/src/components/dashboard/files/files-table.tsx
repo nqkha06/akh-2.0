@@ -1,24 +1,19 @@
 "use client";
 
-import Image from "next/image";
-import { X } from "lucide-react";
-
 import { TablePagination } from "@/components/table-pagination";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { getFileDownloadUrl, getFilePreviewUrl, type ManagedFileDto } from "@/lib/api-client";
+import type { ManagedFileDto } from "@/lib/api-client";
 
 import { FileRowActions } from "./file-row-actions";
-import { FileStatusBadge, FileTypeIcon, formatFileDate, getFileType } from "./file-utils";
-import type { ManagedFileView, UploadQueueItem } from "./types";
+import { FileTypeIcon, formatFileDate, getFileType } from "./file-utils";
+import type { ManagedFileView } from "./types";
 
 const typeLabels = { image: "Hình ảnh", video: "Video", audio: "Âm thanh", document: "Tài liệu", archive: "File nén", other: "Khác" } as const;
 
 type FilesTableProps = {
   files: ManagedFileView[];
-  uploads: UploadQueueItem[];
   selectedIds: Set<string>;
   page: number;
   pageSize: number;
@@ -28,19 +23,12 @@ type FilesTableProps = {
   onSelect: (id: string, selected: boolean) => void;
   onSelectPage: (selected: boolean) => void;
   onPreview: (file: ManagedFileDto) => void;
-  onCopyUrl: (file: ManagedFileDto) => void;
-  onCopyAlias: (file: ManagedFileDto) => void;
-  onUseDestination: (file: ManagedFileDto) => void;
   onRename: (file: ManagedFileDto) => void;
   onDelete: (file: ManagedFileDto) => void;
-  onCancelUpload: (id: string) => void;
 };
 
 function FileVisual({ file }: { file: ManagedFileDto }) {
-  if (file.mimeType.startsWith("image/")) {
-    return <Image src={getFilePreviewUrl(file)} alt="" width={36} height={36} unoptimized className="size-9 rounded-md border border-border object-cover" />;
-  }
-  return <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-muted/40 text-muted-foreground"><FileTypeIcon file={file} className="size-4" /></span>;
+  return <FileTypeIcon file={file} />;
 }
 
 export function FilesTable(props: FilesTableProps) {
@@ -51,12 +39,6 @@ export function FilesTable(props: FilesTableProps) {
   return (
     <TooltipProvider>
       <section aria-label="Danh sách file" className="overflow-hidden rounded-xl border border-border bg-card">
-        {props.uploads.filter((item) => item.status === "uploading" || item.status === "pending").map((item) => (
-          <div key={item.id} className="flex min-h-16 items-center gap-3 border-b border-border bg-primary/5 px-3 sm:px-4">
-            <LoaderUpload /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.file.name}</p><p className="text-xs text-muted-foreground">Đang tải lên · {item.progress}%</p><div className="mt-2 h-1.5 max-w-sm overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={`Đang tải ${item.file.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><div className="h-full rounded-full bg-primary transition-[width] duration-200 motion-reduce:transition-none" style={{ width: `${item.progress}%` }} /></div></div><Button variant="ghost" size="icon-sm" onClick={() => props.onCancelUpload(item.id)} aria-label={`Hủy tải lên ${item.file.name}`}><X /></Button>
-          </div>
-        ))}
-
         <div className="hidden overflow-x-auto md:block">
           <Table className="min-w-[1040px]">
             <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border)]">
@@ -78,11 +60,22 @@ export function FilesTable(props: FilesTableProps) {
                 return (
                   <TableRow key={file.id} data-state={selected ? "selected" : undefined} className="h-16 data-[state=selected]:bg-primary/5">
                     <TableCell className="px-4"><Checkbox checked={selected} onCheckedChange={(checked) => props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} /></TableCell>
-                    <TableCell><div className="flex min-w-0 items-center gap-3"><FileVisual file={file} /><div className="min-w-0"><Tooltip><TooltipTrigger asChild><button type="button" className="block max-w-72 truncate text-left text-sm font-medium text-foreground hover:text-primary hover:underline" onClick={() => props.onPreview(file)}>{file.name}</button></TooltipTrigger><TooltipContent>{file.name}</TooltipContent></Tooltip><p className="mt-0.5 max-w-72 truncate text-xs text-muted-foreground">/{file.alias}</p></div></div></TableCell>
+                    <TableCell>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <FileVisual file={file} />
+                        <div className="min-w-0">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="block max-w-72 truncate text-left text-sm font-medium text-foreground hover:text-primary hover:underline" onClick={() => props.onPreview(file)}>{file.name}</button></TooltipTrigger><TooltipContent>{file.name}</TooltipContent>
+                          </Tooltip>
+                              
+                          {/* <p className="mt-0.5 max-w-72 truncate text-xs text-muted-foreground">/{file.alias}</p> */}
+                        </div></div>
+                          </TableCell>
                     <TableCell className="text-muted-foreground">{typeLabels[getFileType(file)]}</TableCell>
                     <TableCell className="font-medium tabular-nums">{file.sizeLabel}</TableCell>
                     <TableCell className="text-muted-foreground">{formatFileDate(file.createdAt)}</TableCell>
-                    <TableCell className="pr-3"><FileRowActions file={file} downloadUrl={getFileDownloadUrl(file)} onPreview={props.onPreview} onCopyUrl={props.onCopyUrl} onCopyAlias={props.onCopyAlias} onUseDestination={props.onUseDestination} onRename={props.onRename} onDelete={props.onDelete} /></TableCell>
+                    <TableCell className="pr-3"><FileRowActions file={file} onPreview={props.onPreview} onRename={props.onRename} onDelete={props.onDelete} /></TableCell>
                   </TableRow>
                 );
               })}
@@ -92,10 +85,21 @@ export function FilesTable(props: FilesTableProps) {
 
         <div className="divide-y divide-border md:hidden">
           {props.files.map((file) => {
-            const selected = props.selectedIds.has(file.id);
-            return <article key={file.id} className={`flex min-h-[76px] items-center gap-3 px-2 py-3 ${selected ? "bg-primary/5" : ""}`}><Checkbox checked={selected} onCheckedChange={(checked) => props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} /><FileVisual file={file} /><div className="min-w-0 flex-1"><button type="button" className="block max-w-full truncate text-left text-sm font-medium text-foreground" onClick={() => props.onPreview(file)}>{file.name}</button><div className="mt-1 flex items-center gap-2"><FileStatusBadge status={file.status} /><span className="text-xs tabular-nums text-muted-foreground">{file.sizeLabel}</span></div></div><FileRowActions file={file} downloadUrl={getFileDownloadUrl(file)} onPreview={props.onPreview} onCopyUrl={props.onCopyUrl} onCopyAlias={props.onCopyAlias} onUseDestination={props.onUseDestination} onRename={props.onRename} onDelete={props.onDelete} /></article>;
+          const selected = props.selectedIds.has(file.id);
+          return <article key={file.id} className={`flex min-h-[76px] items-center gap-3 px-2 py-3 ${selected ? "bg-primary/5" : "" }`}>
+              <Checkbox checked={selected} onCheckedChange={(checked)=> props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} />
+                  <FileVisual file={file} />
+                  <div className="min-w-0 flex-1"><button type="button" className="block max-w-full truncate text-left text-sm font-medium text-foreground" onClick={()=> props.onPreview(file)}>{file.name}</button>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs tabular-nums text-muted-foreground">{file.sizeLabel}</span>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">{formatFileDate(file.createdAt)}</span>
+                      </div>
+                  </div>
+                  <FileRowActions file={file} onPreview={props.onPreview} onRename={props.onRename} onDelete={props.onDelete} />
+          </article>;
           })}
-        </div>
+      </div>
 
         <footer className="border-t border-border px-3 py-3">
           <TablePagination
@@ -109,8 +113,4 @@ export function FilesTable(props: FilesTableProps) {
       </section>
     </TooltipProvider>
   );
-}
-
-function LoaderUpload() {
-  return <span className="grid size-9 shrink-0 place-items-center rounded-md border border-primary/20 bg-primary/10 text-primary"><span className="size-3 animate-pulse rounded-full bg-primary motion-reduce:animate-none" /></span>;
 }

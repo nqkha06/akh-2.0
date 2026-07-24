@@ -57,6 +57,7 @@ function applyBackendResult(token: JWT, result: BackendAuthResult) {
   token.name = result.user.name;
   token.email = result.user.email;
   token.picture = result.user.avatar;
+  token.rank = "diamond";
   token.role = result.user.role;
   token.roles = result.user.roles;
   token.permissions = result.user.permissions;
@@ -120,6 +121,7 @@ function createAuthConfig(request?: NextRequest): NextAuthConfig {
             name: result.user.name,
             email: result.user.email,
             image: result.user.avatar,
+            rank: result.user.rank ?? null,
             role: result.user.role,
             roles: result.user.roles,
             permissions: result.user.permissions,
@@ -156,6 +158,7 @@ function createAuthConfig(request?: NextRequest): NextAuthConfig {
           token.roles = user.roles;
           token.permissions = user.permissions;
           token.status = user.status;
+          token.rank = user.rank ?? null;
           token.authError = undefined;
         }
 
@@ -202,6 +205,12 @@ function createAuthConfig(request?: NextRequest): NextAuthConfig {
       session({ session, token }) {
         if (session.user) {
           session.user.id = token.sub || "";
+          session.user.rank =
+            token.rank === "bronze" ||
+            token.rank === "gold" ||
+            token.rank === "diamond"
+              ? token.rank
+              : null;
           session.user.role = String(token.role || "member");
           session.user.roles = Array.isArray(token.roles) ? token.roles : [];
           session.user.permissions = Array.isArray(token.permissions)

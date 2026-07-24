@@ -1,64 +1,49 @@
-import type { LucideIcon } from "lucide-react";
-
 export type SupportRequestStatus = "submitted" | "in_progress" | "waiting_user" | "answered" | "resolved" | "closed";
+export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
 export type SupportCategory = "usage" | "technical" | "social_links" | "files" | "link_in_bio" | "monetization" | "withdrawal" | "rewards" | "account" | "abuse" | "other";
 
-export interface SupportTopic {
-  id: string;
-  title: string;
-  description: string;
-  articleCount?: number;
-  href: string;
-  icon: LucideIcon;
-}
-
-export interface SupportArticle {
-  id: string;
-  title: string;
-  summary: string;
-  category: string;
-  readingTime?: string;
-  href: string;
-}
-
 export interface SupportMessage {
-  id: string;
+  id: number;
   sender: string;
-  senderRole: "user" | "support";
+  senderRole: "user" | "support" | "system";
   content: string;
   createdAt: string;
-  attachments?: string[];
+  isInternal?: boolean;
+  attachments?: SupportAttachment[];
+}
+
+export interface SupportAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  downloadPath: string;
 }
 
 export interface SupportRequest {
-  id: string;
+  id: number;
   reference: string;
   subject: string;
   category: string;
   categoryValue: SupportCategory;
   status: SupportRequestStatus;
+  priority: SupportTicketPriority;
   createdAt: string;
   updatedAt: string;
   content: string;
-  attachments: string[];
+  attachments: SupportAttachment[];
   messages: SupportMessage[];
+  lastMessageAt: string;
+  assignedTo?: {
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  } | null;
 }
 
 export interface SupportDashboardData {
-  topics: SupportTopic[];
-  articles: SupportArticle[];
   requests: SupportRequest[];
-  systemStatus: {
-    state: "operational" | "incident" | "unknown";
-    message: string;
-    affectedService?: string;
-    href?: string;
-  };
-  contact: {
-    responseTime?: string;
-    workingHours?: string;
-    channels: string[];
-  };
   attachmentConfig: {
     acceptedTypes: string;
     maxSizeMb: number;
@@ -76,6 +61,7 @@ export interface CreateSupportRequestInput {
 
 export interface SupportDataSource {
   getDashboard(): Promise<SupportDashboardData>;
+  getRequest(id: number): Promise<SupportRequest>;
   createRequest(input: CreateSupportRequestInput): Promise<SupportRequest>;
-  replyToRequest(id: string, content: string): Promise<SupportMessage>;
+  replyToRequest(id: number, content: string): Promise<SupportRequest>;
 }

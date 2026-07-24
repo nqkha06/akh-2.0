@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 import type { WithdrawalStatus, WithdrawalTransaction } from "./types";
 import type { WithdrawalController } from "./use-withdrawal-controller";
-import { formatCurrency, formatDateTime } from "./use-withdrawal-controller";
+import { formatDateTime } from "./use-withdrawal-controller";
 
 const statusConfig: Record<WithdrawalStatus, { label: string; icon: typeof Clock3; className: string }> = {
   pending: { label: "Chờ xử lý", icon: Clock3, className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
@@ -66,7 +66,7 @@ export function WithdrawalEmptyState({ filtered = false }: { filtered?: boolean 
 }
 
 export function WithdrawalHistory({ controller }: { controller: WithdrawalController }) {
-  const { data, historyError, filteredTransactions, setDetailTransaction } = controller;
+  const { data, historyError, filteredTransactions, setDetailTransaction, formatCurrency } = controller;
   const filtersActive = useMemo(() => controller.statusFilter !== "all" || controller.dateFilter !== "all", [controller.dateFilter, controller.statusFilter]);
   if (!data) return null;
   return (

@@ -162,6 +162,15 @@ function invalidateSiteSettings(
     revalidateTag("public-site-settings", "max")
     revalidatePath("/", "layout")
   }
+  if (
+    request.method !== "GET" &&
+    request.method !== "HEAD" &&
+    relativePath.startsWith("admin/menus") &&
+    response.ok
+  ) {
+    revalidateTag("public-website-menus", "max")
+    revalidatePath("/", "page")
+  }
 }
 
 export {

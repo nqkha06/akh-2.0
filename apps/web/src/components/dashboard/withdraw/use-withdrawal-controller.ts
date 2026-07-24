@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
+
 import { withdrawalDataSource } from "./api-data-source";
 import type {
   CreateWithdrawalPayload,
@@ -15,14 +17,6 @@ import type {
 function parseAmount(value: string) {
   const digits = value.replace(/\D/g, "");
   return digits ? Number(digits) : 0;
-}
-
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 export function formatAmountInput(value: number) {
@@ -41,6 +35,10 @@ export function formatDateTime(value?: string) {
 }
 
 export function useWithdrawalController() {
+  const {
+    baseCurrency,
+    formatCurrency: formatMemberCurrency,
+  } = useMemberCurrency();
   const [data, setData] = useState<WithdrawalDashboardData>();
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -82,6 +80,13 @@ export function useWithdrawalController() {
 
   const amount = parseAmount(amountInput);
   const selectedMethod = data?.payoutMethods.find((method) => method.id === selectedMethodId);
+  const formatCurrency = useCallback(
+    (value: number) =>
+      formatMemberCurrency(value, {
+        sourceCurrency: data?.currency ?? baseCurrency,
+      }),
+    [baseCurrency, data?.currency, formatMemberCurrency],
+  );
 
   const validationError = useMemo(() => {
     if (!data || !amountInput) return "";
@@ -92,7 +97,7 @@ export function useWithdrawalController() {
     if (amount > transactionMaximum) return `Số tiền vượt quá hạn mức hiện tại ${formatCurrency(transactionMaximum)}.`;
     if (amount > data.availableBalance) return "Số tiền vượt quá số dư khả dụng.";
     return "";
-  }, [amount, amountInput, data, selectedMethod]);
+  }, [amount, amountInput, data, formatCurrency, selectedMethod]);
 
   useEffect(() => {
     const requestId = ++estimateRequestRef.current;
@@ -248,6 +253,7 @@ export function useWithdrawalController() {
     statusFilter,
     dateFilter,
     sort,
+    formatCurrency,
     retry: load,
     setAmount,
     setMaximumAmount,

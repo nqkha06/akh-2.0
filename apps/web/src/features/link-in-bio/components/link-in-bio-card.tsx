@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { BioPageDto } from "@/lib/api-client"
+import {
+  getSiteHost,
+  useSiteBrand,
+} from "@/features/site-settings/components/site-brand-provider"
 import { LinkInBioActionsMenu } from "./link-in-bio-actions-menu"
 import { copyBioUrl, DeleteLinkInBioDialog, LinkInBioQrDialog, LinkInBioStatsDialog } from "./link-in-bio-dialogs"
 import { LinkInBioMetrics } from "./link-in-bio-metrics"
@@ -28,15 +32,19 @@ export function LinkInBioCard({
   onEdit,
   onDuplicate,
   onToggleStatus,
+  onDelete,
 }: {
   page: BioPageDto
   onEdit: (page: BioPageDto) => void
   onDuplicate: (page: BioPageDto) => void
   onToggleStatus: (page: BioPageDto) => void
+  onDelete: (page: BioPageDto) => Promise<void>
 }) {
   const [qrOpen, setQrOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const brand = useSiteBrand()
+  const siteHost = getSiteHost(brand)
   const visibleLinks = getVisibleBioLinks(page)
 
   return (
@@ -48,7 +56,9 @@ export function LinkInBioCard({
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-semibold text-foreground">{page.name}</h2>
             <div className="mt-1 flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-xs text-muted-foreground">rekonise.com{page.publicUrl}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {siteHost}{page.publicUrl}
+              </span>
               <Button type="button" variant="ghost" size="icon-sm" className="size-7 shrink-0 text-muted-foreground" onClick={() => void copyBioUrl(page)} aria-label={`Sao chép liên kết ${page.name}`}><Copy className="size-3.5" /></Button>
             </div>
           </div>
@@ -85,7 +95,7 @@ export function LinkInBioCard({
 
       <LinkInBioQrDialog page={page} open={qrOpen} onOpenChange={setQrOpen} />
       <LinkInBioStatsDialog page={page} open={statsOpen} onOpenChange={setStatsOpen} />
-      <DeleteLinkInBioDialog page={page} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      <DeleteLinkInBioDialog page={page} open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={() => onDelete(page)} />
     </>
   )
 }

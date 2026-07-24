@@ -6,47 +6,81 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/dashboard/ui";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
+import {
+  CircleDollarSign,
+  Clock3,
+  WalletCards,
+  type LucideIcon,
+} from "lucide-react"
 
 import type { WithdrawalDashboardData } from "./types";
-import { formatCurrency } from "./use-withdrawal-controller";
 
 export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
+  const { formatCurrency } = useMemberCurrency();
   const metrics = [
     {
       label: "Có thể rút",
       value: data.availableBalance,
       description: "Có thể tạo yêu cầu rút ngay",
+      icon: WalletCards
     },
     {
       label: "Đang xử lý",
       value: data.pendingBalance,
       description: "Các yêu cầu đang được xử lý",
+      icon: Clock3
     },
     {
       label: "Tổng đã nhận",
       value: data.totalReceived,
       description: "Tổng tiền đã thanh toán",
+      icon: WalletCards
     },
   ];
 
   return (
-    <section aria-label="Tổng quan số dư" className="grid border-y border-border bg-muted/20 sm:grid-cols-3">
-      {metrics.map((metric, index) => (
+    <section
+  aria-label="Tổng quan số dư"
+  className="overflow-hidden rounded-xl border border-border bg-card"
+>
+  <div className="grid sm:grid-cols-3">
+    {metrics.map((metric, index) => {
+      const Icon = metric.icon
+
+      return (
         <div
           key={metric.label}
           className={cn(
-            "px-1 py-4 sm:px-5 sm:py-5",
-            index > 0 && "border-t border-border sm:border-l sm:border-t-0",
+            "group relative flex gap-4 p-4 transition-colors hover:bg-muted/40 sm:p-5",
+            index > 0 &&
+              "border-t border-border sm:border-l sm:border-t-0",
           )}
         >
-          <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
-          <p className="mt-1.5 text-xl font-semibold tracking-[-0.02em] tabular-nums text-foreground lg:text-2xl">
-            {formatCurrency(metric.value)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground transition-colors group-hover:bg-background group-hover:text-foreground">
+            <Icon className="size-5" strokeWidth={1.8} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-muted-foreground">
+              {metric.label}
+            </p>
+
+            <p className="mt-1.5 truncate text-xl font-semibold tracking-[-0.02em] text-foreground tabular-nums lg:text-2xl">
+              {formatCurrency(metric.value, {
+                sourceCurrency: data.currency,
+              })}
+            </p>
+
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {metric.description}
+            </p>
+          </div>
         </div>
-      ))}
-    </section>
+      )
+    })}
+  </div>
+</section>
   );
 }
 

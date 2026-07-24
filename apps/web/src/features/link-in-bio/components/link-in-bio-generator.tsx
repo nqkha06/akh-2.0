@@ -44,6 +44,10 @@ import {
   type CreateBioPagePayload,
 } from "@/lib/api-client"
 import {
+  getSiteHost,
+  useSiteBrand,
+} from "@/features/site-settings/components/site-brand-provider"
+import {
   bioButtonStyles,
   getBioAccentColor,
   getBioLinkClass,
@@ -142,6 +146,8 @@ export default function LinkInBioGenerator({
   onSaved?: (bioPage: BioPageDto) => void
   onSavingChange?: (saving: boolean) => void
 }) {
+  const brand = useSiteBrand()
+  const siteHost = getSiteHost(brand)
   const nextIdRef = useRef(10)
   const [expandedSections, setExpandedSections] = useState<Record<EditorSectionKey, boolean>>({
     details: true,
@@ -526,7 +532,9 @@ export default function LinkInBioGenerator({
                       <header className="text-center">
                         <div className="mx-auto grid size-20 place-items-center rounded-2xl border-4 border-white bg-slate-950 text-2xl font-semibold text-white shadow-lg">{profileDetails.name.trim().slice(0, 1).toUpperCase() || "R"}</div>
                         <h4 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">{profileDetails.name || "Tên của bạn"}</h4>
-                        <p className="mt-1 truncate text-xs font-medium text-slate-500">rekonise.com/b/{customSlug || "ten-cua-ban"}</p>
+                        <p className="mt-1 truncate text-xs font-medium text-slate-500">
+                          {siteHost ? `${siteHost}/b/` : "/b/"}{customSlug || "ten-cua-ban"}
+                        </p>
                         <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-600">{profileDetails.title || "Thêm một mô tả ngắn để mọi người biết bạn là ai và nội dung bạn chia sẻ."}</p>
                       </header>
 
@@ -536,7 +544,9 @@ export default function LinkInBioGenerator({
                         {customLinks.filter((link) => !hiddenLinks.includes(link.id)).map((link) => <button key={link.id} type="button" className={getBioLinkClass(selectedButtonStyle)} style={getBioLinkStyle(selectedButtonStyle, accentColor)}><span className="min-w-0 truncate">{link.title || "Liên kết chưa đặt tên"}</span><span className={`grid size-8 shrink-0 place-items-center rounded-full ${getBioLinkIconClass(selectedButtonStyle)}`} style={getBioLinkIconStyle(selectedButtonStyle, accentColor)}><LinkIcon className="size-4" /></span></button>)}
                       </div>
                       {customLinks.length === 0 && socialLinks.length === 0 && widgets.length === 0 ? <div className="rounded-xl border border-dashed border-slate-300 bg-white/55 px-4 py-8 text-center text-sm text-slate-500">Thêm nội dung để xem trước tại đây.</div> : null}
-                      <div className="pt-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Powered by Rekonise</div>
+                      <div className="pt-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Powered by {brand.siteName}
+                      </div>
                     </div>
                   </div>
                 </div>

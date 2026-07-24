@@ -249,20 +249,6 @@ export class AuthService {
     }
   }
 
-  async logoutAll(userId: number) {
-    const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.authSession.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { tokenVersion: { increment: 1 } },
-      }),
-    ]);
-  }
-
   async loginWithGoogle(idToken: string, referralCode?: string) {
     const clientId = this.configService.get<string>("AUTH_GOOGLE_ID");
 

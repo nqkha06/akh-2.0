@@ -125,17 +125,29 @@ export function LinkInBioStatsDialog({ page, open, onOpenChange }: { page: BioPa
   )
 }
 
-export function DeleteLinkInBioDialog({ page, open, onOpenChange, onConfirm }: { page: BioPageDto; open: boolean; onOpenChange: (open: boolean) => void; onConfirm?: () => void }) {
+export function DeleteLinkInBioDialog({ page, open, onOpenChange, onConfirm }: { page: BioPageDto; open: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => Promise<void> }) {
+  const [deleting, setDeleting] = useState(false)
+  const confirmDelete = async () => {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await onConfirm()
+      onOpenChange(false)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Xóa trang “{page.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>Hành động này không thể hoàn tác. API hiện tại chưa cung cấp thao tác xóa Link-in-bio nên dữ liệu sẽ không bị thay đổi.</AlertDialogDescription>
+          <AlertDialogDescription>Trang sẽ ngừng hiển thị công khai và được chuyển vào trạng thái đã xóa.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Hủy</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={!onConfirm} onClick={onConfirm}>Xóa</AlertDialogAction>
+          <AlertDialogCancel disabled={deleting}>Hủy</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={deleting} onClick={(event) => { event.preventDefault(); void confirmDelete() }}>{deleting ? "Đang xóa..." : "Xóa"}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

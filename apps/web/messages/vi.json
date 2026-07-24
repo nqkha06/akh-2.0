@@ -35,11 +35,9 @@
       "bio": "Link-in-bio",
       "levels": "Kiếm tiền",
       "withdraw": "Rút tiền",
-      "rewards": "Phần thưởng",
       "referrals": "Giới thiệu",
       "new": "New",
       "loyalty": "Thân thiết",
-      "leaderboard": "Bảng xếp hạng",
       "account": "Tài khoản",
       "support": "Hỗ trợ"
     },
@@ -69,19 +67,18 @@
       "subscription": "Gói dịch vụ",
       "accountSettings": "Cài đặt tài khoản",
       "logout": "Đăng xuất",
-      "logoutAll": "Đăng xuất tất cả thiết bị",
       "language": "Ngôn ngữ"
     },
     "sidebar": {
       "navigation": "Điều hướng dashboard",
       "open": "Mở sidebar",
-      "mobileTitle": "Menu Rekonise",
-      "mobileDescription": "Điều hướng dashboard Rekonise"
+      "mobileTitle": "Menu {brand}",
+      "mobileDescription": "Điều hướng dashboard {brand}"
     },
     "footer": {
       "home": "Về trang tổng quan",
       "navigation": "Điều hướng chân trang",
-      "copyright": "© {year} Link4Sub."
+      "copyright": "© {year} {brand}."
     },
     "search": {
       "open": "Mở tìm kiếm",
@@ -191,12 +188,19 @@
       "confirmTerms": "Tôi hiểu rằng thay đổi gói sẽ tác động đến trải nghiệm của người truy cập.",
       "cancel": "Hủy",
       "confirmEnroll": "Xác nhận chọn gói",
+      "selectionSuccess": "Đã chuyển sang gói {plan}.",
+      "selectionFailed": "Không thể thay đổi gói kiếm tiền.",
+      "emptyTitle": "Chưa có gói kiếm tiền",
+      "emptyDescription": "Hiện chưa có gói kiếm tiền nào được xuất bản.",
       "payoutTitle": "Tỷ giá chi trả",
       "payoutDescription": "CPM ước tính cho desktop và mobile/tablet theo gói hiện tại.",
       "country": "Quốc gia",
       "desktopCpm": "CPM Desktop",
       "mobileCpm": "CPM Mobile/Tablet",
-      "payoutNote": "Tỷ giá chỉ dùng để minh họa ở giao diện FE và có thể thay đổi theo chất lượng traffic, vị trí và chính sách quảng cáo.",
+      "payoutNote": "Tỷ giá được tính từ Base CPM và phần trăm lợi nhuận của gói hiện tại; kết quả thực tế có thể thay đổi theo traffic và chính sách quảng cáo.",
+      "noRates": "Gói hiện tại chưa được cấu hình tỷ giá.",
+      "allMarkets": "Tất cả quốc gia",
+      "unknownMarket": "Quốc gia chưa xác định",
       "countries": {
         "unitedStates": "Hoa Kỳ",
         "canada": "Canada",
@@ -421,7 +425,7 @@
       "email": "Email",
       "bio": "Giới thiệu ngắn",
       "bioValue": "Creator chia sẻ nội dung hữu ích mỗi ngày.",
-      "fallbackName": "Tài khoản Linkicom",
+      "fallbackName": "Tài khoản {brand}",
       "changeAvatar": "Đổi ảnh đại diện",
       "avatarHint": "JPG, PNG hoặc WebP. Ảnh vuông cho kết quả hiển thị tốt nhất.",
       "avatarInvalid": "Vui lòng chọn một tệp hình ảnh hợp lệ.",
@@ -507,7 +511,7 @@
     },
     "referral": {
       "title": "Link giới thiệu",
-      "description": "Chia sẻ đường dẫn cá nhân để mời creator mới tham gia Linkicom.",
+      "description": "Chia sẻ đường dẫn cá nhân để mời creator mới tham gia {brand}.",
       "copy": "Sao chép",
       "copied": "Đã sao chép link giới thiệu.",
       "people": "Người đã giới thiệu",
@@ -555,11 +559,6 @@
     }
   },
   "SimplePages": {
-    "leaderboard": {
-      "eyebrow": "Competition",
-      "title": "Bảng xếp hạng",
-      "description": "Top creator theo thu nhập, điểm và lượt giới thiệu trong tuần, tháng hoặc toàn thời gian."
-    },
     "levels": {
       "eyebrow": "Monetization levels",
       "title": "Cấp độ kiếm tiền",
@@ -632,7 +631,7 @@
     "referrals": {
       "eyebrow": "Referral",
       "title": "Giới thiệu",
-      "description": "Mời bạn bè tham gia Linkicom và nhận hoa hồng sau mỗi lượt rút tiền thành công của họ.",
+      "description": "Mời bạn bè tham gia {brand} và nhận hoa hồng sau mỗi lượt rút tiền thành công của họ.",
       "share": "Chia sẻ link",
       "commissionRate": "5% hoa hồng",
       "commissionRateValue": "{rate}% hoa hồng",
@@ -654,7 +653,7 @@
       "variant": "Phiên bản {number}",
       "embedCode": "Mã nhúng HTML",
       "copiedBanner": "Đã sao chép mã biểu ngữ",
-      "bannersAlt": "Tham gia Rekonise qua link giới thiệu",
+      "bannersAlt": "Tham gia {brand} qua link giới thiệu",
       "bannerHeadline": "Chia sẻ thông minh hơn",
       "bannerSubheadline": "Tạo link, phát triển cộng đồng và theo dõi hiệu suất.",
       "howTitle": "Cách hoạt động",
@@ -673,18 +672,18 @@
       "recipients": "{count} người nhận hợp lệ",
       "invalidRecipients": "Nhập ít nhất một email hợp lệ.",
       "sendInvites": "Gửi lời mời",
-      "emailSubject": "Tham gia Rekonise cùng mình",
-      "emailBody": "Mình đang dùng Rekonise để chia sẻ link và theo dõi hiệu suất. Tham gia cùng mình tại: {link}",
+      "emailSubject": "Tham gia {brand} cùng mình",
+      "emailBody": "Mình đang dùng {brand} để chia sẻ link và theo dõi hiệu suất. Tham gia cùng mình tại: {link}",
       "templateTitle": "Mẫu nội dung sẵn sàng",
       "templateDescription": "Bấm vào mẫu bất kỳ để sao chép và dán vào bài viết hoặc tin nhắn.",
       "copiedTemplate": "Đã sao chép mẫu nội dung",
       "templates": {
         "socialLabel": "Mạng xã hội",
-        "social": "Bạn đang cần một công cụ quản lý link gọn gàng? Tham gia Rekonise cùng mình: {link}",
+        "social": "Bạn đang cần một công cụ quản lý link gọn gàng? Tham gia {brand} cùng mình: {link}",
         "dmLabel": "DM / WhatsApp",
-        "dm": "Hey, nếu bạn thường chia sẻ nội dung hoặc link, thử Rekonise nhé. Đây là link mời của mình: {link}",
+        "dm": "Hey, nếu bạn thường chia sẻ nội dung hoặc link, thử {brand} nhé. Đây là link mời của mình: {link}",
         "newsletterLabel": "Newsletter / Blog",
-        "newsletter": "Mình dùng Rekonise để tạo link, theo dõi hiệu suất và phát triển cộng đồng. Đăng ký miễn phí tại {link}"
+        "newsletter": "Mình dùng {brand} để tạo link, theo dõi hiệu suất và phát triển cộng đồng. Đăng ký miễn phí tại {link}"
       },
       "tableTitle": "Referral của bạn",
       "tableDescription": "Danh sách creator đăng ký qua link giới thiệu và phần hoa hồng tương ứng.",
@@ -706,48 +705,6 @@
       "withdrawalReference": "Withdrawal #{id}",
       "rateApplied": "Tỷ lệ {rate}%",
       "recentEmpty": "Chưa có withdrawal thành công nào phát sinh hoa hồng."
-    },
-    "rewards": {
-      "description": "Nhận bonus khi dùng nền tảng: đăng nhập mỗi ngày, phát triển lượt click và mời bạn bè.",
-      "earned": "Đã nhận {amount}",
-      "context": "Phần thưởng được cộng vào ví đang hoạt động sau khi bạn hoàn thành các mốc tương ứng.",
-      "summary": "Tổng quan phần thưởng",
-      "streak": "Chuỗi đăng nhập",
-      "day": "ngày",
-      "totalEarned": "Tổng đã nhận",
-      "granted": "Phần thưởng đã cấp",
-      "waysTitle": "Cách nhận thưởng",
-      "waysDescription": "Ba cách nhận bonus, tất cả đều được ghi có vào ví đang hoạt động.",
-      "perDay": "/ ngày",
-      "yourProgress": "Tiến độ của bạn",
-      "historyTitle": "Lịch sử phần thưởng",
-      "historyDescription": "Các bonus đã được ghi nhận vào ví của bạn.",
-      "entries": "{count} mục",
-      "dailyLogin": "Đăng nhập hằng ngày",
-      "table": {
-        "type": "Loại",
-        "milestone": "Mốc",
-        "amount": "Số tiền",
-        "date": "Ngày"
-      },
-      "rewards": {
-        "daily": {
-          "title": "Đăng nhập hằng ngày",
-          "description": "Đăng nhập mỗi ngày để nhận thưởng cơ bản và duy trì chuỗi. Bỏ lỡ một ngày sẽ reset chuỗi về 0.",
-          "base": "Thưởng cơ bản mỗi ngày ($)|$0.01",
-          "tier": "{value} ngày"
-        },
-        "clicks": {
-          "title": "Mốc lượt click",
-          "description": "Đạt các mốc click trọn đời để nhận bonus một lần. Chia sẻ link chất lượng để đạt nhanh hơn.",
-          "tier": "{value} click"
-        },
-        "referrals": {
-          "title": "Mốc giới thiệu",
-          "description": "Mời bạn bè bằng link referral. Khi họ đăng ký và được xác nhận, bạn nhận bonus một lần ở mỗi mốc.",
-          "tier": "{value} referral"
-        }
-      }
     },
     "support": {
       "eyebrow": "Support center",
@@ -797,7 +754,7 @@
     "unlockLink": "Hoàn thành yêu cầu để mở khóa",
     "destinationReady": "Nội dung đích đã sẵn sàng để mở.",
     "destinationProtected": "Nội dung đích được ẩn cho đến khi hoàn thành tất cả yêu cầu.",
-    "protectedBy": "Được bảo vệ bởi Linkicom",
+    "protectedBy": "Được bảo vệ bởi {brand}",
     "createOwn": "Tạo Social Link của bạn"
   },
   "CreateLink": {
@@ -959,7 +916,7 @@
     "snippetContentLocked": "Hiện sau khi mở khóa",
     "actions": "HÀNH ĐỘNG",
     "enterPlatformUrl": "Nhập URL {platform}",
-    "invalidInput": "Dữ liệu này không hợp lệ",
+    "invalidInput": "Vui lòng nhập URL hợp lệ.",
     "changeAction": "Đổi hành động",
     "collapseAll": "Thu gọn tất cả",
     "expandAll": "Mở rộng tất cả",
@@ -1033,6 +990,9 @@
     "fileRequired": "Hãy chọn file đích",
     "snippetRequired": "Hãy chọn snippet",
     "actionRequired": "Cần ít nhất một hành động",
+    "actionUrlRequired": "Hãy nhập URL cho hành động này",
+    "mostUsed": "Đã dùng nhiều",
+    "addUsedAction": "Thêm {action} cho {target}",
     "completeAllActions": "Hãy hoàn thành tất cả hành động",
     "expiryRequired": "Hãy nhập điều kiện hết hạn hợp lệ",
     "updated": "Cập nhật link thành công",
@@ -1047,7 +1007,6 @@
   },
   "Admin": {
     "brand": {
-      "name": "Linkicom",
       "console": "Control center",
       "admin": "Quản trị viên"
     },

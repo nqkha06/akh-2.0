@@ -7,6 +7,7 @@ apps/api/prisma/dev.db
 apps/api/prisma/dev.db-journal
 apps/api/prisma/auth-test-*.db
 apps/api/uploads/
+apps/web/public/file-icons/
 pnpm-debug.log*
 .turbo
 *.tsbuildinfo

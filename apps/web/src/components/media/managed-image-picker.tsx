@@ -36,12 +36,9 @@ export function ManagedImagePicker({
         sort: "date",
         direction: "desc",
         status: "active",
+        limit: 100,
       });
-      setFiles(
-        response.items.filter(
-          (file) => file.isPublic && file.mimeType.startsWith("image/"),
-        ),
-      );
+      setFiles(response.items.filter((file) => file.mimeType.startsWith("image/")));
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -100,11 +97,11 @@ export function ManagedImagePicker({
       mode="cover"
       selectedFileId={selectedFileId ?? undefined}
       title={title}
-      description="Chỉ hiển thị ảnh public còn hoạt động. Có thể upload ảnh mới ngay tại đây."
+      description="Chỉ hiển thị ảnh còn hoạt động. Có thể upload ảnh mới ngay tại đây."
       labels={{
         action: "Chọn ảnh",
         close: "Đóng",
-        empty: "Chưa có ảnh public trong Media Manager.",
+        empty: "Chưa có ảnh trong Media Manager.",
         loading: "Đang tải ảnh...",
         name: "Tên ảnh",
         select: "Dùng ảnh này",

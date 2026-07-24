@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   createBioPage,
+  deleteBioPage,
   getBioPages,
   updateBioPage,
   type BioPageDto,
@@ -85,6 +86,17 @@ export function BioView() {
     }
   }
 
+  const removeBio = async (page: BioPageDto) => {
+    try {
+      await deleteBioPage(page.id)
+      setBioPages((current) => current.filter((item) => item.id !== page.id))
+      toast.success("Đã xóa trang Link-in-bio")
+    } catch (deleteError) {
+      toast.error(deleteError instanceof Error ? deleteError.message : "Không thể xóa trang.")
+      throw deleteError
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -114,7 +126,7 @@ export function BioView() {
           </div>
         ) : null}
         {!error && !loading && visiblePages.length > 0 ? (
-          <LinkInBioGrid pages={visiblePages} onEdit={(page) => router.push(`/member/bio/${page.id}/edit`)} onDuplicate={(page) => void duplicateBio(page)} onToggleStatus={(page) => void toggleBioStatus(page)} />
+          <LinkInBioGrid pages={visiblePages} onEdit={(page) => router.push(`/member/bio/${page.id}/edit`)} onDuplicate={(page) => void duplicateBio(page)} onToggleStatus={(page) => void toggleBioStatus(page)} onDelete={removeBio} />
         ) : null}
       </div>
     </>

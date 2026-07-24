@@ -6,10 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import type { WithdrawalController } from "./use-withdrawal-controller";
-import { formatCurrency } from "./use-withdrawal-controller";
 
 export function PayoutMethodPanel({ controller }: { controller: WithdrawalController }) {
-  const { data, selectedMethod } = controller;
+  const { data, selectedMethod, formatCurrency } = controller;
   if (!data) return null;
 
   return (

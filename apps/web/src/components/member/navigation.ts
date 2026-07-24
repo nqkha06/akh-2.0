@@ -1,13 +1,10 @@
 import type { LucideIcon } from "lucide-react"
 import {
   CircleHelp,
-  Crown,
   FileText,
   Folder,
   Gauge,
-  Gift,
   Link2,
-  Network,
   Trophy,
   User,
   Users,
@@ -20,12 +17,9 @@ export type NavigationItem = {
     | "nav.links"
     | "nav.files"
     | "nav.bio"
-    | "nav.levels"
     | "nav.withdraw"
-    | "nav.rewards"
     | "nav.referrals"
     | "nav.loyalty"
-    | "nav.leaderboard"
     | "nav.account"
     | "nav.support"
   href: string
@@ -61,17 +55,14 @@ export const navigationGroups: NavigationGroup[] = [
   {
     labelKey: "groups.monetization",
     items: [
-      { titleKey: "nav.levels", href: "/member/levels", icon: Network },
       { titleKey: "nav.withdraw", href: "/member/withdraw", icon: Wallet },
     ],
   },
   {
     labelKey: "groups.community",
     items: [
-      { titleKey: "nav.rewards", href: "/member/rewards", icon: Gift },
       { titleKey: "nav.referrals", href: "/member/referrals", icon: Users },
       { titleKey: "nav.loyalty", href: "/member/loyalty", icon: Trophy },
-      { titleKey: "nav.leaderboard", href: "/member/leaderboard", icon: Crown },
     ],
   },
   {

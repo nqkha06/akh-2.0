@@ -45,7 +45,7 @@ export type WithdrawalLimits = {
 };
 
 export type WithdrawalDashboardData = {
-  currency: "VND";
+  currency: string;
   availableBalance: number;
   pendingBalance: number;
   totalReceived: number;

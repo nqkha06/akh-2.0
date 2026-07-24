@@ -27,11 +27,12 @@ export function MemberHeader({
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={7}>{t("sidebar.open")}</TooltipContent>
         </Tooltip>
+        <CreateMenu />
 
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-        <CreateMenu />
+        {/* <CreateMenu /> */}
         <NotificationsPopover />
         <UserMenu />
       </div>

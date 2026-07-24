@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { ManagedImagePicker } from "@/components/media/managed-image-picker";
+import { AdminMediaPicker } from "@/components/admin-media/admin-media-picker";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -48,7 +48,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getFilePreviewUrl } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export function RichTextEditor({
@@ -341,7 +340,7 @@ export function RichTextEditor({
         <EditorContent editor={editor} />
       </div>
 
-      <ManagedImagePicker
+      <AdminMediaPicker
         open={imagePickerOpen}
         onOpenChange={setImagePickerOpen}
         title="Chèn ảnh vào nội dung"
@@ -350,9 +349,9 @@ export function RichTextEditor({
             .chain()
             .focus()
             .setImage({
-              src: getFilePreviewUrl(file),
-              alt: file.name,
-              title: file.name,
+              src: file.url,
+              alt: file.altText || file.fileName,
+              title: file.fileName,
             })
             .run();
         }}

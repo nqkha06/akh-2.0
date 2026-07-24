@@ -3,6 +3,7 @@ import type { AuthErrorCode } from "@/lib/auth/auth-errors";
 
 declare module "next-auth" {
   interface User {
+    rank?: "bronze" | "gold" | "diamond" | null;
     role: string;
     roles: string[];
     permissions: string[];
@@ -18,6 +19,7 @@ declare module "next-auth" {
     authError?: AuthErrorCode;
     user: DefaultSession["user"] & {
       id: string;
+      rank?: "bronze" | "gold" | "diamond" | null;
       role: string;
       roles: string[];
       permissions: string[];
@@ -28,6 +30,7 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
+    rank?: "bronze" | "gold" | "diamond" | null;
     role?: string;
     roles?: string[];
     permissions?: string[];

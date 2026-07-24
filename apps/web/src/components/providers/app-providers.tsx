@@ -5,23 +5,21 @@ import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { Toaster } from "sonner"
 
 import { AuthSessionProvider } from "@/components/auth/auth-session-provider"
-import { ThemeProvider } from "@/components/theme-provider"
+import { SiteBrandProvider } from "@/features/site-settings/components/site-brand-provider"
+import type { PublicSiteSettings } from "@/features/site-settings/types"
 
-export function AppProviders({ children }: PropsWithChildren) {
+export function AppProviders({
+  children,
+  settings,
+}: PropsWithChildren<{ settings: PublicSiteSettings }>) {
   return (
-    <AuthSessionProvider>
-      <NuqsAdapter>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          themes={["light", "dark"]}
-          disableTransitionOnChange
-        >
+    <SiteBrandProvider settings={settings}>
+      <AuthSessionProvider>
+        <NuqsAdapter>
           {children}
           <Toaster position="top-right" />
-        </ThemeProvider>
-      </NuqsAdapter>
-    </AuthSessionProvider>
+        </NuqsAdapter>
+      </AuthSessionProvider>
+    </SiteBrandProvider>
   )
 }

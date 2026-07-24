@@ -51,8 +51,8 @@ export default async function AdminPagePreview({
             {page.featuredImageId ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={`/api/backend/files/${page.featuredImageId}/download?disposition=inline`}
-                alt={page.featuredImage?.name || ""}
+                src={page.featuredImage?.url || ""}
+                alt={page.featuredImage?.fileName || ""}
                 className="aspect-[16/7] w-full object-cover"
               />
             ) : null}

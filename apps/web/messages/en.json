@@ -35,11 +35,9 @@
       "bio": "Link-in-bio",
       "levels": "Earnings",
       "withdraw": "Withdraw",
-      "rewards": "Rewards",
       "referrals": "Referrals",
       "new": "New",
       "loyalty": "Loyalty",
-      "leaderboard": "Leaderboard",
       "account": "Account",
       "support": "Support"
     },
@@ -69,19 +67,18 @@
       "subscription": "Subscription",
       "accountSettings": "Account settings",
       "logout": "Log out",
-      "logoutAll": "Log out all devices",
       "language": "Language"
     },
     "sidebar": {
       "navigation": "Dashboard navigation",
       "open": "Open sidebar",
-      "mobileTitle": "Rekonise menu",
-      "mobileDescription": "Navigate the Rekonise dashboard"
+      "mobileTitle": "{brand} menu",
+      "mobileDescription": "Navigate the {brand} dashboard"
     },
     "footer": {
       "home": "Back to dashboard",
       "navigation": "Footer navigation",
-      "copyright": "© {year} Linkicom. All rights reserved."
+      "copyright": "© {year} {brand}. All rights reserved."
     },
     "search": {
       "open": "Open search",
@@ -191,12 +188,19 @@
       "confirmTerms": "I understand that changing plans affects the visitor experience.",
       "cancel": "Cancel",
       "confirmEnroll": "Confirm plan",
+      "selectionSuccess": "Switched to the {plan} plan.",
+      "selectionFailed": "Unable to change monetization plan.",
+      "emptyTitle": "No monetization plans",
+      "emptyDescription": "There are currently no published monetization plans.",
       "payoutTitle": "Payout rates",
       "payoutDescription": "Estimated desktop and mobile/tablet CPM for your current plan.",
       "country": "Country",
       "desktopCpm": "Desktop CPM",
       "mobileCpm": "Mobile/Tablet CPM",
-      "payoutNote": "Rates are a FE-only illustration and may vary based on traffic quality, location, and advertising policy.",
+      "payoutNote": "Rates are calculated from Base CPM and the current plan's profit share; actual results may vary based on traffic and advertising policy.",
+      "noRates": "The current plan has no configured payout rates.",
+      "allMarkets": "All countries",
+      "unknownMarket": "Unknown country",
       "countries": {
         "unitedStates": "United States",
         "canada": "Canada",
@@ -421,7 +425,7 @@
       "email": "Email",
       "bio": "Short bio",
       "bioValue": "A creator sharing helpful content every day.",
-      "fallbackName": "Linkicom account",
+      "fallbackName": "{brand} account",
       "changeAvatar": "Change profile photo",
       "avatarHint": "JPG, PNG, or WebP. A square image works best.",
       "avatarInvalid": "Please select a valid image file.",
@@ -507,7 +511,7 @@
     },
     "referral": {
       "title": "Referral link",
-      "description": "Share your personal link to invite new creators to Linkicom.",
+      "description": "Share your personal link to invite new creators to {brand}.",
       "copy": "Copy",
       "copied": "Referral link copied.",
       "people": "People referred",
@@ -555,11 +559,6 @@
     }
   },
   "SimplePages": {
-    "leaderboard": {
-      "eyebrow": "Competition",
-      "title": "Leaderboard",
-      "description": "Top creators by revenue, points, and referrals across weekly, monthly, or all-time views."
-    },
     "levels": {
       "eyebrow": "Monetization levels",
       "title": "Earning levels",
@@ -632,7 +631,7 @@
     "referrals": {
       "eyebrow": "Referral",
       "title": "Referrals",
-      "description": "Invite friends to join Linkicom and earn commission after each successful withdrawal.",
+      "description": "Invite friends to join {brand} and earn commission after each successful withdrawal.",
       "share": "Share link",
       "commissionRate": "5% commission",
       "commissionRateValue": "{rate}% commission",
@@ -654,7 +653,7 @@
       "variant": "Variant {number}",
       "embedCode": "Embed HTML",
       "copiedBanner": "Banner code copied",
-      "bannersAlt": "Join Rekonise through a referral link",
+      "bannersAlt": "Join {brand} through a referral link",
       "bannerHeadline": "Share smarter",
       "bannerSubheadline": "Create links, grow your audience, and track performance.",
       "howTitle": "How it works",
@@ -673,18 +672,18 @@
       "recipients": "{count} valid recipients",
       "invalidRecipients": "Enter at least one valid email address.",
       "sendInvites": "Send invites",
-      "emailSubject": "Join me on Rekonise",
-      "emailBody": "I use Rekonise to share links and track performance. Join me here: {link}",
+      "emailSubject": "Join me on {brand}",
+      "emailBody": "I use {brand} to share links and track performance. Join me here: {link}",
       "templateTitle": "Ready-made templates",
       "templateDescription": "Click any template to copy it, then paste it into a post or message.",
       "copiedTemplate": "Template copied",
       "templates": {
         "socialLabel": "Social media",
-        "social": "Looking for a clean way to manage links? Join me on Rekonise: {link}",
+        "social": "Looking for a clean way to manage links? Join me on {brand}: {link}",
         "dmLabel": "DM / WhatsApp",
-        "dm": "Hey, if you often share content or links, try Rekonise. Here is my invite link: {link}",
+        "dm": "Hey, if you often share content or links, try {brand}. Here is my invite link: {link}",
         "newsletterLabel": "Newsletter / Blog",
-        "newsletter": "I use Rekonise to create links, track performance, and grow my community. Sign up free at {link}"
+        "newsletter": "I use {brand} to create links, track performance, and grow my community. Sign up free at {link}"
       },
       "tableTitle": "Your referrals",
       "tableDescription": "Creators who sign up through your referral link and their related commission.",
@@ -706,48 +705,6 @@
       "withdrawalReference": "Withdrawal #{id}",
       "rateApplied": "{rate}% rate",
       "recentEmpty": "No successful withdrawal has generated commission yet."
-    },
-    "rewards": {
-      "description": "Earn bonuses by using the platform: log in daily, grow your clicks, and invite friends.",
-      "earned": "Earned {amount}",
-      "context": "Rewards are credited to your active wallet after you complete the corresponding milestones.",
-      "summary": "Rewards summary",
-      "streak": "Login streak",
-      "day": "day",
-      "totalEarned": "Total earned",
-      "granted": "Rewards granted",
-      "waysTitle": "Ways to earn",
-      "waysDescription": "Three ways to earn bonuses, all credited to your active wallet.",
-      "perDay": "/ day",
-      "yourProgress": "Your progress",
-      "historyTitle": "Rewards history",
-      "historyDescription": "Bonuses that have been credited to your wallet.",
-      "entries": "{count} entries",
-      "dailyLogin": "Daily login",
-      "table": {
-        "type": "Type",
-        "milestone": "Milestone",
-        "amount": "Amount",
-        "date": "Date"
-      },
-      "rewards": {
-        "daily": {
-          "title": "Daily login",
-          "description": "Log in every day to earn a base reward and build your streak. Missing a day resets your streak to zero.",
-          "base": "Base daily reward ($)|$0.01",
-          "tier": "{value} days"
-        },
-        "clicks": {
-          "title": "Click milestones",
-          "description": "Hit lifetime click targets to earn a one-time bonus. Share quality links to reach them faster.",
-          "tier": "{value} clicks"
-        },
-        "referrals": {
-          "title": "Referral milestones",
-          "description": "Invite friends using your referral link. Once they sign up and are confirmed, earn a one-time bonus at each tier.",
-          "tier": "{value} referrals"
-        }
-      }
     },
     "support": {
       "eyebrow": "Support center",
@@ -797,7 +754,7 @@
     "unlockLink": "Complete requirements to unlock",
     "destinationReady": "The destination is ready to open.",
     "destinationProtected": "The destination stays hidden until every requirement is complete.",
-    "protectedBy": "Protected by Linkicom",
+    "protectedBy": "Protected by {brand}",
     "createOwn": "Create your Social Link"
   },
   "CreateLink": {
@@ -1033,6 +990,9 @@
     "fileRequired": "Select a destination file",
     "snippetRequired": "Select a snippet",
     "actionRequired": "At least one action is required",
+    "actionUrlRequired": "Enter a URL for this action",
+    "mostUsed": "Most used",
+    "addUsedAction": "Add {action} for {target}",
     "completeAllActions": "Complete all actions",
     "expiryRequired": "Enter a valid expiry condition",
     "updated": "Link updated successfully",
@@ -1047,7 +1007,6 @@
   },
   "Admin": {
     "brand": {
-      "name": "Linkicom",
       "console": "Control center",
       "admin": "Administrator"
     },

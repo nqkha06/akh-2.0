@@ -28,6 +28,7 @@ export type ReferralsDashboard = {
   referralCode: string;
   referralPath: string;
   referralUrl: string;
+  currency: string;
   commissionRate: string;
   commissionBasis: "net_amount";
   summary: {

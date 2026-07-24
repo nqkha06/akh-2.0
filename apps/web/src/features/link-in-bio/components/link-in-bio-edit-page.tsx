@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 
-import { getBioPages, type BioPageDto } from "@/lib/api-client"
+import { getBioPageById, type BioPageDto } from "@/lib/api-client"
 
 import { LinkInBioEditorError, LinkInBioEditorLoading, LinkInBioEditorPage } from "./link-in-bio-editor-page"
 
@@ -15,10 +15,7 @@ export function LinkInBioEditPage({ bioId }: { bioId: string }) {
     try {
       setLoading(true)
       setError("")
-      const pages = await getBioPages()
-      const current = pages.find((page) => page.id === bioId)
-      if (!current) throw new Error("Không tìm thấy trang Link-in-bio này.")
-      setBio(current)
+      setBio(await getBioPageById(bioId))
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Không thể tải trang Link-in-bio.")
     } finally {

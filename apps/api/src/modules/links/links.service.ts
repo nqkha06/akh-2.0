@@ -75,7 +75,7 @@ export class LinksService {
       throw new BadRequestException("Tiêu đề không được để trống.");
     }
 
-    const destination = await this.resolveDestination(createLinkDto);
+    const destination = await this.resolveDestination(userId, createLinkDto);
     const customAlias = this.normalizeAlias(createLinkDto.customAlias);
     const slug = customAlias || (await this.createUniqueSlug(createLinkDto.title));
 
@@ -202,7 +202,7 @@ export class LinksService {
     }
 
     const existing = await this.findOwnedLink(userId, id);
-    const destination = await this.resolveDestination(updateLinkDto);
+    const destination = await this.resolveDestination(userId, updateLinkDto);
 
     const updated = await this.prisma.$transaction(async (prisma) => {
       await prisma.link.update({
@@ -308,14 +308,26 @@ export class LinksService {
     return link;
   }
 
-  private async resolveDestination(createLinkDto: CreateLinkDto) {
+  private async resolveDestination(
+    userId: number,
+    createLinkDto: CreateLinkDto,
+  ) {
     if (createLinkDto.inputType === "snippet") {
       if (!createLinkDto.selectedSnippet) {
         throw new BadRequestException("Vui lòng chọn snippet.");
       }
 
-      const snippet = await this.prisma.snippet.findUnique({
-        where: { id: createLinkDto.selectedSnippet },
+      const snippetId = Number(createLinkDto.selectedSnippet);
+      if (!Number.isSafeInteger(snippetId) || snippetId <= 0) {
+        throw new BadRequestException("Snippet không tồn tại.");
+      }
+
+      const snippet = await this.prisma.snippet.findFirst({
+        where: {
+          id: snippetId,
+          userId,
+          deletedAt: null,
+        },
       });
       if (!snippet) {
         throw new BadRequestException("Snippet không tồn tại.");
@@ -326,6 +338,7 @@ export class LinksService {
         destinationUrl: null,
         destinationFileId: null,
         destinationSnippetId: snippet.id,
+        destinationSnippetContent: snippet.content,
       };
     }
 
@@ -334,8 +347,12 @@ export class LinksService {
         throw new BadRequestException("Vui lòng chọn file destination.");
       }
 
-      const file = await this.prisma.managedFile.findFirst({
-        where: { id: createLinkDto.selectedFile, deletedAt: null },
+      const fileId = Number(createLinkDto.selectedFile);
+      if (!Number.isSafeInteger(fileId) || fileId <= 0) {
+        throw new BadRequestException("File destination không tồn tại.");
+      }
+      const file = await this.prisma.memberFile.findFirst({
+        where: { id: fileId, userId, deletedAt: null, status: "completed" },
       });
       if (!file) {
         throw new BadRequestException("File destination không tồn tại.");
@@ -346,6 +363,7 @@ export class LinksService {
         destinationUrl: null,
         destinationFileId: file.id,
         destinationSnippetId: null,
+        destinationSnippetContent: null,
       };
     }
 
@@ -354,6 +372,7 @@ export class LinksService {
       destinationUrl: createLinkDto.destinationUrl.trim(),
       destinationFileId: null,
       destinationSnippetId: null,
+      destinationSnippetContent: null,
     };
   }
 
@@ -514,7 +533,10 @@ export class LinksService {
     const expiresAt = link.expiresAt;
     const destinationUrl =
       link.destinationType === "snippet"
-        ? link.destinationSnippet?.content || link.destinationUrl || ""
+        ? link.destinationSnippetContent ||
+          link.destinationSnippet?.content ||
+          link.destinationUrl ||
+          ""
         : link.destinationType === "file"
           ? this.toFileDestinationUrl(link)
           : link.destinationUrl || "";
@@ -526,8 +548,12 @@ export class LinksService {
       destinationUrl,
       title: link.title,
       inputType: link.destinationType,
-      selectedSnippet: link.destinationSnippetId,
-      selectedFile: link.destinationFileId,
+      selectedSnippet:
+        link.destinationSnippetId === null
+          ? null
+          : String(link.destinationSnippetId),
+      selectedFile:
+        link.destinationFileId === null ? null : String(link.destinationFileId),
       subtitle: link.subtitle,
       customAlias: link.slug,
       coverImageUrl: appearance.coverImageUrl,
@@ -555,12 +581,12 @@ export class LinksService {
 
   private toFileDestinationUrl(link: LinkWithRelations) {
     if (link.destinationFile) {
-      return `/api/backend/files/${encodeURIComponent(link.destinationFile.id)}/download`;
+      return `/api/public/files/${encodeURIComponent(link.slug)}`;
     }
 
     const destinationUrl = link.destinationUrl || "";
     const legacyPath = this.extractLegacyFilePath(destinationUrl);
-    return legacyPath ? `/api/backend${legacyPath.slice(4)}` : destinationUrl;
+    return legacyPath ? `/api/public/files/${encodeURIComponent(link.slug)}` : destinationUrl;
   }
 
   private async resolveMonetizationRedirect(

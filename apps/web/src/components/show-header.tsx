@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight, Home, Link2, Menu, Moon, Plus, Share2, Sun } from "lucide-react";
+import { ArrowRight, Home, Menu, Moon, Plus, Share2, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import {
+  SiteBrandLink,
+  SiteBrandMark,
+  SiteBrandName,
+} from "@/components/site-brand";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,12 +96,11 @@ export function ShowHeader({ onShare, variant = "default" }: { onShare?: () => v
     return (
       <header className="border-b border-border bg-background/90 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-[#010102]/90 sm:px-6">
         <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between gap-4">
-          <Link href="/" aria-label="Linkicom home" className="flex min-w-0 items-center gap-2.5 text-foreground dark:text-[#f7f8f8]">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[#5e6ad2] text-white">
-              <Link2 className="size-4" />
-            </span>
-            <span className="truncate text-sm font-semibold tracking-[-0.02em]">Linkicom</span>
-          </Link>
+          <SiteBrandLink
+            className="text-foreground dark:text-[#f7f8f8]"
+            logoClassName="size-8 rounded-md"
+            nameClassName="text-sm font-semibold tracking-[-0.02em]"
+          />
 
           <div className="flex items-center gap-2">
             <PublicThemeSelector variant="linear" />
@@ -130,23 +134,12 @@ export function ShowHeader({ onShare, variant = "default" }: { onShare?: () => v
   return (
     <header className="sticky top-3 z-40 px-3 pt-3 text-slate-950 dark:text-white sm:top-5 sm:px-6 sm:pt-5">
       <div className="mx-auto flex min-h-16 max-w-5xl items-center justify-between gap-3  p-2  sm:min-h-20 sm:p-3">
-        <Link
+        <SiteBrandLink
           href="/member"
-          aria-label="STU home"
           className="group flex h-12 min-w-0 items-center rounded-full border border-black/10 bg-white/80 pr-3 shadow-sm backdrop-blur-xl transition-colors hover:bg-white dark:border-white/20 dark:bg-white/10 dark:shadow-none dark:hover:bg-white/15 sm:h-14 sm:pr-5"
-        >
-          <span className="ml-1 grid size-10 shrink-0 place-items-center rounded-full bg-white/90 text-slate-950 shadow-sm transition-transform group-hover:scale-[1.03] sm:size-12">
-            <Link2 className="size-5" />
-          </span>
-          <span className="ml-3 min-w-0">
-            <span className="block whitespace-nowrap text-base font-black tracking-tight sm:text-xl">
-              Link4Sub
-            </span>
-            {/* <span className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-white/65 md:block">
-              .com
-            </span> */}
-          </span>
-        </Link>
+          logoClassName="ml-1 size-10 rounded-full bg-white/90 shadow-sm transition-transform group-hover:scale-[1.03] sm:size-12"
+          nameClassName="ml-0.5 whitespace-nowrap text-base font-black tracking-tight sm:text-xl"
+        />
 
         {/* <nav
           aria-label="Public page navigation"
@@ -208,10 +201,8 @@ export function ShowHeader({ onShare, variant = "default" }: { onShare?: () => v
             >
               <SheetHeader className="border-b">
                 <SheetTitle className="flex items-center gap-3 text-left text-xl tracking-tight">
-                  <span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-white">
-                    <Link2 className="size-5" />
-                  </span>
-                  STU Links
+                  <SiteBrandMark className="size-10 rounded-xl" />
+                  <SiteBrandName />
                 </SheetTitle>
               </SheetHeader>
 

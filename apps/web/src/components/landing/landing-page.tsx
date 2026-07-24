@@ -53,6 +53,10 @@ import { useState } from "react";
 import Image from "next/image";
 import styles from "@/app/page.module.css";
 import type { PublicSiteSettings } from "@/features/site-settings/types";
+import type {
+  PublicMenu,
+  WebsiteMenuLocation,
+} from "@/features/admin-menus/types";
 
 const easing = [0.22, 1, 0.36, 1] as const;
 
@@ -112,25 +116,53 @@ function Logo({ settings }: { settings: PublicSiteSettings }) {
   );
 }
 
-export function Navbar({ settings }: { settings: PublicSiteSettings }) {
+export function Navbar({
+  settings,
+  menus,
+}: {
+  settings: PublicSiteSettings;
+  menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+}) {
   const [open, setOpen] = useState(false);
-  const links = [
-    ["How it works", "#how-it-works"],
-    ["Features", "#features"],
-    ["Creators", "#creators"],
-    ["Pricing", "#pricing"],
+  const fallbackLinks = [
+    { id: -1, label: "How it works", href: "#how-it-works", target: "_self" as const, rel: null },
+    { id: -2, label: "Features", href: "#features", target: "_self" as const, rel: null },
+    { id: -3, label: "Creators", href: "#creators", target: "_self" as const, rel: null },
+    { id: -4, label: "Pricing", href: "#pricing", target: "_self" as const, rel: null },
   ];
+  const links = menus?.["header-primary"]?.items.length
+    ? menus["header-primary"].items
+    : fallbackLinks;
+  const mobileLinks = menus?.["mobile-primary"]?.items.length
+    ? menus["mobile-primary"].items
+    : links;
+  const actions = menus?.["header-actions"]?.items.length
+    ? menus["header-actions"].items
+    : [
+        { id: -5, label: "Sign in", href: "/login", target: "_self" as const, rel: null },
+        { id: -6, label: "Start creating", href: "/register", target: "_self" as const, rel: null },
+      ];
 
   return (
     <header className={styles.navbar}>
       <nav className={styles.navInner} aria-label="Main navigation">
         <Logo settings={settings} />
         <div className={styles.navLinks}>
-          {links.map(([label, href]) => <a key={label} href={href}>{label}</a>)}
+          {links.map((item) => item.href ? <a key={item.id} href={item.href} target={item.target} rel={item.rel ?? undefined}>{item.label}</a> : null)}
         </div>
         <div className={styles.navActions}>
-          <a className={styles.textButton} href="/login">Sign in</a>
-          <a className={styles.smallPrimary} href="/register">Start creating <ArrowRight size={15} /></a>
+          {actions.map((item, index) => item.href ? (
+            <a
+              className={index === actions.length - 1 ? styles.smallPrimary : styles.textButton}
+              href={item.href}
+              key={item.id}
+              target={item.target}
+              rel={item.rel ?? undefined}
+            >
+              {item.label}
+              {index === actions.length - 1 ? <ArrowRight size={15} /> : null}
+            </a>
+          ) : null)}
         </div>
         <button className={styles.menuButton} onClick={() => setOpen(!open)} aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open}>
           {open ? <X size={21} /> : <Menu size={21} />}
@@ -139,9 +171,8 @@ export function Navbar({ settings }: { settings: PublicSiteSettings }) {
       <AnimatePresence>
         {open && (
           <motion.div className={styles.mobileMenu} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-            {links.map(([label, href]) => <a key={label} href={href} onClick={() => setOpen(false)}>{label}</a>)}
-            <a href="/login" onClick={() => setOpen(false)}>Sign in</a>
-            <a className={styles.smallPrimary} href="/register">Start creating <ArrowRight size={15} /></a>
+            {mobileLinks.map((item) => item.href ? <a key={item.id} href={item.href} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}</a> : null)}
+            {actions.map((item, index) => item.href ? <a className={index === actions.length - 1 ? styles.smallPrimary : undefined} href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}{index === actions.length - 1 ? <ArrowRight size={15} /> : null}</a> : null)}
           </motion.div>
         )}
       </AnimatePresence>
@@ -524,13 +555,22 @@ export function FinalCTA() {
   );
 }
 
-export function Footer({ settings }: { settings: PublicSiteSettings }) {
-  const columns = [
-    ["Product", "Features", "Creator pages", "Unlock actions", "Analytics"],
-    ["Resources", "Help center", "Creator guide", "Examples", "Status"],
-    ["Company", "About", "Contact", "Careers", "Brand"],
-    ["Legal", "Privacy", "Terms", "Acceptable use", "Cookies"],
-  ];
+export function Footer({
+  settings,
+  menus,
+}: {
+  settings: PublicSiteSettings;
+  menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+}) {
+  const managedColumns = menus?.["footer-primary"]?.items;
+  const columns = managedColumns?.length
+    ? managedColumns
+    : [
+        { id: -20, label: "Product", children: [{ id: -21, label: "Features", href: "#features", target: "_self" as const, rel: null }] },
+        { id: -22, label: "Resources", children: [{ id: -23, label: "Help center", href: "/", target: "_self" as const, rel: null }] },
+        { id: -24, label: "Company", children: [{ id: -25, label: "Contact", href: "/", target: "_self" as const, rel: null }] },
+      ];
+  const legalItems = menus?.["footer-legal"]?.items ?? [];
   return (
     <footer className={styles.footer}>
       <div className={`${styles.container} ${styles.footerGrid}`}>
@@ -552,17 +592,46 @@ export function Footer({ settings }: { settings: PublicSiteSettings }) {
             </div>
           ) : null}
         </div>
-        {columns.map(([title, ...links]) => <div className={styles.footerColumn} key={title}><strong>{title}</strong>{links.map((link) => <a href="#top" key={link}>{link}</a>)}</div>)}
+        {columns.map((column) => (
+          <div className={styles.footerColumn} key={column.id}>
+            <strong>{column.label}</strong>
+            {column.children.map((item) =>
+              item.href ? (
+                <a href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined}>
+                  {item.label}
+                </a>
+              ) : null,
+            )}
+          </div>
+        ))}
+        {legalItems.length ? (
+          <div className={styles.footerColumn}>
+            <strong>{menus?.["footer-legal"]?.title || "Legal"}</strong>
+            {legalItems.map((item) =>
+              item.href ? (
+                <a href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined}>
+                  {item.label}
+                </a>
+              ) : null,
+            )}
+          </div>
+        ) : null}
       </div>
       <div className={`${styles.container} ${styles.footerBottom}`}><span>© 2026 {settings.siteName}. All rights reserved.</span><span>{settings.siteTagline || "Built for creators, from first click to real connection."}</span></div>
     </footer>
   );
 }
 
-export function LandingPage({ settings }: { settings: PublicSiteSettings }) {
+export function LandingPage({
+  settings,
+  menus,
+}: {
+  settings: PublicSiteSettings;
+  menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+}) {
   return (
     <main className={styles.page}>
-      <Navbar settings={settings} />
+      <Navbar menus={menus} settings={settings} />
       <HeroSection />
       <IntegrationStrip />
       <ProcessTimeline />
@@ -571,7 +640,7 @@ export function LandingPage({ settings }: { settings: PublicSiteSettings }) {
       <SocialProofSection />
       <UseCaseTabs />
       <FinalCTA />
-      <Footer settings={settings} />
+      <Footer menus={menus} settings={settings} />
     </main>
   );
 }

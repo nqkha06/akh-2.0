@@ -9,11 +9,15 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AdminAuthorizationProvider } from "@/features/admin-authorization/components/admin-authorization-provider"
+import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server"
 import { requireAdmin } from "@/lib/auth/guards"
 
-export const metadata: Metadata = {
-  title: "Admin Console — Linkicom",
-  description: "Không gian vận hành và quản trị hệ thống Linkicom.",
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSiteSettings()
+  return {
+    title: `Admin Console — ${settings.siteName}`,
+    description: `Không gian vận hành và quản trị hệ thống ${settings.siteName}.`,
+  }
 }
 
 export default async function AdminLayout({

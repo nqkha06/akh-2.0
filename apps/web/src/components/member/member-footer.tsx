@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider"
 
 const footerLinks = [
   // { href: "/member/links", labelKey: "nav.links" },
@@ -13,6 +14,7 @@ const footerLinks = [
 
 export function MemberFooter() {
   const t = useTranslations("Dashboard")
+  const brand = useSiteBrand()
 
   return (
     <footer className="mt-auto bg-background/80 px-4 py-5 sm:px-6 lg:px-8">
@@ -21,6 +23,7 @@ export function MemberFooter() {
         <p className="truncate text-sm text-muted-foreground">
           {t("footer.copyright", {
             year: new Date().getFullYear(),
+            brand: brand.siteName,
           })}
         </p>
       </div>

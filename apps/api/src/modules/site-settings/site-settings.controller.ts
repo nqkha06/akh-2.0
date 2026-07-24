@@ -35,7 +35,7 @@ export class SiteSettingsController {
 
   @Patch("admin/settings/appearance")
   @UseGuards(JwtAccessGuard, PermissionsGuard)
-  @Permissions("settings.update")
+  @Permissions("settings.update", "admin-media.read")
   update(
     @Req() request: AdminRequest,
     @Body() dto: UpdateWebsiteSettingsDto,

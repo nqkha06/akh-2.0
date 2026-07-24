@@ -75,6 +75,7 @@ export function getOverviewMockData(range: OverviewDateRange): OverviewData {
         label: "Doanh thu",
         value: Math.round(10_450_000 * multiplier),
         format: "currency",
+        currency: "VND",
         change: 3.6,
         trend: "down",
         hint: "Doanh thu được ghi nhận từ nội dung trong kỳ đã chọn.",
@@ -109,16 +110,16 @@ export function getOverviewMockData(range: OverviewDateRange): OverviewData {
       },
     ],
     topContent: [
-      { id: "preset-lightroom", name: "Preset Lightroom", href: "/member/links#preset-lightroom", type: "Unlock link", status: "active", visits: Math.round(8_420 * multiplier), unlocks: Math.round(3_578 * multiplier), conversion: 42.5, revenue: Math.round(4_820_000 * multiplier) },
-      { id: "creator-hub", name: "Creator Resource Hub", href: "/member/bio", type: "Link-in-bio", status: "active", visits: Math.round(6_160 * multiplier), unlocks: Math.round(2_218 * multiplier), conversion: 36, revenue: Math.round(2_410_000 * multiplier) },
-      { id: "discord-unlock", name: "Discord Unlock", href: "/member/links#discord-unlock", type: "Social link", status: "active", visits: Math.round(4_892 * multiplier), unlocks: Math.round(2_054 * multiplier), conversion: 42, revenue: Math.round(1_920_000 * multiplier) },
-      { id: "video-template", name: "Video Template Launch", href: "/member/files", type: "File", status: "paused", visits: Math.round(3_870 * multiplier), unlocks: Math.round(1_018 * multiplier), conversion: 26.3, revenue: Math.round(1_300_000 * multiplier) },
-      { id: "editing-guide", name: "Editing Guide 2026", href: "/member/links#editing-guide", type: "Unlock link", status: "draft", visits: Math.round(1_460 * multiplier), unlocks: Math.round(533 * multiplier), conversion: 36.5, revenue: 0 },
+      { id: "preset-lightroom", name: "Preset Lightroom", href: "/member/links#preset-lightroom", type: "Unlock link", status: "active", visits: Math.round(8_420 * multiplier), unlocks: Math.round(3_578 * multiplier), conversion: 42.5, revenue: Math.round(4_820_000 * multiplier), revenueCurrency: "VND" },
+      { id: "creator-hub", name: "Creator Resource Hub", href: "/member/bio", type: "Link-in-bio", status: "active", visits: Math.round(6_160 * multiplier), unlocks: Math.round(2_218 * multiplier), conversion: 36, revenue: Math.round(2_410_000 * multiplier), revenueCurrency: "VND" },
+      { id: "discord-unlock", name: "Discord Unlock", href: "/member/links#discord-unlock", type: "Social link", status: "active", visits: Math.round(4_892 * multiplier), unlocks: Math.round(2_054 * multiplier), conversion: 42, revenue: Math.round(1_920_000 * multiplier), revenueCurrency: "VND" },
+      { id: "video-template", name: "Video Template Launch", href: "/member/files", type: "File", status: "paused", visits: Math.round(3_870 * multiplier), unlocks: Math.round(1_018 * multiplier), conversion: 26.3, revenue: Math.round(1_300_000 * multiplier), revenueCurrency: "VND" },
+      { id: "editing-guide", name: "Editing Guide 2026", href: "/member/links#editing-guide", type: "Unlock link", status: "draft", visits: Math.round(1_460 * multiplier), unlocks: Math.round(533 * multiplier), conversion: 36.5, revenue: 0, revenueCurrency: "VND" },
     ],
     recentActivity: [
       { id: "a1", kind: "unlock", content: "Link Preset Lightroom nhận được 128 lượt mở khóa", time: "2 phút trước", href: "/member/links#preset-lightroom" },
       { id: "a2", kind: "published", content: "Bạn đã xuất bản trang Link-in-bio mới", time: "36 phút trước", href: "/member/bio" },
-      { id: "a3", kind: "payment", content: "Khoản thanh toán 1.200.000₫ đã được xử lý", time: "2 giờ trước", href: "/member/withdraw" },
+      { id: "a3", kind: "payment", content: "Khoản thanh toán đã được xử lý", amount: 1_200_000, currency: "VND", time: "2 giờ trước", href: "/member/withdraw" },
       { id: "a4", kind: "milestone", content: "Discord Unlock đạt tỷ lệ chuyển đổi 42%", time: "Hôm qua", href: "/member/links#discord-unlock" },
     ],
     quickActions: [
@@ -129,4 +130,3 @@ export function getOverviewMockData(range: OverviewDateRange): OverviewData {
     ],
   };
 }
-

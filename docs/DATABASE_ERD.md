@@ -822,3 +822,92 @@ Tên entity đề xuất dùng PascalCase số ít nhưng luôn khai báo `@Enti
 | Laravel queue/cache/session/migrations                                          | Không port trừ khi có yêu cầu tương thích ngược  |
 | `questions`, `user_addresses`, `meta_boxes`, `widgets`                          | Xác nhận usage trước khi port                    |
 | `withdrawal_status_histories`                                                   | Không port                                       |
+
+## 10. Bổ sung hiện hành: user meta và tiền tệ
+
+Migration `20260724010000_add_user_meta_and_currencies` bổ sung hai bảng cho
+ứng dụng NestJS/Prisma hiện tại:
+
+```mermaid
+erDiagram
+  users ||--o{ user_meta : stores
+
+  users {
+    int id PK
+  }
+
+  user_meta {
+    int id PK
+    int user_id FK
+    string key
+    string value_json
+    string value_type
+    datetime created_at
+    datetime updated_at
+  }
+
+  currencies {
+    int id PK
+    string code UK
+    string name
+    string symbol
+    decimal exchange_rate
+    int decimal_digits
+    boolean is_base
+    boolean is_default
+    boolean is_active
+    int sort_order
+    datetime created_at
+    datetime updated_at
+  }
+```
+
+- `user_meta` có unique `(user_id, key)`; lựa chọn tiền tệ dùng key
+  `preferences.currency`.
+- Giá trị meta được lưu dưới dạng JSON có type marker, không dùng cho dữ liệu
+  kế toán như balance, ledger hoặc withdrawal.
+- `currencies.exchange_rate` là số đơn vị tiền tệ đích tương ứng với `1 USD`.
+  USD là tiền tệ cơ sở với tỷ giá cố định `1`.
+- Chỉ có một tiền tệ cơ sở và một tiền tệ mặc định, được bảo vệ bởi partial
+  unique index của SQLite và transaction ở service.
+- Dữ liệu mặc định gồm USD và VND (`1 USD = 22000 VND`); Admin có thể sửa tỷ
+  giá VND sau đó.
+
+## 11. Bổ sung hiện hành: Link-in-bio dạng JSON document
+
+Migration `20260724020000_refactor_bio_pages_json` chuyển cấu trúc
+`BioPage` cũ sang bảng `bio_pages` có ownership và soft delete:
+
+```mermaid
+erDiagram
+  users ||--o{ bio_pages : owns
+
+  bio_pages {
+    string id PK
+    int user_id FK
+    string slug UK
+    string name
+    string title
+    string status
+    text content_json
+    text appearance_json
+    int views
+    int clicks
+    datetime published_at
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+```
+
+- `content_json` chứa `socialLinks`, `customLinks` và `widgets`. Mỗi custom
+  link có `isVisible`; không còn danh sách `hiddenLinksJson` tách rời.
+- `appearance_json` chứa toàn bộ cấu hình giao diện.
+- Tất cả API quản trị theo Member đều lọc bằng `user_id` và `deleted_at`.
+- Public API chỉ trả record `published`, chưa xóa và đã có owner.
+- Dữ liệu legacy chỉ được tự gán owner nếu database có đúng một user. Nếu
+  không xác định được owner, record được giữ lại với `user_id = NULL` và
+  chuyển về `draft` để tránh lộ hoặc gán nhầm dữ liệu.
+- Không tạo column `version`. Flow hiện tại không có autosave, collaborative
+  editing hoặc version history; `updated_at` có thể dùng làm concurrency token
+  nếu cần chống ghi đè sau này.

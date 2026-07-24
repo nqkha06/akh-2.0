@@ -314,11 +314,20 @@ export class LanguagesService implements OnModuleInit {
   }
 
   private async assertLocaleIsUnused(locale: string) {
-    const [levels, paymentMethods] = await this.prisma.$transaction([
+    const [levels, paymentMethods, menuTranslations, menuItemTranslations] =
+      await this.prisma.$transaction([
       this.prisma.monetizationLevelTranslation.count({ where: { locale } }),
       this.prisma.paymentMethodTranslation.count({ where: { locale } }),
+      this.prisma.websiteMenuTranslation.count({ where: { locale } }),
+      this.prisma.websiteMenuItemTranslation.count({ where: { locale } }),
     ]);
-    if (levels + paymentMethods > 0) {
+    if (
+      levels +
+        paymentMethods +
+        menuTranslations +
+        menuItemTranslations >
+      0
+    ) {
       throw new ConflictException(
         "Ngôn ngữ đã có nội dung dịch. Hãy tắt thay vì xóa hoặc đổi locale.",
       );

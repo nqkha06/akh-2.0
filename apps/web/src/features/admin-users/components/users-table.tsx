@@ -5,7 +5,6 @@ import {
   Ban,
   CheckCircle2,
   LockKeyhole,
-  Plus,
   Search,
   Shield,
   Trash2,
@@ -13,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -50,13 +48,11 @@ import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 export function UsersTable({
   data,
   pageCount,
-  total,
   accessOptions,
 }: UsersTableData & { accessOptions: UsersAccessOptions }) {
   const { data: session } = useSession();
   const currentUserId = Number(session?.user?.id || 0);
   const permissions = useAdminPermissions();
-  const canCreate = permissions.includes("users.create");
   const canUpdate = permissions.includes("users.update");
   const canDelete = permissions.includes("users.delete");
   const canManageStatus = permissions.includes("users.manage-status");
@@ -151,25 +147,6 @@ export function UsersTable({
 
   return (
     <div className="flex min-w-0 w-full flex-col gap-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Identity registry
-          </p>
-          <h2 className="mt-1 text-lg font-semibold">Danh sách Users</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total.toLocaleString("vi-VN")} tài khoản theo bộ lọc hiện tại.
-          </p>
-        </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/admin/users/create">
-              <Plus /> Tạo User
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-
       <DataTable
         table={table}
         emptyMessage="Không tìm thấy người dùng phù hợp."

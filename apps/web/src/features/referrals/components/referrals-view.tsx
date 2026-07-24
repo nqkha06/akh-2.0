@@ -25,17 +25,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { ReferralsDashboard } from "@/features/referrals/types";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 import { cn } from "@/lib/utils";
 
 export function ReferralsView({ data }: { data: ReferralsDashboard }) {
   const t = useTranslations("SimplePages.referrals");
+  const brand = useSiteBrand();
   const locale = useLocale();
+  const { formatCurrency } = useMemberCurrency();
   const money = (value: string) =>
-    new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(Number(value));
+    formatCurrency(value, { sourceCurrency: data.currency });
   const date = (value: string | null) =>
     value
       ? new Intl.DateTimeFormat(locale, {
@@ -77,7 +77,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
-        description={t("description")}
+        description={t("description", { brand: brand.siteName })}
         action={
           <Badge className="h-9 gap-1.5 bg-emerald-600 px-3 text-sm hover:bg-emerald-600">
             <BadgeDollarSign className="size-4" />

@@ -28,7 +28,7 @@ const typeOptions: Array<{ value: FileTypeFilter; label: string }> = [
   { value: "all", label: "Tất cả loại" }, { value: "image", label: "Hình ảnh" }, { value: "video", label: "Video" }, { value: "audio", label: "Âm thanh" }, { value: "document", label: "Tài liệu" }, { value: "archive", label: "File nén" }, { value: "other", label: "Khác" },
 ];
 const statusOptions: Array<{ value: FileStatusFilter; label: string }> = [
-  { value: "all", label: "Tất cả trạng thái" }, { value: "ready", label: "Sẵn sàng" }, { value: "processing", label: "Đang xử lý" }, { value: "failed", label: "Upload thất bại" }, { value: "private", label: "Riêng tư" }, { value: "public", label: "Công khai" },
+  { value: "all", label: "Tất cả trạng thái" }, { value: "ready", label: "Sẵn sàng" }, { value: "processing", label: "Đang xử lý" }, { value: "failed", label: "Upload thất bại" },
 ];
 const sortOptions: Array<{ value: FileSortOption; label: string }> = [
   { value: "newest", label: "Mới tải lên" }, { value: "oldest", label: "Cũ nhất" }, { value: "name-asc", label: "Tên A–Z" }, { value: "name-desc", label: "Tên Z–A" }, { value: "size-desc", label: "Dung lượng lớn nhất" }, { value: "size-asc", label: "Dung lượng nhỏ nhất" },

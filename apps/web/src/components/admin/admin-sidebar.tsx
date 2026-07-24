@@ -13,6 +13,9 @@ import {
   IconFileDescription,
   IconUsers,
   IconSettings,
+  IconPhoto,
+  IconMenu2,
+  IconLifebuoy,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -28,7 +31,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu"
-import { ChevronsUpDown, Lock } from "lucide-react"
+import { ChevronsUpDown } from "lucide-react"
+import { SiteBrandMark, SiteBrandName } from "@/components/site-brand"
 
 const data = {
   navMain: [
@@ -57,6 +61,18 @@ const data = {
       permission: "pages.read",
     },
     {
+      title: "Admin Media",
+      url: "/admin/media",
+      icon: IconPhoto,
+      permission: "admin-media.read",
+    },
+    {
+      title: "Website Menus",
+      url: "/admin/menus",
+      icon: IconMenu2,
+      permission: "menus.read",
+    },
+    {
       title: "Monetization Levels",
       url: "/admin/monetization-levels",
       icon: IconMoneybag,
@@ -75,16 +91,22 @@ const data = {
       permission: "withdrawals.read",
     },
     {
+      title: "Member Support",
+      url: "/admin/support",
+      icon: IconLifebuoy,
+      permission: "support.read",
+    },
+    {
       title: "Languages",
       url: "/admin/languages",
       icon: IconLanguage,
       permission: "languages.read",
     },
     {
-      title: "Website Settings",
-      url: "/admin/settings/appearance",
+      title: "Settings",
+      url: "/admin/settings",
       icon: IconSettings,
-      permission: "settings.read",
+      permissions: ["settings.read", "currencies.read"],
     },
     {
       title: "Roles & Permissions",
@@ -102,7 +124,7 @@ export function AdminSidebar({
   const permissions = useAdminPermissions()
   const user = {
     name: session?.user?.name || "Administrator",
-    email: session?.user?.email || "admin@linkicom.local",
+    email: session?.user?.email || "",
     avatar: session?.user?.image || "",
   }
 
@@ -117,11 +139,9 @@ export function AdminSidebar({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Lock className="size-4" />
-              </div>
+              <SiteBrandMark className="size-8 border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground" />
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Link4Sub</span>
+                <SiteBrandName className="font-medium" />
                 <span className="">v1</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
@@ -147,9 +167,17 @@ export function AdminSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain
-          items={data.navMain.filter((item) =>
-            permissions.includes(item.permission),
-          )}
+          items={data.navMain.filter((item) => {
+            const required =
+              "permissions" in item && item.permissions
+                ? item.permissions
+                : "permission" in item && item.permission
+                  ? [item.permission]
+                  : []
+            return required.some((permission) =>
+              permissions.includes(permission),
+            )
+          })}
         />
       </SidebarContent>
       <SidebarFooter>

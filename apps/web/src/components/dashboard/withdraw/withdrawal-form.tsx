@@ -10,10 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import type { WithdrawalController } from "./use-withdrawal-controller";
-import { formatCurrency } from "./use-withdrawal-controller";
 
 export function AmountInput({ controller }: { controller: WithdrawalController }) {
-  const { data, amountInput, validationError, submitting, setAmount, setMaximumAmount } = controller;
+  const { data, amountInput, validationError, submitting, setAmount, setMaximumAmount, formatCurrency } = controller;
   if (!data) return null;
   return (
     <div className="grid gap-2">
@@ -32,7 +31,7 @@ export function AmountInput({ controller }: { controller: WithdrawalController }
           onChange={(event) => setAmount(event.target.value)}
           className="h-12 pr-12 text-base font-medium tabular-nums"
         />
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-muted-foreground">₫</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs font-medium text-muted-foreground">{data.currency}</span>
       </div>
       <div id="withdrawal-amount-help" className="flex min-h-8 items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>Số dư khả dụng: <span className="font-medium tabular-nums text-foreground">{formatCurrency(data.availableBalance)}</span></span>
@@ -44,7 +43,7 @@ export function AmountInput({ controller }: { controller: WithdrawalController }
 }
 
 export function WithdrawalBreakdown({ controller }: { controller: WithdrawalController }) {
-  const { amount, estimate, estimateLoading } = controller;
+  const { amount, estimate, estimateLoading, formatCurrency } = controller;
   return (
     <div className="space-y-3 text-sm">
       <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Số tiền yêu cầu</span><span className="font-medium tabular-nums">{formatCurrency(amount)}</span></div>
@@ -59,7 +58,7 @@ export function WithdrawalBreakdown({ controller }: { controller: WithdrawalCont
 }
 
 export function WithdrawalForm({ controller }: { controller: WithdrawalController }) {
-  const { data, selectedMethod, selectedMethodId, submitting, submitError, formEligible, formValid, setSelectedMethodId, requestConfirmation } = controller;
+  const { data, selectedMethod, selectedMethodId, submitting, submitError, formEligible, formValid, setSelectedMethodId, requestConfirmation, formatCurrency } = controller;
   if (!data) return null;
 
   if (!data.payoutMethods.length) {

@@ -4,7 +4,7 @@
 import { ImageIcon, ImagePlus, Link2, PlayCircle, RefreshCw, Video } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { getFileDownloadUrl, getFiles, type ManagedFileDto } from "@/lib/api-client";
+import { getFilePreviewUrl, getFiles, type ManagedFileDto } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,14 +103,14 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
 
   const filteredImages = useMemo(() => backgroundImages.filter((image) => imageCategory === "All" || image.categories.some((category) => category === imageCategory)), [imageCategory]);
   const filteredVideos = useMemo(() => backgroundVideos.filter((video) => videoCategory === "All" || video.categories.some((category) => category === videoCategory)), [videoCategory]);
-  const backgroundFiles = files.filter((file) => file.isPublic && (isImageFile(file) || isVideoFile(file)));
+  const backgroundFiles = files.filter((file) => isImageFile(file) || isVideoFile(file));
   const youtubeEmbedUrl = getYouTubeEmbedUrl(youtubeUrl);
 
   async function loadFiles() {
     try {
       setFilesLoading(true);
       setFilesError("");
-      const response = await getFiles({ sort: "date", direction: "desc" });
+      const response = await getFiles({ sort: "date", direction: "desc", limit: 100 });
       setFiles(response.items);
     } catch (error) {
       setFilesError(error instanceof Error ? error.message : "Không tải được file media.");
@@ -162,13 +162,13 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
         </TabsContent>
 
         <TabsContent value="files" className="mt-4 space-y-3">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Ảnh và video public có thể dùng làm nền Bio.</p><Button type="button" variant="outline" size="icon-sm" onClick={() => void loadFiles()} disabled={filesLoading} aria-label="Tải lại file media"><RefreshCw className={filesLoading ? "animate-spin" : ""} /></Button></div>
+          <div className="flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Ảnh và video trong kho file có thể dùng làm nền Bio.</p><Button type="button" variant="outline" size="icon-sm" onClick={() => void loadFiles()} disabled={filesLoading} aria-label="Tải lại file media"><RefreshCw className={filesLoading ? "animate-spin" : ""} /></Button></div>
           {filesLoading ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="aspect-square" />)}</div> : null}
           {filesError ? <p className="text-sm text-destructive">{filesError}</p> : null}
-          {!filesLoading && !filesError && backgroundFiles.length === 0 ? <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">Chưa có file ảnh hoặc video công khai.</p> : null}
+          {!filesLoading && !filesError && backgroundFiles.length === 0 ? <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">Chưa có file ảnh hoặc video.</p> : null}
           {!filesLoading && backgroundFiles.length > 0 ? <div className="grid max-h-90 grid-cols-2 gap-3 overflow-y-auto pr-2 sm:grid-cols-3">{backgroundFiles.map((file) => {
             const isVideo = isVideoFile(file);
-            const url = getFileDownloadUrl(file);
+            const url = getFilePreviewUrl(file);
             const type: BackgroundMediaType = isVideo ? "video" : "image";
             const selected = selectedMedia?.id === `file:${file.id}`;
             return <Button key={file.id} type="button" variant="outline" aria-pressed={selected} className="relative aspect-square h-auto w-full overflow-hidden p-0" onClick={() => onMediaSelect({ id: `file:${file.id}`, type, url })}>{isVideo ? <video src={url} muted loop playsInline preload="metadata" onMouseEnter={(event) => void event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} className="size-full object-cover" /> : <img src={url} alt={file.name} className="size-full object-cover" />}<span className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-transparent" /><span className="absolute left-2 top-2"><Badge variant="secondary">{isVideo ? "Video" : "Ảnh"}</Badge></span><span className="absolute inset-x-2 bottom-2 truncate text-left text-xs font-medium text-white">{file.name}</span>{selected ? <Badge className="absolute top-2 right-2">Đã chọn</Badge> : null}</Button>;

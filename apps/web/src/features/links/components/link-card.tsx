@@ -46,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 import { deleteLink, updateLinkStatus, type LinkDto } from "@/lib/api-client";
 
 type LinkCardProps = {
@@ -58,6 +59,7 @@ type QrErrorCorrection = "L" | "M" | "Q" | "H";
 export function LinkCard({ link, onChanged }: LinkCardProps) {
     const t = useTranslations("LinkCard");
     const commonT = useTranslations("Common");
+    const { formatCurrency } = useMemberCurrency();
     const isActive = link.status === "active";
     const statusLabel = isActive
         ? t("active")
@@ -444,7 +446,7 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                                         {[
                                             [t("clicks"), "0"],
                                             [t("visitors"), "0"],
-                                            [t("earnings"), "$0.0000"],
+                                            [t("earnings"), formatCurrency(0)],
                                             [t("status"), statusLabel],
                                         ].map(([label, value]) => (
                                             <div

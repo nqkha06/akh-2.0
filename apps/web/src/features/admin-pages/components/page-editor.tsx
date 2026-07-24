@@ -17,8 +17,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminMediaPicker } from "@/components/admin-media/admin-media-picker";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
-import { ManagedImagePicker } from "@/components/media/managed-image-picker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -72,6 +72,9 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
   const canPublish = permissions.includes("pages.publish");
   const [saving, setSaving] = React.useState(false);
   const [imagePickerOpen, setImagePickerOpen] = React.useState(false);
+  const [featuredImageUrl, setFeaturedImageUrl] = React.useState(
+    page?.featuredImage?.url ?? null,
+  );
   const [slugEdited, setSlugEdited] = React.useState(Boolean(page));
   const [selectedStatus, setSelectedStatus] = React.useState<PageStatus>(
     page?.status ?? "DRAFT",
@@ -500,7 +503,7 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
                   {featuredImageId ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={`/api/backend/files/${featuredImageId}/download?disposition=inline`}
+                      src={featuredImageUrl || ""}
                       alt="Featured image"
                       className="aspect-video w-full rounded-lg border object-cover"
                     />
@@ -522,11 +525,12 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
                       type="button"
                       variant="ghost"
                       className="w-full text-destructive hover:text-destructive"
-                      onClick={() =>
+                      onClick={() => {
                         form.setValue("featuredImageId", null, {
                           shouldDirty: true,
-                        })
-                      }
+                        });
+                        setFeaturedImageUrl(null);
+                      }}
                     >
                       <Trash2 /> Bỏ ảnh
                     </Button>
@@ -568,16 +572,17 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
         </form>
       </Form>
 
-      <ManagedImagePicker
+      <AdminMediaPicker
         open={imagePickerOpen}
         onOpenChange={setImagePickerOpen}
-        selectedFileId={featuredImageId}
+        selectedId={featuredImageId}
         title="Chọn featured image"
-        onSelect={(file) =>
+        onSelect={(file) => {
           form.setValue("featuredImageId", file.id, {
             shouldDirty: true,
-          })
-        }
+          });
+          setFeaturedImageUrl(file.url);
+        }}
       />
     </>
   );

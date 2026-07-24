@@ -10,9 +10,6 @@ import {
 } from "react"
 import {
   Check,
-  FileImage,
-  FileText,
-  FileVideo,
   FolderOpen,
   Loader2,
   Search,
@@ -20,6 +17,7 @@ import {
   X,
 } from "lucide-react"
 
+import { FileTypeIcon } from "@/components/file-type-icon"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -123,14 +121,6 @@ function getFileKind(file: ManagedFileDto): FileKind {
     : "other"
 }
 
-function FileTypeIcon({ file, className = "size-4" }: { file: ManagedFileDto; className?: string }) {
-  const kind = getFileKind(file)
-
-  if (kind === "image") return <FileImage className={className} aria-hidden />
-  if (kind === "video") return <FileVideo className={className} aria-hidden />
-  return <FileText className={className} aria-hidden />
-}
-
 function formatFileDate(date: string) {
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
@@ -156,9 +146,7 @@ function FileThumbnail({ file }: { file: ManagedFileDto }) {
   }
 
   return (
-    <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-muted/30 text-muted-foreground">
-      <FileTypeIcon file={file} className="size-5" />
-    </span>
+    <FileTypeIcon file={file} />
   )
 }
 

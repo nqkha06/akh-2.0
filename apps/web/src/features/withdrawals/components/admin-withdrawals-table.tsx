@@ -1,6 +1,5 @@
 "use client";
 
-import { RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -8,7 +7,6 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { Button } from "@/components/ui/button";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import {
   getAdminWithdrawalsTableColumns,
@@ -29,12 +27,10 @@ import { useDataTable } from "@/hooks/use-data-table";
 export function AdminWithdrawalsTable({
   data,
   pageCount,
-  total,
 }: AdminWithdrawalsTableData) {
   const permissions = useAdminPermissions();
   const canProcess = permissions.includes("withdrawals.process");
   const router = useRouter();
-  const [isRefreshing, startRefreshing] = React.useTransition();
   const [busyId, setBusyId] = React.useState<number | null>(null);
   const [detailTarget, setDetailTarget] =
     React.useState<AdminWithdrawal | null>(null);
@@ -42,7 +38,7 @@ export function AdminWithdrawalsTable({
     React.useState<AdminWithdrawal | null>(null);
 
   const refresh = React.useCallback(() => {
-    startRefreshing(() => router.refresh());
+    router.refresh();
   }, [router]);
 
   const changeStatus = React.useCallback(
@@ -113,32 +109,6 @@ export function AdminWithdrawalsTable({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Withdrawal registry
-          </p>
-          <div className="mt-1 flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Danh sách yêu cầu</h2>
-            <span className="rounded-full border bg-muted/30 px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
-              {total.toLocaleString("vi-VN")}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Chỉnh trạng thái ngay trong bảng hoặc mở menu thao tác của từng yêu
-            cầu.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={refresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCcw className={isRefreshing ? "animate-spin" : undefined} />
-          Làm mới
-        </Button>
-      </div>
-
       <DataTable
         table={table}
         emptyMessage="Chưa có yêu cầu rút tiền phù hợp."

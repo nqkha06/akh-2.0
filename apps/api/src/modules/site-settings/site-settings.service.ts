@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import type { ManagedFile, WebsiteSettings } from "@prisma/client";
+import type { AdminMedia, WebsiteSettings } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import {
@@ -15,10 +15,10 @@ import {
 const SETTINGS_ID = 1;
 const mediaSelect = {
   id: true,
-  alias: true,
-  name: true,
+  fileName: true,
   mimeType: true,
   extension: true,
+  url: true,
 } as const;
 
 const settingsInclude = {
@@ -30,11 +30,11 @@ const settingsInclude = {
 } as const;
 
 type SettingsWithMedia = WebsiteSettings & {
-  logoLight: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null;
-  logoDark: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null;
-  logoIcon: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null;
-  favicon: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null;
-  defaultOgImage: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null;
+  logoLight: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null;
+  logoDark: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null;
+  logoIcon: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null;
+  favicon: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null;
+  defaultOgImage: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null;
 };
 
 @Injectable()
@@ -166,12 +166,16 @@ export class SiteSettingsService {
   }
 
   private toPublicMedia(
-    file: Pick<ManagedFile, "id" | "alias" | "name" | "mimeType" | "extension"> | null,
+    file: Pick<AdminMedia, "id" | "fileName" | "mimeType" | "extension" | "url"> | null,
   ) {
     return file
       ? {
-          ...file,
-          downloadUrl: `/api/site-assets/${file.id}`,
+          id: file.id,
+          alias: file.id,
+          name: file.fileName,
+          mimeType: file.mimeType,
+          extension: file.extension,
+          downloadUrl: file.url,
         }
       : null;
   }
@@ -209,9 +213,9 @@ export class SiteSettingsService {
   private async validateMediaIds(ids: Array<string | null | undefined>) {
     const uniqueIds = [...new Set(ids.filter((id): id is string => Boolean(id)))];
     if (uniqueIds.length === 0) return;
-    const files = await this.prisma.managedFile.findMany({
+    const files = await this.prisma.adminMedia.findMany({
       where: { id: { in: uniqueIds }, deletedAt: null },
-      select: { id: true, isPublic: true, mimeType: true, status: true },
+      select: { id: true, mimeType: true },
     });
     if (files.length !== uniqueIds.length) {
       throw new NotFoundException("Có ảnh nhận diện không tồn tại.");
@@ -219,13 +223,11 @@ export class SiteSettingsService {
     if (
       files.some(
         (file) =>
-          !file.isPublic ||
-          file.status !== "completed" ||
           !file.mimeType.toLowerCase().startsWith("image/"),
       )
     ) {
       throw new BadRequestException(
-        "Ảnh nhận diện phải là ảnh public còn hoạt động trong Media Manager.",
+        "Ảnh nhận diện phải là ảnh còn hoạt động trong Admin Media.",
       );
     }
   }

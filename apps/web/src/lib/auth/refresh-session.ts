@@ -21,6 +21,7 @@ export type BackendUser = {
   email: string
   emailVerifiedAt: string | null
   avatar: string | null
+  rank?: "bronze" | "gold" | "diamond" | null
   status: string
   role: string
   roles: string[]

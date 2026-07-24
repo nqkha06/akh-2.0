@@ -1,7 +1,6 @@
 "use client";
 
-import { Activity, Globe2, Layers3, Plus, Route, Users } from "lucide-react";
-import Link from "next/link";
+import { Activity, Globe2, Layers3, Route, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import * as React from "react";
@@ -10,7 +9,6 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 import { DataTableFilterList } from "@/components/data-table/data-table-filter-list";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
-import { Button } from "@/components/ui/button";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import { DeleteMonetizationLevelDialog } from "@/features/admin-monetization-levels/components/delete-monetization-level-dialog";
 import {
@@ -28,7 +26,6 @@ export function MonetizationLevelsTable({
 }: MonetizationLevelsTableData) {
   const permissions = useAdminPermissions();
   const locale = useLocale();
-  const canCreate = permissions.includes("monetization-levels.create");
   const canUpdate = permissions.includes("monetization-levels.update");
   const canDelete = permissions.includes("monetization-levels.delete");
   const router = useRouter();
@@ -97,25 +94,6 @@ export function MonetizationLevelsTable({
           value={summary.assignedUsers}
           description="Đã lựa chọn level"
         />
-      </div>
-
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Level registry
-          </p>
-          <h2 className="mt-1 text-lg font-semibold">Danh sách cấp độ</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Quản lý tỷ lệ lợi nhuận, trải nghiệm quảng cáo và định tuyến.
-          </p>
-        </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/admin/monetization-levels/create">
-              <Plus /> Thêm cấp độ
-            </Link>
-          </Button>
-        ) : null}
       </div>
 
       <DataTable table={table}>

@@ -7,7 +7,7 @@ export async function getMemberMonetizationLevels(): Promise<MemberMonetizationL
   const response = await serverApiFetch(
     "/member/monetization-levels",
     { cache: "no-store" },
-    "/member/levels",
+    "/member/links",
   );
 
   if (!response.ok) {

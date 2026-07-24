@@ -96,6 +96,7 @@ export class ReferralsService {
     return {
       referralCode,
       referralPath: `/register?ref=${encodeURIComponent(referralCode)}`,
+      currency: "VND",
       commissionRate: REFERRAL_COMMISSION_RATE.toFixed(2),
       commissionBasis: "net_amount",
       summary: {

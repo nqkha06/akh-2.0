@@ -1,18 +1,18 @@
 import { ArrowDownRight, ArrowUpRight, Info } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 
 import type { MetricFormat, OverviewMetric } from "./types";
 
 const numberFormatter = new Intl.NumberFormat("vi-VN");
-const currencyFormatter = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-  maximumFractionDigits: 0,
-});
-
-function formatValue(value: number, format: MetricFormat) {
-  if (format === "currency") return currencyFormatter.format(value);
+function formatValue(
+  value: number,
+  format: MetricFormat,
+  currency: string | undefined,
+  formatCurrency: (value: number, sourceCurrency?: string) => string,
+) {
+  if (format === "currency") return formatCurrency(value, currency);
   if (format === "percent") return `${value.toLocaleString("vi-VN")}%`;
   return numberFormatter.format(value);
 }
@@ -41,6 +41,9 @@ function Sparkline({ values, trend }: { values: number[]; trend: OverviewMetric[
 }
 
 export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
+  const { formatCurrency } = useMemberCurrency();
+  const money = (value: number, sourceCurrency?: string) =>
+    formatCurrency(value, { sourceCurrency });
   return (
     <TooltipProvider>
       <section aria-label="Chỉ số tổng quan" className="border rounded-lg border-border bg-card">
@@ -66,7 +69,7 @@ export function OverviewMetrics({ metrics }: { metrics: OverviewMetric[] }) {
                 <div className="mt-3 flex min-w-0 items-end justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-xl font-semibold tracking-[-0.025em] text-foreground sm:text-2xl">
-                      {formatValue(metric.value, metric.format)}
+                      {formatValue(metric.value, metric.format, metric.currency, money)}
                     </p>
                     <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${metric.trend === "up" ? "text-[var(--overview-success)]" : "text-destructive"}`}>
                       <TrendIcon className="size-3.5" aria-hidden="true" />

@@ -21,11 +21,11 @@ import type { PageStatus } from "./pages.constants";
 
 const featuredImageSelect = {
   id: true,
-  alias: true,
-  name: true,
+  fileName: true,
   mimeType: true,
   extension: true,
-} satisfies Prisma.ManagedFileSelect;
+  url: true,
+} satisfies Prisma.AdminMediaSelect;
 
 const pageInclude = {
   featuredImage: { select: featuredImageSelect },
@@ -235,6 +235,24 @@ export class PagesService {
 
   async removeMany(inputIds: number[]) {
     const ids = this.uniqueIds(inputIds);
+    const menuReferences = await this.prisma.websiteMenuItem.findMany({
+      where: {
+        pageId: { in: ids },
+        deletedAt: null,
+        menu: { deletedAt: null },
+      },
+      select: {
+        pageId: true,
+        menu: { select: { id: true, name: true } },
+      },
+    });
+    if (menuReferences.length) {
+      throw new ConflictException({
+        code: "PAGE_IN_USE",
+        message: "Không thể xóa trang đang được dùng trong menu website.",
+        references: menuReferences,
+      });
+    }
     const result = await this.prisma.page.updateMany({
       where: { id: { in: ids }, deletedAt: null },
       data: { deletedAt: new Date() },
@@ -458,13 +476,13 @@ export class PagesService {
 
   private async assertFeaturedImage(id?: string | null) {
     if (id === undefined || id === null || id === "") return;
-    const file = await this.prisma.managedFile.findFirst({
-      where: { id, deletedAt: null, isPublic: true },
+    const file = await this.prisma.adminMedia.findFirst({
+      where: { id, deletedAt: null },
       select: { mimeType: true },
     });
     if (!file || !file.mimeType.toLowerCase().startsWith("image/")) {
       throw new BadRequestException(
-        "Featured image phải là ảnh public còn hoạt động trong Media Manager.",
+        "Featured image phải là ảnh còn hoạt động trong Admin Media.",
       );
     }
   }

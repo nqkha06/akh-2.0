@@ -24,9 +24,16 @@ export class AuthOriginGuard implements CanActivate {
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<Request>();
     const origin = request.headers.origin?.replace(/\/$/, "");
+    const requestOrigin = `${request.protocol}://${request.get("host")}`;
 
     // Server-to-server calls do not carry Origin. Browser cookie calls do.
-    if (!origin || this.allowedOrigins.has(origin)) return true;
+    if (
+      !origin ||
+      origin === requestOrigin ||
+      this.allowedOrigins.has(origin)
+    ) {
+      return true;
+    }
     throw new ForbiddenException("Origin không được phép.");
   }
 }

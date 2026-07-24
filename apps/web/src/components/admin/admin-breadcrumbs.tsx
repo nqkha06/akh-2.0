@@ -22,6 +22,8 @@ const sectionLabels: Record<string, string> = {
   users: "Users",
   "social-links": "Social Links",
   pages: "Pages",
+  media: "Admin Media",
+  menus: "Website Menus",
   "monetization-levels": "Monetization Levels",
   "payment-methods": "Payment Methods",
   withdrawals: "Withdrawals",
@@ -35,6 +37,7 @@ const leafLabels: Record<string, string> = {
   edit: "Chỉnh sửa",
   preview: "Preview",
   appearance: "Website Settings",
+  currencies: "Tiền tệ & tỷ giá",
 }
 
 export function AdminBreadcrumbs({
@@ -96,10 +99,7 @@ function getAdminBreadcrumbs(pathname: string): AdminBreadcrumbItem[] {
     { label: "Dashboard", href: "/admin" },
     {
       label: sectionLabel,
-      href:
-        rest.length > 0 && section !== "settings"
-          ? `/admin/${section}`
-          : undefined,
+      href: rest.length > 0 ? `/admin/${section}` : undefined,
     },
   ]
 

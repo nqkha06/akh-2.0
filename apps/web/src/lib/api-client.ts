@@ -67,10 +67,10 @@ export type ManagedFileDto = {
   mimeType: string;
   size: number;
   sizeLabel: string;
-  isPublic: boolean;
   downloadCount: number;
   status: string;
-  downloadUrl: string;
+  purpose: "file" | "cover";
+  usageCount: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -80,13 +80,33 @@ export type SnippetDto = {
   id: string;
   name: string;
   content: string;
-  copies: number;
   createdAt: string;
   updatedAt: string;
 };
 
+export type SnippetsResponseDto = {
+  items: SnippetDto[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+};
+
 export type FilesResponseDto = {
   items: ManagedFileDto[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  summary: {
+    usedBytes: number;
+    reservedBytes: number;
+    limitBytes: number;
+  };
   total: number;
   totalSize: number;
 };
@@ -251,13 +271,6 @@ export async function registerAccount(payload: {
   return response.json();
 }
 
-export async function logoutAllDevices() {
-  const response = await authenticatedApiFetch("/auth/logout-all", {
-    method: "POST",
-  });
-  if (!response.ok) throw new Error(await getApiError(response));
-}
-
 export async function createLink(payload: CreateLinkPayload) {
   const response = await authenticatedApiFetch("/links", {
     method: "POST",
@@ -346,22 +359,38 @@ export async function deleteLink(id: string) {
 }
 
 export async function getSnippets() {
-  const response = await fetch(requestApiUrl("/snippets"), {
-    cache: "no-store",
-    credentials: "include",
-  });
+  const snippets: SnippetDto[] = [];
+  let page = 1;
+  let totalPages = 1;
 
-  if (!response.ok) {
-    throw new Error(await getApiError(response));
-  }
+  do {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+      limit: "100",
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    });
+    const response = await authenticatedApiFetch(
+      `/member/snippets?${searchParams.toString()}`,
+      { cache: "no-store" },
+    );
 
-  return (await response.json()) as SnippetDto[];
+    if (!response.ok) {
+      throw new Error(await getApiError(response));
+    }
+
+    const result = (await response.json()) as SnippetsResponseDto;
+    snippets.push(...result.items);
+    totalPages = result.pagination.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+
+  return snippets;
 }
 
 export async function createSnippet(payload: { name?: string; content: string }) {
-  const response = await fetch(requestApiUrl("/snippets"), {
+  const response = await authenticatedApiFetch("/member/snippets", {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -377,9 +406,8 @@ export async function updateSnippet(
   id: string,
   payload: { name?: string; content?: string },
 ) {
-  const response = await fetch(requestApiUrl(`/snippets/${id}`), {
+  const response = await authenticatedApiFetch(`/member/snippets/${id}`, {
     method: "PATCH",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -392,9 +420,8 @@ export async function updateSnippet(
 }
 
 export async function deleteSnippet(id: string) {
-  const response = await fetch(requestApiUrl(`/snippets/${id}`), {
+  const response = await authenticatedApiFetch(`/member/snippets/${id}`, {
     method: "DELETE",
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -452,6 +479,10 @@ export async function getFiles(params?: {
   sort?: "date" | "name" | "size" | "downloads";
   direction?: "asc" | "desc";
   status?: "active" | "trash";
+  type?: "image" | "video" | "audio" | "document" | "archive" | "other";
+  state?: "ready" | "processing" | "failed";
+  page?: number;
+  limit?: number;
 }) {
   const searchParams = new URLSearchParams();
 
@@ -471,9 +502,14 @@ export async function getFiles(params?: {
     searchParams.set("status", params.status);
   }
 
+  if (params?.type) searchParams.set("type", params.type);
+  if (params?.state) searchParams.set("state", params.state);
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+
   const query = searchParams.toString();
   const response = await fetch(
-    requestApiUrl(`/files${query ? `?${query}` : ""}`),
+    requestApiUrl(`/member/files${query ? `?${query}` : ""}`),
     {
       cache: "no-store",
       credentials: "include",
@@ -493,11 +529,12 @@ export async function uploadFile(
     purpose?: "file" | "cover";
     signal?: AbortSignal;
     onProgress?: (progress: number) => void;
+    onFinalizing?: () => void;
   },
 ) {
   options?.onProgress?.(0);
 
-  const initiateResponse = await fetch(requestApiUrl("/files/multipart"), {
+  const initiateResponse = await fetch(requestApiUrl("/member/files/multipart"), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -539,8 +576,10 @@ export async function uploadFile(
       );
     }
 
+    options?.onFinalizing?.();
+
     const completeResponse = await fetch(
-      requestApiUrl(`/files/multipart/${upload.uploadId}/complete`),
+      requestApiUrl(`/member/files/multipart/${upload.uploadId}/complete`),
       {
         method: "POST",
         credentials: "include",
@@ -555,7 +594,7 @@ export async function uploadFile(
     options?.onProgress?.(100);
     return (await completeResponse.json()) as ManagedFileDto;
   } catch (error) {
-    await fetch(requestApiUrl(`/files/multipart/${uploadId}`), {
+    await fetch(requestApiUrl(`/member/files/multipart/${uploadId}`), {
       method: "DELETE",
       credentials: "include",
       keepalive: true,
@@ -581,7 +620,7 @@ function uploadMultipartPart(
 
     xhr.open(
       "POST",
-      requestApiUrl(`/files/multipart/${uploadId}/parts/${partNumber}`),
+      requestApiUrl(`/member/files/multipart/${uploadId}/parts/${partNumber}`),
     );
     xhr.withCredentials = true;
     xhr.upload.onprogress = (event) => {
@@ -630,10 +669,9 @@ export async function updateFile(
   id: string,
   payload: {
     name?: string;
-    isPublic?: boolean;
   },
 ) {
-  const response = await fetch(requestApiUrl(`/files/${id}`), {
+  const response = await fetch(requestApiUrl(`/member/files/${id}`), {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -650,7 +688,7 @@ export async function updateFile(
 }
 
 export async function deleteFile(id: string) {
-  const response = await fetch(requestApiUrl(`/files/${id}`), {
+  const response = await fetch(requestApiUrl(`/member/files/${id}`), {
     method: "DELETE",
     credentials: "include",
   });
@@ -662,18 +700,24 @@ export async function deleteFile(id: string) {
   return (await response.json()) as ManagedFileDto;
 }
 
-export function getFileDownloadUrl(file: Pick<ManagedFileDto, "id">) {
-  return browserApiUrl(`/files/${file.id}/download`);
+export async function bulkDeleteFiles(ids: string[]) {
+  const response = await fetch(requestApiUrl("/member/files/bulk-delete"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+  if (!response.ok) throw new Error(await getApiError(response));
+  return (await response.json()) as { ids: string[]; deleted: true };
 }
 
 export function getFilePreviewUrl(file: Pick<ManagedFileDto, "id">) {
-  return browserApiUrl(`/files/${file.id}/download?disposition=inline`);
+  return browserApiUrl(`/member/files/${file.id}/preview`);
 }
 
 export async function createBioPage(payload: CreateBioPagePayload) {
-  const response = await fetch(requestApiUrl("/bio-pages"), {
+  const response = await authenticatedApiFetch("/member/bio-pages", {
     method: "POST",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -688,9 +732,8 @@ export async function createBioPage(payload: CreateBioPagePayload) {
 }
 
 export async function updateBioPage(id: string, payload: CreateBioPagePayload) {
-  const response = await fetch(requestApiUrl(`/bio-pages/${id}`), {
+  const response = await authenticatedApiFetch(`/member/bio-pages/${id}`, {
     method: "PATCH",
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -705,9 +748,8 @@ export async function updateBioPage(id: string, payload: CreateBioPagePayload) {
 }
 
 export async function getBioPages() {
-  const response = await fetch(requestApiUrl("/bio-pages"), {
+  const response = await authenticatedApiFetch("/member/bio-pages", {
     cache: "no-store",
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -717,10 +759,33 @@ export async function getBioPages() {
   return (await response.json()) as BioPageDto[];
 }
 
-export async function getBioPage(slug: string) {
-  const response = await fetch(requestApiUrl(`/bio-pages/${slug}`), {
+export async function getBioPageById(id: string) {
+  const response = await authenticatedApiFetch(`/member/bio-pages/${id}`, {
     cache: "no-store",
-    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as BioPageDto;
+}
+
+export async function deleteBioPage(id: string) {
+  const response = await authenticatedApiFetch(`/member/bio-pages/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as { id: string; deleted: true };
+}
+
+export async function getBioPage(slug: string) {
+  const response = await fetch(requestApiUrl(`/public/bio-pages/${slug}`), {
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -731,9 +796,8 @@ export async function getBioPage(slug: string) {
 }
 
 export async function trackBioClick(slug: string) {
-  const response = await fetch(requestApiUrl(`/bio-pages/${slug}/click`), {
+  const response = await fetch(requestApiUrl(`/public/bio-pages/${slug}/click`), {
     method: "POST",
-    credentials: "include",
   });
 
   if (!response.ok) {

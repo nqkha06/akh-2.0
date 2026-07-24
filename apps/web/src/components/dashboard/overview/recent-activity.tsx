@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BadgeDollarSign, CheckCheck, ExternalLink, Link2, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 
 import type { ActivityKind, RecentActivityItem } from "./types";
 
@@ -13,6 +14,7 @@ const activityIcons: Record<ActivityKind, typeof Link2> = {
 };
 
 export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
+  const { formatCurrency } = useMemberCurrency();
   return (
     <section className="min-w-0 rounded-xl border border-border bg-card" aria-labelledby="activity-title">
       <div className="border-b border-border px-5 py-4 sm:px-6">
@@ -28,7 +30,13 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
                 <Icon className="size-4" aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm leading-5 text-foreground">{item.content}</span>
+                <span className="block text-sm leading-5 text-foreground">
+                  {item.kind === "payment" && item.amount !== undefined
+                    ? `${item.content}: ${formatCurrency(item.amount, {
+                        sourceCurrency: item.currency,
+                      })}`
+                    : item.content}
+                </span>
                 <time className="mt-1 block text-xs text-muted-foreground">{item.time}</time>
               </span>
               {item.href ? <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}

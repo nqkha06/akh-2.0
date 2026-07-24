@@ -7,6 +7,7 @@ export type OverviewMetric = {
   label: string;
   value: number;
   format: MetricFormat;
+  currency?: string;
   change: number;
   trend: "up" | "down";
   hint: string;
@@ -55,6 +56,7 @@ export type TopContentItem = {
   unlocks: number;
   conversion: number;
   revenue: number;
+  revenueCurrency: string;
 };
 
 export type ActivityKind = "unlock" | "published" | "payment" | "milestone";
@@ -63,6 +65,8 @@ export type RecentActivityItem = {
   id: string;
   kind: ActivityKind;
   content: string;
+  amount?: number;
+  currency?: string;
   time: string;
   href?: string;
 };
@@ -85,4 +89,3 @@ export type OverviewData = {
   recentActivity: RecentActivityItem[];
   quickActions: QuickActionItem[];
 };
-

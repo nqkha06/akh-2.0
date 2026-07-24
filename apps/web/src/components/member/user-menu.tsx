@@ -36,19 +36,20 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { localeCookieName, locales, type AppLocale } from "@/i18n/config"
 import { useUiLanguages } from "@/features/languages/hooks/use-ui-languages"
-import { logoutAllDevices } from "@/lib/api-client"
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider"
 import { cn } from "@/lib/utils"
 
 function useAccount() {
+  const brand = useSiteBrand()
   const { data: session } = useSession()
-  const name = session?.user?.name || "Tài khoản Linkicom"
+  const name = session?.user?.name || `Tài khoản ${brand.siteName}`
   const email = session?.user?.email || ""
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join("") || "LI"
+    .join("") || brand.siteName.slice(0, 2).toUpperCase()
 
   return {
     name,
@@ -76,7 +77,6 @@ function UserMenuContent() {
   const currentTheme = theme === "dark" ? "dark" : "light"
   const locale = useLocale() as AppLocale
   const [isChangingLocale, startLocaleTransition] = useTransition()
-  const [isLoggingOutAll, startLogoutAllTransition] = useTransition()
   const uiLanguages = useUiLanguages()
 
   const localeLabels = Object.fromEntries(
@@ -97,16 +97,6 @@ function UserMenuContent() {
     startLocaleTransition(() => window.location.reload())
   }
 
-  const handleLogoutAll = () => {
-    startLogoutAllTransition(async () => {
-      try {
-        await logoutAllDevices()
-      } finally {
-        await signOut({ redirectTo: "/login" })
-      }
-    })
-  }
-
   return (
     <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-lg p-1.5">
       <DropdownMenuLabel className="px-2 py-2 font-normal">
@@ -121,12 +111,7 @@ function UserMenuContent() {
 
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuItem asChild>
-          <Link href="/member/account">
-            <User className="size-4" />
-            {t("topbar.editProfile")}
-          </Link>
-        </DropdownMenuItem>
+     
         <DropdownMenuItem asChild>
           <Link href="/member/account">
             <Settings className="size-4" />
@@ -171,13 +156,6 @@ function UserMenuContent() {
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
-      <DropdownMenuItem
-        disabled={isLoggingOutAll}
-        onSelect={handleLogoutAll}
-      >
-        <MonitorCog className="size-4" />
-        {t("topbar.logoutAll")}
-      </DropdownMenuItem>
       <DropdownMenuItem
         variant="destructive"
         onSelect={() => void signOut({ redirectTo: "/login" })}

@@ -1,17 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, LockKeyhole } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
+import { SiteBrandMark, SiteBrandName } from "@/components/site-brand"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function BrandMark({ className = "size-8" }: { className?: string }) {
-  return (
-    <span className={`grid shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground ${className}`}>
-      <LockKeyhole className="size-[55%]" strokeWidth={2.35} />
-    </span>
-  )
+  return <SiteBrandMark className={className} />
 }
 
 export function SidebarBrand({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -43,7 +40,7 @@ export function SidebarBrand({ collapsed, onToggle }: { collapsed: boolean; onTo
     <div className="flex h-[var(--header-height)] items-center gap-3 border-b border-sidebar-border px-4">
       <Link href="/member" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
         <BrandMark className="size-8" />
-        <span className="truncate text-[19px] font-semibold tracking-[-0.02em] text-sidebar-foreground">Rekonise</span>
+        <SiteBrandName className="text-[19px] font-semibold tracking-[-0.02em] text-sidebar-foreground" />
       </Link>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -61,7 +58,7 @@ export function MobileBrand() {
   return (
     <Link href="/member" className="flex min-w-0 items-center gap-2.5">
       <BrandMark className="size-8" />
-      <span className="truncate text-[19px] font-semibold tracking-[-0.02em]">Rekonise</span>
+      <SiteBrandName className="text-[19px] font-semibold tracking-[-0.02em]" />
       <ChevronRight className="sr-only" />
     </Link>
   )

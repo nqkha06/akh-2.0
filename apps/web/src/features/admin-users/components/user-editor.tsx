@@ -17,7 +17,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { ManagedImagePicker } from "@/components/media/managed-image-picker";
+import { AdminMediaPicker } from "@/components/admin-media/admin-media-picker";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -541,11 +541,11 @@ export function UserEditor({
         </form>
       </Form>
 
-      <ManagedImagePicker
+      <AdminMediaPicker
         open={imagePickerOpen}
         onOpenChange={setImagePickerOpen}
         onSelect={(file) =>
-          form.setValue("avatar", file.downloadUrl, {
+          form.setValue("avatar", file.url, {
             shouldDirty: true,
             shouldValidate: true,
           })

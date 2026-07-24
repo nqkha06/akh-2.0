@@ -6,6 +6,7 @@ import { FileUp, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 
 import { FileUploadItem } from "./file-upload-item";
 import { FILE_SIZE_LIMIT, formatBytes } from "./file-utils";
@@ -22,9 +23,15 @@ type FileUploadDialogProps = {
 };
 
 export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, onRetry, onCancel, onRemove }: FileUploadDialogProps) {
+  const brand = useSiteBrand();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
-  const hasActiveUpload = queue.some((item) => item.status === "pending" || item.status === "uploading");
+  const hasActiveUpload = queue.some(
+    (item) =>
+      item.status === "pending" ||
+      item.status === "uploading" ||
+      item.status === "finalizing",
+  );
 
   const chooseFiles = () => inputRef.current?.click();
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -38,7 +45,7 @@ export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
-        <DialogHeader className="border-b border-border px-5 py-4 pr-12"><DialogTitle>Tải file lên</DialogTitle><DialogDescription>Thêm một hoặc nhiều file vào thư viện Rekonise.</DialogDescription></DialogHeader>
+        <DialogHeader className="border-b border-border px-5 py-4 pr-12"><DialogTitle>Tải file lên</DialogTitle><DialogDescription>Thêm một hoặc nhiều file vào thư viện {brand.siteName}.</DialogDescription></DialogHeader>
         <div className="p-5">
           <div
             role="button"

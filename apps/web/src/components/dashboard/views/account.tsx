@@ -24,6 +24,7 @@ import {
   Globe2,
   KeyRound,
   Link2,
+  LoaderCircle,
   Mail,
   MessageSquare,
   Save,
@@ -56,6 +57,7 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 import type { ReferralsDashboard } from "@/features/referrals/types";
 import {
   Select,
@@ -67,6 +69,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MemberPaymentMethodsManager } from "@/features/payment-methods/components/member-payment-methods-page";
+import {
+  getSiteHost,
+  useSiteBrand,
+} from "@/features/site-settings/components/site-brand-provider";
 
 type ProfileForm = {
   firstName: string;
@@ -91,7 +97,10 @@ export function AccountView({
   referrals: ReferralsDashboard;
 }) {
   const t = useTranslations("Account");
+  const brand = useSiteBrand();
+  const siteHost = getSiteHost(brand);
   const { data: session } = useSession();
+  const currencyPreferences = useMemberCurrency();
   const hydratedProfile = useRef(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -101,7 +110,11 @@ export function AccountView({
     email: "",
     bio: t("profile.bioValue"),
   });
-  const [currency, setCurrency] = useState("VND");
+  const [currency, setCurrency] = useState(currencyPreferences.currency);
+  const [savedCurrency, setSavedCurrency] = useState(
+    currencyPreferences.currency,
+  );
+  const [savingCurrency, setSavingCurrency] = useState(false);
   const [notifications, setNotifications] = useState<Record<NotificationKey, boolean>>({
     account: true,
     activity: true,
@@ -128,16 +141,28 @@ export function AccountView({
     }));
   }, [session]);
 
-  const displayName = [profile.lastName, profile.firstName].filter(Boolean).join(" ") || t("profile.fallbackName");
+  const displayName =
+    [profile.lastName, profile.firstName].filter(Boolean).join(" ") ||
+    t("profile.fallbackName", { brand: brand.siteName });
   const initials = useMemo(
-    () => displayName.split(/\s+/).filter(Boolean).slice(-2).map((part) => part[0]?.toUpperCase()).join("") || "LI",
-    [displayName],
+    () =>
+      displayName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(-2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("") ||
+      (brand.siteShortName || brand.siteName).slice(0, 2).toUpperCase(),
+    [brand.siteName, brand.siteShortName, displayName],
   );
   const referralLink = referrals.referralUrl;
   const passwordIsLongEnough = password.next.length >= 8;
   const passwordHasNumber = /\d/.test(password.next);
   const passwordsMatch = Boolean(password.next) && password.next === password.confirm;
   const canUpdatePassword = Boolean(password.current) && passwordIsLongEnough && passwordHasNumber && passwordsMatch;
+  const currencyPreview = currencyPreferences.formatCurrency(48.1, {
+    targetCurrency: currency,
+  });
 
   const sections: Array<{ id: string; icon: LucideIcon; label: string }> = [
     { id: "personal-information", icon: User, label: t("navigation.personal") },
@@ -150,6 +175,23 @@ export function AccountView({
   ];
 
   const notifySaved = (section: string) => toast.success(t("toast.sectionSaved", { section }));
+
+  const saveCurrency = async () => {
+    setSavingCurrency(true);
+    try {
+      await currencyPreferences.selectCurrency(currency);
+      setSavedCurrency(currency);
+      toast.success(t("toast.sectionSaved", { section: t("currency.title") }));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể lưu đơn vị tiền tệ.",
+      );
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
 
   const copyText = async (value: string, message: string) => {
     try {
@@ -321,22 +363,39 @@ export function AccountView({
                 <Select value={currency} onValueChange={setCurrency}>
                   <SelectTrigger id="account-currency" className={`${inputClassName} w-full`}><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VND">VND — Vietnamese đồng</SelectItem>
-                    <SelectItem value="USD">USD — US dollar</SelectItem>
-                    <SelectItem value="EUR">EUR — Euro</SelectItem>
+                    {currencyPreferences.availableCurrencies.map((item) => (
+                      <SelectItem key={item.id} value={item.code}>
+                        {item.code} — {item.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FieldBlock>
               <div className="rounded-lg border border-border bg-muted/20 px-4 py-3">
                 <p className="text-xs text-muted-foreground">{t("currency.preview")}</p>
                 <p className="mt-1 font-mono text-sm font-medium text-foreground">
-                  {currency === "VND" ? "1.250.000 ₫" : currency === "USD" ? "$48.10" : "€41.50"}
+                  {currencyPreview}
                 </p>
               </div>
             </div>
             <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("currency.hint")}</p>
             <CardActions>
-              <Button type="button" className="h-10" onClick={() => notifySaved(t("currency.title"))}><Save />{t("saveChanges")}</Button>
+              <Button
+                type="button"
+                className="h-10"
+                disabled={
+                  savingCurrency ||
+                  currency === savedCurrency
+                }
+                onClick={() => void saveCurrency()}
+              >
+                {savingCurrency ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
+                {t("saveChanges")}
+              </Button>
             </CardActions>
           </SettingsCard>
 
@@ -427,8 +486,8 @@ export function AccountView({
                 <DnsValue label={t("domain.host")} value="links" />
                 <DnsValue
                   label={t("domain.value")}
-                  value="domains.linkicom.io"
-                  onCopy={() => void copyText("domains.linkicom.io", t("domain.copied"))}
+                  value={siteHost || "—"}
+                  onCopy={siteHost ? () => void copyText(siteHost, t("domain.copied")) : undefined}
                 />
               </div>
             </div>
@@ -501,7 +560,7 @@ export function AccountView({
             id="referral-link"
             icon={Link2}
             title={t("referral.title")}
-            description={t("referral.description")}
+            description={t("referral.description", { brand: brand.siteName })}
           >
             <InputGroup className="h-11 rounded-lg bg-background shadow-none sm:h-10">
               <InputGroupAddon><Link2 /></InputGroupAddon>
@@ -589,32 +648,6 @@ function CardActions({ children }: { children: ReactNode }) {
   return (
     <div className="-mx-4 -mb-5 mt-5 flex flex-col gap-3 border-t border-border bg-muted/10 px-4 py-4 sm:-mx-5 sm:flex-row sm:items-center sm:justify-end sm:px-5 sm:[&>p]:mr-auto">
       {children}
-    </div>
-  );
-}
-
-function SettingToggle({
-  id,
-  title,
-  description,
-  checked,
-  onCheckedChange,
-  className = "",
-}: {
-  id: string;
-  title: string;
-  description: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  className?: string;
-}) {
-  return (
-    <div className={`flex min-h-16 items-center gap-4 py-3 ${className}`}>
-      <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer flex-col items-start gap-1">
-        <span className="text-sm font-medium text-foreground">{title}</span>
-        <span className="text-xs leading-5 font-normal text-muted-foreground">{description}</span>
-      </Label>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
 }

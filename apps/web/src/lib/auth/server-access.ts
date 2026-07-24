@@ -51,9 +51,10 @@ export async function requireFreshServerSession(
   }
   if (!session.backendAccessToken) redirect(loginUrl(resolvedCallbackUrl))
   if (session.authError) {
-    throw new Error(
-      `Dịch vụ xác thực tạm thời không khả dụng (${session.authError}).`,
-    )
+    // NETWORK_ERROR/TIMEOUT are retryable and may remain on the Auth.js JWT
+    // after the API has recovered. Retry through a Route Handler so the
+    // rotated backend tokens can be persisted to the session cookie.
+    redirect(refreshSessionUrl(resolvedCallbackUrl))
   }
   if (accessTokenNeedsRefresh(session)) {
     redirect(refreshSessionUrl(resolvedCallbackUrl))

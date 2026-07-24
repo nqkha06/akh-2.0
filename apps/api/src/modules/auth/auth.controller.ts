@@ -115,17 +115,6 @@ export class AuthController {
     this.clearRefreshCookie(response);
   }
 
-  @Post("logout-all")
-  @UseGuards(AuthOriginGuard, JwtAccessGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async logoutAll(
-    @Req() request: AccessRequest,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    await this.authService.logoutAll(request.user.id);
-    this.clearRefreshCookie(response);
-  }
-
   @Get("me")
   @UseGuards(JwtAccessGuard)
   me(@Req() request: AccessRequest) {
