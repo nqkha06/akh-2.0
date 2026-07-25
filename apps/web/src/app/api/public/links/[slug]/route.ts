@@ -1,4 +1,4 @@
-import { getLink } from "@/lib/api-client";
+import { completeLinkVisit } from "@/lib/api-client";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
@@ -8,12 +8,25 @@ const corsHeaders = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
     const { slug } = await params;
-    const link = await getLink(slug);
+    const visitToken = new URL(request.url).searchParams.get("visitToken");
+    if (!visitToken) {
+      return Response.json(
+        {
+          statusCode: 400,
+          message: "Thiếu visit token.",
+        },
+        {
+          status: 400,
+          headers: corsHeaders,
+        },
+      );
+    }
+    const link = await completeLinkVisit(slug, visitToken);
 
     return Response.json(link, {
       headers: corsHeaders,

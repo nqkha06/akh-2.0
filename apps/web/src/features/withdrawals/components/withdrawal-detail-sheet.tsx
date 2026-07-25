@@ -125,11 +125,20 @@ export function WithdrawalDetailSheet({
                 Giá trị yêu cầu
               </h3>
               <dl className="mt-3 grid grid-cols-2 gap-3">
-                <AmountItem label="Số tiền" value={detail.amount} />
-                <AmountItem label="Phí" value={detail.feeAmount} />
+                <AmountItem
+                  label="Số tiền"
+                  value={detail.amount}
+                  currency={detail.currency}
+                />
+                <AmountItem
+                  label="Phí"
+                  value={detail.feeAmount}
+                  currency={detail.currency}
+                />
                 <AmountItem
                   label="Member thực nhận"
                   value={detail.netAmount}
+                  currency={detail.currency}
                   className="col-span-2"
                   prominent
                 />
@@ -195,11 +204,13 @@ export function WithdrawalDetailSheet({
 function AmountItem({
   label,
   value,
+  currency,
   prominent,
   className,
 }: {
   label: string;
   value: string;
+  currency: string;
   prominent?: boolean;
   className?: string;
 }) {
@@ -212,7 +223,7 @@ function AmountItem({
           prominent && "text-lg font-semibold",
         )}
       >
-        {formatWithdrawalMoney(value)}
+        {formatWithdrawalMoney(value, currency)}
       </dd>
     </div>
   );

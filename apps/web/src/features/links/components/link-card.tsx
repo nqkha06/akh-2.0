@@ -46,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 import { deleteLink, updateLinkStatus, type LinkDto } from "@/lib/api-client";
 
@@ -69,6 +70,12 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                 ? commonT("paused")
                 : link.status;
     const shortUrl = `/l/${link.slug}`;
+    const destinationLabel =
+        link.inputType === "file"
+            ? link.destinationFileName || t("unnamedFile")
+            : link.destinationUrl || "—";
+    const destinationLabelKey =
+        link.inputType === "file" ? t("destinationFile") : t("destinationUrl");
     const redirectUrl = useMemo(() => {
         if (typeof window === "undefined") {
             return shortUrl;
@@ -188,30 +195,61 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                         <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="min-w-0">
-                                    <h3 className="truncate text-base font-semibold tracking-tight sm:text-[17px]">
-                                        {link.title}
-                                    </h3>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <h3 className="truncate text-base font-semibold tracking-tight sm:text-[17px]">
+                                                {link.title}
+                                            </h3>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" sideOffset={6} className="max-w-sm">
+                                            {link.title}
+                                        </TooltipContent>
+                                    </Tooltip>
 
                                     <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:text-sm">
-                                        <span
-                                            className="min-w-0 max-w-full truncate"
-                                            title={link.destinationUrl ?? undefined}
-                                        >
-                                            {link.destinationUrl ?? "https://example.com"}
-                                        </span>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span className="min-w-0 max-w-full truncate">
+                                                    {destinationLabel}
+                                                </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="top"
+                                                sideOffset={6}
+                                                className="max-w-sm space-y-1"
+                                            >
+                                                <span className="block text-[11px] opacity-70">
+                                                    {destinationLabelKey}
+                                                </span>
+                                                <span className="block break-all">{destinationLabel}</span>
+                                            </TooltipContent>
+                                        </Tooltip>
 
                                         <span className="shrink-0 text-muted-foreground/70">
                                             {t("to")}
                                         </span>
 
-                                        <button
-                                            type="button"
-                                            onClick={copyRedirectUrl}
-                                            className="max-w-full truncate rounded-md bg-muted px-2 py-1 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                                            title={redirectUrl}
-                                        >
-                                            {redirectUrl}
-                                        </button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={copyRedirectUrl}
+                                                    className="max-w-full truncate rounded-md bg-muted px-2 py-1 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                                                >
+                                                    {redirectUrl}
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="top"
+                                                sideOffset={6}
+                                                className="max-w-sm space-y-1"
+                                            >
+                                                <span className="block">{t("copyPublicUrlHint")}</span>
+                                                <span className="block break-all font-mono text-[11px] opacity-70">
+                                                    {redirectUrl}
+                                                </span>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </div>
 
@@ -255,18 +293,25 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                             </Button>
 
                             <Credenza>
-                                <CredenzaTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
-                                        aria-label={t("qrCode")}
-                                    >
-                                        <QrCode className="size-3.5 sm:size-4" />
-                                        <span className="hidden sm:inline">{t("qrCode")}</span>
-                                        <span className="sm:hidden">QR</span>
-                                    </Button>
-                                </CredenzaTrigger>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <CredenzaTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
+                                                aria-label={t("qrCode")}
+                                            >
+                                                <QrCode className="size-3.5 sm:size-4" />
+                                                <span className="hidden sm:inline">{t("qrCode")}</span>
+                                                <span className="sm:hidden">QR</span>
+                                            </Button>
+                                        </CredenzaTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6}>
+                                        {t("qrDescription")}
+                                    </TooltipContent>
+                                </Tooltip>
 
                                 <CredenzaContent className="sm:max-w-xl">
                                     <CredenzaHeader>
@@ -424,17 +469,24 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                             </Credenza>
 
                             <Credenza>
-                                <CredenzaTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
-                                        aria-label={t("stats")}
-                                    >
-                                        <BarChart3 className="size-3.5 sm:size-4" />
-                                        <span className="hidden sm:inline">{t("stats")}</span>
-                                    </Button>
-                                </CredenzaTrigger>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <CredenzaTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 min-w-0 border-border bg-background px-2 shadow-none sm:h-9 sm:px-3"
+                                                aria-label={t("stats")}
+                                            >
+                                                <BarChart3 className="size-3.5 sm:size-4" />
+                                                <span className="hidden sm:inline">{t("stats")}</span>
+                                            </Button>
+                                        </CredenzaTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6}>
+                                        {t("statsDescription")}
+                                    </TooltipContent>
+                                </Tooltip>
 
                                 <CredenzaContent className="sm:max-w-xl">
                                     <CredenzaHeader>
@@ -444,10 +496,10 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                                     <CredenzaBody className="space-y-4">
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                         {[
-                                            [t("clicks"), "0"],
-                                            [t("visitors"), "0"],
-                                            [t("earnings"), formatCurrency(0)],
-                                            [t("status"), statusLabel],
+                                            [t("visitors"), new Intl.NumberFormat().format(link.views)],
+                                            [t("earnings"), formatCurrency(link.revenue)],
+                                            [t("actions"), new Intl.NumberFormat().format(link.actions.length)],
+                                            [t("updatedAt"), new Date(link.updatedAt).toLocaleDateString()],
                                         ].map(([label, value]) => (
                                             <div
                                                 key={label}
@@ -477,11 +529,11 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
 
                                         <div>
                                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                {t("destinationUrl")}
+                                                {destinationLabelKey}
                                             </p>
 
                                             <p className="mt-1 break-all font-medium text-foreground">
-                                                {link.destinationUrl ?? "https://example.com"}
+                                                {destinationLabel}
                                             </p>
                                         </div>
                                         </div>
@@ -515,17 +567,23 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                             </div>
 
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="size-8 shrink-0 border-border bg-background shadow-none sm:size-9"
-                                        aria-label={t("edit")}
-                                        title={t("edit")}
-                                    >
-                                        <MoreVertical className="size-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="size-8 shrink-0 border-border bg-background shadow-none sm:size-9"
+                                                aria-label={t("moreActions")}
+                                            >
+                                                <MoreVertical className="size-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6}>
+                                        {t("moreActions")}
+                                    </TooltipContent>
+                                </Tooltip>
 
                                 <DropdownMenuContent align="end" className="w-52">
                                     <DropdownMenuItem asChild>

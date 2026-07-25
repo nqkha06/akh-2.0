@@ -79,7 +79,7 @@ export class AdminLinksService {
       this.prisma.link.count({ where }),
       this.prisma.link.aggregate({
         where,
-        _sum: { clicks: true },
+        _sum: { views: true },
       }),
     ]);
 
@@ -90,7 +90,7 @@ export class AdminLinksService {
       perPage: query.perPage,
       total,
       pageCount: Math.max(1, Math.ceil(total / query.perPage)),
-      totalClicks: aggregate._sum.clicks ?? 0,
+      totalViews: aggregate._sum.views ?? 0,
     };
   }
 
@@ -246,7 +246,7 @@ export class AdminLinksService {
     const values = Array.isArray(filter.value) ? filter.value : undefined;
     const field = filter.id;
 
-    if (field === "clicks") {
+    if (field === "views") {
       const number = value === undefined ? null : Number(value);
       if (number === null || !Number.isFinite(number)) return undefined;
       const operatorMap = {
@@ -261,7 +261,7 @@ export class AdminLinksService {
         filter.operator as keyof typeof operatorMap
       ];
       return operator
-        ? { clicks: { [operator]: number } }
+        ? { views: { [operator]: number } }
         : undefined;
     }
 
@@ -518,7 +518,7 @@ export class AdminLinksService {
             id: String(link.destinationSnippet.id),
           }
         : null,
-      clicks: link.clicks,
+      views: link.views,
       revenue: link.revenue.toString(),
       actionsCount: link.actions.length,
       platforms: [...new Set(link.actions.map((action) => action.platform))],

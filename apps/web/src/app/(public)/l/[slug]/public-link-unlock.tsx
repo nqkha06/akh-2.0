@@ -25,12 +25,17 @@ import {
   Users,
   Volume2,
   VolumeX,
+  ChevronsRight,
   type LucideIcon,
+  Check,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
-import type { LinkDto } from "@/lib/api-client";
+import {
+  completePublicLinkVisit,
+  type LinkDto,
+} from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const ACTION_DELAY_SECONDS = 6;
@@ -275,6 +280,7 @@ export function PublicLinkUnlock({
 
   const youtubeBackgroundRef =
     useRef<HTMLIFrameElement | null>(null);
+  const visitCompletedRef = useRef(false);
 
   const [completedIds, setCompletedIds] = useState<
     string[]
@@ -393,6 +399,14 @@ export function PublicLinkUnlock({
     totalActions > 0
       ? (completedCount / totalActions) * 100
       : 100;
+
+  const completeSuccessfulVisit = () => {
+    if (visitCompletedRef.current || !link.visitToken) return;
+    visitCompletedRef.current = true;
+    void completePublicLinkVisit(link.slug, link.visitToken).catch(() => {
+      visitCompletedRef.current = false;
+    });
+  };
 
   const selectedBackground = useMemo(
     () =>
@@ -705,7 +719,7 @@ export function PublicLinkUnlock({
                     handleActionClick(id);
                   }}
                   className={[
-                    "group relative flex min-h-16 w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors",
+                    "justify-between group relative flex min-h-16 w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors",
                     completed
                       ? "border-[#27a644]/30 bg-[#27a644]/10"
                       : loading
@@ -737,41 +751,19 @@ export function PublicLinkUnlock({
                           : platformColor,
                     ].join(" ")}
                   >
-                    {loading ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : completed ? (
-                      <CheckCircle2 className="size-4" />
-                    ) : (
-                      <ActionIcon className="size-4" />
-                    )}
+                    <ActionIcon className="size-4" />
                   </span>
 
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-slate-950 dark:text-[#f7f8f8]">
-                      {loading ? t("recordingAction") : actionLabel}
-                    </span>
-
-                    <span className="mt-1 block truncate text-xs text-slate-600 dark:text-[#8a8f98]">
-                      {loading
-                        ? t("keepPageOpen")
-                        : completed
-                          ? t("completedAction")
-                          : t("opensNewTab", {
-                            platform: formatPlatform(action.platform),
-                          })}
-                    </span>
+                  <span >
+                     {loading ? t("pleaseWait") : actionLabel}
                   </span>
 
                   {loading ? (
-                    <span className="shrink-0 font-mono text-xs font-medium tabular-nums text-slate-700 dark:text-[#d0d6e0]">
-                      {remainingSeconds}s
-                    </span>
+                    <Loader2 className="size-4 animate-spin" />
                   ) : completed ? (
-                    <span className="shrink-0 rounded-md border border-[#27a644]/25 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-[#6fd486]">
-                      {t("done")}
-                    </span>
+                    <Check className="size-6 shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-[#62666d] dark:group-hover:text-[#d0d6e0]" />
                   ) : (
-                    <ExternalLink className="size-4 shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-[#62666d] dark:group-hover:text-[#d0d6e0]" />
+                    <ChevronsRight className="size-6 shrink-0 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-[#62666d] dark:group-hover:text-[#d0d6e0]" />
                   )}
                 </a>
               );
@@ -813,7 +805,10 @@ export function PublicLinkUnlock({
                 <button
                   type="button"
                   disabled={!unlocked}
-                  onClick={() => setSnippetRevealed(true)}
+                  onClick={() => {
+                    setSnippetRevealed(true);
+                    completeSuccessfulVisit();
+                  }}
                   data-testid="unlock-cta"
                   className={[
                     "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
@@ -848,6 +843,7 @@ export function PublicLinkUnlock({
                 rel="noopener noreferrer"
                 aria-disabled={!unlocked}
                 data-testid="unlock-cta"
+                onClick={completeSuccessfulVisit}
                 className={[
                   "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
                   unlocked

@@ -407,10 +407,9 @@ function initials(name: string) {
 
 function formatBalance(value: string) {
   const amount = Number(value);
-  if (!Number.isFinite(amount)) return `${value} ₫`;
+  if (!Number.isFinite(amount)) return `$${value}`;
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
+    currency: "USD",
   }).format(amount);
 }

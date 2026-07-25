@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FilePickerCredenza } from "@/components/file-picker-credenza"
+import { FileTypeIcon } from "@/components/file-type-icon"
 import { FILE_CREATED_EVENT } from "@/components/dashboard/files/events"
 import { SnippetPickerCredenza } from "./snippet-picker-credenza"
 import {
@@ -65,6 +66,8 @@ import {
   History,
   X,
   Check,
+  CheckCircle2,
+  Copy,
   Loader2,
   Lock,
   type LucideIcon,
@@ -74,6 +77,7 @@ import {
   ChevronsDown,
   ChevronsDownUp,
 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
   SiApplemusic,
@@ -856,7 +860,9 @@ export default function SocialLinksGenerator({
   const [title, setTitle] = useState(initialLink?.title || "")
   const [inputType, setInputType] = useState<"url" | "file" | "snippet">(initialInputType)
   const [selectedFile, setSelectedFile] = useState<string>(initialLink?.selectedFile || "")
-  const [selectedFileName, setSelectedFileName] = useState(initialLink?.selectedFile || "")
+  const [selectedFileName, setSelectedFileName] = useState(
+    initialLink?.destinationFileName || initialLink?.selectedFile || "",
+  )
   const [availableFiles, setAvailableFiles] = useState<ManagedFileDto[]>([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [fileUploading, setFileUploading] = useState(false)
@@ -926,7 +932,27 @@ export default function SocialLinksGenerator({
   const [submitError, setSubmitError] = useState("")
   const [validationAttempted, setValidationAttempted] = useState(false)
   const [createdLink, setCreatedLink] = useState<LinkDto | null>(null)
+  const [publicUrlCopied, setPublicUrlCopied] = useState(false)
   const [fetchedActionHistory, setFetchedActionHistory] = useState<LinkDto[]>([])
+  const createdPublicUrl = useMemo(() => {
+    if (!createdLink) return ""
+
+    const publicPath = `/l/${createdLink.slug}`
+
+    if (brand.siteUrl) {
+      try {
+        return new URL(publicPath, brand.siteUrl).toString()
+      } catch {
+        // Fall back to the current browser origin or the configured host.
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      return new URL(publicPath, window.location.origin).toString()
+    }
+
+    return siteHost ? `https://${siteHost}${publicPath}` : publicPath
+  }, [brand.siteUrl, createdLink, siteHost])
 
   useEffect(() => {
     if (actionHistory !== undefined) return
@@ -993,6 +1019,13 @@ export default function SocialLinksGenerator({
     const intervalId = window.setInterval(() => setExpiryValidationNow(Date.now()), 10_000)
     return () => window.clearInterval(intervalId)
   }, [expiryEnabled, expiryType])
+
+  useEffect(() => {
+    if (!publicUrlCopied) return
+
+    const timerId = window.setTimeout(() => setPublicUrlCopied(false), 2_000)
+    return () => window.clearTimeout(timerId)
+  }, [publicUrlCopied])
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -1321,7 +1354,11 @@ export default function SocialLinksGenerator({
   const canCreateLink = isDestinationValid && isTitleValid && allActionUrlsValid && isExpiryValid
   const selectedBackground = backgroundImages.find((bg) => bg.id === selectedBackgroundId)
   const selectedSnippetData = snippets.find((snippet) => snippet.id === selectedSnippet)
-  const selectedFileDisplayName = availableFiles.find((file) => file.id === selectedFile)?.name || selectedFileName
+  const selectedFileData = availableFiles.find((file) => file.id === selectedFile)
+  const selectedFileDisplayName = selectedFileData?.name || selectedFileName
+  const selectedFileIconData = selectedFileData || (
+    selectedFileDisplayName ? { name: selectedFileDisplayName } : null
+  )
   const backgroundFileMedia = availableFiles.filter((file) => isImageFile(file) || isVideoFile(file))
   const youtubeEmbedUrl = backgroundMediaType === "youtube"
     ? getYouTubeEmbedUrl(backgroundMediaUrl)
@@ -1506,6 +1543,7 @@ export default function SocialLinksGenerator({
     setIsSubmitting(true)
     setSubmitError("")
     setCreatedLink(null)
+    setPublicUrlCopied(false)
 
     try {
       const link = initialLink
@@ -1527,6 +1565,19 @@ export default function SocialLinksGenerator({
       setIsSubmitting(false)
     }
   }
+
+  const handleCopyPublicUrl = async () => {
+    if (!createdPublicUrl) return
+
+    try {
+      await navigator.clipboard.writeText(createdPublicUrl)
+      setPublicUrlCopied(true)
+      toast.success(t("copiedPublicUrl"))
+    } catch {
+      toast.error(t("copyPublicUrlFailed"))
+    }
+  }
+
   const isAllExpanded =
     expandedPlatforms.size === Object.keys(socialPlatforms).length;
   return (
@@ -1630,9 +1681,13 @@ export default function SocialLinksGenerator({
                       validationAttempted && !isFileDestinationValid && "border-destructive",
                     )}
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
-                      <FileImage className="h-5 w-5" />
-                    </span>
+                    {selectedFileIconData ? (
+                      <FileTypeIcon file={selectedFileIconData} />
+                    ) : (
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
+                        <FileImage className="h-5 w-5" />
+                      </span>
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-foreground">
                         {selectedFileDisplayName ? t("fileSelected") : t("selectFile")}
@@ -2686,7 +2741,11 @@ export default function SocialLinksGenerator({
                     >
                       {aliasCheckMessage}
                     </p>
-                  ) : null}
+                  ) : (
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      {t("aliasRandomHint")}
+                    </p>
+                  )}
                 </div>
               </div>
             </CollapsibleContent>
@@ -2876,6 +2935,88 @@ export default function SocialLinksGenerator({
           </Button>
         </div>
 
+        {submitError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-medium text-destructive"
+          >
+            {submitError}
+          </div>
+        )}
+
+        {createdLink && (
+          <section
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4 shadow-none"
+          >
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-5" />
+              </span>
+
+              <div className="min-w-0 pt-0.5">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {isEditing ? t("updated") : t("createdSuccess")}
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {isEditing ? t("updatedDescription") : t("createdDescription")}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex min-w-0 items-center gap-1 rounded-lg border border-border bg-background p-1.5 pl-3">
+              <a
+                href={createdPublicUrl}
+                target="_blank"
+                rel="noreferrer"
+                title={createdPublicUrl}
+                className="min-w-0 flex-1 truncate font-mono text-xs font-medium text-foreground underline-offset-4 hover:text-primary hover:underline sm:text-sm"
+              >
+                {createdPublicUrl}
+              </a>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="shrink-0"
+                    aria-label={publicUrlCopied ? t("copiedPublicUrl") : t("copyPublicUrl")}
+                    onClick={() => void handleCopyPublicUrl()}
+                  >
+                    {publicUrlCopied ? (
+                      <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <Copy className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {publicUrlCopied ? t("copiedPublicUrl") : t("copyPublicUrl")}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon-sm" className="shrink-0">
+                    <a
+                      href={createdPublicUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={t("openPublicUrl")}
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("openPublicUrl")}</TooltipContent>
+              </Tooltip>
+            </div>
+          </section>
+        )}
+
         <Card className="relative z-10 min-h-[420px] overflow-hidden rounded-xl border-border bg-slate-100 p-4 shadow-none dark:bg-[#010102] sm:p-5 lg:min-h-[560px]">
           {activeBackgroundMediaType === "video" && activeBackgroundMediaUrl ? (
             <video
@@ -3022,27 +3163,6 @@ export default function SocialLinksGenerator({
             >
               <Lock />{inputType === "file" ? t("unlockFile") : inputType === "snippet" ? t("revealSnippet") : t("unlockLink")}
             </Button>
-
-            {submitError && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                {submitError}
-              </div>
-            )}
-
-            {createdLink && (
-              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-left text-sm text-emerald-700 dark:text-emerald-400">
-                <p className="font-semibold">{isEditing ? t("updated") : t("createdSuccess")}</p>
-
-                <a
-                  href={`/l/${createdLink.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 block break-all font-medium underline underline-offset-4"
-                >
-                  /l/{createdLink.slug}
-                </a>
-              </div>
-            )}
 
           </Card>
         </Card>

@@ -487,7 +487,7 @@ async function main() {
       appearanceJson,
       expiresAt,
       maxClicks,
-      clicks: link.clicks,
+      views: link.clicks,
       status: link.status,
     };
 

@@ -145,10 +145,10 @@
     "allPlatforms": "Tất cả platform",
     "fromDate": "Từ ngày",
     "toDate": "Đến ngày",
-    "minClicks": "Click tối thiểu",
+    "minClicks": "Visit hoàn tất tối thiểu",
     "minClicksPlaceholder": "Ví dụ: 100",
     "highPerformance": "Chỉ hiện link hiệu suất cao",
-    "highPerformanceDescription": "Link có từ 500 clicks trở lên.",
+    "highPerformanceDescription": "Link có từ 500 visit hoàn tất trở lên.",
     "demoData": "Dữ liệu demo",
     "rows": "Dòng",
     "showing": "Hiển thị {first}-{last} trong {total} link",
@@ -168,8 +168,9 @@
       "label": "Tóm tắt Social links",
       "total": "Tổng số link",
       "active": "Đang hoạt động",
-      "clicks": "Lượt mở public",
-      "actions": "Action đã cấu hình"
+      "clicks": "Visit hoàn tất",
+      "views": "Visit hoàn tất",
+      "revenue": "Doanh thu"
     },
     "monetization": {
       "eyebrow": "Lộ trình kiếm tiền",
@@ -337,7 +338,7 @@
     "sort": {
       "newest": "Mới nhất",
       "oldest": "Cũ nhất",
-      "clicksDesc": "Nhiều click nhất",
+      "clicksDesc": "Nhiều visit hoàn tất nhất",
       "titleAsc": "Title A-Z",
       "actionsDesc": "Nhiều action nhất"
     }
@@ -348,6 +349,7 @@
     "to": "đến",
     "copied": "Đã sao chép!",
     "copyFailed": "Không thể sao chép link.",
+    "copyPublicUrlHint": "Nhấn để sao chép URL công khai",
     "copyLink": "Copy link",
     "copy": "Sao chép",
     "open": "Mở link",
@@ -365,21 +367,24 @@
     "stats": "Thống kê",
     "actionsCount": "{count} actions",
     "statsTitle": "Thống kê link",
-    "statsDescription": "Ảnh chụp hiệu suất demo trong toàn thời gian.",
-    "clicks": "Clicks",
+    "statsDescription": "Xem thống kê chi tiết về hiệu suất của link.",
+    "clicks": "Visit hoàn tất",
     "actions": "Actions",
     "updatedAt": "Cập nhật",
     "destination": "Destination",
     "protectedSnippet": "Snippet được bảo vệ",
     "updated": "Cập nhật {date}",
-    "visitors": "Visitors",
+    "visitors": "Visit hoàn tất",
     "earnings": "Thu nhập",
     "status": "Trạng thái",
     "shortUrl": "Short URL",
     "destinationUrl": "Destination URL",
+    "destinationFile": "File đích",
+    "unnamedFile": "File không có tên",
     "created": "Ngày tạo",
     "lastUpdated": "Cập nhật cuối",
     "monetization": "Monetization",
+    "moreActions": "Thao tác khác",
     "edit": "Chỉnh sửa",
     "deactivate": "Tắt",
     "delete": "Xóa",
@@ -619,7 +624,7 @@
       "emptyDescription": "Quản trị viên chưa kích hoạt cấu hình kiếm tiền nào. Vui lòng quay lại sau."
     },
     "loyalty": {
-      "eyebrow": "Loyalty",
+      "eyebrow": "Thành viên",
       "title": "Thân thiết",
       "description": "Gamification nhẹ giúp bạn theo dõi điểm thân thiết, nhiệm vụ và quyền lợi theo hạng thành viên."
     },
@@ -741,13 +746,14 @@
     "readyTitle": "Nội dung đã sẵn sàng",
     "readyDescription": "Tất cả yêu cầu đã hoàn thành. Bạn có thể tiếp tục.",
     "recordingAction": "Đang ghi nhận hành động...",
+    "pleaseWait": "Vui lòng chờ...",
     "keepPageOpen": "Giữ trang này mở trong giây lát",
     "completedAction": "Đã hoàn thành · có thể mở lại",
     "opensNewTab": "Mở {platform} trong tab mới",
     "done": "Xong",
     "snippetRevealed": "Snippet đã được hiển thị",
-    "revealSnippet": "Hiển thị snippet",
-    "unlockSnippet": "Hoàn thành yêu cầu để mở snippet",
+    "revealSnippet": "Mở khoá snippet",
+    "unlockSnippet": "Unlock snippet",
     "unlockedContent": "Nội dung đã mở khóa",
     "openFile": "Mở file",
     "continueToLink": "Tiếp tục đến liên kết",
@@ -958,6 +964,7 @@
     "coverSelectHint": "Chọn ảnh có sẵn hoặc upload ảnh mới.",
     "customAlias": "Alias tùy chỉnh",
     "aliasPlaceholder": "alias-tuy-chinh",
+    "aliasRandomHint": "Để trống để hệ thống tự tạo alias ngẫu nhiên.",
     "aliasEditing": "Không thể thay đổi alias khi chỉnh sửa.",
     "aliasMin": "Alias phải có ít nhất 3 ký tự.",
     "checkingAlias": "Đang kiểm tra alias...",
@@ -968,13 +975,13 @@
     "enableExpiry": "Bật thời hạn link",
     "expiryType": "Kiểu hết hạn",
     "byDate": "Theo ngày",
-    "byClicks": "Theo lượt click",
+    "byClicks": "Theo lượt vượt link",
     "expiryDate": "Ngày hết hạn",
     "expiryTime": "Giờ hết hạn",
     "expiresOn": "Link sẽ hết hạn vào {date} lúc {time}",
-    "maximumClicks": "Số lượt click tối đa",
+    "maximumClicks": "Số lượt vượt tối đa",
     "maximumClicksPlaceholder": "Ví dụ: 100",
-    "expiresAfter": "Link sẽ hết hạn sau {count} lượt click",
+    "expiresAfter": "Link sẽ hết hạn sau {count} lượt vượt",
     "previewTitle": "XEM TRƯỚC",
     "saving": "Đang lưu...",
     "creating": "Đang tạo...",
@@ -997,6 +1004,12 @@
     "expiryRequired": "Hãy nhập điều kiện hết hạn hợp lệ",
     "updated": "Cập nhật link thành công",
     "createdSuccess": "Tạo link thành công",
+    "createdDescription": "Link đã sẵn sàng để bạn chia sẻ.",
+    "updatedDescription": "Các thay đổi đã được áp dụng trên link công khai.",
+    "copyPublicUrl": "Sao chép URL",
+    "copiedPublicUrl": "Đã sao chép URL",
+    "copyPublicUrlFailed": "Không thể sao chép URL. Vui lòng thử lại.",
+    "openPublicUrl": "Mở link công khai",
     "createFailed": "Tạo link thất bại",
     "coverMustImage": "Ảnh cover phải là file ảnh.",
     "coverMaxSize": "Ảnh cover tối đa 10 MB.",
@@ -1004,6 +1017,53 @@
     "uploadFileFailed": "Upload file thất bại.",
     "youtubeValid": "Hãy nhập link YouTube hợp lệ.",
     "youtubeSelected": "Đã chọn YouTube làm nền."
+  },
+  "MemberDashboard": {
+    "eyebrow": "Hiệu suất",
+    "title": "Tổng quan",
+    "actions": {
+      "withdraw": "Rút tiền",
+      "createLink": "Tạo social link",
+      "myLinks": "Social links",
+      "viewAll": "Xem tất cả"
+    },
+    "metrics": {
+      "label": "Chỉ số {days} ngày",
+      "earnings": "Doanh thu",
+      "views": "Lượt vượt thành công",
+      "averageCpm": "CPM trung bình",
+      "today": "Hôm nay"
+    },
+    "performance": {
+      "title": "Hiệu suất theo thời gian",
+      "successfulOpens": "Lượt vượt",
+      "revenue": "Doanh thu",
+      "empty": "Chưa có lượt vượt trong kỳ này."
+    },
+    "daily": {
+      "title": "Hiệu suất hằng ngày",
+      "date": "Ngày",
+      "views": "Lượt vượt",
+      "earnings": "Doanh thu",
+      "averageCpm": "CPM trung bình"
+    },
+    "topLinks": {
+      "title": "Social links hiệu quả nhất",
+      "empty": "Chưa có dữ liệu social link."
+    },
+    "breakdowns": {
+      "countries": "Quốc gia hàng đầu",
+      "devices": "Thiết bị hàng đầu",
+      "browsers": "Trình duyệt hàng đầu",
+      "empty": "Chưa đủ dữ liệu."
+    },
+    "labels": {
+      "unknown": "Không xác định",
+      "mobile": "Di động",
+      "tablet": "Máy tính bảng",
+      "desktop": "Máy tính",
+      "other": "Khác"
+    }
   },
   "Admin": {
     "brand": {

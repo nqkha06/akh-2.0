@@ -10,6 +10,7 @@ function linkMatchesQuery(link: LinkDto, query: string) {
     link.slug,
     link.shortUrl,
     link.destinationUrl,
+    link.destinationFileName,
     link.subtitle,
     link.status,
     link.inputType,
@@ -35,8 +36,8 @@ export function filterLinks(links: LinkDto[], filters: LinkFilters) {
     if (filters.inputType !== "all" && link.inputType !== filters.inputType) return false;
     if (filters.platform !== "all" && !link.actions.some((action) => action.platform === filters.platform)) return false;
     if (!isWithinDateRange(link, filters.createdFrom, filters.createdTo)) return false;
-    if (filters.minClicks && !Number.isNaN(minClicks) && link.clicks < minClicks) return false;
-    if (filters.highPerformance && link.clicks < 500) return false;
+    if (filters.minClicks && !Number.isNaN(minClicks) && link.views < minClicks) return false;
+    if (filters.highPerformance && link.views < 500) return false;
     return true;
   });
 }
@@ -44,7 +45,7 @@ export function filterLinks(links: LinkDto[], filters: LinkFilters) {
 export function sortLinks(links: LinkDto[], sort: LinkSort) {
   return [...links].sort((first, second) => {
     if (sort === "oldest") return new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
-    if (sort === "clicks-desc") return second.clicks - first.clicks;
+    if (sort === "clicks-desc") return second.views - first.views;
     if (sort === "title-asc") return first.title.localeCompare(second.title);
     if (sort === "actions-desc") return second.actions.length - first.actions.length;
     return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();

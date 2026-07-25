@@ -42,7 +42,17 @@ export class LinksController {
       countryCode: request.get("x-visitor-country"),
       userAgent: request.get("user-agent"),
       ipAddress: request.get("x-visitor-ip") || request.ip,
+      referrer: request.get("referer"),
     });
+  }
+
+  @Post(":slug/visit/:visitToken/complete")
+  @HttpCode(200)
+  completeVisit(
+    @Param("slug") slug: string,
+    @Param("visitToken") visitToken: string,
+  ) {
+    return this.linksService.completeVisit(slug, visitToken);
   }
 
   @UseGuards(JwtAuthGuard)

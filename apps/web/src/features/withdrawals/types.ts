@@ -13,6 +13,7 @@ export type WithdrawalParty = {
 
 export type AdminWithdrawal = {
   id: number;
+  currency: string;
   amount: string;
   feeAmount: string;
   netAmount: string;

@@ -22,6 +22,7 @@ export type LinkDto = {
   inputType: string;
   selectedSnippet: string | null;
   selectedFile: string | null;
+  destinationFileName: string | null;
   subtitle: string | null;
   customAlias: string | null;
   coverImageUrl: string | null;
@@ -30,9 +31,11 @@ export type LinkDto = {
   expiryDate: string | null;
   expiryTime: string | null;
   maxClicks: number | null;
-  clicks: number;
+  views: number;
+  revenue: string;
   status: string;
   monetizationRedirectUrl?: string | null;
+  visitToken?: string | null;
   actions: LinkActionDto[];
   backgroundSettings: {
     selectedBackgroundId: string | null;
@@ -56,6 +59,7 @@ export type LinkVisitorContext = {
   countryCode?: string | null;
   userAgent?: string | null;
   ipAddress?: string | null;
+  referrer?: string | null;
 };
 
 export type ManagedFileDto = {
@@ -456,7 +460,9 @@ export async function recordLinkVisit(
   if (visitor.ipAddress) {
     headers.set("x-visitor-ip", visitor.ipAddress);
   }
-
+  if (visitor.referrer) {
+    headers.set("referer", visitor.referrer);
+  }
   const response = await fetch(
     requestApiUrl(`/links/${encodeURIComponent(slug)}/visit`),
     {
@@ -464,6 +470,45 @@ export async function recordLinkVisit(
       headers,
       cache: "no-store",
       credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as LinkDto;
+}
+
+export async function completeLinkVisit(slug: string, visitToken: string) {
+  const response = await fetch(
+    requestApiUrl(
+      `/links/${encodeURIComponent(slug)}/visit/${encodeURIComponent(visitToken)}/complete`,
+    ),
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await getApiError(response));
+  }
+
+  return (await response.json()) as LinkDto;
+}
+
+export async function completePublicLinkVisit(
+  slug: string,
+  visitToken: string,
+) {
+  const response = await fetch(
+    `/api/public/links/${encodeURIComponent(slug)}?visitToken=${encodeURIComponent(visitToken)}`,
+    {
+      method: "GET",
+      cache: "no-store",
+      keepalive: true,
     },
   );
 

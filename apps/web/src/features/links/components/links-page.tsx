@@ -14,7 +14,6 @@ import {
   LoaderCircle,
   Megaphone,
   MonitorSmartphone,
-  MousePointerClick,
   Plus,
   RotateCcw,
   Search,
@@ -114,6 +113,7 @@ export function LinksView({
   const isDesktopFilter = useMediaQuery("(min-width: 768px)");
   const filterDirection = isDesktopFilter ? "right" : "bottom";
   const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const { formatCurrency } = useMemberCurrency();
 
   const loadLinks = useCallback(async () => {
     try {
@@ -155,8 +155,8 @@ export function LinksView({
   const metrics = useMemo(() => ({
     total: links.length,
     active: links.filter((link) => link.status === "active").length,
-    clicks: links.reduce((sum, link) => sum + link.clicks, 0),
-    actions: links.reduce((sum, link) => sum + link.actions.length, 0),
+    views: links.reduce((sum, link) => sum + link.views, 0),
+    revenue: sumDecimalStrings(links.map((link) => link.revenue)),
   }), [links]);
 
   const updateFilter = <Key extends keyof LinkFilters>(key: Key, value: LinkFilters[Key]) => {
@@ -180,12 +180,6 @@ export function LinksView({
       <LinksTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "overview" ? <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-card px-4 py-3 sm:px-5">
-          <p className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
-            <Workflow className="mt-1 size-4 shrink-0 text-primary" />
-            {t("context")}
-          </p>
-        </div>
 
         {error ? (
         <Alert variant="destructive" className="shadow-none">
@@ -202,8 +196,8 @@ export function LinksView({
           <section className="grid overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-2 xl:grid-cols-4" aria-label={t("summary.label")}>
             <SummaryMetric icon={Link2} label={t("summary.total")} value={numberFormatter.format(metrics.total)} />
             <SummaryMetric icon={CircleCheck} label={t("summary.active")} value={numberFormatter.format(metrics.active)} accent />
-            <SummaryMetric icon={MousePointerClick} label={t("summary.clicks")} value={numberFormatter.format(metrics.clicks)} />
-            <SummaryMetric icon={Activity} label={t("summary.actions")} value={numberFormatter.format(metrics.actions)} />
+            <SummaryMetric icon={Activity} label={t("summary.views")} value={numberFormatter.format(metrics.views)} />
+            <SummaryMetric icon={CircleDollarSign} label={t("summary.revenue")} value={formatCurrency(metrics.revenue)} />
           </section>
 
           <Card className="gap-3 border-border bg-card p-3 shadow-none">
@@ -663,6 +657,38 @@ function formatPayoutRates(
     .join(" / ");
 }
 
+function sumDecimalStrings(values: string[]) {
+  const parsed = values.map((value) => {
+    const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
+    return match
+      ? {
+          negative: match[1] === "-",
+          integer: match[2],
+          fraction: match[3] ?? "",
+        }
+      : { negative: false, integer: "0", fraction: "" };
+  });
+  const scale = parsed.reduce(
+    (maximum, value) => Math.max(maximum, value.fraction.length),
+    0,
+  );
+  const total = parsed.reduce((sum, value) => {
+    const units = BigInt(
+      `${value.integer}${value.fraction.padEnd(scale, "0")}`,
+    );
+    return sum + (value.negative ? -units : units);
+  }, 0n);
+  const negative = total < 0n;
+  const absolute = negative ? -total : total;
+
+  if (scale === 0) return `${negative ? "-" : ""}${absolute}`;
+
+  const digits = absolute.toString().padStart(scale + 1, "0");
+  const integer = digits.slice(0, -scale);
+  const fraction = digits.slice(-scale).replace(/0+$/, "");
+  return `${negative ? "-" : ""}${integer}${fraction ? `.${fraction}` : ""}`;
+}
+
 function countryName(
   countryCode: string,
   locale: string,
@@ -724,8 +750,8 @@ function LinksEmptyState({ icon: Icon, title, description, children }: { icon: L
 function LinksPageSkeleton() {
   return (
     <div className="space-y-5">
-      <div className="grid overflow-hidden rounded-xl border border-border sm:grid-cols-2 xl:grid-cols-4">
-        {[1, 2, 3, 4].map((item) => <div key={item} className="flex min-h-24 items-center gap-3 border-b border-r border-border p-4"><Skeleton className="size-9 rounded-lg" /><div className="space-y-2"><Skeleton className="h-3 w-24" /><Skeleton className="h-6 w-14" /></div></div>)}
+      <div className="grid overflow-hidden rounded-xl border border-border sm:grid-cols-2 xl:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((item) => <div key={item} className="flex min-h-24 items-center gap-3 border-b border-r border-border p-4"><Skeleton className="size-9 rounded-lg" /><div className="space-y-2"><Skeleton className="h-3 w-24" /><Skeleton className="h-6 w-14" /></div></div>)}
       </div>
       <Skeleton className="h-16 rounded-xl" />
       {[1, 2, 3].map((item) => <Skeleton key={item} className="h-52 rounded-xl" />)}

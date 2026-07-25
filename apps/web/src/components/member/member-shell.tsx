@@ -35,7 +35,7 @@ export function MemberShell({
   }
 
   return (
-    <div className="flex h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+    <div className="fixed inset-0 flex min-h-0 overflow-hidden bg-background text-foreground">
       <MemberSidebar
         collapsed={collapsed}
         onToggle={toggleSidebar}

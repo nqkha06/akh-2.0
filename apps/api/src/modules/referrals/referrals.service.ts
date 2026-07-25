@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { BASE_CURRENCY_CODE } from "../currencies/currency.constants";
 
 export const REFERRAL_COMMISSION_RATE = new Prisma.Decimal("5.00");
 export const REFERRAL_COMMISSIONABLE_TYPE = "user_withdrawal";
@@ -96,7 +97,7 @@ export class ReferralsService {
     return {
       referralCode,
       referralPath: `/register?ref=${encodeURIComponent(referralCode)}`,
-      currency: "VND",
+      currency: BASE_CURRENCY_CODE,
       commissionRate: REFERRAL_COMMISSION_RATE.toFixed(2),
       commissionBasis: "net_amount",
       summary: {

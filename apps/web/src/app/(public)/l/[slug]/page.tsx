@@ -18,6 +18,7 @@ export default async function PublicLinkPage({
     countryCode: getVisitorCountry(requestHeaders),
     userAgent: requestHeaders.get("user-agent"),
     ipAddress: getVisitorIp(requestHeaders),
+    referrer: requestHeaders.get("referer"),
   }).catch(() => null);
 
   if (!link) {
@@ -42,6 +43,7 @@ export default async function PublicLinkPage({
     const redirectUrl = buildMonetizationRedirectUrl(
       link.monetizationRedirectUrl,
       link.slug,
+      link.visitToken,
       getRequestOrigin(requestHeaders),
     );
     if (redirectUrl) redirect(redirectUrl);
@@ -85,6 +87,7 @@ function getRequestOrigin(requestHeaders: Headers) {
 function buildMonetizationRedirectUrl(
   targetUrl: string,
   slug: string,
+  visitToken: string | null | undefined,
   origin: string,
 ) {
   try {
@@ -93,6 +96,8 @@ function buildMonetizationRedirectUrl(
       `/api/public/links/${encodeURIComponent(slug)}`,
       origin,
     );
+    if (!visitToken) return null;
+    dataUrl.searchParams.set("visitToken", visitToken);
 
     redirectUrl.searchParams.set("slug", slug);
     redirectUrl.searchParams.set("dataUrl", dataUrl.toString());

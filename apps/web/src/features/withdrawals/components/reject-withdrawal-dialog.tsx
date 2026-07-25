@@ -70,7 +70,10 @@ export function RejectWithdrawalDialog({
           <AlertDialogDescription>
             Yêu cầu #{withdrawal.id} trị giá{" "}
             <strong>
-              {formatWithdrawalMoney(withdrawal.amount)}
+              {formatWithdrawalMoney(
+                withdrawal.amount,
+                withdrawal.currency,
+              )}
             </strong>{" "}
             sẽ bị từ chối và toàn bộ số tiền yêu cầu được hoàn lại vào số dư
             member.

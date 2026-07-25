@@ -19,7 +19,7 @@ const sortableColumns = [
   "updatedAt",
   "title",
   "status",
-  "clicks",
+  "views",
 ] as const;
 const statuses = ["active", "inactive", "paused"] as const;
 const destinationTypes = ["url", "file", "snippet"] as const;
@@ -31,7 +31,7 @@ const filterableColumns = [
   "status",
   "destinationType",
   "deletedState",
-  "clicks",
+  "views",
   "createdAt",
 ] as const;
 const filterVariants = [

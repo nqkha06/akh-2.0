@@ -193,19 +193,19 @@ export function getSocialLinksTableColumns({
       enableSorting: false,
     },
     {
-      id: "clicks",
-      accessorKey: "clicks",
+      id: "views",
+      accessorKey: "views",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Lượt mở" />
+        <DataTableColumnHeader column={column} label="Visit hoàn tất" />
       ),
       cell: ({ row }) => (
         <span className="tabular-nums">
-          {new Intl.NumberFormat("vi-VN").format(row.original.clicks)}
+          {new Intl.NumberFormat("vi-VN").format(row.original.views)}
         </span>
       ),
       meta: {
-        label: "Lượt mở",
-        placeholder: "Nhập số lượt...",
+        label: "Visit hoàn tất",
+        placeholder: "Nhập số visit...",
         variant: "number",
         icon: MousePointerClick,
       },

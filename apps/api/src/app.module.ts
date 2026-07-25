@@ -5,6 +5,7 @@ import { validateEnvironment } from "./config/env.validation";
 
 import { PrismaModule } from "./database/prisma/prisma.module";
 import { AdminMediaModule } from "./modules/admin-media/admin-media.module";
+import { AdminDashboardModule } from "./modules/admin-dashboard/admin-dashboard.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { AuthorizationModule } from "./modules/authorization/authorization.module";
 import { BioPagesModule } from "./modules/bio-pages/bio-pages.module";
@@ -13,6 +14,7 @@ import { FilesModule } from "./modules/files/files.module";
 import { LinksModule } from "./modules/links/links.module";
 import { LanguagesModule } from "./modules/languages/languages.module";
 import { MonetizationLevelsModule } from "./modules/monetization-levels/monetization-levels.module";
+import { MemberDashboardModule } from "./modules/member-dashboard/member-dashboard.module";
 import { PaymentMethodsModule } from "./modules/payment-methods/payment-methods.module";
 import { PagesModule } from "./modules/pages/pages.module";
 import { ReferralsModule } from "./modules/referrals/referrals.module";
@@ -30,6 +32,7 @@ import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module
       validate: validateEnvironment,
     }),
     PrismaModule,
+    AdminDashboardModule,
     AdminMediaModule,
     AuthModule,
     AuthorizationModule,
@@ -38,6 +41,7 @@ import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module
     FilesModule,
     LinksModule,
     LanguagesModule,
+    MemberDashboardModule,
     MonetizationLevelsModule,
     PaymentMethodsModule,
     PagesModule,

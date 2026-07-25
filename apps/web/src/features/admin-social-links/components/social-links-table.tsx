@@ -40,7 +40,7 @@ export function SocialLinksTable({
   data,
   pageCount,
   total,
-  totalClicks,
+  totalViews,
 }: AdminSocialLinksTableData) {
   const permissions = useAdminPermissions()
   const canUpdate = permissions.includes("links.update")
@@ -84,7 +84,7 @@ export function SocialLinksTable({
     <div className="flex min-w-0 w-full flex-col gap-6">
       <div className="grid gap-3 sm:grid-cols-3">
         <SummaryCard label="Kết quả" value={total} />
-        <SummaryCard label="Tổng lượt mở" value={totalClicks} />
+        <SummaryCard label="Tổng visit hoàn tất" value={totalViews} />
         <SummaryCard
           label="Đang hoạt động trên trang"
           value={data.filter((link) => link.status === "active").length}

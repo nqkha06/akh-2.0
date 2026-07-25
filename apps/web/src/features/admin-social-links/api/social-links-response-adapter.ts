@@ -10,6 +10,6 @@ export function adaptAdminSocialLinksResponse(
     data: response.items,
     pageCount: Math.max(1, Math.ceil(response.total / response.limit)),
     total: response.total,
-    totalClicks: response.totalClicks,
+    totalViews: response.totalViews,
   }
 }

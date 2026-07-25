@@ -53,6 +53,7 @@ model User {
   supportAttachments       SupportTicketAttachment[]
   meta                     UserMeta[]
   bioPages                 BioPage[]
+  accessLogs               LinkAccessLog[]
 
   @@index([status])
   @@index([monetizationLevelId])
@@ -175,29 +176,30 @@ model SocialAccount {
 }
 
 model Link {
-  id                        Int          @id @default(autoincrement())
-  userId                    Int          @map("user_id")
-  slug                      String       @unique
+  id                        Int             @id @default(autoincrement())
+  userId                    Int             @map("user_id")
+  slug                      String          @unique
   title                     String
   subtitle                  String?
-  destinationType           String       @default("url") @map("destination_type")
-  destinationUrl            String?      @map("destination_url")
-  destinationFileId         Int?         @map("destination_file_id")
-  destinationSnippetId      Int?         @map("destination_snippet_id")
-  destinationSnippetContent String?      @map("destination_snippet_content")
-  appearanceJson            String       @default("{}") @map("appearance")
-  expiresAt                 DateTime?    @map("expires_at")
-  maxClicks                 Int?         @map("max_clicks")
-  clicks                    Int          @default(0)
-  status                    String       @default("active")
-  revenue                   Decimal      @default(0)
-  createdAt                 DateTime     @default(now()) @map("created_at")
-  updatedAt                 DateTime     @updatedAt @map("updated_at")
-  deletedAt                 DateTime?    @map("deleted_at")
-  user                      User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  destinationFile           MemberFile?  @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
-  destinationSnippet        Snippet?     @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
+  destinationType           String          @default("url") @map("destination_type")
+  destinationUrl            String?         @map("destination_url")
+  destinationFileId         Int?            @map("destination_file_id")
+  destinationSnippetId      Int?            @map("destination_snippet_id")
+  destinationSnippetContent String?         @map("destination_snippet_content")
+  appearanceJson            String          @default("{}") @map("appearance")
+  expiresAt                 DateTime?       @map("expires_at")
+  maxClicks                 Int?            @map("max_clicks")
+  views                     Int             @default(0)
+  status                    String          @default("active")
+  revenue                   Decimal         @default(0)
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+  deletedAt                 DateTime?       @map("deleted_at")
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destinationFile           MemberFile?     @relation(fields: [destinationFileId], references: [id], onDelete: SetNull)
+  destinationSnippet        Snippet?        @relation(fields: [destinationSnippetId], references: [id], onDelete: SetNull)
   actions                   LinkAction[]
+  accessLogs                LinkAccessLog[]
 
   @@index([userId])
   @@index([userId, status])
@@ -219,6 +221,66 @@ model LinkAction {
 
   @@index([linkId, position])
   @@map("stu_link_actions")
+}
+
+model UserAgent {
+  id         Int             @id @default(autoincrement())
+  hash       String          @unique
+  raw        String
+  browser    String          @default("other")
+  os         String          @default("other")
+  deviceType Int             @default(2) @map("device_type")
+  accessLogs LinkAccessLog[]
+
+  @@index([browser])
+  @@index([os])
+  @@index([deviceType])
+  @@map("user_agents")
+}
+
+model LinkAccessLog {
+  id                String    @id @default(cuid())
+  linkId            Int       @map("link_id")
+  userId            Int       @map("user_id")
+  levelId           Int?      @map("level_id")
+  agentHash         String    @map("agent_hash")
+  ipAddress         String?   @map("ip_address")
+  country           String    @default("ZZ")
+  device            Int       @default(2)
+  referrer          String?
+  payoutCpm         Decimal   @default(0) @map("payout_cpm")
+  revenue           Decimal   @default(0)
+  isEarn            Boolean   @default(false) @map("is_earn")
+  detectionMask     Int       @default(0) @map("detection_mask")
+  rejectReasonMask  Int       @default(0) @map("reject_reason_mask")
+  completedAt       DateTime? @map("completed_at")
+  processedAt       DateTime? @map("processed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  link              Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userAgent         UserAgent @relation(fields: [agentHash], references: [hash], onDelete: Restrict)
+
+  @@index([linkId, createdAt])
+  @@index([userId, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([agentHash])
+  @@index([completedAt, processedAt])
+  @@index([userId, ipAddress, completedAt])
+  @@map("stu_access_logs")
+}
+
+model AccessLogAggregationRun {
+  id             String    @id @default(cuid())
+  minuteKey      String    @unique @map("minute_key")
+  status         String    @default("processing")
+  processedCount Int       @default(0) @map("processed_count")
+  earnedViews    Int       @default(0) @map("earned_views")
+  revenue        Decimal   @default(0)
+  startedAt      DateTime  @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+
+  @@index([startedAt])
+  @@map("stu_access_aggregation_runs")
 }
 
 model MonetizationLevel {

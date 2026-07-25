@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { randomInt } from "node:crypto";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { MonetizationRouteDto } from "../monetization-levels/dto/monetization-level-config.dto";
@@ -14,6 +15,7 @@ import {
   resolveMonetizationRoute,
 } from "./monetization-route-resolver";
 import { UpdateLinkStatusDto } from "./dto/update-link-status.dto";
+import { LinkVisitAnalyticsService } from "./link-visit-analytics.service";
 
 const linkInclude = Prisma.validator<Prisma.LinkInclude>()({
   actions: { orderBy: { position: "asc" } },
@@ -23,6 +25,10 @@ const linkInclude = Prisma.validator<Prisma.LinkInclude>()({
 
 type LinkWithRelations = Prisma.LinkGetPayload<{ include: typeof linkInclude }>;
 
+const RANDOM_ALIAS_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+const RANDOM_ALIAS_LENGTH = 8;
+const RANDOM_ALIAS_MAX_ATTEMPTS = 10;
+
 const publicVisitInclude = Prisma.validator<Prisma.LinkInclude>()({
   ...linkInclude,
   user: {
@@ -30,7 +36,10 @@ const publicVisitInclude = Prisma.validator<Prisma.LinkInclude>()({
       monetizationLevel: {
         select: {
           status: true,
+          id: true,
           routesJson: true,
+          ratesJson: true,
+          metaDataJson: true,
         },
       },
     },
@@ -45,6 +54,14 @@ export type LinkVisitorMetadata = {
   countryCode?: string | null;
   userAgent?: string | null;
   ipAddress?: string | null;
+  referrer?: string | null;
+};
+
+export type ResolvedMonetization = {
+  targetUrl: string;
+  levelId: number;
+  ratesJson: string;
+  metaDataJson: string;
 };
 
 type StoredAppearance = {
@@ -67,7 +84,10 @@ type StoredAppearance = {
 
 @Injectable()
 export class LinksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly visitAnalytics: LinkVisitAnalyticsService,
+  ) {}
 
   async create(userId: number, createLinkDto: CreateLinkDto) {
     const title = createLinkDto.title.trim();
@@ -77,7 +97,7 @@ export class LinksService {
 
     const destination = await this.resolveDestination(userId, createLinkDto);
     const customAlias = this.normalizeAlias(createLinkDto.customAlias);
-    const slug = customAlias || (await this.createUniqueSlug(createLinkDto.title));
+    const slug = customAlias || (await this.createUniqueRandomAlias());
 
     if (customAlias) {
       await this.assertAliasAvailable(customAlias);
@@ -169,29 +189,46 @@ export class LinksService {
         current.expiresAt && current.expiresAt.getTime() <= Date.now(),
       );
       const expiredByClicks = Boolean(
-        current.maxClicks !== null && current.clicks >= current.maxClicks,
+        current.maxClicks !== null && current.views >= current.maxClicks,
       );
 
       if (expiredByDate || expiredByClicks) {
         return { ...this.toResponse(current), status: "expired" };
       }
 
-      const visited = await prisma.link.update({
-        where: { id: current.id },
-        data: { clicks: { increment: 1 } },
-        include: publicVisitInclude,
-      });
-
-      const monetizationRedirectUrl = await this.resolveMonetizationRedirect(
+      const monetization = await this.resolveMonetizationRedirect(
         prisma,
-        visited,
+        current,
         visitor,
+      );
+      const context = buildVisitorRouteContext(visitor);
+      const visitIntent = await this.visitAnalytics.createIntent(
+        prisma,
+        current,
+        monetization,
+        visitor,
+        context,
       );
 
       return {
-        ...this.toResponse(visited),
-        monetizationRedirectUrl,
+        ...this.toResponse(current),
+        monetizationRedirectUrl: monetization?.targetUrl ?? null,
+        visitToken: visitIntent.id,
       };
+    });
+  }
+
+  async completeVisit(slug: string, visitToken: string) {
+    return this.prisma.$transaction(async (prisma) => {
+      await this.visitAnalytics.completeIntent(prisma, slug, visitToken);
+      const link = await prisma.link.findUnique({
+        where: { slug },
+        include: linkInclude,
+      });
+      if (!link || link.deletedAt) {
+        throw new NotFoundException("Không tìm thấy link.");
+      }
+      return this.toResponse(link);
     });
   }
 
@@ -470,17 +507,25 @@ export class LinksService {
       : null;
   }
 
-  private async createUniqueSlug(source: string) {
-    const baseSlug = this.slugify(source) || `link-${Date.now()}`;
-    let slug = baseSlug;
-    let suffix = 1;
+  private async createUniqueRandomAlias() {
+    for (let attempt = 0; attempt < RANDOM_ALIAS_MAX_ATTEMPTS; attempt += 1) {
+      const alias = Array.from(
+        { length: RANDOM_ALIAS_LENGTH },
+        () => RANDOM_ALIAS_ALPHABET[randomInt(RANDOM_ALIAS_ALPHABET.length)],
+      ).join("");
+      const existing = await this.prisma.link.findUnique({
+        where: { slug: alias },
+        select: { id: true },
+      });
 
-    while (await this.prisma.link.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${suffix}`;
-      suffix += 1;
+      if (!existing) {
+        return alias;
+      }
     }
 
-    return slug;
+    throw new ConflictException(
+      "Không thể tạo alias ngẫu nhiên. Vui lòng thử lại.",
+    );
   }
 
   private normalizeAlias(value?: string | null) {
@@ -554,6 +599,7 @@ export class LinksService {
           : String(link.destinationSnippetId),
       selectedFile:
         link.destinationFileId === null ? null : String(link.destinationFileId),
+      destinationFileName: link.destinationFile?.name ?? null,
       subtitle: link.subtitle,
       customAlias: link.slug,
       coverImageUrl: appearance.coverImageUrl,
@@ -564,7 +610,8 @@ export class LinksService {
         ? `${String(expiresAt.getHours()).padStart(2, "0")}:${String(expiresAt.getMinutes()).padStart(2, "0")}`
         : null,
       maxClicks: link.maxClicks,
-      clicks: link.clicks,
+      views: link.views,
+      revenue: link.revenue.toString(),
       status: link.status,
       actions: link.actions.map((action) => ({
         id: String(action.id),
@@ -593,15 +640,18 @@ export class LinksService {
     prisma: Prisma.TransactionClient,
     link: PublicVisitLink,
     visitor: LinkVisitorMetadata,
-  ) {
+  ): Promise<ResolvedMonetization | null> {
     let level = link.user.monetizationLevel;
     if (!level || level.status !== "published") {
       level = await prisma.monetizationLevel.findFirst({
         where: { isDefault: true, status: "published" },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         select: {
+          id: true,
           status: true,
           routesJson: true,
+          ratesJson: true,
+          metaDataJson: true,
         },
       });
     }
@@ -615,7 +665,14 @@ export class LinksService {
       visitorKey: `${link.id}|${context.visitorKey}`,
     });
 
-    return route?.targetUrl ?? null;
+    if (!route) return null;
+
+    return {
+      targetUrl: route.targetUrl,
+      levelId: level.id,
+      ratesJson: level.ratesJson,
+      metaDataJson: level.metaDataJson,
+    };
   }
 
   private parseMonetizationRoutes(value: string): MonetizationRouteDto[] {

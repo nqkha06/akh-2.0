@@ -7,6 +7,7 @@ import {
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { BASE_CURRENCY_CODE } from "../currencies/currency.constants";
 import { ReferralsService } from "../referrals/referrals.service";
 import type { CreateWithdrawalDto } from "./dto/create-withdrawal.dto";
 import type { EstimateWithdrawalDto } from "./dto/estimate-withdrawal.dto";
@@ -69,7 +70,7 @@ export class WithdrawalsService {
     if (!user) throw new NotFoundException("Không tìm thấy người dùng.");
 
     return {
-      currency: "VND",
+      currency: BASE_CURRENCY_CODE,
       availableBalance: user.balance.toString(),
       pendingBalance: (pending._sum.amount ?? new Prisma.Decimal(0)).toString(),
       totalReceived: (paid._sum.netAmount ?? new Prisma.Decimal(0)).toString(),
@@ -367,7 +368,7 @@ export class WithdrawalsService {
     }
     if (amount.lessThan(minimum)) {
       throw new BadRequestException(
-        `Số tiền rút tối thiểu là ${minimum.toString()} VND.`,
+        `Số tiền rút tối thiểu là ${minimum.toString()} ${BASE_CURRENCY_CODE}.`,
       );
     }
     const fee = Prisma.Decimal.min(amount, rawFee);
@@ -427,6 +428,7 @@ export class WithdrawalsService {
     const snapshot = this.parseSnapshot(record.paymentSnapshotJson);
     return {
       id: record.id,
+      currency: BASE_CURRENCY_CODE,
       amount: record.amount.toString(),
       feeAmount: record.feeAmount.toString(),
       netAmount: record.netAmount.toString(),

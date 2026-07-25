@@ -11,6 +11,7 @@ import type { AddressInfo } from "node:net";
 import type { PrismaService } from "../src/database/prisma/prisma.service";
 import { PermissionsGuard } from "../src/modules/auth/guards/permissions.guard";
 import { RolesGuard } from "../src/modules/auth/guards/roles.guard";
+import { LinkAccessAggregationWorker } from "../src/modules/links/link-access-aggregation.worker";
 import { resolveMonetizationRoute } from "../src/modules/links/monetization-route-resolver";
 import type { MonetizationRouteDto } from "../src/modules/monetization-levels/dto/monetization-level-config.dto";
 
@@ -56,6 +57,7 @@ process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 process.env.FRONTEND_ORIGIN = "http://localhost:3000";
 process.env.AUTH_COOKIE_SECURE = "false";
 process.env.AUTH_COOKIE_SAME_SITE = "lax";
+process.env.VISIT_AGGREGATION_DISABLED = "true";
 
 let app!: INestApplication;
 let baseUrl!: string;
@@ -402,6 +404,135 @@ describe("Authentication E2E", () => {
 
 });
 
+describe("Member dashboard E2E", () => {
+  it("requires authentication and returns a simple real-data overview", async () => {
+    assert.equal((await request("/api/member/dashboard")).status, 401);
+
+    const member = await login();
+    const response = await request("/api/member/dashboard", {
+      headers: { Authorization: `Bearer ${member.body.accessToken}` },
+    });
+    assert.equal(response.status, 200);
+
+    const body = (await response.json()) as {
+      member: { name: string; balance: string };
+      content: { links: number; files: number; bioPages: number };
+      account: {
+        hasPayoutMethod: boolean;
+        ticketsAwaitingReply: number;
+      };
+      analytics: {
+        periodDays: number;
+        successfulOpens: number;
+        successfulOpensInPeriod: number;
+        breakdowns: {
+          countries: unknown[];
+          devices: unknown[];
+          browsers: unknown[];
+        };
+        recentUnlocks: unknown[];
+      };
+      recentLinks: unknown[];
+    };
+    assert.equal(body.member.name, "Auth Test");
+    assert.equal(body.member.balance, "0");
+    assert.equal(typeof body.content.links, "number");
+    assert.equal(typeof body.content.files, "number");
+    assert.equal(typeof body.content.bioPages, "number");
+    assert.equal(body.account.hasPayoutMethod, false);
+    assert.equal(body.account.ticketsAwaitingReply, 0);
+    assert.equal(body.analytics.periodDays, 30);
+    assert.equal(typeof body.analytics.successfulOpens, "number");
+    assert.equal(typeof body.analytics.successfulOpensInPeriod, "number");
+    assert.ok(Array.isArray(body.analytics.breakdowns.countries));
+    assert.ok(Array.isArray(body.analytics.breakdowns.devices));
+    assert.ok(Array.isArray(body.analytics.breakdowns.browsers));
+    assert.ok(Array.isArray(body.analytics.recentUnlocks));
+    assert.ok(Array.isArray(body.recentLinks));
+  });
+});
+
+describe("Member social links E2E", () => {
+  it("generates random aliases independently from title and preserves custom aliases", async () => {
+    const email = `link-alias-${process.pid}@example.com`;
+    const password = "Secure123";
+    const registerResponse = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Link Alias Test",
+        email,
+        password,
+      }),
+    });
+    assert.equal(registerResponse.status, 201);
+
+    const current = await loginAs(email, password);
+    const authorization = {
+      Authorization: `Bearer ${current.body.accessToken}`,
+    };
+    const createPayload = {
+      title: "Tiêu đề không được dùng làm slug",
+      inputType: "url",
+      destinationUrl: "https://example.com/destination",
+      actions: [
+        {
+          platform: "website",
+          action: "visit",
+          url: "https://example.com/action",
+        },
+      ],
+    };
+
+    const firstResponse = await request("/api/links", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify(createPayload),
+    });
+    const secondResponse = await request("/api/links", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify(createPayload),
+    });
+
+    assert.equal(firstResponse.status, 201);
+    assert.equal(secondResponse.status, 201);
+
+    const first = (await firstResponse.json()) as { id: string; slug: string };
+    const second = (await secondResponse.json()) as { id: string; slug: string };
+
+    assert.match(first.slug, /^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
+    assert.match(second.slug, /^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
+    assert.notEqual(first.slug, second.slug);
+    assert.notEqual(first.slug, "tieu-de-khong-duoc-dung-lam-slug");
+
+    const requestedAlias = `custom-alias-${process.pid}`;
+    const customResponse = await request("/api/links", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        ...createPayload,
+        customAlias: requestedAlias,
+      }),
+    });
+
+    assert.equal(customResponse.status, 201);
+    const custom = (await customResponse.json()) as {
+      id: string;
+      slug: string;
+    };
+    assert.equal(custom.slug, requestedAlias);
+
+    await prisma.link.deleteMany({
+      where: {
+        id: {
+          in: [Number(first.id), Number(second.id), Number(custom.id)],
+        },
+      },
+    });
+    await prisma.user.delete({ where: { email } });
+  });
+});
+
 describe("Member snippets E2E", () => {
   it("isolates owners, soft deletes library rows and preserves link snapshots", async () => {
     const owner = await login();
@@ -658,10 +789,12 @@ describe("Member files E2E", () => {
       }),
     });
     assert.equal(createFileLink.status, 201);
-    assert.equal(
-      ((await createFileLink.json()) as { destinationUrl: string }).destinationUrl,
-      `/api/public/files/${alias}`,
-    );
+    const createdFileLink = (await createFileLink.json()) as {
+      destinationUrl: string;
+      destinationFileName: string | null;
+    };
+    assert.equal(createdFileLink.destinationUrl, `/api/public/files/${alias}`);
+    assert.equal(createdFileLink.destinationFileName, "private.txt");
 
     const socialLinkDownload = await request(`/api/files/link/${alias}/download`);
     assert.equal(socialLinkDownload.status, 200);
@@ -1057,13 +1190,13 @@ describe("Admin social links E2E", () => {
         actionsCount: number;
       }>;
       total: number;
-      totalClicks: number;
+      totalViews: number;
     };
     assert.equal(list.total, 1);
     assert.equal(list.items[0]?.id, link.id);
     assert.equal(list.items[0]?.owner.email, "auth@example.com");
     assert.equal(list.items[0]?.actionsCount, 1);
-    assert.equal(list.totalClicks, 0);
+    assert.equal(list.totalViews, 0);
 
     const invalidFilters = new URLSearchParams({
       filters: JSON.stringify([
@@ -2016,6 +2149,7 @@ describe("Public monetization route resolution E2E", () => {
     const vnMobileChromeBody = (await vnMobileChrome.json()) as {
       destinationUrl: string;
       monetizationRedirectUrl: string | null;
+      visitToken: string;
     };
     assert.equal(
       vnMobileChromeBody.destinationUrl,
@@ -2105,9 +2239,43 @@ describe("Public monetization route resolution E2E", () => {
     );
 
     assert.equal(
-      (await prisma.link.findUniqueOrThrow({ where: { id: link.id } })).clicks,
+      await prisma.linkAccessLog.count({ where: { linkId: link.id } }),
       4,
     );
+    assert.equal(
+      await prisma.linkAccessLog.count({
+        where: { linkId: link.id, completedAt: { not: null } },
+      }),
+      0,
+    );
+
+    const successfulVisit = await request(
+      `/api/links/${link.slug}/visit/${vnMobileChromeBody.visitToken}/complete`,
+      { method: "POST" },
+    );
+    assert.equal(successfulVisit.status, 200);
+    const accessLog = await prisma.linkAccessLog.findUniqueOrThrow({
+      where: { id: vnMobileChromeBody.visitToken },
+      include: { userAgent: true },
+    });
+    assert.ok(accessLog.completedAt);
+    assert.equal(accessLog.country, "VN");
+    assert.equal(accessLog.device, 1);
+    assert.equal(accessLog.userAgent.browser, "chrome");
+    assert.equal(accessLog.ipAddress, "203.0.113.10");
+
+    const dashboard = await request("/api/admin/dashboard?range=7d", {
+      headers: { Authorization: `Bearer ${adminAccessToken}` },
+    });
+    assert.equal(dashboard.status, 200);
+    const dashboardBody = (await dashboard.json()) as {
+      metrics: { unlocks: number; uniqueIps: number };
+      recentUnlocks: Array<{ id: string; countryCode: string }>;
+    };
+    assert.ok(dashboardBody.metrics.unlocks >= 1);
+    assert.ok(dashboardBody.metrics.uniqueIps >= 1);
+    assert.equal(dashboardBody.recentUnlocks[0]?.id, accessLog.id);
+    assert.equal(dashboardBody.recentUnlocks[0]?.countryCode, "VN");
 
     await prisma.link.delete({ where: { id: link.id } });
     await prisma.user.delete({ where: { id: owner.id } });
@@ -2169,6 +2337,245 @@ describe("Public monetization route resolution E2E", () => {
     assert.equal(
       body.monetizationRedirectUrl,
       "https://example.com/route",
+    );
+
+    await prisma.link.delete({ where: { id: link.id } });
+    await prisma.user.delete({ where: { id: owner.id } });
+    await prisma.monetizationLevel.delete({ where: { id: level.id } });
+  });
+
+  it("tracks a non-monetized destination completion in access logs", async () => {
+    const owner = await prisma.user.create({
+      data: {
+        name: "Standard Visit Owner",
+        email: "standard-visit-owner@example.com",
+      },
+    });
+    const link = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "standard-visit-completion",
+        title: "Standard visit completion",
+        destinationUrl: "https://example.com/destination",
+      },
+    });
+
+    const visit = await request(`/api/links/${link.slug}/visit`, {
+      method: "POST",
+      headers: {
+        "X-Visitor-Country": "US",
+        "X-Visitor-IP": "203.0.113.70",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+      },
+    });
+    assert.equal(visit.status, 200);
+    const body = (await visit.json()) as {
+      monetizationRedirectUrl: string | null;
+      visitToken: string;
+    };
+    assert.equal(body.monetizationRedirectUrl, null);
+    assert.ok(body.visitToken);
+
+    const pending = await prisma.linkAccessLog.findUniqueOrThrow({
+      where: { id: body.visitToken },
+    });
+    assert.equal(pending.levelId, null);
+    assert.equal(pending.payoutCpm.toString(), "0");
+    assert.equal(pending.completedAt, null);
+
+    const completion = await request(
+      `/api/links/${link.slug}/visit/${body.visitToken}/complete`,
+      { method: "POST" },
+    );
+    assert.equal(completion.status, 200);
+    assert.ok(
+      (
+        await prisma.linkAccessLog.findUniqueOrThrow({
+          where: { id: body.visitToken },
+        })
+      ).completedAt,
+    );
+
+    await prisma.link.delete({ where: { id: link.id } });
+    await prisma.user.delete({ where: { id: owner.id } });
+  });
+
+  it("completes and aggregates monetized visits exactly once per minute", async () => {
+    const level = await prisma.monetizationLevel.create({
+      data: {
+        key: "visit-aggregation",
+        status: "published",
+        routesJson: JSON.stringify([
+          {
+            id: "visit-route",
+            countryCode: "ALL",
+            countryMode: "include",
+            deviceType: "any",
+            deviceMode: "include",
+            browserFamily: "any",
+            browserMode: "include",
+            targetUrl: "https://example.com/visit-route",
+            priority: 10,
+            weight: 100,
+            enabled: true,
+          },
+        ]),
+        ratesJson: JSON.stringify([
+          {
+            countryCode: "VN",
+            deviceType: "mobile",
+            baseCpm: "10",
+            currency: "USD",
+            dailyLimit: 1,
+            enabled: true,
+          },
+        ]),
+        metaDataJson: JSON.stringify({
+          version: 1,
+          profitBps: 5_000,
+          stepCount: 1,
+          visitorExperience: {
+            popup: "none",
+            banner: "none",
+            interstitial: "none",
+            notification: "none",
+          },
+        }),
+      },
+    });
+    const owner = await prisma.user.create({
+      data: {
+        name: "Visit Aggregation Owner",
+        email: "visit-aggregation-owner@example.com",
+        monetizationLevelId: level.id,
+      },
+    });
+    const link = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "visit-aggregation",
+        title: "Visit aggregation",
+        destinationUrl: "https://example.com/destination",
+      },
+    });
+    const visitHeaders = {
+      "X-Visitor-Country": "VN",
+      "X-Visitor-IP": "203.0.113.80",
+      "User-Agent":
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/124.0.0.0 Mobile Safari/537.36",
+      Referer: "https://publisher.example/article",
+    };
+
+    const firstVisit = await request(`/api/links/${link.slug}/visit`, {
+      method: "POST",
+      headers: visitHeaders,
+    });
+    assert.equal(firstVisit.status, 200);
+    const firstBody = (await firstVisit.json()) as {
+      visitToken: string;
+      monetizationRedirectUrl: string;
+    };
+    assert.ok(firstBody.visitToken);
+    assert.equal(
+      firstBody.monetizationRedirectUrl,
+      "https://example.com/visit-route",
+    );
+
+    const pending = await prisma.linkAccessLog.findUniqueOrThrow({
+      where: { id: firstBody.visitToken },
+    });
+    assert.equal(pending.completedAt, null);
+    assert.equal(pending.processedAt, null);
+    assert.equal(pending.country, "VN");
+    assert.equal(pending.device, 1);
+    assert.equal(pending.referrer, "https://publisher.example/article");
+    assert.equal(pending.payoutCpm.toString(), "5");
+    assert.equal(
+      await prisma.userAgent.count({ where: { hash: pending.agentHash } }),
+      1,
+    );
+
+    const completePath =
+      `/api/links/${link.slug}/visit/${firstBody.visitToken}/complete`;
+    assert.equal(
+      (await request(completePath, { method: "POST" })).status,
+      200,
+    );
+    assert.equal(
+      (await request(completePath, { method: "POST" })).status,
+      200,
+    );
+    assert.ok(
+      (
+        await prisma.linkAccessLog.findUniqueOrThrow({
+          where: { id: firstBody.visitToken },
+        })
+      ).completedAt,
+    );
+
+    const worker = app.get(LinkAccessAggregationWorker);
+    const firstRunAt = new Date(Date.now() + 1_000);
+    const firstRun = await worker.processPending(firstRunAt);
+    assert.equal(firstRun.processedCount, 1);
+    assert.equal(firstRun.earnedViews, 1);
+    assert.equal(firstRun.revenue, "0.005");
+    const duplicateMinute = await worker.processPending(firstRunAt);
+    assert.equal(duplicateMinute.skipped, true);
+    assert.equal(duplicateMinute.processedCount, 0);
+
+    const aggregatedLink = await prisma.link.findUniqueOrThrow({
+      where: { id: link.id },
+    });
+    const aggregatedOwner = await prisma.user.findUniqueOrThrow({
+      where: { id: owner.id },
+    });
+    assert.equal(aggregatedLink.views, 1);
+    assert.equal(aggregatedLink.revenue.toString(), "0.005");
+    assert.equal(aggregatedOwner.balance.toString(), "0.005");
+    const secondVisit = await request(`/api/links/${link.slug}/visit`, {
+      method: "POST",
+      headers: visitHeaders,
+    });
+    const secondBody = (await secondVisit.json()) as { visitToken: string };
+    assert.equal(
+      (
+        await request(
+          `/api/links/${link.slug}/visit/${secondBody.visitToken}/complete`,
+          { method: "POST" },
+        )
+      ).status,
+      200,
+    );
+
+    const secondRun = await worker.processPending(
+      new Date(firstRunAt.getTime() + 60_000),
+    );
+    assert.equal(secondRun.processedCount, 1);
+    assert.equal(secondRun.earnedViews, 0);
+    const rejected = await prisma.linkAccessLog.findUniqueOrThrow({
+      where: { id: secondBody.visitToken },
+    });
+    assert.equal(rejected.isEarn, false);
+    assert.equal(rejected.rejectReasonMask & 1, 1);
+
+    const unchangedLink = await prisma.link.findUniqueOrThrow({
+      where: { id: link.id },
+    });
+    const unchangedOwner = await prisma.user.findUniqueOrThrow({
+      where: { id: owner.id },
+    });
+    assert.equal(unchangedLink.views, 2);
+    assert.equal(unchangedLink.revenue.toString(), "0.005");
+    assert.equal(unchangedOwner.balance.toString(), "0.005");
+
+    const noDuplicateRun = await worker.processPending(
+      new Date(firstRunAt.getTime() + 120_000),
+    );
+    assert.equal(noDuplicateRun.processedCount, 0);
+    assert.equal(
+      (await prisma.link.findUniqueOrThrow({ where: { id: link.id } })).views,
+      2,
     );
 
     await prisma.link.delete({ where: { id: link.id } });
@@ -3311,9 +3718,11 @@ describe("Withdrawals E2E", () => {
     assert.equal(firstResponse.status, 201, await firstResponse.clone().text());
     const first = (await firstResponse.json()) as {
       id: number;
+      currency: string;
       status: string;
       netAmount: string;
     };
+    assert.equal(first.currency, "USD");
     assert.equal(first.status, "pending");
     assert.equal(first.netAmount, "290000");
     assert.equal(
@@ -3495,11 +3904,13 @@ describe("Withdrawals E2E", () => {
     );
     assert.equal(dashboardResponse.status, 200);
     const dashboard = (await dashboardResponse.json()) as {
+      currency: string;
       availableBalance: string;
       pendingBalance: string;
       totalReceived: string;
       withdrawals: unknown[];
     };
+    assert.equal(dashboard.currency, "USD");
     assert.equal(dashboard.availableBalance, "700000");
     assert.equal(dashboard.pendingBalance, "0");
     assert.equal(dashboard.totalReceived, "280000");
@@ -3515,6 +3926,7 @@ describe("Withdrawals E2E", () => {
       await referralsDashboardResponse.clone().text(),
     );
     const referralsDashboard = (await referralsDashboardResponse.json()) as {
+      currency: string;
       commissionRate: string;
       summary: {
         totalReferrals: number;
@@ -3531,6 +3943,7 @@ describe("Withdrawals E2E", () => {
         withdrawalId: number;
       }>;
     };
+    assert.equal(referralsDashboard.currency, "USD");
     assert.equal(referralsDashboard.commissionRate, "5.00");
     assert.deepEqual(referralsDashboard.summary, {
       totalReferrals: 1,
@@ -3562,12 +3975,13 @@ describe("Withdrawals E2E", () => {
       await adminListResponse.clone().text(),
     );
     const adminList = (await adminListResponse.json()) as {
-      items: Array<{ amount: string; status: string }>;
+      items: Array<{ amount: string; currency: string; status: string }>;
       total: number;
       pageCount: number;
     };
     assert.equal(adminList.total, 3);
     assert.equal(adminList.pageCount, 1);
+    assert.ok(adminList.items.every((item) => item.currency === "USD"));
     assert.deepEqual(
       adminList.items
         .map((item) => [item.amount, item.status])

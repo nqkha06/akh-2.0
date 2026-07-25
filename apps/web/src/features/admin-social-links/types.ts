@@ -34,7 +34,7 @@ export type AdminSocialLink = {
     id: string
     name: string
   } | null
-  clicks: number
+  views: number
   revenue: string
   actionsCount: number
   platforms: string[]
@@ -60,12 +60,12 @@ export type NestPaginatedAdminSocialLinksResponse = {
   total: number
   page: number
   limit: number
-  totalClicks: number
+  totalViews: number
 }
 
 export type AdminSocialLinksTableData = {
   data: AdminSocialLink[]
   pageCount: number
   total: number
-  totalClicks: number
+  totalViews: number
 }

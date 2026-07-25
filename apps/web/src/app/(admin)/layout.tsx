@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import "flag-icons/css/flag-icons.min.css"
 
 import { AdminFooter } from "@/components/admin/admin-footer"
 import { AdminHeader } from "@/components/admin/admin-header"

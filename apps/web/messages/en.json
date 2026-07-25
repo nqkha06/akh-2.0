@@ -145,10 +145,10 @@
     "allPlatforms": "All platforms",
     "fromDate": "From",
     "toDate": "To",
-    "minClicks": "Min clicks",
+    "minClicks": "Min completed visits",
     "minClicksPlaceholder": "e.g. 100",
     "highPerformance": "Only high-performance links",
-    "highPerformanceDescription": "Links with at least 500 clicks.",
+    "highPerformanceDescription": "Links with at least 500 completed visits.",
     "demoData": "Demo data",
     "rows": "Rows",
     "showing": "Showing {first}-{last} of {total} links",
@@ -168,8 +168,9 @@
       "label": "Social links summary",
       "total": "Total links",
       "active": "Active links",
-      "clicks": "Public opens",
-      "actions": "Configured actions"
+      "clicks": "Completed visits",
+      "views": "Completed visits",
+      "revenue": "Revenue"
     },
     "monetization": {
       "eyebrow": "Earnings roadmap",
@@ -337,7 +338,7 @@
     "sort": {
       "newest": "Newest",
       "oldest": "Oldest",
-      "clicksDesc": "Most clicks",
+      "clicksDesc": "Most completed visits",
       "titleAsc": "Title A-Z",
       "actionsDesc": "Most actions"
     }
@@ -348,6 +349,7 @@
     "to": "to",
     "copied": "Copied!",
     "copyFailed": "Could not copy the link.",
+    "copyPublicUrlHint": "Click to copy the public URL",
     "copyLink": "Copy link",
     "copy": "Copy",
     "open": "Open link",
@@ -365,21 +367,24 @@
     "stats": "Stats",
     "actionsCount": "{count} actions",
     "statsTitle": "Link statistics",
-    "statsDescription": "Performance snapshot for demo over all time.",
-    "clicks": "Clicks",
+    "statsDescription": "Real data recorded when a visitor successfully opens the destination.",
+    "clicks": "Completed visits",
     "actions": "Actions",
     "updatedAt": "Updated",
     "destination": "Destination",
     "protectedSnippet": "Protected snippet",
     "updated": "Updated {date}",
-    "visitors": "Visitors",
+    "visitors": "Completed visits",
     "earnings": "Earnings",
     "status": "Status",
     "shortUrl": "Short URL",
     "destinationUrl": "Destination URL",
+    "destinationFile": "Destination file",
+    "unnamedFile": "Unnamed file",
     "created": "Created",
     "lastUpdated": "Last updated",
     "monetization": "Monetization",
+    "moreActions": "More actions",
     "edit": "Edit",
     "deactivate": "Deactivate",
     "delete": "Delete",
@@ -620,7 +625,7 @@
     },
     "loyalty": {
       "eyebrow": "Loyalty",
-      "title": "Loyalty",
+      "title": "Loyalty program",
       "description": "Light gamification for tracking loyalty points, missions, and membership benefits."
     },
     "new": {
@@ -740,7 +745,8 @@
     "progressDescription": "Completed {completed}/{total} required actions.",
     "readyTitle": "Content is ready",
     "readyDescription": "All requirements are complete. You can continue.",
-    "recordingAction": "Recording action...",
+    "recordingAction": "Recording your action...",
+    "pleaseWait": "Please wait...",
     "keepPageOpen": "Keep this page open for a moment",
     "completedAction": "Completed · open again anytime",
     "opensNewTab": "Opens {platform} in a new tab",
@@ -958,6 +964,7 @@
     "coverSelectHint": "Choose an existing image or upload a new one.",
     "customAlias": "Custom alias",
     "aliasPlaceholder": "custom-alias",
+    "aliasRandomHint": "Leave blank to generate a random alias automatically.",
     "aliasEditing": "Custom alias cannot be changed while editing.",
     "aliasMin": "Alias must be at least 3 characters.",
     "checkingAlias": "Checking alias...",
@@ -968,13 +975,13 @@
     "enableExpiry": "Enable link expiration",
     "expiryType": "Expiry type",
     "byDate": "By date",
-    "byClicks": "By clicks",
+    "byClicks": "By successful opens",
     "expiryDate": "Expiry date",
     "expiryTime": "Expiry time",
     "expiresOn": "Link will expire on {date} at {time}",
-    "maximumClicks": "Maximum clicks",
+    "maximumClicks": "Maximum successful opens",
     "maximumClicksPlaceholder": "e.g., 100",
-    "expiresAfter": "Link will expire after {count} clicks",
+    "expiresAfter": "Link will expire after {count} successful opens",
     "previewTitle": "PREVIEW",
     "saving": "Saving...",
     "creating": "Creating...",
@@ -997,6 +1004,12 @@
     "expiryRequired": "Enter a valid expiry condition",
     "updated": "Link updated successfully",
     "createdSuccess": "Link created successfully",
+    "createdDescription": "Your link is ready to share.",
+    "updatedDescription": "Your changes are now live on the public link.",
+    "copyPublicUrl": "Copy URL",
+    "copiedPublicUrl": "URL copied",
+    "copyPublicUrlFailed": "Could not copy the URL. Please try again.",
+    "openPublicUrl": "Open public link",
     "createFailed": "Create link failed",
     "coverMustImage": "Cover image must be an image file.",
     "coverMaxSize": "Cover image maximum size is 10 MB.",
@@ -1004,6 +1017,53 @@
     "uploadFileFailed": "File upload failed.",
     "youtubeValid": "Enter a valid YouTube link.",
     "youtubeSelected": "YouTube selected as background."
+  },
+  "MemberDashboard": {
+    "eyebrow": "Performance",
+    "title": "Overview",
+    "actions": {
+      "withdraw": "Withdraw",
+      "createLink": "Create social link",
+      "myLinks": "Social links",
+      "viewAll": "View all"
+    },
+    "metrics": {
+      "label": "{days}-day metrics",
+      "earnings": "Earnings",
+      "views": "Successful opens",
+      "averageCpm": "Average CPM",
+      "today": "Today"
+    },
+    "performance": {
+      "title": "Performance over time",
+      "successfulOpens": "Successful opens",
+      "revenue": "Earnings",
+      "empty": "No successful opens in this period."
+    },
+    "daily": {
+      "title": "Daily performance",
+      "date": "Date",
+      "views": "Successful opens",
+      "earnings": "Earnings",
+      "averageCpm": "Average CPM"
+    },
+    "topLinks": {
+      "title": "Top performing links",
+      "empty": "No social link data yet."
+    },
+    "breakdowns": {
+      "countries": "Top countries",
+      "devices": "Top devices",
+      "browsers": "Top browsers",
+      "empty": "Not enough data yet."
+    },
+    "labels": {
+      "unknown": "Unknown",
+      "mobile": "Mobile",
+      "tablet": "Tablet",
+      "desktop": "Desktop",
+      "other": "Other"
+    }
   },
   "Admin": {
     "brand": {

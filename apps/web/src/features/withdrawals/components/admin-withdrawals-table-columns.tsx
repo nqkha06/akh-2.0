@@ -128,7 +128,7 @@ export function getAdminWithdrawalsTableColumns({
       ),
       cell: ({ row }) => (
         <span className="whitespace-nowrap font-medium tabular-nums">
-          {formatWithdrawalMoney(row.original.amount)}
+          {formatWithdrawalMoney(row.original.amount, row.original.currency)}
         </span>
       ),
     },
@@ -141,11 +141,18 @@ export function getAdminWithdrawalsTableColumns({
       cell: ({ row }) => (
         <div className="whitespace-nowrap tabular-nums">
           <p className="font-medium">
-            {formatWithdrawalMoney(row.original.netAmount)}
+            {formatWithdrawalMoney(
+              row.original.netAmount,
+              row.original.currency,
+            )}
           </p>
           {Number(row.original.feeAmount) > 0 ? (
             <p className="text-xs text-muted-foreground">
-              Phí {formatWithdrawalMoney(row.original.feeAmount)}
+              Phí{" "}
+              {formatWithdrawalMoney(
+                row.original.feeAmount,
+                row.original.currency,
+              )}
             </p>
           ) : null}
         </div>

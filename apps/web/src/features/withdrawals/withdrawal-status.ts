@@ -61,11 +61,10 @@ export function getAllowedWithdrawalStatuses(
   return [status];
 }
 
-export function formatWithdrawalMoney(value: string) {
+export function formatWithdrawalMoney(value: string, currency = "USD") {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
+    currency,
   }).format(Number(value));
 }
 
