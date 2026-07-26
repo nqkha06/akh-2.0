@@ -73,6 +73,26 @@ export class MonetizationLevelsService {
     };
   }
 
+  async findPublishedPayoutRates(id: number) {
+    const record = await this.prisma.monetizationLevel.findFirst({
+      where: { id, status: "published" },
+      include: levelInclude,
+    });
+    if (!record) {
+      throw new NotFoundException(
+        "Cấp độ kiếm tiền không tồn tại hoặc chưa được xuất bản.",
+      );
+    }
+
+    const level = this.toMemberResponse(record);
+    return {
+      levelId: level.id,
+      key: level.key,
+      profitBps: level.metaData.profitBps,
+      rates: level.rates,
+    };
+  }
+
   async selectForMember(userId: number, monetizationLevelId: number) {
     const level = await this.prisma.monetizationLevel.findFirst({
       where: { id: monetizationLevelId, status: "published" },

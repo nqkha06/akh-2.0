@@ -15,7 +15,59 @@ function requireDuration(config: Record<string, unknown>, key: string) {
   }
 }
 
+function optionalInteger(
+  config: Record<string, unknown>,
+  key: string,
+  minimum: number,
+  maximum: number,
+) {
+  const value = config[key];
+  if (value === undefined || value === "") return;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw new Error(`${key} phải là số nguyên từ ${minimum} đến ${maximum}.`);
+  }
+}
+
+function optionalBoolean(config: Record<string, unknown>, key: string) {
+  const value = config[key];
+  if (value === undefined || value === "") return;
+  if (value !== "true" && value !== "false") {
+    throw new Error(`${key} chỉ nhận true hoặc false.`);
+  }
+}
+
+function validateQueueEnvironment(config: Record<string, unknown>) {
+  optionalBoolean(config, "QUEUE_ENABLED");
+  optionalBoolean(config, "REDIS_TLS");
+  optionalBoolean(config, "VISIT_AGGREGATION_DISABLED");
+  optionalInteger(config, "REDIS_PORT", 1, 65_535);
+  optionalInteger(config, "REDIS_DB", 0, 15);
+  optionalInteger(config, "VISIT_AGGREGATION_INTERVAL_MS", 10_000, 86_400_000);
+  optionalInteger(config, "VISIT_AGGREGATION_BATCH_SIZE", 100, 10_000);
+  optionalInteger(config, "VISIT_AGGREGATION_MAX_BATCHES_PER_JOB", 1, 100);
+
+  const prefix = config.QUEUE_PREFIX;
+  if (
+    prefix !== undefined &&
+    (typeof prefix !== "string" || !/^[a-z0-9_-]{2,40}$/i.test(prefix))
+  ) {
+    throw new Error(
+      "QUEUE_PREFIX chỉ được gồm chữ, số, dấu gạch ngang hoặc gạch dưới.",
+    );
+  }
+
+  if (
+    config.NODE_ENV === "production" &&
+    config.QUEUE_ENABLED !== "false" &&
+    !String(config.REDIS_PASSWORD || "").trim()
+  ) {
+    throw new Error("REDIS_PASSWORD là bắt buộc khi chạy queue ở production.");
+  }
+}
+
 export function validateEnvironment(config: Record<string, unknown>) {
+  validateQueueEnvironment(config);
   const accessSecret = requireSecret(config, "JWT_ACCESS_SECRET");
   const refreshSecret = requireSecret(config, "JWT_REFRESH_SECRET");
 
@@ -51,6 +103,17 @@ export function validateEnvironment(config: Record<string, unknown>) {
     throw new Error("Cookie SameSite=none bắt buộc phải bật Secure.");
   }
 
+  return config;
+}
+
+export function validateWorkerEnvironment(config: Record<string, unknown>) {
+  validateQueueEnvironment(config);
+  if (typeof config.DATABASE_URL !== "string" || !config.DATABASE_URL.trim()) {
+    throw new Error("DATABASE_URL là bắt buộc cho worker.");
+  }
+  if (config.QUEUE_ENABLED === "false") {
+    throw new Error("QUEUE_ENABLED phải là true khi khởi động worker.");
+  }
   return config;
 }
 

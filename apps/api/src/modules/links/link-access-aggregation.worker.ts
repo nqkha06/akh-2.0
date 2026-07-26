@@ -1,16 +1,14 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { MonetizationRateDto } from "../monetization-levels/dto/monetization-level-config.dto";
 
-const BATCH_SIZE = 1_000;
-const ONE_MINUTE_MS = 60_000;
+const DEFAULT_BATCH_SIZE = 1_000;
+const MAX_BATCH_SIZE = 10_000;
+const EARN_COUNT_QUERY_CHUNK_SIZE = 200;
+const ACCESS_UPDATE_CHUNK_SIZE = 500;
 const REJECT_DAILY_LIMIT = 1;
 const REJECT_MISSING_IP = 2;
 
@@ -20,44 +18,28 @@ type AggregateDelta = {
 };
 
 @Injectable()
-export class LinkAccessAggregationWorker
-  implements OnModuleInit, OnModuleDestroy
-{
-  private readonly logger = new Logger(LinkAccessAggregationWorker.name);
-  private startTimer?: NodeJS.Timeout;
-  private intervalTimer?: NodeJS.Timeout;
-  private running = false;
+export class LinkAccessAggregationWorker {
+  readonly batchSize: number;
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  onModuleInit() {
-    if (process.env.VISIT_AGGREGATION_DISABLED === "true") return;
-
-    const delay = ONE_MINUTE_MS - (Date.now() % ONE_MINUTE_MS);
-    this.startTimer = setTimeout(() => {
-      void this.runSafely();
-      this.intervalTimer = setInterval(
-        () => void this.runSafely(),
-        ONE_MINUTE_MS,
-      );
-      this.intervalTimer.unref();
-    }, delay);
-    this.startTimer.unref();
+  constructor(
+    private readonly prisma: PrismaService,
+    config: ConfigService,
+  ) {
+    this.batchSize = this.integerSetting(
+      config.get<string>("VISIT_AGGREGATION_BATCH_SIZE"),
+      DEFAULT_BATCH_SIZE,
+      100,
+      MAX_BATCH_SIZE,
+    );
   }
 
-  onModuleDestroy() {
-    if (this.startTimer) clearTimeout(this.startTimer);
-    if (this.intervalTimer) clearInterval(this.intervalTimer);
-  }
-
-  async processPending(now = new Date()) {
-    const minuteKey = this.minuteKey(now);
+  async processPending(now = new Date(), runKey = this.minuteKey(now)) {
 
     try {
       return await this.prisma.$transaction(
         async (prisma) => {
           const run = await prisma.accessLogAggregationRun.create({
-            data: { minuteKey },
+            data: { minuteKey: runKey },
           });
           const pending = await prisma.linkAccessLog.findMany({
             where: {
@@ -65,7 +47,7 @@ export class LinkAccessAggregationWorker
               processedAt: null,
             },
             orderBy: [{ completedAt: "asc" }, { id: "asc" }],
-            take: BATCH_SIZE,
+            take: this.batchSize,
           });
 
           const dailyLimits = await this.loadDailyLimits(prisma, pending);
@@ -77,6 +59,15 @@ export class LinkAccessAggregationWorker
           const userRevenueDeltas = new Map<number, Prisma.Decimal>();
           let earnedViews = 0;
           let totalRevenue = new Prisma.Decimal(0);
+          const accessUpdates = new Map<
+            string,
+            {
+              ids: string[];
+              isEarn: boolean;
+              revenue: Prisma.Decimal;
+              rejectReasonMask: number;
+            }
+          >();
 
           for (const access of pending) {
             const completedAt = access.completedAt;
@@ -104,15 +95,19 @@ export class LinkAccessAggregationWorker
               ? access.payoutCpm.div(1_000)
               : new Prisma.Decimal(0);
 
-            await prisma.linkAccessLog.update({
-              where: { id: access.id },
-              data: {
-                isEarn,
-                revenue,
-                rejectReasonMask,
-                processedAt: now,
-              },
-            });
+            const updateKey = [
+              isEarn ? "1" : "0",
+              revenue.toString(),
+              rejectReasonMask,
+            ].join("|");
+            const update = accessUpdates.get(updateKey) ?? {
+              ids: [],
+              isEarn,
+              revenue,
+              rejectReasonMask,
+            };
+            update.ids.push(access.id);
+            accessUpdates.set(updateKey, update);
 
             this.addLinkView(linkDeltas, access.linkId);
             if (!isEarn) continue;
@@ -127,6 +122,41 @@ export class LinkAccessAggregationWorker
                 revenue,
               ),
             );
+          }
+
+          for (const update of accessUpdates.values()) {
+            for (
+              let offset = 0;
+              offset < update.ids.length;
+              offset += ACCESS_UPDATE_CHUNK_SIZE
+            ) {
+              const result = await prisma.linkAccessLog.updateMany({
+                where: {
+                  id: {
+                    in: update.ids.slice(
+                      offset,
+                      offset + ACCESS_UPDATE_CHUNK_SIZE,
+                    ),
+                  },
+                  processedAt: null,
+                },
+                data: {
+                  isEarn: update.isEarn,
+                  revenue: update.revenue,
+                  rejectReasonMask: update.rejectReasonMask,
+                  processedAt: now,
+                },
+              });
+              const expected = Math.min(
+                ACCESS_UPDATE_CHUNK_SIZE,
+                update.ids.length - offset,
+              );
+              if (result.count !== expected) {
+                throw new Error(
+                  "Visit aggregation lost its processing lease; retrying the batch is required.",
+                );
+              }
+            }
           }
 
           for (const [linkId, delta] of linkDeltas) {
@@ -159,13 +189,18 @@ export class LinkAccessAggregationWorker
 
           return {
             skipped: false,
-            minuteKey,
+            minuteKey: runKey,
+            batchSize: this.batchSize,
             processedCount: pending.length,
             earnedViews,
             revenue: totalRevenue.toString(),
           };
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 10_000,
+          timeout: 60_000,
+        },
       );
     } catch (error) {
       if (
@@ -174,33 +209,14 @@ export class LinkAccessAggregationWorker
       ) {
         return {
           skipped: true,
-          minuteKey,
+          minuteKey: runKey,
+          batchSize: this.batchSize,
           processedCount: 0,
           earnedViews: 0,
           revenue: "0",
         };
       }
       throw error;
-    }
-  }
-
-  private async runSafely() {
-    if (this.running) return;
-    this.running = true;
-    try {
-      const result = await this.processPending();
-      if (!result.skipped && result.processedCount > 0) {
-        this.logger.log(
-          `Aggregated ${result.processedCount} visits (${result.earnedViews} earned) for ${result.minuteKey}.`,
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        "Visit aggregation failed; the transaction was rolled back.",
-        error instanceof Error ? error.stack : String(error),
-      );
-    } finally {
-      this.running = false;
     }
   }
 
@@ -213,31 +229,54 @@ export class LinkAccessAggregationWorker
     }>,
   ) {
     const counts = new Map<string, number>();
-    const days = new Map<number, Date>();
+    const pairsByDay = new Map<
+      number,
+      Map<string, { userId: number; ipAddress: string }>
+    >();
 
     for (const access of pending) {
-      if (!access.completedAt) continue;
+      if (!access.completedAt || !access.ipAddress) continue;
       const day = this.startOfUtcDay(access.completedAt);
-      days.set(day.getTime(), day);
+      const pairs = pairsByDay.get(day.getTime()) ?? new Map();
+      pairs.set(`${access.userId}|${access.ipAddress}`, {
+        userId: access.userId,
+        ipAddress: access.ipAddress,
+      });
+      pairsByDay.set(day.getTime(), pairs);
     }
 
-    for (const day of days.values()) {
+    for (const [dayTime, pairMap] of pairsByDay) {
+      const day = new Date(dayTime);
       const nextDay = new Date(day.getTime() + 86_400_000);
-      const groups = await prisma.linkAccessLog.groupBy({
-        by: ["userId", "ipAddress"],
-        where: {
-          isEarn: true,
-          processedAt: { not: null },
-          completedAt: { gte: day, lt: nextDay },
-        },
-        _count: { _all: true },
-      });
+      const pairs = [...pairMap.values()];
 
-      for (const group of groups) {
-        counts.set(
-          this.earnKey(group.userId, group.ipAddress, day),
-          group._count._all,
-        );
+      for (
+        let offset = 0;
+        offset < pairs.length;
+        offset += EARN_COUNT_QUERY_CHUNK_SIZE
+      ) {
+        const groups = await prisma.linkAccessLog.groupBy({
+          by: ["userId", "ipAddress"],
+          where: {
+            isEarn: true,
+            processedAt: { not: null },
+            completedAt: { gte: day, lt: nextDay },
+            OR: pairs
+              .slice(offset, offset + EARN_COUNT_QUERY_CHUNK_SIZE)
+              .map((pair) => ({
+                userId: pair.userId,
+                ipAddress: pair.ipAddress,
+              })),
+          },
+          _count: { _all: true },
+        });
+
+        for (const group of groups) {
+          counts.set(
+            this.earnKey(group.userId, group.ipAddress, day),
+            group._count._all,
+          );
+        }
       }
     }
 
@@ -370,5 +409,17 @@ export class LinkAccessAggregationWorker
 
   private minuteKey(value: Date) {
     return value.toISOString().slice(0, 16);
+  }
+
+  private integerSetting(
+    value: string | undefined,
+    fallback: number,
+    minimum: number,
+    maximum: number,
+  ) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum
+      ? parsed
+      : fallback;
   }
 }

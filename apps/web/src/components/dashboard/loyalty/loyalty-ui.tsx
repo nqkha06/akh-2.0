@@ -1,4 +1,7 @@
-import type { TierStatus } from "@/components/dashboard/loyalty/loyalty-data";
+import { Gem, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+import type { TierStatus } from "@/features/loyalty/types";
 import { cn } from "@/lib/utils";
 
 export const loyaltyCardClass = [
@@ -15,7 +18,8 @@ export function StatusBadge({
 }: {
   status: Exclude<TierStatus, "locked">;
 }) {
-  const label = status === "current" ? "Hiện tại" : "Kế tiếp";
+  const t = useTranslations("SimplePages.loyalty");
+  const label = status === "current" ? t("currentBadge") : t("nextBadge");
 
   return (
     <span
@@ -29,4 +33,23 @@ export function StatusBadge({
       {label}
     </span>
   );
+}
+
+export function LoyaltyTierIcon({
+  iconKey,
+  className,
+}: {
+  iconKey: string | null;
+  className?: string;
+}) {
+  if (iconKey === "gem") {
+    return <Gem className={className} aria-hidden="true" />;
+  }
+  if (iconKey === "shield-check") {
+    return <ShieldCheck className={className} aria-hidden="true" />;
+  }
+  if (iconKey === "trophy") {
+    return <Trophy className={className} aria-hidden="true" />;
+  }
+  return <Sparkles className={className} aria-hidden="true" />;
 }

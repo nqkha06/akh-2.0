@@ -240,6 +240,165 @@ const defaultMonetizationLevels = [
   },
 ] as const;
 
+const loyaltyBenefitCatalog = [
+  { key: "cpm_bonus", vi: "Thưởng CPM", en: "CPM bonus" },
+  {
+    key: "analytics_history",
+    vi: "Lịch sử phân tích",
+    en: "Analytics history",
+  },
+  { key: "custom_slugs", vi: "Custom slug", en: "Custom slugs" },
+  {
+    key: "link_scheduling",
+    vi: "Lập lịch bật hoặc tắt link",
+    en: "Link scheduling",
+  },
+  { key: "csv_export", vi: "Xuất báo cáo CSV", en: "CSV report export" },
+  {
+    key: "storage_bonus",
+    vi: "Tăng dung lượng lưu trữ",
+    en: "Additional storage",
+  },
+  { key: "custom_qr", vi: "Tùy chỉnh QR code", en: "Custom QR codes" },
+  {
+    key: "priority_support",
+    vi: "Hỗ trợ ưu tiên",
+    en: "Priority support",
+  },
+] as const;
+
+type LoyaltyBenefitKey = (typeof loyaltyBenefitCatalog)[number]["key"];
+type LoyaltyBenefitValues = Partial<
+  Record<LoyaltyBenefitKey, string | null>
+>;
+
+function loyaltyBenefits(
+  locale: "vi" | "en",
+  included: LoyaltyBenefitValues,
+) {
+  return loyaltyBenefitCatalog.map((benefit) => ({
+    key: benefit.key,
+    label: benefit[locale],
+    included: Object.prototype.hasOwnProperty.call(included, benefit.key),
+    value: included[benefit.key] ?? null,
+  }));
+}
+
+const defaultLoyaltyTiers = [
+  {
+    key: "started",
+    minimumValidViews: 0,
+    sortOrder: 10,
+    iconKey: "sparkles",
+    translations: {
+      vi: {
+        name: "Khởi đầu",
+        description: "Các công cụ cơ bản để bắt đầu tích lũy lượt xem hợp lệ.",
+        included: { analytics_history: "7 ngày" },
+      },
+      en: {
+        name: "Starter",
+        description: "Core tools for starting to collect valid views.",
+        included: { analytics_history: "7 days" },
+      },
+    },
+  },
+  {
+    key: "bronze",
+    minimumValidViews: 1_000,
+    sortOrder: 20,
+    iconKey: "shield-check",
+    translations: {
+      vi: {
+        name: "Đồng",
+        description: "Dành cho creator đang xây dựng lưu lượng ổn định.",
+        included: {
+          cpm_bonus: "+1%",
+          analytics_history: "30 ngày",
+          custom_slugs: "5 mỗi tháng",
+        },
+      },
+      en: {
+        name: "Bronze",
+        description: "For creators building a consistent traffic base.",
+        included: {
+          cpm_bonus: "+1%",
+          analytics_history: "30 days",
+          custom_slugs: "5 per month",
+        },
+      },
+    },
+  },
+  {
+    key: "gold",
+    minimumValidViews: 5_000,
+    sortOrder: 30,
+    iconKey: "trophy",
+    translations: {
+      vi: {
+        name: "Vàng",
+        description: "Bộ quyền lợi hiển thị cho creator có lưu lượng tăng trưởng.",
+        included: {
+          cpm_bonus: "+3%",
+          analytics_history: "90 ngày",
+          custom_slugs: "5 mỗi tháng",
+          link_scheduling: null,
+          csv_export: null,
+          storage_bonus: null,
+        },
+      },
+      en: {
+        name: "Gold",
+        description: "Displayed benefits for creators with growing traffic.",
+        included: {
+          cpm_bonus: "+3%",
+          analytics_history: "90 days",
+          custom_slugs: "5 per month",
+          link_scheduling: null,
+          csv_export: null,
+          storage_bonus: null,
+        },
+      },
+    },
+  },
+  {
+    key: "diamond",
+    minimumValidViews: 10_000,
+    sortOrder: 40,
+    iconKey: "gem",
+    translations: {
+      vi: {
+        name: "Kim cương",
+        description: "Hạng cao nhất trong danh mục Loyalty hiện tại.",
+        included: {
+          cpm_bonus: "+5%",
+          analytics_history: "90 ngày",
+          custom_slugs: "Tăng giới hạn",
+          link_scheduling: null,
+          csv_export: null,
+          storage_bonus: null,
+          custom_qr: null,
+          priority_support: null,
+        },
+      },
+      en: {
+        name: "Diamond",
+        description: "The highest tier in the current Loyalty catalog.",
+        included: {
+          cpm_bonus: "+5%",
+          analytics_history: "90 days",
+          custom_slugs: "Higher limit",
+          link_scheduling: null,
+          csv_export: null,
+          storage_bonus: null,
+          custom_qr: null,
+          priority_support: null,
+        },
+      },
+    },
+  },
+] as const;
+
 async function main() {
   const demoPasswordHash = await hash("Demo123!", 12);
 
@@ -368,6 +527,51 @@ async function main() {
       });
     }
   }
+
+  for (const tier of defaultLoyaltyTiers) {
+    const loyaltyTier = await prisma.loyaltyTier.upsert({
+      where: { key: tier.key },
+      update: {
+        minimumValidViews: tier.minimumValidViews,
+        sortOrder: tier.sortOrder,
+        iconKey: tier.iconKey,
+        status: "published",
+      },
+      create: {
+        key: tier.key,
+        minimumValidViews: tier.minimumValidViews,
+        sortOrder: tier.sortOrder,
+        iconKey: tier.iconKey,
+        status: "published",
+      },
+    });
+
+    for (const locale of ["vi", "en"] as const) {
+      const translation = tier.translations[locale];
+      await prisma.loyaltyTierTranslation.upsert({
+        where: {
+          tierId_locale: { tierId: loyaltyTier.id, locale },
+        },
+        update: {
+          name: translation.name,
+          description: translation.description,
+          benefitsJson: JSON.stringify(
+            loyaltyBenefits(locale, translation.included),
+          ),
+        },
+        create: {
+          tierId: loyaltyTier.id,
+          locale,
+          name: translation.name,
+          description: translation.description,
+          benefitsJson: JSON.stringify(
+            loyaltyBenefits(locale, translation.included),
+          ),
+        },
+      });
+    }
+  }
+
   const defaultMonetizationLevel = await prisma.monetizationLevel.findFirst({
     where: { isDefault: true, status: "published" },
     select: { id: true },

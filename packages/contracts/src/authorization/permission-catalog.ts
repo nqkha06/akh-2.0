@@ -163,6 +163,30 @@ export const permissionCatalog = [
     group: "monetization",
   },
   {
+    key: "loyalty-tiers.read",
+    name: "Xem hạng Loyalty",
+    description: "Xem danh sách, nội dung và quyền lợi của các hạng Loyalty.",
+    group: "loyalty",
+  },
+  {
+    key: "loyalty-tiers.create",
+    name: "Tạo hạng Loyalty",
+    description: "Tạo hạng Loyalty và nội dung đa ngôn ngữ.",
+    group: "loyalty",
+  },
+  {
+    key: "loyalty-tiers.update",
+    name: "Sửa hạng Loyalty",
+    description: "Cập nhật ngưỡng, nội dung và quyền lợi của hạng Loyalty.",
+    group: "loyalty",
+  },
+  {
+    key: "loyalty-tiers.delete",
+    name: "Xóa hạng Loyalty",
+    description: "Xóa hạng Loyalty không còn sử dụng.",
+    group: "loyalty",
+  },
+  {
     key: "payment-methods.read",
     name: "Xem phương thức thanh toán",
     description: "Xem danh mục phương thức nhận thanh toán.",

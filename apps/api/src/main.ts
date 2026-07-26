@@ -9,6 +9,7 @@ import { setupSwagger } from "./config/swagger";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 4000);
   const allowedOrigins = configService

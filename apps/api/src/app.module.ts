@@ -13,6 +13,7 @@ import { CurrenciesModule } from "./modules/currencies/currencies.module";
 import { FilesModule } from "./modules/files/files.module";
 import { LinksModule } from "./modules/links/links.module";
 import { LanguagesModule } from "./modules/languages/languages.module";
+import { LoyaltyModule } from "./modules/loyalty/loyalty.module";
 import { MonetizationLevelsModule } from "./modules/monetization-levels/monetization-levels.module";
 import { MemberDashboardModule } from "./modules/member-dashboard/member-dashboard.module";
 import { PaymentMethodsModule } from "./modules/payment-methods/payment-methods.module";
@@ -21,9 +22,15 @@ import { ReferralsModule } from "./modules/referrals/referrals.module";
 import { SiteSettingsModule } from "./modules/site-settings/site-settings.module";
 import { SnippetsModule } from "./modules/snippets/snippets.module";
 import { SupportModule } from "./modules/support/support.module";
+import { VisitAggregationSchedulerModule } from "./modules/system-jobs/visit-aggregation-scheduler.module";
 import { UsersModule } from "./modules/users/users.module";
 import { WithdrawalsModule } from "./modules/withdrawals/withdrawals.module";
 import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module";
+
+const visitAggregationScheduler =
+  process.env.QUEUE_ENABLED === "false"
+    ? []
+    : [VisitAggregationSchedulerModule];
 
 @Module({
   imports: [
@@ -41,6 +48,7 @@ import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module
     FilesModule,
     LinksModule,
     LanguagesModule,
+    LoyaltyModule,
     MemberDashboardModule,
     MonetizationLevelsModule,
     PaymentMethodsModule,
@@ -49,6 +57,7 @@ import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module
     SiteSettingsModule,
     SnippetsModule,
     SupportModule,
+    ...visitAggregationScheduler,
     UsersModule,
     WithdrawalsModule,
     WebsiteMenusModule,

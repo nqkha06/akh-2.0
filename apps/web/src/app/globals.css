@@ -46,6 +46,25 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Shared, theme-independent typography scale. */
+  --type-marketing-hero-size: clamp(2.5rem, 5vw, 4rem);
+  --type-marketing-section-title-size: clamp(1.875rem, 3.5vw, 2.75rem);
+  --type-page-title-size: clamp(1.625rem, calc(1.5rem + 0.75vw), 2.125rem);
+  --type-section-title-size: clamp(1.375rem, calc(1.25rem + 0.6vw), 1.75rem);
+  --type-card-title-size: 1.0625rem;
+  --type-lead-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+  --type-body-size: 1rem;
+  --type-body-sm-size: 0.875rem;
+  --type-label-size: 0.875rem;
+  --type-caption-size: 0.8125rem;
+  --type-metric-size: clamp(1.75rem, 2.5vw, 2.125rem);
+}
+
+@media (min-width: 521px) and (max-width: 780px) {
+  :root {
+    --type-marketing-hero-size: clamp(2.75rem, 6vw, 3.25rem);
+  }
 }
 
 * {
@@ -202,5 +221,84 @@ input:focus-visible {
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .type-marketing-hero {
+    font-size: var(--type-marketing-hero-size);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+  }
+
+  .type-marketing-section-title {
+    font-size: var(--type-marketing-section-title-size);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .type-page-title {
+    font-size: var(--type-page-title-size);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+  }
+
+  .type-section-title {
+    font-size: var(--type-section-title-size);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.012em;
+  }
+
+  .type-card-title {
+    font-size: var(--type-card-title-size);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.006em;
+  }
+
+  .type-lead {
+    font-size: var(--type-lead-size);
+    font-weight: 400;
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+
+  .type-body {
+    font-size: var(--type-body-size);
+    font-weight: 400;
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+
+  .type-body-sm {
+    font-size: var(--type-body-sm-size);
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: 0;
+  }
+
+  .type-label {
+    font-size: var(--type-label-size);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  .type-caption {
+    font-size: var(--type-caption-size);
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: 0;
+  }
+
+  .type-metric {
+    font-size: var(--type-metric-size);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
   }
 }

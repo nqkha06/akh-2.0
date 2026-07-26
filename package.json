@@ -15,6 +15,7 @@
     "web:dev": "turbo dev --filter=@stu/web",
     "web:build": "turbo build --filter=@stu/web",
     "api:dev": "turbo dev --filter=@stu/api",
+    "api:worker": "pnpm --filter @stu/api dev:worker",
     "api:build": "turbo build --filter=@stu/api",
     "api:start": "pnpm --filter @stu/api start",
     "test:auth": "pnpm --filter @stu/api test:e2e",

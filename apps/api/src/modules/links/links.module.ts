@@ -5,18 +5,17 @@ import { AdminLinksController } from "./admin-links.controller";
 import { AdminLinksService } from "./admin-links.service";
 import { LinksController } from "./links.controller";
 import { LinksService } from "./links.service";
-import { LinkAccessAggregationWorker } from "./link-access-aggregation.worker";
+import { LinkAccessAggregationModule } from "./link-access-aggregation.module";
 import { LinkVisitAnalyticsService } from "./link-visit-analytics.service";
 
 @Module({
-  imports: [SnippetsModule],
+  imports: [SnippetsModule, LinkAccessAggregationModule],
   controllers: [LinksController, AdminLinksController],
   providers: [
     LinksService,
     AdminLinksService,
     LinkVisitAnalyticsService,
-    LinkAccessAggregationWorker,
   ],
-  exports: [LinkAccessAggregationWorker],
+  exports: [LinkAccessAggregationModule],
 })
 export class LinksModule {}

@@ -16,6 +16,7 @@ import {
   IconPhoto,
   IconMenu2,
   IconLifebuoy,
+  IconAward,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -77,6 +78,12 @@ const data = {
       url: "/admin/monetization-levels",
       icon: IconMoneybag,
       permission: "monetization-levels.read",
+    },
+    {
+      title: "Loyalty Tiers",
+      url: "/admin/loyalty",
+      icon: IconAward,
+      permission: "loyalty-tiers.read",
     },
     {
       title: "Payment Methods",

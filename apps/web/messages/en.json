@@ -17,6 +17,43 @@
     "comingSoon": "No section yet, coming soon!",
     "home": "Home"
   },
+  "PayoutRates": {
+    "eyebrow": "Transparent earnings",
+    "title": "Payout rates",
+    "description": "Payouts are optimized for valid traffic across supported markets and devices, giving you a clearer view of your earnings.",
+    "themeToggle": "Switch between light and dark theme",
+    "benefits": {
+      "fastPayout": {
+        "title": "Fast withdrawals",
+        "description": "Submit a payout request conveniently once your balance reaches the minimum threshold."
+      },
+      "globalTraffic": {
+        "title": "Global traffic support",
+        "description": "Valid visits are recognized across all supported markets."
+      },
+      "referrals": {
+        "title": "Referral commission",
+        "description": "Earn additional commission when users you refer generate valid revenue."
+      }
+    },
+    "ratesTitle": "Rates by country",
+    "ratesDescription": "Reference earnings per 1,000 valid visits, broken down by device type.",
+    "countries": {
+      "vietnam": "Vietnam",
+      "vietnamDescription": "Vietnam market",
+      "otherCountries": "All other countries",
+      "otherCountriesDescription": "Other supported markets",
+      "unknownCountry": "Unknown country"
+    },
+    "devices": {
+      "mobile": "Mobile",
+      "desktop": "Desktop"
+    },
+    "perThousand": "Per 1,000 valid visits",
+    "noRates": "The Maximum level currently has no active payout rates.",
+    "noteTitle": "About these rates",
+    "note": "Payout rates may change based on traffic quality, country, and device type."
+  },
   "Dashboard": {
     "groups": {
       "overview": "Overview",
@@ -626,7 +663,36 @@
     "loyalty": {
       "eyebrow": "Loyalty",
       "title": "Loyalty program",
-      "description": "Light gamification for tracking loyalty points, missions, and membership benefits."
+      "description": "Track your membership tier, valid-view progress, and the benefits listed for each tier.",
+      "currentTier": "Current tier",
+      "currentBadge": "Current",
+      "nextBadge": "Next",
+      "unranked": "Unranked",
+      "qualification": "Based on valid views collected over the last {days} days",
+      "nextMilestone": "Next milestone",
+      "highestTier": "Highest tier",
+      "tierName": "{name} tier",
+      "requiresViews": "Requires {count} valid views",
+      "highestTierDescription": "You have reached the highest available milestone.",
+      "progressTo": "Progress toward {name}",
+      "tierProgress": "Membership tier progress",
+      "progressLabel": "Membership tier progress",
+      "remainingViews": "{count} valid views remaining",
+      "aggregationTitle": "Data is aggregated automatically",
+      "aggregationDescription": "Valid views update after the visit worker completes processing.",
+      "aggregationEmpty": "No valid views have been aggregated for this account yet.",
+      "tiersTitle": "Tier information",
+      "tiersDescription": "A check indicates an included benefit; an X indicates an unavailable benefit. This content is informational only.",
+      "included": "Included",
+      "notIncluded": "Not included",
+      "requirement": "Requirement",
+      "requirementValue": "{count} views / {days} days",
+      "historyTitle": "Accumulation history",
+      "historyCaption": "Valid-view and membership-tier history for the last {days} days",
+      "date": "Date",
+      "dailyViews": "Daily views",
+      "rollingViews": "{days}-day total",
+      "tier": "Tier"
     },
     "new": {
       "eyebrow": "Product updates",

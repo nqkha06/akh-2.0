@@ -239,26 +239,26 @@ model UserAgent {
 }
 
 model LinkAccessLog {
-  id                String    @id @default(cuid())
-  linkId            Int       @map("link_id")
-  userId            Int       @map("user_id")
-  levelId           Int?      @map("level_id")
-  agentHash         String    @map("agent_hash")
-  ipAddress         String?   @map("ip_address")
-  country           String    @default("ZZ")
-  device            Int       @default(2)
-  referrer          String?
-  payoutCpm         Decimal   @default(0) @map("payout_cpm")
-  revenue           Decimal   @default(0)
-  isEarn            Boolean   @default(false) @map("is_earn")
-  detectionMask     Int       @default(0) @map("detection_mask")
-  rejectReasonMask  Int       @default(0) @map("reject_reason_mask")
-  completedAt       DateTime? @map("completed_at")
-  processedAt       DateTime? @map("processed_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  link              Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  userAgent         UserAgent @relation(fields: [agentHash], references: [hash], onDelete: Restrict)
+  id               String    @id @default(cuid())
+  linkId           Int       @map("link_id")
+  userId           Int       @map("user_id")
+  levelId          Int?      @map("level_id")
+  agentHash        String    @map("agent_hash")
+  ipAddress        String?   @map("ip_address")
+  country          String    @default("ZZ")
+  device           Int       @default(2)
+  referrer         String?
+  payoutCpm        Decimal   @default(0) @map("payout_cpm")
+  revenue          Decimal   @default(0)
+  isEarn           Boolean   @default(false) @map("is_earn")
+  detectionMask    Int       @default(0) @map("detection_mask")
+  rejectReasonMask Int       @default(0) @map("reject_reason_mask")
+  completedAt      DateTime? @map("completed_at")
+  processedAt      DateTime? @map("processed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  link             Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userAgent        UserAgent @relation(fields: [agentHash], references: [hash], onDelete: Restrict)
 
   @@index([linkId, createdAt])
   @@index([userId, createdAt])
@@ -266,6 +266,7 @@ model LinkAccessLog {
   @@index([agentHash])
   @@index([completedAt, processedAt])
   @@index([userId, ipAddress, completedAt])
+  @@index([userId, isEarn, completedAt])
   @@map("stu_access_logs")
 }
 
@@ -312,6 +313,36 @@ model MonetizationLevelTranslation {
   @@unique([levelId, locale])
   @@index([locale])
   @@map("stu_monetization_level_translations")
+}
+
+model LoyaltyTier {
+  id                Int                      @id @default(autoincrement())
+  key               String                   @unique
+  minimumValidViews Int                      @default(0) @map("minimum_valid_views")
+  sortOrder         Int                      @default(0) @map("sort_order")
+  iconKey           String?                  @map("icon_key")
+  status            String                   @default("draft")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  translations      LoyaltyTierTranslation[]
+
+  @@index([status, sortOrder])
+  @@index([status, minimumValidViews])
+  @@map("loyalty_tiers")
+}
+
+model LoyaltyTierTranslation {
+  id           Int         @id @default(autoincrement())
+  tierId       Int         @map("tier_id")
+  locale       String
+  name         String
+  description  String?
+  benefitsJson String      @default("[]") @map("benefits")
+  tier         LoyaltyTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, locale])
+  @@index([locale])
+  @@map("loyalty_tier_translations")
 }
 
 model PaymentMethod {

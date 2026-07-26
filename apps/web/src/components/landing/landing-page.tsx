@@ -17,9 +17,11 @@ import {
   Link2,
   LockKeyhole,
   Menu,
+  Moon,
   Play,
   ShieldCheck,
   Sparkles,
+  Sun,
   TrendingUp,
   UserCheck,
   Users,
@@ -50,8 +52,10 @@ import {
   SiYoutube,
 } from "@icons-pack/react-simple-icons";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import styles from "@/app/page.module.css";
+import { Button } from "@/components/ui/button";
 import type { PublicSiteSettings } from "@/features/site-settings/types";
 import type {
   PublicMenu,
@@ -116,19 +120,51 @@ function Logo({ settings }: { settings: PublicSiteSettings }) {
   );
 }
 
+function PublicThemeToggle({ label }: { label: string }) {
+  const { theme = "light", setTheme } = useTheme();
+
+  return (
+    <Button
+      aria-label={label}
+      className={styles.publicThemeButton}
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      size="icon-lg"
+      title={label}
+      type="button"
+      variant="ghost"
+    >
+      <Sun aria-hidden="true" className="dark:hidden" />
+      <Moon aria-hidden="true" className="hidden dark:block" />
+      <span className={styles.publicThemeLabel}>{label}</span>
+    </Button>
+  );
+}
+
+function resolvePublicHref(href: string, anchorPrefix: string) {
+  return anchorPrefix && href.startsWith("#") ? `${anchorPrefix}${href}` : href;
+}
+
 export function Navbar({
   settings,
   menus,
+  semantic = false,
+  showThemeToggle = false,
+  themeToggleLabel = "Toggle color theme",
+  fallbackAnchorPrefix = "",
 }: {
   settings: PublicSiteSettings;
   menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+  semantic?: boolean;
+  showThemeToggle?: boolean;
+  themeToggleLabel?: string;
+  fallbackAnchorPrefix?: string;
 }) {
   const [open, setOpen] = useState(false);
   const fallbackLinks = [
-    { id: -1, label: "How it works", href: "#how-it-works", target: "_self" as const, rel: null },
-    { id: -2, label: "Features", href: "#features", target: "_self" as const, rel: null },
-    { id: -3, label: "Creators", href: "#creators", target: "_self" as const, rel: null },
-    { id: -4, label: "Pricing", href: "#pricing", target: "_self" as const, rel: null },
+    { id: -1, label: "How it works", href: `${fallbackAnchorPrefix}#how-it-works`, target: "_self" as const, rel: null },
+    { id: -2, label: "Features", href: `${fallbackAnchorPrefix}#features`, target: "_self" as const, rel: null },
+    { id: -3, label: "Creators", href: `${fallbackAnchorPrefix}#creators`, target: "_self" as const, rel: null },
+    { id: -4, label: "Pricing", href: `${fallbackAnchorPrefix}#pricing`, target: "_self" as const, rel: null },
   ];
   const links = menus?.["header-primary"]?.items.length
     ? menus["header-primary"].items
@@ -144,17 +180,18 @@ export function Navbar({
       ];
 
   return (
-    <header className={styles.navbar}>
+    <header className={`${styles.navbar} ${semantic ? styles.semanticNavbar : ""}`}>
       <nav className={styles.navInner} aria-label="Main navigation">
         <Logo settings={settings} />
         <div className={styles.navLinks}>
-          {links.map((item) => item.href ? <a key={item.id} href={item.href} target={item.target} rel={item.rel ?? undefined}>{item.label}</a> : null)}
+          {links.map((item) => item.href ? <a key={item.id} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} target={item.target} rel={item.rel ?? undefined}>{item.label}</a> : null)}
         </div>
         <div className={styles.navActions}>
+          {showThemeToggle ? <PublicThemeToggle label={themeToggleLabel} /> : null}
           {actions.map((item, index) => item.href ? (
             <a
               className={index === actions.length - 1 ? styles.smallPrimary : styles.textButton}
-              href={item.href}
+              href={resolvePublicHref(item.href, fallbackAnchorPrefix)}
               key={item.id}
               target={item.target}
               rel={item.rel ?? undefined}
@@ -171,8 +208,9 @@ export function Navbar({
       <AnimatePresence>
         {open && (
           <motion.div className={styles.mobileMenu} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-            {mobileLinks.map((item) => item.href ? <a key={item.id} href={item.href} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}</a> : null)}
-            {actions.map((item, index) => item.href ? <a className={index === actions.length - 1 ? styles.smallPrimary : undefined} href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}{index === actions.length - 1 ? <ArrowRight size={15} /> : null}</a> : null)}
+            {mobileLinks.map((item) => item.href ? <a key={item.id} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}</a> : null)}
+            {actions.map((item, index) => item.href ? <a className={index === actions.length - 1 ? styles.smallPrimary : undefined} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} key={item.id} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}{index === actions.length - 1 ? <ArrowRight size={15} /> : null}</a> : null)}
+            {showThemeToggle ? <PublicThemeToggle label={themeToggleLabel} /> : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -558,21 +596,25 @@ export function FinalCTA() {
 export function Footer({
   settings,
   menus,
+  semantic = false,
+  fallbackAnchorPrefix = "",
 }: {
   settings: PublicSiteSettings;
   menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+  semantic?: boolean;
+  fallbackAnchorPrefix?: string;
 }) {
   const managedColumns = menus?.["footer-primary"]?.items;
   const columns = managedColumns?.length
     ? managedColumns
     : [
-        { id: -20, label: "Product", children: [{ id: -21, label: "Features", href: "#features", target: "_self" as const, rel: null }] },
+        { id: -20, label: "Product", children: [{ id: -21, label: "Features", href: `${fallbackAnchorPrefix}#features`, target: "_self" as const, rel: null }] },
         { id: -22, label: "Resources", children: [{ id: -23, label: "Help center", href: "/", target: "_self" as const, rel: null }] },
         { id: -24, label: "Company", children: [{ id: -25, label: "Contact", href: "/", target: "_self" as const, rel: null }] },
       ];
   const legalItems = menus?.["footer-legal"]?.items ?? [];
   return (
-    <footer className={styles.footer}>
+    <footer className={`${styles.footer} ${semantic ? styles.semanticFooter : ""}`}>
       <div className={`${styles.container} ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Logo settings={settings} />
@@ -597,7 +639,7 @@ export function Footer({
             <strong>{column.label}</strong>
             {column.children.map((item) =>
               item.href ? (
-                <a href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined}>
+                <a href={resolvePublicHref(item.href, fallbackAnchorPrefix)} key={item.id} target={item.target} rel={item.rel ?? undefined}>
                   {item.label}
                 </a>
               ) : null,
@@ -609,7 +651,7 @@ export function Footer({
             <strong>{menus?.["footer-legal"]?.title || "Legal"}</strong>
             {legalItems.map((item) =>
               item.href ? (
-                <a href={item.href} key={item.id} target={item.target} rel={item.rel ?? undefined}>
+                <a href={resolvePublicHref(item.href, fallbackAnchorPrefix)} key={item.id} target={item.target} rel={item.rel ?? undefined}>
                   {item.label}
                 </a>
               ) : null,
@@ -631,7 +673,7 @@ export function LandingPage({
 }) {
   return (
     <main className={styles.page}>
-      <Navbar menus={menus} settings={settings} />
+      <Navbar menus={menus} semantic settings={settings} showThemeToggle />
       <HeroSection />
       <IntegrationStrip />
       <ProcessTimeline />
@@ -640,7 +682,7 @@ export function LandingPage({
       <SocialProofSection />
       <UseCaseTabs />
       <FinalCTA />
-      <Footer menus={menus} settings={settings} />
+      <Footer menus={menus} semantic settings={settings} />
     </main>
   );
 }

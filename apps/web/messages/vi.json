@@ -17,6 +17,43 @@
     "comingSoon": "Chưa có section, sắp ra mắt!",
     "home": "Trang chủ"
   },
+  "PayoutRates": {
+    "eyebrow": "Doanh thu minh bạch",
+    "title": "Tỷ lệ thanh toán",
+    "description": "Mức chi trả được tối ưu cho lưu lượng hợp lệ trên nhiều thị trường và thiết bị, giúp bạn theo dõi doanh thu rõ ràng hơn.",
+    "themeToggle": "Chuyển giao diện sáng hoặc tối",
+    "benefits": {
+      "fastPayout": {
+        "title": "Rút tiền nhanh chóng",
+        "description": "Gửi yêu cầu rút tiền thuận tiện khi số dư của bạn đạt mức tối thiểu."
+      },
+      "globalTraffic": {
+        "title": "Hỗ trợ lưu lượng toàn cầu",
+        "description": "Lượt truy cập hợp lệ được ghi nhận trên các thị trường được hỗ trợ."
+      },
+      "referrals": {
+        "title": "Hoa hồng giới thiệu",
+        "description": "Nhận thêm hoa hồng khi người dùng được bạn giới thiệu tạo ra doanh thu hợp lệ."
+      }
+    },
+    "ratesTitle": "Tỷ lệ theo quốc gia",
+    "ratesDescription": "Mức tham khảo cho mỗi 1.000 lượt truy cập hợp lệ, phân tách theo loại thiết bị.",
+    "countries": {
+      "vietnam": "Việt Nam",
+      "vietnamDescription": "Thị trường Việt Nam",
+      "otherCountries": "Các quốc gia còn lại",
+      "otherCountriesDescription": "Các thị trường được hỗ trợ khác",
+      "unknownCountry": "Quốc gia chưa xác định"
+    },
+    "devices": {
+      "mobile": "Mobile",
+      "desktop": "Desktop"
+    },
+    "perThousand": "Mỗi 1.000 lượt truy cập hợp lệ",
+    "noRates": "Level Tối đa hiện chưa có tỷ lệ thanh toán được kích hoạt.",
+    "noteTitle": "Lưu ý về tỷ lệ",
+    "note": "Tỷ lệ thanh toán có thể thay đổi theo chất lượng traffic, quốc gia và loại thiết bị."
+  },
   "Dashboard": {
     "groups": {
       "overview": "Tổng quan",
@@ -626,7 +663,36 @@
     "loyalty": {
       "eyebrow": "Thành viên",
       "title": "Thân thiết",
-      "description": "Gamification nhẹ giúp bạn theo dõi điểm thân thiết, nhiệm vụ và quyền lợi theo hạng thành viên."
+      "description": "Theo dõi hạng thành viên, tiến độ lượt xem hợp lệ và thông tin quyền lợi của từng hạng.",
+      "currentTier": "Hạng hiện tại",
+      "currentBadge": "Hiện tại",
+      "nextBadge": "Kế tiếp",
+      "unranked": "Chưa xếp hạng",
+      "qualification": "Được xét theo lượt xem hợp lệ trong {days} ngày gần nhất",
+      "nextMilestone": "Mốc tiếp theo",
+      "highestTier": "Hạng cao nhất",
+      "tierName": "Hạng {name}",
+      "requiresViews": "Yêu cầu {count} lượt xem hợp lệ",
+      "highestTierDescription": "Bạn đã đạt mốc cao nhất hiện có.",
+      "progressTo": "Tiến độ đến hạng {name}",
+      "tierProgress": "Tiến độ hạng thành viên",
+      "progressLabel": "Tiến độ hạng thành viên",
+      "remainingViews": "Còn {count} lượt xem hợp lệ",
+      "aggregationTitle": "Dữ liệu được tổng hợp tự động",
+      "aggregationDescription": "Lượt xem hợp lệ được cập nhật sau khi worker hoàn tất xử lý visit.",
+      "aggregationEmpty": "Chưa có lượt xem hợp lệ nào được tổng hợp cho tài khoản này.",
+      "tiersTitle": "Thông tin các hạng",
+      "tiersDescription": "Dấu tích thể hiện quyền lợi có trong hạng; dấu X thể hiện quyền lợi không có. Nội dung này chỉ dùng để hiển thị thông tin.",
+      "included": "Có",
+      "notIncluded": "Không có",
+      "requirement": "Yêu cầu",
+      "requirementValue": "{count} lượt xem / {days} ngày",
+      "historyTitle": "Lịch sử tích lũy",
+      "historyCaption": "Lịch sử lượt xem hợp lệ và hạng thành viên trong {days} ngày gần đây",
+      "date": "Ngày",
+      "dailyViews": "Lượt xem ngày",
+      "rollingViews": "Tích lũy {days} ngày",
+      "tier": "Hạng"
     },
     "new": {
       "eyebrow": "Product updates",

@@ -25,6 +25,7 @@ const sectionLabels: Record<string, string> = {
   media: "Admin Media",
   menus: "Website Menus",
   "monetization-levels": "Monetization Levels",
+  loyalty: "Loyalty Tiers",
   "payment-methods": "Payment Methods",
   withdrawals: "Withdrawals",
   languages: "Languages",

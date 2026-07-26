@@ -57,6 +57,7 @@ process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 process.env.FRONTEND_ORIGIN = "http://localhost:3000";
 process.env.AUTH_COOKIE_SECURE = "false";
 process.env.AUTH_COOKIE_SAME_SITE = "lax";
+process.env.QUEUE_ENABLED = "false";
 process.env.VISIT_AGGREGATION_DISABLED = "true";
 
 let app!: INestApplication;
@@ -477,6 +478,183 @@ describe("Member dashboard E2E", () => {
       (
         await request("/api/member/dashboard?range=invalid", {
           headers: { Authorization: `Bearer ${member.body.accessToken}` },
+        })
+      ).status,
+      400,
+    );
+  });
+});
+
+describe("Member loyalty E2E", () => {
+  it("returns localized tiers, check/X states, and progress from earned visits", async () => {
+    assert.equal((await request("/api/member/loyalty")).status, 401);
+
+    const email = `loyalty-${process.pid}@example.com`;
+    const password = "Secure123";
+    assert.equal(
+      (
+        await request("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ name: "Loyalty Member", email, password }),
+        })
+      ).status,
+      201,
+    );
+    const member = await loginAs(email, password);
+    const authorization = {
+      Authorization: `Bearer ${member.body.accessToken}`,
+    };
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+
+    for (const tier of [
+      { key: "started", minimum: 0, order: 10, vi: "Khởi đầu", en: "Starter" },
+      { key: "bronze", minimum: 2, order: 20, vi: "Đồng", en: "Bronze" },
+      { key: "gold", minimum: 5, order: 30, vi: "Vàng", en: "Gold" },
+    ]) {
+      await prisma.loyaltyTier.create({
+        data: {
+          key: tier.key,
+          minimumValidViews: tier.minimum,
+          sortOrder: tier.order,
+          iconKey: tier.key === "gold" ? "trophy" : "sparkles",
+          status: "published",
+          translations: {
+            create: [
+              {
+                locale: "vi",
+                name: tier.vi,
+                benefitsJson: JSON.stringify([
+                  {
+                    key: "csv_export",
+                    label: "Xuất báo cáo CSV",
+                    included: tier.key === "gold",
+                    value: null,
+                  },
+                ]),
+              },
+              {
+                locale: "en",
+                name: tier.en,
+                benefitsJson: JSON.stringify([
+                  {
+                    key: "csv_export",
+                    label: "CSV report export",
+                    included: tier.key === "gold",
+                    value: null,
+                  },
+                ]),
+              },
+            ],
+          },
+        },
+      });
+    }
+
+    const link = await prisma.link.create({
+      data: {
+        userId: user.id,
+        slug: `loyalty-${process.pid}`,
+        title: "Loyalty source",
+        destinationUrl: "https://example.com/loyalty",
+      },
+    });
+    const agentHash = `loyalty-agent-${process.pid}`;
+    await prisma.userAgent.create({
+      data: {
+        hash: agentHash,
+        raw: "Loyalty E2E",
+        browser: "test",
+        os: "test",
+        deviceType: 1,
+      },
+    });
+    const now = new Date();
+    await prisma.linkAccessLog.createMany({
+      data: Array.from({ length: 4 }, (_, index) => ({
+        id: `loyalty-access-${process.pid}-${index}`,
+        linkId: link.id,
+        userId: user.id,
+        agentHash,
+        ipAddress: `203.0.113.${index + 1}`,
+        country: "VN",
+        device: 1,
+        payoutCpm: "1",
+        revenue: index < 3 ? "0.001" : "0",
+        isEarn: index < 3,
+        completedAt: now,
+        processedAt: now,
+      })),
+    });
+
+    const response = await request("/api/member/loyalty?locale=en-US", {
+      headers: authorization,
+    });
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as {
+      calculation: { windowDays: number; lastAggregatedAt: string | null };
+      summary: {
+        currentValue: number;
+        currentTier: { key: string; name: string };
+        nextTier: { key: string; name: string };
+        nextTierTarget: number;
+        remaining: number;
+        progress: number;
+      };
+      tiers: Array<{
+        key: string;
+        name: string;
+        isCurrent: boolean;
+        isNext: boolean;
+        benefits: Array<{ key: string; included: boolean }>;
+      }>;
+      history: Array<{
+        dailyValidViews: number;
+        rollingValidViews: number;
+        tier: { key: string; name: string } | null;
+      }>;
+    };
+
+    assert.equal(body.calculation.windowDays, 7);
+    assert.ok(body.calculation.lastAggregatedAt);
+    assert.equal(body.summary.currentValue, 3);
+    assert.deepEqual(body.summary.currentTier, {
+      key: "bronze",
+      name: "Bronze",
+    });
+    assert.deepEqual(body.summary.nextTier, { key: "gold", name: "Gold" });
+    assert.equal(body.summary.nextTierTarget, 5);
+    assert.equal(body.summary.remaining, 2);
+    assert.equal(body.summary.progress, 33);
+    assert.equal(body.tiers.find((tier) => tier.key === "bronze")?.isCurrent, true);
+    assert.equal(body.tiers.find((tier) => tier.key === "gold")?.isNext, true);
+    assert.equal(
+      body.tiers.find((tier) => tier.key === "bronze")?.benefits[0]
+        ?.included,
+      false,
+    );
+    assert.equal(
+      body.tiers.find((tier) => tier.key === "gold")?.benefits[0]?.included,
+      true,
+    );
+    assert.equal(body.history.length, 7);
+    assert.equal(body.history[6]?.dailyValidViews, 3);
+    assert.equal(body.history[6]?.rollingValidViews, 3);
+    assert.equal(body.history[6]?.tier?.key, "bronze");
+
+    const vietnamese = await request("/api/member/loyalty?locale=vi", {
+      headers: authorization,
+    });
+    assert.equal(vietnamese.status, 200);
+    assert.equal(
+      ((await vietnamese.json()) as { summary: { currentTier: { name: string } } })
+        .summary.currentTier.name,
+      "Đồng",
+    );
+
+    assert.equal(
+      (
+        await request("/api/member/loyalty?locale=not_a_locale", {
+          headers: authorization,
         })
       ).status,
       400,
@@ -2027,6 +2205,161 @@ describe("Admin monetization levels E2E", () => {
   });
 });
 
+describe("Admin Loyalty tiers E2E", () => {
+  const benefits = (locale: "vi" | "en") => [
+    {
+      key: "csv_export",
+      label: locale === "vi" ? "Xuất CSV" : "CSV export",
+      included: true,
+      value: null,
+    },
+    {
+      key: "custom_qr",
+      label: locale === "vi" ? "QR tùy chỉnh" : "Custom QR",
+      included: false,
+      value: null,
+    },
+  ];
+  const payload = {
+    key: "admin-loyalty-test",
+    minimumValidViews: 123_456,
+    sortOrder: 90,
+    iconKey: "trophy",
+    status: "published",
+    translations: [
+      {
+        locale: "vi",
+        name: "Hạng kiểm thử",
+        description: "Mô tả quản trị Loyalty.",
+        benefits: benefits("vi"),
+      },
+      {
+        locale: "en",
+        name: "Test tier",
+        description: "Loyalty administration description.",
+        benefits: benefits("en"),
+      },
+    ],
+  };
+
+  it("supports protected CRUD and preserves check/X states across locales", async () => {
+    assert.ok(adminAccessToken);
+    const authorization = { Authorization: `Bearer ${adminAccessToken}` };
+    assert.equal((await request("/api/admin/loyalty-tiers")).status, 401);
+
+    const createResponse = await request("/api/admin/loyalty-tiers", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify(payload),
+    });
+    assert.equal(createResponse.status, 201, await createResponse.clone().text());
+    const created = (await createResponse.json()) as {
+      id: number;
+      displayName: string;
+      benefitsCount: number;
+      includedBenefitsCount: number;
+      translations: Array<{
+        locale: string;
+        benefits: Array<{ key: string; included: boolean }>;
+      }>;
+    };
+    assert.equal(created.displayName, "Hạng kiểm thử");
+    assert.equal(created.benefitsCount, 2);
+    assert.equal(created.includedBenefitsCount, 1);
+    assert.equal(
+      created.translations.find(({ locale }) => locale === "en")?.benefits[1]
+        ?.included,
+      false,
+    );
+
+    const duplicateThreshold = await request("/api/admin/loyalty-tiers", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({ ...payload, key: "admin-loyalty-duplicate" }),
+    });
+    assert.equal(duplicateThreshold.status, 409);
+
+    const inconsistentBenefits = await request(
+      `/api/admin/loyalty-tiers/${created.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          translations: [
+            payload.translations[0],
+            {
+              ...payload.translations[1],
+              benefits: benefits("en").map((benefit, index) =>
+                index === 1 ? { ...benefit, included: true } : benefit,
+              ),
+            },
+          ],
+        }),
+      },
+    );
+    assert.equal(inconsistentBenefits.status, 400);
+
+    const updateResponse = await request(
+      `/api/admin/loyalty-tiers/${created.id}`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          sortOrder: 95,
+          status: "draft",
+          translations: payload.translations.map((translation) => ({
+            ...translation,
+            benefits: translation.benefits.map((benefit) => ({
+              ...benefit,
+              included: false,
+            })),
+          })),
+        }),
+      },
+    );
+    assert.equal(updateResponse.status, 200, await updateResponse.clone().text());
+    const updated = (await updateResponse.json()) as {
+      status: string;
+      sortOrder: number;
+      includedBenefitsCount: number;
+    };
+    assert.equal(updated.status, "draft");
+    assert.equal(updated.sortOrder, 95);
+    assert.equal(updated.includedBenefitsCount, 0);
+
+    const listResponse = await request(
+      "/api/admin/loyalty-tiers?name=admin-loyalty&page=1&perPage=10",
+      { headers: authorization },
+    );
+    assert.equal(listResponse.status, 200);
+    const list = (await listResponse.json()) as {
+      total: number;
+      summary: { configuredBenefits: number; highestThreshold: number };
+    };
+    assert.equal(list.total, 1);
+    assert.equal(list.summary.configuredBenefits, 2);
+    assert.equal(list.summary.highestThreshold, 123_456);
+
+    assert.equal(
+      (
+        await request(`/api/admin/loyalty-tiers/${created.id}`, {
+          method: "DELETE",
+          headers: authorization,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/loyalty-tiers/${created.id}`, {
+          headers: authorization,
+        })
+      ).status,
+      404,
+    );
+  });
+});
+
 describe("Public monetization route resolution E2E", () => {
   it("uses deterministic weighted selection within the highest priority", () => {
     const routes: MonetizationRouteDto[] = [
@@ -2608,6 +2941,43 @@ describe("Public monetization route resolution E2E", () => {
     assert.equal(
       (await prisma.link.findUniqueOrThrow({ where: { id: link.id } })).views,
       2,
+    );
+
+    await prisma.linkAccessLog.createMany({
+      data: Array.from({ length: 1_200 }, (_, index) => ({
+        id: `batch-${process.pid}-${index}`,
+        linkId: link.id,
+        userId: owner.id,
+        levelId: level.id,
+        agentHash: pending.agentHash,
+        ipAddress: `10.20.${Math.floor(index / 250)}.${index % 250}`,
+        country: "VN",
+        device: 1,
+        referrer: "direct",
+        payoutCpm: "0",
+        completedAt: new Date(firstRunAt.getTime() + 150_000),
+      })),
+    });
+
+    const fullBatch = await worker.processPending(
+      new Date(firstRunAt.getTime() + 180_000),
+    );
+    assert.equal(fullBatch.processedCount, 1_000);
+    assert.equal(fullBatch.batchSize, 1_000);
+
+    const finalBatch = await worker.processPending(
+      new Date(firstRunAt.getTime() + 240_000),
+    );
+    assert.equal(finalBatch.processedCount, 200);
+    assert.equal(
+      (await prisma.link.findUniqueOrThrow({ where: { id: link.id } })).views,
+      1_202,
+    );
+    assert.equal(
+      await prisma.linkAccessLog.count({
+        where: { linkId: link.id, processedAt: null },
+      }),
+      0,
     );
 
     await prisma.link.delete({ where: { id: link.id } });
