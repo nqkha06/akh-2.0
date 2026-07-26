@@ -6,7 +6,7 @@ import { PayoutMethodPanel } from "@/components/dashboard/withdraw/payout-method
 import { WithdrawalHistory } from "@/components/dashboard/withdraw/withdrawal-history";
 import { WithdrawalConfirmationDialog, WithdrawalDetailSheet, WithdrawalSuccessDialog } from "@/components/dashboard/withdraw/withdrawal-dialogs";
 import { useWithdrawalController } from "@/components/dashboard/withdraw/use-withdrawal-controller";
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 
 export function WithdrawView() {
   const controller = useWithdrawalController();
@@ -15,7 +15,7 @@ export function WithdrawView() {
   if (controller.pageError || !controller.data) return <WithdrawalErrorState message={controller.pageError} onRetry={() => void controller.retry()} />;
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
+    <PageContainer>
       <PageHeader title="Rút tiền" description="Chuyển số dư khả dụng về phương thức thanh toán của bạn." />
       <BalanceSummary data={controller.data} />
       <WithdrawalEligibilityAlert data={controller.data} />
@@ -27,6 +27,6 @@ export function WithdrawView() {
       <WithdrawalConfirmationDialog controller={controller} />
       <WithdrawalSuccessDialog controller={controller} />
       <WithdrawalDetailSheet controller={controller} />
-    </div>
+    </PageContainer>
   );
 }

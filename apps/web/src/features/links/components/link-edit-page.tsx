@@ -6,6 +6,7 @@ import { ArrowLeft, CircleAlert, ExternalLink, LoaderCircle } from "lucide-react
 import { useTranslations } from "next-intl";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageContainer } from "@/components/dashboard/ui";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -92,7 +93,7 @@ export function LinkEditPage({ linkId }: { linkId: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-5">
+    <PageContainer size="wide">
       <Breadcrumb className="text-[13px] sm:text-sm">
         <BreadcrumbList className="gap-1.5 sm:gap-2.5">
           <BreadcrumbItem className="hidden sm:inline-flex">
@@ -143,26 +144,26 @@ export function LinkEditPage({ linkId }: { linkId: string }) {
           cacheLink(updatedLink);
         }}
       />
-    </div>
+    </PageContainer>
   );
 }
 
 function LinkEditLoading() {
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-5">
+    <PageContainer size="wide">
       <div className="border-b border-border pb-5">
         <Skeleton className="mb-3 h-5 w-48" />
         <Skeleton className="h-8 w-72" />
         <Skeleton className="mt-2 h-4 w-[34rem] max-w-full" />
       </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
         <div className="space-y-4">
           <Skeleton className="h-64 rounded-xl" />
           <Skeleton className="h-72 rounded-xl" />
         </div>
         <Skeleton className="h-[640px] rounded-xl" />
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -170,7 +171,7 @@ function LinkEditError({ message, onRetry }: { message: string; onRetry: () => v
   const t = useTranslations("Links");
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-5">
+    <PageContainer size="wide">
       <Button asChild variant="ghost" size="icon" className="size-11 sm:size-9">
         <Link href="/member/links" aria-label="Social links"><ArrowLeft /></Link>
       </Button>
@@ -185,6 +186,6 @@ function LinkEditError({ message, onRetry }: { message: string; onRetry: () => v
           </Button>
         </AlertDescription>
       </Alert>
-    </div>
+    </PageContainer>
   );
 }

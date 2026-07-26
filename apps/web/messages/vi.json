@@ -1021,6 +1021,15 @@
   "MemberDashboard": {
     "eyebrow": "Hiệu suất",
     "title": "Tổng quan",
+    "range": {
+      "label": "Khoảng thời gian",
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "7d": "7 ngày qua",
+      "30d": "30 ngày qua",
+      "60d": "60 ngày qua",
+      "90d": "90 ngày qua"
+    },
     "actions": {
       "withdraw": "Rút tiền",
       "createLink": "Tạo social link",
@@ -1048,7 +1057,7 @@
       "averageCpm": "CPM trung bình"
     },
     "topLinks": {
-      "title": "Social links hiệu quả nhất",
+      "title": "Các links phổ biến",
       "empty": "Chưa có dữ liệu social link."
     },
     "breakdowns": {

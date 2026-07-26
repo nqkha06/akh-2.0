@@ -1,6 +1,5 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { SidebarBrand } from "./sidebar-brand"
 import { SidebarNavigation } from "./sidebar-navigation"
 

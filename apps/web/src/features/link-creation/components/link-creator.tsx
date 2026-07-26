@@ -1583,7 +1583,7 @@ export default function SocialLinksGenerator({
   return (
 
     <div
-      className={`${embedded ? "w-full" : "mx-auto max-w-6xl"} grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] lg:items-start`}
+      className={`${embedded ? "w-full" : "mx-auto max-w-6xl"} grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] xl:items-start`}
     >
       {/* Left Panel - Form */}
       <div className="min-w-0 space-y-4">

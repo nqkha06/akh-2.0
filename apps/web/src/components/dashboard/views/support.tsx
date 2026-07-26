@@ -14,7 +14,7 @@ import {
   SupportTicketList,
 } from "@/components/dashboard/support/support-requests";
 import { useSupportController } from "@/components/dashboard/support/use-support-controller";
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { Button } from "@/components/ui/button";
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 
@@ -43,7 +43,7 @@ export function SupportView() {
   const openCreateRequest = () => controller.setRequestSheetOpen(true);
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
+    <PageContainer>
       <PageHeader
         title="Hỗ trợ"
         description={`Tạo và theo dõi ticket hỗ trợ với đội ngũ ${brand.siteName}.`}
@@ -66,6 +66,6 @@ export function SupportView() {
 
       <CreateSupportRequestSheet controller={controller} />
       <SupportRequestDetail controller={controller} />
-    </div>
+    </PageContainer>
   );
 }

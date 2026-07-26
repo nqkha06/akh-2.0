@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, CircleAlert, ExternalLink, LoaderCircle } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { PageContainer } from "@/components/dashboard/ui"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -24,7 +25,7 @@ export function LinkInBioEditorPage({ mode, initialBio }: { mode: "create" | "ed
     ? "Cập nhật hồ sơ, liên kết và giao diện cho trang công khai của bạn."
     : "Thiết lập hồ sơ, liên kết và giao diện cho trang công khai của bạn."
 
-  return <div className="mx-auto w-full max-w-[1440px] space-y-5">
+  return <PageContainer size="wide">
     <Breadcrumb className="text-[13px] sm:text-sm">
       <BreadcrumbList className="gap-1.5 sm:gap-2.5">
         <BreadcrumbItem className="hidden sm:inline-flex"><BreadcrumbLink asChild><Link href="/member">Home</Link></BreadcrumbLink></BreadcrumbItem>
@@ -64,13 +65,13 @@ export function LinkInBioEditorPage({ mode, initialBio }: { mode: "create" | "ed
     </div>
 
     <LinkInBioGenerator key={initialBio?.id || "create-bio"} initialBio={initialBio} onSavingChange={setIsSaving} />
-  </div>
+  </PageContainer>
 }
 
 export function LinkInBioEditorLoading() {
-  return <div className="mx-auto w-full max-w-[1440px] space-y-5"><div className="border-b border-border pb-5"><Skeleton className="mb-3 h-5 w-48" /><Skeleton className="h-8 w-72" /><Skeleton className="mt-2 h-4 w-[34rem] max-w-full" /></div><div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"><div className="space-y-3"><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /></div><Skeleton className="h-[700px] rounded-xl" /></div></div>
+  return <PageContainer size="wide"><div className="border-b border-border pb-5"><Skeleton className="mb-3 h-5 w-48" /><Skeleton className="h-8 w-72" /><Skeleton className="mt-2 h-4 w-[34rem] max-w-full" /></div><div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"><div className="space-y-3"><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /></div><Skeleton className="h-[700px] rounded-xl" /></div></PageContainer>
 }
 
 export function LinkInBioEditorError({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return <div className="mx-auto w-full max-w-[1440px] space-y-5"><Button asChild variant="ghost" size="icon" className="size-11 sm:size-9" aria-label="Quay lại Link-in-bio"><Link href="/member/bio"><ArrowLeft /></Link></Button><Alert variant="destructive"><CircleAlert /><AlertTitle>Không tải được trang Link-in-bio</AlertTitle><AlertDescription><p>{message}</p><Button variant="outline" className="mt-3 bg-background" onClick={onRetry}><LoaderCircle />Thử lại</Button></AlertDescription></Alert></div>
+  return <PageContainer size="wide"><Button asChild variant="ghost" size="icon" className="size-11 sm:size-9" aria-label="Quay lại Link-in-bio"><Link href="/member/bio"><ArrowLeft /></Link></Button><Alert variant="destructive"><CircleAlert /><AlertTitle>Không tải được trang Link-in-bio</AlertTitle><AlertDescription><p>{message}</p><Button variant="outline" className="mt-3 bg-background" onClick={onRetry}><LoaderCircle />Thử lại</Button></AlertDescription></Alert></PageContainer>
 }

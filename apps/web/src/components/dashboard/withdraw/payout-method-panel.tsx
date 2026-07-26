@@ -12,7 +12,7 @@ export function PayoutMethodPanel({ controller }: { controller: WithdrawalContro
   if (!data) return null;
 
   return (
-    <aside className="h-fit rounded-lg border border-border bg-card">
+    <aside className="h-fit rounded-xl border border-border bg-card">
       <div className="border-b border-border px-5 py-4">
         <h2 className="text-base font-semibold tracking-[-0.01em]">Phương thức nhận tiền</h2>
         <p className="mt-1 text-sm text-muted-foreground">Thông tin dùng cho yêu cầu hiện tại.</p>

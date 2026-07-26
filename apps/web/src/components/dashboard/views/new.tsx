@@ -1,7 +1,7 @@
 import { Bug, CalendarDays, Rocket, Sparkles, Wand2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Badge, PageHeader, SoftCard } from "@/components/dashboard/ui";
+import { Badge, PageContainer, PageHeader, SoftCard } from "@/components/dashboard/ui";
 
 const updates = [
   {
@@ -34,26 +34,26 @@ export function NewView() {
   const t = useTranslations("SimplePages.new");
 
   return (
-    <>
+    <PageContainer>
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("description")}
       />
 
-      <SoftCard className="mb-5 overflow-hidden p-6">
-        <div className="grid gap-5 rounded-lg border border-blue-100 bg-blue-50 p-6 md:grid-cols-[1fr_260px] md:items-center">
+      <SoftCard className="overflow-hidden p-5 sm:p-6">
+        <div className="grid gap-5 rounded-lg border border-border bg-muted/20 p-5 sm:p-6 md:grid-cols-[1fr_260px] md:items-center">
           <div>
             <Badge tone="emerald">Mới nhất</Badge>
-            <h2 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-slate-950">
+            <h2 className="mt-4 max-w-2xl text-2xl font-semibold tracking-[-0.035em] text-foreground sm:text-3xl">
               Bộ giao diện Light UI premium cho toàn bộ affiliate dashboard.
             </h2>
-            <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-slate-600">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
               Sidebar grouping, header search, card depth, table nâng cấp và các
               route riêng cho từng tính năng.
             </p>
           </div>
-          <div className="grid aspect-square place-items-center rounded-lg bg-white text-blue-700 ring-1 ring-blue-100">
+          <div className="grid aspect-square place-items-center rounded-lg border border-border bg-background text-primary">
             <Sparkles size={72} />
           </div>
         </div>
@@ -63,24 +63,24 @@ export function NewView() {
         {updates.map((update) => (
           <SoftCard key={update.title} className="p-5">
             <div className="flex items-start justify-between gap-4">
-              <span className="grid size-12 place-items-center rounded-lg bg-slate-100 text-blue-600">
+              <span className="grid size-12 place-items-center rounded-lg bg-primary/10 text-primary">
                 <update.icon size={22} />
               </span>
               <Badge tone={update.tone}>{update.type}</Badge>
             </div>
-            <h3 className="mt-5 text-lg font-bold text-slate-950">
+            <h3 className="mt-5 text-lg font-semibold text-foreground">
               {update.title}
             </h3>
-            <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {update.desc}
             </p>
-            <p className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-slate-400">
+            <p className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <CalendarDays size={14} />
               {update.date}
             </p>
           </SoftCard>
         ))}
       </section>
-    </>
+    </PageContainer>
   );
 }

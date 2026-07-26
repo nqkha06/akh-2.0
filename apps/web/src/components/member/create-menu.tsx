@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { FileCode2, FileUp, Link2, Plus, UserRound } from "lucide-react"
+import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
@@ -14,7 +13,7 @@ export function CreateMenu() {
   return (
       <Tooltip>
         <TooltipTrigger asChild>
-            <Button type="button" className="h-9 rounded-lg px-2.5 text-sm font-medium shadow-none sm:px-3" aria-label={t("create.title")}>
+            <Button type="button" className="h-10 rounded-lg px-3 text-sm font-medium shadow-none" aria-label={t("create.title")}>
               <Plus className="size-4" />
               <span className="">{t("create.title")}</span>
             </Button>

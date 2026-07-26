@@ -63,7 +63,7 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
 
   if (!data.payoutMethods.length) {
     return (
-      <section className="rounded-lg border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
         <div className="grid min-h-72 place-items-center text-center">
           <div className="max-w-sm"><div className="mx-auto grid size-11 place-items-center rounded-lg border border-border bg-muted/40 text-primary"><Building2 className="size-5" /></div><h2 className="mt-4 text-lg font-semibold">Bạn chưa thiết lập phương thức nhận tiền</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Thêm một phương thức nhận tiền trong phần cài đặt tài khoản trước khi tạo yêu cầu rút.</p><Button className="mt-5" asChild><Link href="/member/account#payment-method">Thêm phương thức nhận tiền</Link></Button></div>
         </div>
@@ -72,7 +72,7 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card">
+    <section className="rounded-xl border border-border bg-card">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-base font-semibold tracking-[-0.01em]">Tạo yêu cầu rút tiền</h2>
         <p className="mt-1 text-sm text-muted-foreground">Chọn số tiền và kiểm tra thông tin trước khi xác nhận.</p>

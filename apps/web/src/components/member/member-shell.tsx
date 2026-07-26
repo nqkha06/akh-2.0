@@ -1,6 +1,13 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { usePathname } from "next/navigation"
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 
 import { MemberFooter } from "./member-footer"
 import { MemberHeader } from "./member-header"
@@ -16,6 +23,8 @@ export function MemberShell({
   children: ReactNode
   canAccess?: (permission: string) => boolean
 }) {
+  const pathname = usePathname()
+  const scrollContainerRef = useRef<HTMLElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
@@ -26,6 +35,14 @@ export function MemberShell({
     return () => window.cancelAnimationFrame(frame)
   }, [])
 
+  useLayoutEffect(() => {
+    scrollContainerRef.current?.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    })
+  }, [pathname])
+
   const toggleSidebar = () => {
     setCollapsed((current) => {
       const next = !current
@@ -35,7 +52,7 @@ export function MemberShell({
   }
 
   return (
-    <div className="fixed inset-0 flex min-h-0 overflow-hidden bg-background text-foreground">
+    <div className="fixed inset-0 flex min-h-0 overflow-clip bg-background text-foreground">
       <MemberSidebar
         collapsed={collapsed}
         onToggle={toggleSidebar}
@@ -47,11 +64,12 @@ export function MemberShell({
         canAccess={canAccess}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-clip">
         <MemberHeader
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
         />
         <main
+          ref={scrollContainerRef}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           id="dashboard-main-content"
         >

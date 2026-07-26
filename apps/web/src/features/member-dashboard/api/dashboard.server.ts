@@ -2,11 +2,11 @@ import "server-only"
 
 import { serverApiFetch } from "@/lib/auth/server-access"
 
-import type { MemberDashboardData } from "../types"
+import type { MemberDashboardData, MemberDashboardRange } from "../types"
 
-export async function getMemberDashboard() {
+export async function getMemberDashboard(range: MemberDashboardRange) {
   const response = await serverApiFetch(
-    "/member/dashboard",
+    `/member/dashboard?range=${range}`,
     { cache: "no-store" },
     "/member",
   )

@@ -64,7 +64,78 @@ export function CreateSupportRequestSheet({ controller }: { controller: SupportC
     setErrors({});
   };
 
-  return <Sheet open={controller.requestSheetOpen} onOpenChange={(open) => { if (controller.submitting) return; if (open) controller.setRequestSheetOpen(true); else close(); }}><SheetContent id="create-support-request" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-xl"><SheetHeader className="border-b border-border px-5 py-5 sm:px-6"><SheetTitle>{controller.successRequest ? "Yêu cầu hỗ trợ đã được gửi" : "Gửi yêu cầu hỗ trợ"}</SheetTitle><SheetDescription>{controller.successRequest ? "Thông tin yêu cầu đã được cập nhật trong danh sách của bạn." : `Cung cấp đủ thông tin để đội ngũ ${brand.siteName} có thể hỗ trợ nhanh hơn.`}</SheetDescription></SheetHeader>{controller.successRequest ? <SupportRequestSuccess controller={controller} onClose={close} /> : <form onSubmit={submit} className="space-y-5 px-5 py-5 sm:px-6"><div className="space-y-2"><label htmlFor="support-category" className="text-sm font-medium">Loại yêu cầu</label><Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value as SupportCategory }))} disabled={controller.submitting}><SelectTrigger id="support-category" className="h-10 w-full"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(categoryLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><label htmlFor="support-subject" className="text-sm font-medium">Tiêu đề</label><Input id="support-subject" value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} placeholder="Mô tả ngắn vấn đề của bạn" aria-invalid={Boolean(errors.subject)} aria-describedby={errors.subject ? "support-subject-error" : undefined} disabled={controller.submitting} className="h-10" />{errors.subject ? <p id="support-subject-error" role="alert" className="text-xs text-destructive">{errors.subject}</p> : null}</div><div className="space-y-2"><label htmlFor="support-content" className="text-sm font-medium">Nội dung</label><Textarea id="support-content" value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="Hãy mô tả vấn đề, kết quả mong đợi và các bước đã thử..." className="min-h-32 resize-y" aria-invalid={Boolean(errors.content)} aria-describedby={errors.content ? "support-content-error" : undefined} disabled={controller.submitting} />{errors.content ? <p id="support-content-error" role="alert" className="text-xs text-destructive">{errors.content}</p> : null}</div><div className="space-y-2"><label htmlFor="support-resource" className="text-sm font-medium">Trang hoặc đối tượng liên quan</label><Select value={form.relatedResource} onValueChange={(value) => setForm((current) => ({ ...current, relatedResource: value }))} disabled={controller.submitting}><SelectTrigger id="support-resource" className="h-10 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Không có</SelectItem><SelectItem value="social-link">Social link</SelectItem><SelectItem value="file">File</SelectItem><SelectItem value="link-in-bio">Link-in-bio</SelectItem><SelectItem value="withdrawal">Giao dịch rút tiền</SelectItem><SelectItem value="reward">Phần thưởng</SelectItem></SelectContent></Select></div><div className="space-y-2"><span className="text-sm font-medium">Tệp đính kèm</span><SupportAttachmentUploader files={attachments} onChange={setAttachments} acceptedTypes={data.attachmentConfig.acceptedTypes} maxSizeMb={data.attachmentConfig.maxSizeMb} disabled={controller.submitting} /></div><label className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3"><Checkbox checked={form.attachTechnicalInfo} onCheckedChange={(checked) => setForm((current) => ({ ...current, attachTechnicalInfo: checked === true }))} disabled={controller.submitting} className="mt-0.5" /><span><span className="block text-sm font-medium">Đính kèm thông tin kỹ thuật để hỗ trợ chẩn đoán</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">Chỉ gồm trình duyệt, hệ điều hành, route và phiên bản ứng dụng. Không gửi mật khẩu, token hoặc cookie.</span></span></label>{controller.submitError ? <Alert variant="destructive"><AlertCircle /><AlertDescription>{controller.submitError}</AlertDescription></Alert> : null}<SheetFooter className="-mx-5 border-t border-border px-5 pb-1 pt-4 sm:-mx-6 sm:px-6"><Button type="button" variant="outline" disabled={controller.submitting} onClick={close}>Hủy</Button><Button type="submit" disabled={controller.submitting}>{controller.submitting ? <><LoaderCircle className="animate-spin motion-reduce:animate-none" />Đang gửi…</> : "Gửi yêu cầu"}</Button></SheetFooter></form>}</SheetContent></Sheet>;
+  return (
+    <Sheet
+      open={controller.requestSheetOpen}
+      onOpenChange={(open) => {
+        if (controller.submitting) return;
+        if (open) controller.setRequestSheetOpen(true);
+        else close();
+      }}
+    >
+      <SheetContent id="create-support-request" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-xl">
+        <SheetHeader className="border-b border-border px-5 py-5 sm:px-6">
+          <SheetTitle>{controller.successRequest ? "Yêu cầu hỗ trợ đã được gửi" : "Gửi yêu cầu hỗ trợ"}</SheetTitle>
+          <SheetDescription>
+            {controller.successRequest
+              ? "Thông tin yêu cầu đã được cập nhật trong danh sách của bạn."
+              : `Cung cấp đủ thông tin để đội ngũ ${brand.siteName} có thể hỗ trợ nhanh hơn.`}
+          </SheetDescription>
+        </SheetHeader>
+
+        {controller.successRequest ? (
+          <SupportRequestSuccess controller={controller} onClose={close} />
+        ) : (
+          <>
+            <form id="create-support-request-form" onSubmit={submit} className="space-y-5 px-5 py-5 sm:px-6">
+              <div className="space-y-2">
+                <label htmlFor="support-category" className="text-sm font-medium">Loại yêu cầu</label>
+                <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value as SupportCategory }))} disabled={controller.submitting}>
+                  <SelectTrigger id="support-category" className="h-10 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(categoryLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="support-subject" className="text-sm font-medium">Tiêu đề</label>
+                <Input id="support-subject" value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} placeholder="Mô tả ngắn vấn đề của bạn" aria-invalid={Boolean(errors.subject)} aria-describedby={errors.subject ? "support-subject-error" : undefined} disabled={controller.submitting} className="h-10" />
+                {errors.subject ? <p id="support-subject-error" role="alert" className="text-xs text-destructive">{errors.subject}</p> : null}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="support-content" className="text-sm font-medium">Nội dung</label>
+                <Textarea id="support-content" value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="Hãy mô tả vấn đề, kết quả mong đợi và các bước đã thử..." className="min-h-32 resize-y" aria-invalid={Boolean(errors.content)} aria-describedby={errors.content ? "support-content-error" : undefined} disabled={controller.submitting} />
+                {errors.content ? <p id="support-content-error" role="alert" className="text-xs text-destructive">{errors.content}</p> : null}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="support-resource" className="text-sm font-medium">Trang hoặc đối tượng liên quan</label>
+                <Select value={form.relatedResource} onValueChange={(value) => setForm((current) => ({ ...current, relatedResource: value }))} disabled={controller.submitting}>
+                  <SelectTrigger id="support-resource" className="h-10 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="none">Không có</SelectItem><SelectItem value="social-link">Social link</SelectItem><SelectItem value="file">File</SelectItem><SelectItem value="link-in-bio">Link-in-bio</SelectItem><SelectItem value="withdrawal">Giao dịch rút tiền</SelectItem><SelectItem value="reward">Phần thưởng</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Tệp đính kèm</span>
+                <SupportAttachmentUploader files={attachments} onChange={setAttachments} acceptedTypes={data.attachmentConfig.acceptedTypes} maxSizeMb={data.attachmentConfig.maxSizeMb} disabled={controller.submitting} />
+              </div>
+              <label className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+                <Checkbox checked={form.attachTechnicalInfo} onCheckedChange={(checked) => setForm((current) => ({ ...current, attachTechnicalInfo: checked === true }))} disabled={controller.submitting} className="mt-0.5" />
+                <span>
+                  <span className="block text-sm font-medium">Đính kèm thông tin kỹ thuật để hỗ trợ chẩn đoán</span>
+                  <span className="mt-1 block text-xs leading-5 text-muted-foreground">Chỉ gồm trình duyệt, hệ điều hành, route và phiên bản ứng dụng. Không gửi mật khẩu, token hoặc cookie.</span>
+                </span>
+              </label>
+              {controller.submitError ? <Alert variant="destructive"><AlertCircle /><AlertDescription>{controller.submitError}</AlertDescription></Alert> : null}
+            </form>
+            <SheetFooter className="border-t border-border px-5 py-4 sm:px-6">
+              <Button type="button" variant="outline" disabled={controller.submitting} onClick={close}>Hủy</Button>
+              <Button type="submit" form="create-support-request-form" disabled={controller.submitting}>
+                {controller.submitting ? <><LoaderCircle className="animate-spin motion-reduce:animate-none" />Đang gửi…</> : "Gửi yêu cầu"}
+              </Button>
+            </SheetFooter>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 export function SupportRequestSuccess({ controller, onClose }: { controller: SupportController; onClose: () => void }) {

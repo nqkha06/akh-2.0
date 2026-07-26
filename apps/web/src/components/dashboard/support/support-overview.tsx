@@ -9,7 +9,7 @@ import {
   Tickets,
 } from "lucide-react";
 
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -68,7 +68,7 @@ export function SupportTicketSummary({ items }: { items: SupportRequest[] }) {
         return (
           <Card
             key={item.key}
-            className="gap-0 rounded-lg px-4 py-4 shadow-none sm:px-5"
+            className="gap-0 rounded-xl px-4 py-4 shadow-none sm:px-5"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -100,28 +100,25 @@ export function SupportTicketSummary({ items }: { items: SupportRequest[] }) {
 
 export function SupportSkeleton() {
   return (
-    <div
-      className="mx-auto w-full max-w-[1280px] space-y-6"
-      aria-busy="true"
-    >
+    <PageContainer aria-busy="true">
       <div className="flex items-center justify-between gap-4">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-10 w-36" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-28 rounded-lg" />
+          <Skeleton key={index} className="h-28 rounded-xl" />
         ))}
       </div>
-      <Skeleton className="h-[460px] rounded-lg" />
-    </div>
+      <Skeleton className="h-[460px] rounded-xl" />
+    </PageContainer>
   );
 }
 
 export function SupportErrorState({ onRetry }: { onRetry: () => void }) {
   const brand = useSiteBrand();
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
+    <PageContainer>
       <PageHeader
         title="Hỗ trợ"
         description={`Quản lý ticket hỗ trợ của bạn tại ${brand.siteName}.`}
@@ -142,6 +139,6 @@ export function SupportErrorState({ onRetry }: { onRetry: () => void }) {
           </Button>
         </AlertDescription>
       </Alert>
-    </div>
+    </PageContainer>
   );
 }

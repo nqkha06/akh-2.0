@@ -1,6 +1,3 @@
-import { Archive, CircleCheck, CircleX, LoaderCircle } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
 import type { ManagedFileDto } from "@/lib/api-client";
 
 import type { FileTypeFilter } from "./types";

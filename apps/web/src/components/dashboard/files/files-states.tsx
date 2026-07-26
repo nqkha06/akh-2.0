@@ -14,7 +14,7 @@ export function FilesEmptyState({ onUpload }: { onUpload: () => void }) {
         <Button onClick={onUpload}><Upload />Tải file lên</Button>
         <Button variant="outline" onClick={onUpload}>Xem định dạng được hỗ trợ</Button>
       </div>
-      <ul className="mx-auto mt-7 flex max-w-2xl flex-col justify-center gap-2 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:gap-5">
+      <ul className="mx-auto mt-6 flex max-w-2xl flex-col justify-center gap-2 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:gap-5">
         <li>Làm destination sau khi unlock</li><li>Hiển thị trên link-in-bio</li><li>Chia sẻ qua social link</li>
       </ul>
     </section>

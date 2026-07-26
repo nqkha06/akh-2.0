@@ -66,7 +66,7 @@ export function SupportTicketList({
   return (
     <Card
       id="support-tickets"
-      className="gap-0 overflow-hidden rounded-lg py-0 shadow-none"
+      className="gap-0 overflow-hidden rounded-xl py-0 shadow-none"
     >
       <div className="border-b border-border px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -93,14 +93,14 @@ export function SupportTicketList({
                 value={controller.query}
                 onChange={(event) => controller.setQuery(event.target.value)}
                 placeholder="Tìm mã, tiêu đề hoặc loại..."
-                className="h-9 pl-9 pr-9 shadow-none"
+                className="h-10 pl-9 pr-9 shadow-none"
               />
               {controller.query ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="absolute right-0.5 top-0.5"
+                className="absolute right-1 top-1"
                   aria-label="Xóa từ khóa"
                   onClick={() => controller.setQuery("")}
                 >
@@ -115,7 +115,7 @@ export function SupportTicketList({
               }
             >
               <SelectTrigger
-                className="h-9 w-full shadow-none sm:w-44"
+                className="h-10 w-full shadow-none sm:w-44"
                 aria-label="Lọc trạng thái ticket"
               >
                 <SelectValue />

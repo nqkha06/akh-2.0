@@ -416,39 +416,71 @@ describe("Member dashboard E2E", () => {
 
     const body = (await response.json()) as {
       member: { name: string; balance: string };
-      content: { links: number; files: number; bioPages: number };
-      account: {
-        hasPayoutMethod: boolean;
-        ticketsAwaitingReply: number;
-      };
       analytics: {
         periodDays: number;
-        successfulOpens: number;
-        successfulOpensInPeriod: number;
+        metrics: {
+          revenue: number;
+          successfulOpens: number;
+          earnedViews: number;
+          averageCpm: number;
+        };
+        today: {
+          revenue: number;
+          successfulOpens: number;
+          earnedViews: number;
+          averageCpm: number;
+        };
+        series: unknown[];
         breakdowns: {
           countries: unknown[];
           devices: unknown[];
           browsers: unknown[];
         };
-        recentUnlocks: unknown[];
+        topLinks: unknown[];
       };
-      recentLinks: unknown[];
     };
     assert.equal(body.member.name, "Auth Test");
     assert.equal(body.member.balance, "0");
-    assert.equal(typeof body.content.links, "number");
-    assert.equal(typeof body.content.files, "number");
-    assert.equal(typeof body.content.bioPages, "number");
-    assert.equal(body.account.hasPayoutMethod, false);
-    assert.equal(body.account.ticketsAwaitingReply, 0);
     assert.equal(body.analytics.periodDays, 30);
-    assert.equal(typeof body.analytics.successfulOpens, "number");
-    assert.equal(typeof body.analytics.successfulOpensInPeriod, "number");
+    assert.equal(typeof body.analytics.metrics.successfulOpens, "number");
+    assert.equal(typeof body.analytics.metrics.revenue, "number");
+    assert.equal(typeof body.analytics.today.successfulOpens, "number");
+    assert.equal(body.analytics.series.length, 30);
     assert.ok(Array.isArray(body.analytics.breakdowns.countries));
     assert.ok(Array.isArray(body.analytics.breakdowns.devices));
     assert.ok(Array.isArray(body.analytics.breakdowns.browsers));
-    assert.ok(Array.isArray(body.analytics.recentUnlocks));
-    assert.ok(Array.isArray(body.recentLinks));
+    assert.ok(Array.isArray(body.analytics.topLinks));
+
+    for (const [range, days] of [
+      ["today", 1],
+      ["yesterday", 1],
+      ["7d", 7],
+      ["30d", 30],
+      ["60d", 60],
+      ["90d", 90],
+    ] as const) {
+      const rangeResponse = await request(
+        `/api/member/dashboard?range=${range}`,
+        {
+          headers: { Authorization: `Bearer ${member.body.accessToken}` },
+        },
+      );
+      assert.equal(rangeResponse.status, 200);
+      const rangeBody = (await rangeResponse.json()) as {
+        analytics: { periodDays: number; series: unknown[] };
+      };
+      assert.equal(rangeBody.analytics.periodDays, days);
+      assert.equal(rangeBody.analytics.series.length, days);
+    }
+
+    assert.equal(
+      (
+        await request("/api/member/dashboard?range=invalid", {
+          headers: { Authorization: `Bearer ${member.body.accessToken}` },
+        })
+      ).status,
+      400,
+    );
   });
 });
 

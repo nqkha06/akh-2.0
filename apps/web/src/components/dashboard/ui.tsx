@@ -13,6 +13,28 @@ import {
   type ToolbarFilterField,
 } from "@/components/dashboard/filter-drawer";
 
+export function PageContainer({
+  children,
+  size = "default",
+  className,
+  ...props
+}: ComponentProps<"div"> & {
+  size?: "default" | "wide";
+}) {
+  return (
+    <div
+      className={cn(
+        "mx-auto w-full space-y-6",
+        size === "wide" ? "max-w-[1440px]" : "max-w-[1280px]",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function PageHeader({
   title,
   description,
@@ -35,21 +57,21 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground sm:text-[1.5rem]">
+        <h1 className="text-2xl font-semibold tracking-[-0.035em] text-foreground">
           {title}
         </h1>
-        {/* {description ? (
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+        {description ? (
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
             {description}
           </p>
-        ) : null} */}
+        ) : null}
       </div>
       {action ? (
-        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           {action}
         </div>
       ) : null}
@@ -67,7 +89,7 @@ export function SoftCard({
   return (
     <ShadcnCard
       className={cn(
-        "rounded-2xl border-slate-200 bg-white shadow-[0_6px_18px_rgba(15,23,42,0.05)] transition duration-200 hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.07)]",
+        "rounded-xl border-border bg-card text-card-foreground shadow-none",
         className,
       )}
     >
@@ -90,23 +112,23 @@ export function StatCard({
   tone?: "blue" | "emerald" | "violet" | "amber" | "rose";
 }) {
   const tones = {
-    blue: "bg-blue-50 text-blue-700 ring-blue-100",
-    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    violet: "bg-violet-50 text-violet-700 ring-violet-100",
-    amber: "bg-amber-50 text-amber-700 ring-amber-100",
-    rose: "bg-rose-50 text-rose-700 ring-rose-100",
+    blue: "bg-primary/10 text-primary ring-primary/15",
+    emerald: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/15 dark:text-emerald-300",
+    violet: "bg-primary/10 text-primary ring-primary/15",
+    amber: "bg-amber-500/10 text-amber-700 ring-amber-500/15 dark:text-amber-300",
+    rose: "bg-destructive/10 text-destructive ring-destructive/15",
   };
 
   return (
     <SoftCard className="relative overflow-hidden p-4">
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-bold text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-[1.7rem]">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-foreground sm:text-[1.7rem]">
             {value}
           </p>
           {detail ? (
-            <p className="mt-2 text-xs font-bold text-emerald-600">{detail}</p>
+            <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">{detail}</p>
           ) : null}
         </div>
         {icon ? (
@@ -129,16 +151,16 @@ export function Badge({
   tone?: "blue" | "emerald" | "violet" | "amber" | "rose" | "slate";
 }) {
   const tones = {
-    blue: "bg-blue-50 text-blue-700 ring-blue-100",
-    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    violet: "bg-violet-50 text-violet-700 ring-violet-100",
-    amber: "bg-amber-50 text-amber-700 ring-amber-100",
-    rose: "bg-rose-50 text-rose-700 ring-rose-100",
-    slate: "bg-slate-100 text-slate-600 ring-slate-200",
+    blue: "bg-primary/10 text-primary ring-primary/15",
+    emerald: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/15 dark:text-emerald-300",
+    violet: "bg-primary/10 text-primary ring-primary/15",
+    amber: "bg-amber-500/10 text-amber-700 ring-amber-500/15 dark:text-amber-300",
+    rose: "bg-destructive/10 text-destructive ring-destructive/15",
+    slate: "bg-muted text-muted-foreground ring-border",
   };
 
   return (
-    <ShadcnBadge className={cn("border-0 font-bold", tones[tone])}>
+    <ShadcnBadge className={cn("border-0 font-medium", tones[tone])}>
       {children}
     </ShadcnBadge>
   );
@@ -155,10 +177,10 @@ export function AppButton({
   className?: string;
 } & Omit<ComponentProps<typeof ShadcnButton>, "variant" | "children" | "className">) {
   const variants = {
-    primary: "bg-blue-600 text-white shadow-sm hover:bg-blue-700",
-    secondary: "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50",
-    ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
-    danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700",
+    primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+    secondary: "border-border bg-background text-foreground hover:bg-muted",
+    ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
+    danger: "bg-destructive text-white hover:bg-destructive/90",
   };
 
   return (
@@ -166,7 +188,7 @@ export function AppButton({
       {...props}
       variant={variant === "secondary" ? "outline" : variant === "ghost" ? "ghost" : variant === "danger" ? "destructive" : "default"}
       size="lg"
-      className={cn("h-11 rounded-xl px-4 text-sm font-bold", variants[variant], className)}
+      className={cn("h-10 rounded-lg px-4 text-sm font-medium", variants[variant], className)}
     >
       {children}
     </ShadcnButton>
@@ -187,11 +209,11 @@ export function Toolbar({
   filterButtonLabel?: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:max-w-sm">
-        <Search size={16} className="text-slate-400" />
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 sm:max-w-sm">
+        <Search size={16} className="text-muted-foreground" />
         <Input
-          className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+          className="h-8 w-full border-0 bg-transparent px-0 text-sm shadow-none outline-none focus-visible:ring-0"
           placeholder={placeholder}
         />
       </div>
@@ -217,15 +239,15 @@ export function TableShell({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/70 text-left text-xs font-bold uppercase tracking-[0.08em] text-slate-400">
+            <tr className="border-b border-border bg-muted/30 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {headers.map((header) => (
-                <th key={header} className="px-5 py-4">
+                <th key={header} className="px-4 py-3 sm:px-5">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-700">
+          <tbody className="divide-y divide-border text-sm text-foreground">
             {rows}
           </tbody>
         </table>
@@ -244,13 +266,13 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <SoftCard className="grid min-h-64 place-items-center p-8 text-center">
+    <SoftCard className="grid min-h-64 place-items-center p-6 text-center sm:p-8">
       <div className="max-w-sm">
-        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/15">
           <Sparkles size={24} />
         </div>
-        <h3 className="text-lg font-bold text-slate-950">{title}</h3>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           {description}
         </p>
         {action ? <div className="mt-5">{action}</div> : null}
@@ -267,14 +289,14 @@ export function ProgressBar({
   tone?: "blue" | "emerald" | "violet" | "amber";
 }) {
   const tones = {
-    blue: "bg-blue-600",
+    blue: "bg-primary",
     emerald: "bg-emerald-600",
-    violet: "bg-violet-600",
+    violet: "bg-primary",
     amber: "bg-amber-500",
   };
 
   return (
-    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+    <div className="h-2 overflow-hidden rounded-full bg-muted">
       <div
         className={`h-full rounded-full ${tones[tone]}`}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
@@ -320,7 +342,7 @@ export function DataTable({
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <ShadcnSkeleton className={cn("rounded-lg bg-slate-100", className)} />;
+  return <ShadcnSkeleton className={cn("rounded-lg", className)} />;
 }
 
 export function Pagination(props: ComponentProps<typeof TablePagination>) {
@@ -335,12 +357,12 @@ export function TabPills({
   active?: number;
 }) {
   return (
-    <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-[0_4px_10px_rgba(15,23,42,0.06)]">
+    <div className="inline-flex rounded-lg border border-border bg-muted/20 p-1">
       {items.map((item, index) => (
         <button
           key={item}
-          className={`h-9 rounded-xl px-3 text-sm font-bold transition ${
-            active === index ? "bg-slate-950 text-white" : "text-slate-500"
+          className={`h-9 rounded-md px-3 text-sm font-medium transition-colors ${
+            active === index ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {item}
@@ -352,7 +374,7 @@ export function TabPills({
 
 export function DropdownFilter({ label = "Trạng thái" }: { label?: string }) {
   return (
-    <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 shadow-[0_4px_10px_rgba(15,23,42,0.06)] transition hover:border-slate-300 hover:text-slate-950">
+    <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
       {label}
       <ChevronDown size={16} />
     </button>
@@ -367,13 +389,13 @@ export function ToastPreview({
   description?: string;
 }) {
   return (
-    <div className="flex max-w-sm items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-      <span className="grid size-9 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+    <div className="flex max-w-sm items-start gap-3 rounded-xl border border-border bg-card p-4">
+      <span className="grid size-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
         <Bell size={16} />
       </span>
       <div>
-        <p className="text-sm font-bold text-slate-950">{title}</p>
-        <p className="mt-1 text-xs font-semibold text-slate-500">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
           {description}
         </p>
       </div>

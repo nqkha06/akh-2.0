@@ -1,3 +1,20 @@
+export const memberDashboardRanges = [
+  "today",
+  "yesterday",
+  "7d",
+  "30d",
+  "60d",
+  "90d",
+] as const
+
+export type MemberDashboardRange = (typeof memberDashboardRanges)[number]
+
+export function isMemberDashboardRange(
+  value: unknown,
+): value is MemberDashboardRange {
+  return memberDashboardRanges.includes(value as MemberDashboardRange)
+}
+
 export type MemberDashboardBreakdownItem = {
   key: string
   count: number

@@ -26,11 +26,11 @@ function FilePreviewSheetContent({ file, open, onOpenChange }: Omit<FilePreviewS
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 bg-card p-0 sm:max-w-[460px]">
-        <SheetHeader className="border-b border-border px-5 py-4 pr-12"><SheetTitle className="truncate">{file.name}</SheetTitle><SheetDescription>Thông tin chi tiết và cách sử dụng file.</SheetDescription></SheetHeader>
+        <SheetHeader className="border-b border-border px-5 py-5 pr-12 sm:px-6"><SheetTitle className="truncate">{file.name}</SheetTitle><SheetDescription>Thông tin chi tiết và cách sử dụng file.</SheetDescription></SheetHeader>
         <ScrollArea className="min-h-0 flex-1">
-          <div className="p-5">
+          <div className="p-5 sm:p-6">
             <div className="grid min-h-56 place-items-center overflow-hidden rounded-lg border border-border bg-muted/30">
-              {isImage ? <Image src={getFilePreviewUrl(file)} alt={`Xem trước ${file.name}`} width={720} height={480} unoptimized className="max-h-72 w-full object-contain" /> : <div className="text-center text-muted-foreground"><FileTypeIcon file={file} className="mx-auto size-20 rounded-2xl bg-background shadow-sm" iconClassName="size-12" /><p className="mt-3 text-xs">Định dạng này không hỗ trợ xem trước trực tiếp.</p></div>}
+              {isImage ? <Image src={getFilePreviewUrl(file)} alt={`Xem trước ${file.name}`} width={720} height={480} unoptimized className="max-h-72 w-full object-contain" /> : <div className="text-center text-muted-foreground"><FileTypeIcon file={file} className="mx-auto size-20 rounded-xl bg-background" iconClassName="size-12" /><p className="mt-3 text-xs">Định dạng này không hỗ trợ xem trước trực tiếp.</p></div>}
             </div>
 
             <div className="mt-5 rounded-lg border border-border bg-card p-3">

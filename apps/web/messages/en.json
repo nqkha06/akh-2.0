@@ -1021,6 +1021,15 @@
   "MemberDashboard": {
     "eyebrow": "Performance",
     "title": "Overview",
+    "range": {
+      "label": "Date range",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "60d": "Last 60 days",
+      "90d": "Last 90 days"
+    },
     "actions": {
       "withdraw": "Withdraw",
       "createLink": "Create social link",

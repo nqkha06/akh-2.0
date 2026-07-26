@@ -45,8 +45,8 @@ export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
-        <DialogHeader className="border-b border-border px-5 py-4 pr-12"><DialogTitle>Tải file lên</DialogTitle><DialogDescription>Thêm một hoặc nhiều file vào thư viện {brand.siteName}.</DialogDescription></DialogHeader>
-        <div className="p-5">
+        <DialogHeader className="border-b border-border px-5 py-5 pr-12 sm:px-6"><DialogTitle>Tải file lên</DialogTitle><DialogDescription>Thêm một hoặc nhiều file vào thư viện {brand.siteName}.</DialogDescription></DialogHeader>
+        <div className="p-5 sm:p-6">
           <div
             role="button"
             tabIndex={0}
@@ -66,7 +66,7 @@ export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, o
 
         {queue.length ? <div className="border-t border-border"><div className="flex items-center justify-between px-4 py-2.5 text-xs text-muted-foreground"><span>Hàng đợi upload</span><span>{queue.length} file</span></div><ScrollArea className="max-h-64 border-t border-border"><div>{queue.map((item) => <FileUploadItem key={item.id} item={item} onRetry={onRetry} onCancel={onCancel} onRemove={onRemove} />)}</div></ScrollArea></div> : null}
 
-        <DialogFooter className="border-t border-border px-5 py-4"><Button variant="outline" onClick={() => onOpenChange(false)}>{hasActiveUpload ? "Đóng và tiếp tục nền" : "Đóng"}</Button><Button onClick={chooseFiles}><Upload />Chọn thêm file</Button></DialogFooter>
+        <DialogFooter className="border-t border-border px-5 py-4 sm:px-6"><Button variant="outline" onClick={() => onOpenChange(false)}>{hasActiveUpload ? "Đóng và tiếp tục nền" : "Đóng"}</Button><Button onClick={chooseFiles}><Upload />Chọn thêm file</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

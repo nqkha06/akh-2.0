@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import type { MemberDashboardRange } from "./dto/member-dashboard-query.dto";
 
 type PeriodVisit = {
   completedAt: Date | null;
@@ -10,16 +11,28 @@ type PeriodVisit = {
   linkId: number;
 };
 
+const rangeDays: Record<
+  Exclude<MemberDashboardRange, "today" | "yesterday">,
+  number
+> = {
+  "7d": 7,
+  "30d": 30,
+  "60d": 60,
+  "90d": 90,
+};
+
 @Injectable()
 export class MemberDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async overview(userId: number) {
-    const periodDays = 30;
-    const periodEnd = new Date();
-    const periodStart = new Date(periodEnd);
-    periodStart.setUTCDate(periodStart.getUTCDate() - periodDays + 1);
-    periodStart.setUTCHours(0, 0, 0, 0);
+  async overview(userId: number, range: MemberDashboardRange = "30d") {
+    const now = new Date();
+    const { periodDays, periodEnd, periodStart } = this.resolvePeriod(
+      range,
+      now,
+    );
+    const todayStart = new Date(now);
+    todayStart.setUTCHours(0, 0, 0, 0);
 
     const periodVisitWhere: Prisma.LinkAccessLogWhereInput = {
       link: { userId, deletedAt: null },
@@ -62,6 +75,24 @@ export class MemberDashboardService {
       ]);
 
     if (!user) throw new NotFoundException("Không tìm thấy người dùng.");
+
+    const periodIncludesToday = periodEnd >= todayStart;
+    const todayVisits = periodIncludesToday
+      ? periodVisits.filter(
+          (visit) => visit.completedAt && visit.completedAt >= todayStart,
+        )
+      : await this.prisma.linkAccessLog.findMany({
+          where: {
+            link: { userId, deletedAt: null },
+            completedAt: { not: null, gte: todayStart, lte: now },
+          },
+          select: {
+            completedAt: true,
+            isEarn: true,
+            revenue: true,
+            linkId: true,
+          },
+        });
 
     const browserCounts = await this.browserCounts(browserGroups);
     const topLinkCounts = new Map<
@@ -109,7 +140,8 @@ export class MemberDashboardService {
       0,
     );
     const today =
-      series[series.length - 1] ?? this.emptySeriesPoint(periodEnd);
+      this.buildSeries(todayStart, 1, todayVisits)[0] ??
+      this.emptySeriesPoint(todayStart);
 
     return {
       member: {
@@ -161,6 +193,29 @@ export class MemberDashboardService {
         }),
       },
     };
+  }
+
+  private resolvePeriod(range: MemberDashboardRange, now: Date) {
+    const periodStart = new Date(now);
+    const periodEnd = new Date(now);
+
+    if (range === "today") {
+      periodStart.setUTCHours(0, 0, 0, 0);
+      return { periodDays: 1, periodStart, periodEnd };
+    }
+
+    if (range === "yesterday") {
+      periodStart.setUTCDate(periodStart.getUTCDate() - 1);
+      periodStart.setUTCHours(0, 0, 0, 0);
+      periodEnd.setUTCHours(0, 0, 0, 0);
+      periodEnd.setUTCMilliseconds(-1);
+      return { periodDays: 1, periodStart, periodEnd };
+    }
+
+    const periodDays = rangeDays[range];
+    periodStart.setUTCDate(periodStart.getUTCDate() - periodDays + 1);
+    periodStart.setUTCHours(0, 0, 0, 0);
+    return { periodDays, periodStart, periodEnd };
   }
 
   private async browserCounts(

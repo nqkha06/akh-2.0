@@ -58,7 +58,7 @@ export function FileUploadItem({
           {isActive ? (
             <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />
           ) : item.status === "success" ? (
-            <CircleCheck className="size-4 text-[var(--files-success)]" />
+            <CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
           ) : (
             <CircleX className="size-4 text-destructive" />
           )}

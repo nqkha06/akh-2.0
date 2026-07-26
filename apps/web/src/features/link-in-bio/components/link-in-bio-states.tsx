@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Plus, UserRound } from "lucide-react"
 
 import { Button } from "@/components/ui/button"

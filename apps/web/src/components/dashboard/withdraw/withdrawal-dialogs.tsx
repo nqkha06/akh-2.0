@@ -93,12 +93,12 @@ export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalCo
   if (!transaction) return null;
   return (
     <Sheet open onOpenChange={(open) => { if (!open) controller.setDetailTransaction(undefined); }}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader className="border-b border-border px-5 py-5">
+      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border px-5 py-5 sm:px-6">
           <SheetTitle>Chi tiết giao dịch</SheetTitle>
           <SheetDescription>{transaction.id}</SheetDescription>
         </SheetHeader>
-        <div className="space-y-6 px-5 py-2">
+        <div className="space-y-6 px-5 py-5 sm:px-6">
           <section><p className="text-xs font-medium text-muted-foreground">Trạng thái hiện tại</p><div className="mt-2"><WithdrawalStatusBadge status={transaction.status} /></div>{transaction.status === "processing" ? <p className="mt-3 text-sm leading-6 text-muted-foreground">Yêu cầu đang được kiểm tra và chuyển đến đơn vị thanh toán.</p> : null}</section>
           {transaction.failureReason ? <Alert variant="destructive"><CircleAlert /><AlertTitle>Lý do xử lý</AlertTitle><AlertDescription>{transaction.failureReason}</AlertDescription></Alert> : null}
           <Separator />
@@ -111,8 +111,8 @@ export function WithdrawalDetailSheet({ controller }: { controller: WithdrawalCo
             {transaction.completedAt ? <div><dt className="text-xs text-muted-foreground">Ngày hoàn tất</dt><dd className="mt-1 font-medium">{formatDateTime(transaction.completedAt)}</dd></div> : null}
           </dl>
         </div>
-        {transaction.canCancel ? <SheetFooter className="border-t border-border px-5"><Button variant="destructive" disabled={controller.cancelling} onClick={() => void controller.cancelWithdrawal(transaction)}>{controller.cancelling ? <LoaderCircle className="animate-spin" /> : <Ban />}{controller.cancelling ? "Đang hủy…" : "Hủy yêu cầu và hoàn số dư"}</Button></SheetFooter> : null}
-        {transaction.status === "rejected" ? <SheetFooter className="border-t border-border px-5"><Button variant="outline" asChild><Link href="/member/account">Đổi phương thức nhận tiền</Link></Button><Button asChild><Link href="/member/support">Liên hệ hỗ trợ</Link></Button></SheetFooter> : null}
+        {transaction.canCancel ? <SheetFooter className="border-t border-border px-5 py-4 sm:px-6"><Button variant="destructive" disabled={controller.cancelling} onClick={() => void controller.cancelWithdrawal(transaction)}>{controller.cancelling ? <LoaderCircle className="animate-spin" /> : <Ban />}{controller.cancelling ? "Đang hủy…" : "Hủy yêu cầu và hoàn số dư"}</Button></SheetFooter> : null}
+        {transaction.status === "rejected" ? <SheetFooter className="border-t border-border px-5 py-4 sm:px-6"><Button variant="outline" asChild><Link href="/member/account">Đổi phương thức nhận tiền</Link></Button><Button asChild><Link href="/member/support">Liên hệ hỗ trợ</Link></Button></SheetFooter> : null}
       </SheetContent>
     </Sheet>
   );

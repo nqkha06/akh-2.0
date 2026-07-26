@@ -14,7 +14,6 @@ import {
   MoreHorizontal,
   Settings,
   Sun,
-  User,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

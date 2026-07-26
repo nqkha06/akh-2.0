@@ -46,11 +46,11 @@ export function FilesTable(props: FilesTableProps) {
                 <TableHead className="w-12 px-4">
                   <Checkbox checked={indeterminate ? "indeterminate" : allSelected} onCheckedChange={(checked) => props.onSelectPage(Boolean(checked))} aria-label="Chọn tất cả file trên trang" />
                 </TableHead>
-                <TableHead className="w-[52%]">File</TableHead>
-                <TableHead>Loại</TableHead>
-                <TableHead>Dung lượng</TableHead>
-                <TableHead>Ngày tải lên</TableHead>
-                <TableHead className="w-12">
+                <TableHead className="w-[52%] px-4">File</TableHead>
+                <TableHead className="px-4">Loại</TableHead>
+                <TableHead className="px-4">Dung lượng</TableHead>
+                <TableHead className="px-4">Ngày tải lên</TableHead>
+                <TableHead className="w-12 px-4">
                   <span className="sr-only">Hành động</span></TableHead>
                 </TableRow>
             </TableHeader>
@@ -60,7 +60,7 @@ export function FilesTable(props: FilesTableProps) {
                 return (
                   <TableRow key={file.id} data-state={selected ? "selected" : undefined} className="h-16 data-[state=selected]:bg-primary/5">
                     <TableCell className="px-4"><Checkbox checked={selected} onCheckedChange={(checked) => props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} /></TableCell>
-                    <TableCell>
+                    <TableCell className="px-4">
                       <div className="flex min-w-0 items-center gap-3">
                         <FileVisual file={file} />
                         <div className="min-w-0">
@@ -72,10 +72,10 @@ export function FilesTable(props: FilesTableProps) {
                           {/* <p className="mt-0.5 max-w-72 truncate text-xs text-muted-foreground">/{file.alias}</p> */}
                         </div></div>
                           </TableCell>
-                    <TableCell className="text-muted-foreground">{typeLabels[getFileType(file)]}</TableCell>
-                    <TableCell className="font-medium tabular-nums">{file.sizeLabel}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatFileDate(file.createdAt)}</TableCell>
-                    <TableCell className="pr-3"><FileRowActions file={file} onPreview={props.onPreview} onRename={props.onRename} onDelete={props.onDelete} /></TableCell>
+                    <TableCell className="px-4 text-muted-foreground">{typeLabels[getFileType(file)]}</TableCell>
+                    <TableCell className="px-4 font-medium tabular-nums">{file.sizeLabel}</TableCell>
+                    <TableCell className="px-4 text-muted-foreground">{formatFileDate(file.createdAt)}</TableCell>
+                    <TableCell className="px-4"><FileRowActions file={file} onPreview={props.onPreview} onRename={props.onRename} onDelete={props.onDelete} /></TableCell>
                   </TableRow>
                 );
               })}
@@ -86,7 +86,7 @@ export function FilesTable(props: FilesTableProps) {
         <div className="divide-y divide-border md:hidden">
           {props.files.map((file) => {
           const selected = props.selectedIds.has(file.id);
-          return <article key={file.id} className={`flex min-h-[76px] items-center gap-3 px-2 py-3 ${selected ? "bg-primary/5" : "" }`}>
+          return <article key={file.id} className={`flex min-h-[76px] items-center gap-3 px-4 py-3 ${selected ? "bg-primary/5" : "" }`}>
               <Checkbox checked={selected} onCheckedChange={(checked)=> props.onSelect(file.id, Boolean(checked))} aria-label={`Chọn ${file.name}`} />
                   <FileVisual file={file} />
                   <div className="min-w-0 flex-1"><button type="button" className="block max-w-full truncate text-left text-sm font-medium text-foreground" onClick={()=> props.onPreview(file)}>{file.name}</button>
@@ -101,7 +101,7 @@ export function FilesTable(props: FilesTableProps) {
           })}
       </div>
 
-        <footer className="border-t border-border px-3 py-3">
+        <footer className="border-t border-border px-4 py-3">
           <TablePagination
             page={props.page}
             pageSize={props.pageSize}

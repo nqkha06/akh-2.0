@@ -13,7 +13,7 @@ import {
   type BioPageDto,
 } from "@/lib/api-client"
 import { LinkInBioGrid } from "./link-in-bio-grid"
-import { PageHeader } from "@/components/dashboard/ui"
+import { PageContainer, PageHeader } from "@/components/dashboard/ui"
 import { LinkInBioEmptyState, LinkInBioErrorState, LinkInBioSkeleton } from "./link-in-bio-states"
 import { LinkInBioToolbar } from "./link-in-bio-toolbar"
 import { bioPageToPayload, getBioCtr, type BioSort, type BioStatusFilter } from "./types"
@@ -98,14 +98,14 @@ export function BioView() {
   }
 
   return (
-    <>
+    <PageContainer>
       <PageHeader
         title="Link-in-bio"
         description="Tạo và quản lý các trang hồ sơ công khai của bạn."
         action={<Button type="button" onClick={() => router.push("/member/bio/create")} className="h-10 w-full shrink-0 rounded-lg px-4 shadow-none sm:w-auto">Tạo trang</Button>}
       />
 
-      <div className="space-y-5 mt-5">
+      <div className="space-y-5">
         {bioPages.length > 0 || loading ? (
           <LinkInBioToolbar
             query={query}
@@ -129,6 +129,6 @@ export function BioView() {
           <LinkInBioGrid pages={visiblePages} onEdit={(page) => router.push(`/member/bio/${page.id}/edit`)} onDuplicate={(page) => void duplicateBio(page)} onToggleStatus={(page) => void toggleBioStatus(page)} onDelete={removeBio} />
         ) : null}
       </div>
-    </>
+    </PageContainer>
   )
 }

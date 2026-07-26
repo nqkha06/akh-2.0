@@ -37,7 +37,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -222,7 +222,7 @@ export function AccountView({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
+    <PageContainer>
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -271,6 +271,7 @@ export function AccountView({
               icon={User}
               title={t("profile.title")}
               description={t("profile.description")}
+              footer={<CardActions><Button type="submit" className="h-10"><Save />{t("saveChanges")}</Button></CardActions>}
             >
               <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
                 <Avatar className="size-16 border border-border sm:size-20">
@@ -336,10 +337,6 @@ export function AccountView({
                   <p className="text-right text-xs tabular-nums text-muted-foreground">{profile.bio.length}/180</p>
                 </FieldBlock>
               </div>
-
-              <CardActions>
-                <Button type="submit" className="h-10"><Save />{t("saveChanges")}</Button>
-              </CardActions>
             </SettingsCard>
           </form>
 
@@ -357,6 +354,19 @@ export function AccountView({
             icon={CircleDollarSign}
             title={t("currency.title")}
             description={t("currency.description")}
+            footer={
+              <CardActions>
+                <Button
+                  type="button"
+                  className="h-10"
+                  disabled={savingCurrency || currency === savedCurrency}
+                  onClick={() => void saveCurrency()}
+                >
+                  {savingCurrency ? <LoaderCircle className="animate-spin" /> : <Save />}
+                  {t("saveChanges")}
+                </Button>
+              </CardActions>
+            }
           >
             <div className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,0.7fr)]">
               <FieldBlock label={t("currency.label")} htmlFor="account-currency">
@@ -379,24 +389,6 @@ export function AccountView({
               </div>
             </div>
             <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("currency.hint")}</p>
-            <CardActions>
-              <Button
-                type="button"
-                className="h-10"
-                disabled={
-                  savingCurrency ||
-                  currency === savedCurrency
-                }
-                onClick={() => void saveCurrency()}
-              >
-                {savingCurrency ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : (
-                  <Save />
-                )}
-                {t("saveChanges")}
-              </Button>
-            </CardActions>
           </SettingsCard>
 
           <SettingsCard
@@ -404,6 +396,7 @@ export function AccountView({
             icon={Bell}
             title={t("notifications.title")}
             description={t("notifications.description")}
+            footer={<CardActions><Button type="button" className="h-10" onClick={() => notifySaved(t("notifications.title"))}><Save />{t("saveChanges")}</Button></CardActions>}
           >
             <div className="divide-y divide-border">
               <NotificationRow
@@ -447,9 +440,6 @@ export function AccountView({
                 onCheckedChange={(checked) => setNotifications((current) => ({ ...current, push: checked }))}
               />
             </div>
-            <CardActions>
-              <Button type="button" className="h-10" onClick={() => notifySaved(t("notifications.title"))}><Save />{t("saveChanges")}</Button>
-            </CardActions>
           </SettingsCard>
 
           <SettingsCard
@@ -458,6 +448,23 @@ export function AccountView({
             title={t("domain.title")}
             description={t("domain.description")}
             status={<Badge variant={domainStatus === "pending" ? "secondary" : "outline"}>{t(`domain.status.${domainStatus}`)}</Badge>}
+            footer={
+              <CardActions>
+                <p className="text-xs leading-5 text-muted-foreground">{t("domain.hint")}</p>
+                <Button
+                  type="button"
+                  className="h-10"
+                  disabled={!customDomain.trim()}
+                  onClick={() => {
+                    setDomainStatus("pending");
+                    toast.success(t("domain.checking"));
+                  }}
+                >
+                  <Globe2 />
+                  {t("domain.connect")}
+                </Button>
+              </CardActions>
+            }
           >
             <FieldBlock label={t("domain.label")} htmlFor="custom-domain-input">
               <InputGroup className="h-11 rounded-lg bg-background shadow-none sm:h-10">
@@ -491,22 +498,6 @@ export function AccountView({
                 />
               </div>
             </div>
-
-            <CardActions>
-              <p className="text-xs leading-5 text-muted-foreground">{t("domain.hint")}</p>
-              <Button
-                type="button"
-                className="h-10"
-                disabled={!customDomain.trim()}
-                onClick={() => {
-                  setDomainStatus("pending");
-                  toast.success(t("domain.checking"));
-                }}
-              >
-                <Globe2 />
-                {t("domain.connect")}
-              </Button>
-            </CardActions>
           </SettingsCard>
 
           <form onSubmit={handlePasswordSubmit}>
@@ -515,6 +506,7 @@ export function AccountView({
               icon={KeyRound}
               title={t("security.passwordTitle")}
               description={t("security.passwordDescription")}
+              footer={<CardActions><Button type="submit" className="h-10" disabled={!canUpdatePassword}><KeyRound />{t("security.updatePassword")}</Button></CardActions>}
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <PasswordField
@@ -549,10 +541,6 @@ export function AccountView({
                 <PasswordRequirement met={passwordHasNumber}>{t("security.requirements.number")}</PasswordRequirement>
                 <PasswordRequirement met={passwordsMatch}>{t("security.requirements.match")}</PasswordRequirement>
               </div>
-
-              <CardActions>
-                <Button type="submit" className="h-10" disabled={!canUpdatePassword}><KeyRound />{t("security.updatePassword")}</Button>
-              </CardActions>
             </SettingsCard>
           </form>
 
@@ -561,6 +549,14 @@ export function AccountView({
             icon={Link2}
             title={t("referral.title")}
             description={t("referral.description", { brand: brand.siteName })}
+            footer={
+              <CardActions>
+                <p className="text-xs leading-5 text-muted-foreground">{t("referral.hint")}</p>
+                <Button asChild type="button" variant="outline" className="h-10">
+                  <Link href="/member/referrals">{t("referral.manage")}<ExternalLink /></Link>
+                </Button>
+              </CardActions>
+            }
           >
             <InputGroup className="h-11 rounded-lg bg-background shadow-none sm:h-10">
               <InputGroupAddon><Link2 /></InputGroupAddon>
@@ -585,17 +581,10 @@ export function AccountView({
                 value={`${Number(referrals.commissionRate).toLocaleString()}%`}
               />
             </div>
-
-            <CardActions>
-              <p className="text-xs leading-5 text-muted-foreground">{t("referral.hint")}</p>
-              <Button asChild type="button" variant="outline" className="h-10">
-                <Link href="/member/referrals">{t("referral.manage")}<ExternalLink /></Link>
-              </Button>
-            </CardActions>
           </SettingsCard>
         </main>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -605,6 +594,7 @@ function SettingsCard({
   title,
   description,
   status,
+  footer,
   children,
 }: {
   id: string;
@@ -612,6 +602,7 @@ function SettingsCard({
   title: string;
   description: string;
   status?: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -630,6 +621,7 @@ function SettingsCard({
           </div>
         </CardHeader>
         <CardContent className="px-4 py-5 sm:px-5">{children}</CardContent>
+        {footer}
       </Card>
     </section>
   );
@@ -646,7 +638,7 @@ function FieldBlock({ label, htmlFor, className, children }: { label: string; ht
 
 function CardActions({ children }: { children: ReactNode }) {
   return (
-    <div className="-mx-4 -mb-5 mt-5 flex flex-col gap-3 border-t border-border bg-muted/10 px-4 py-4 sm:-mx-5 sm:flex-row sm:items-center sm:justify-end sm:px-5 sm:[&>p]:mr-auto">
+    <div data-slot="card-actions" className="flex flex-col gap-3 border-t border-border bg-muted/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-5 sm:[&>p]:mr-auto">
       {children}
     </div>
   );

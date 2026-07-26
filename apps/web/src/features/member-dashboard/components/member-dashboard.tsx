@@ -1,25 +1,26 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState, type ReactNode } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
 import {
   ArrowRight,
   BarChart3,
+  CalendarDays,
   CircleDollarSign,
   Globe2,
   Link2,
   Monitor,
   MousePointerClick,
-  Plus,
   Smartphone,
   Tablet,
-  WalletCards,
   type LucideIcon,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { Button } from "@/components/ui/button"
+import { PageContainer, PageHeader } from "@/components/dashboard/ui"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ChartContainer,
@@ -28,6 +29,13 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -39,9 +47,11 @@ import {
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider"
 import { cn } from "@/lib/utils"
 
-import type {
-  MemberDashboardBreakdownItem,
-  MemberDashboardData,
+import {
+  memberDashboardRanges,
+  type MemberDashboardRange,
+  type MemberDashboardBreakdownItem,
+  type MemberDashboardData,
 } from "../types"
 
 type ChartMetric = "successfulOpens" | "revenue"
@@ -57,9 +67,19 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function MemberDashboard({ data }: { data: MemberDashboardData }) {
+export function MemberDashboard({
+  data,
+  range,
+}: {
+  data: MemberDashboardData
+  range: MemberDashboardRange
+}) {
   const t = useTranslations("MemberDashboard")
   const locale = useLocale()
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isRangePending, startRangeTransition] = useTransition()
   const { formatCurrency } = useMemberCurrency()
   const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale])
   const periodFormatter = useMemo(
@@ -87,39 +107,64 @@ export function MemberDashboard({ data }: { data: MemberDashboardData }) {
       icon: BarChart3,
     },
   ] as const
+  const periodFrom = new Date(data.analytics.period.from)
+  const periodTo = new Date(data.analytics.period.to)
+  const isSingleDay =
+    periodFrom.toISOString().slice(0, 10) ===
+    periodTo.toISOString().slice(0, 10)
+
+  function handleRangeChange(value: string) {
+    if (!memberDashboardRanges.includes(value as MemberDashboardRange)) return
+    if (value === range) return
+
+    const params = new URLSearchParams(searchParams.toString())
+    if (value === "30d") params.delete("range")
+    else params.set("range", value)
+
+    const query = params.toString()
+    startRangeTransition(() => {
+      router.replace(query ? `${pathname}?${query}` : pathname)
+    })
+  }
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.035em] text-foreground">
-            {t("title")}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {periodFormatter.format(new Date(data.analytics.period.from))}
-            <span className="px-1.5 text-border">—</span>
-            {periodFormatter.format(new Date(data.analytics.period.to))}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="rounded-lg">
-            <Link href="/member/withdraw">
-              <WalletCards className="size-4" />
-              {t("actions.withdraw")}
-            </Link>
-          </Button>
-          <Button asChild className="rounded-lg bg-[#5e6ad2] text-white hover:bg-[#828fff]">
-            <Link href="/member/create">
-              <Plus className="size-4" />
-              {t("actions.createLink")}
-            </Link>
-          </Button>
-        </div>
-      </header>
+    <PageContainer>
+      <PageHeader
+        title={t("title")}
+        // description={
+        //   isSingleDay ? (
+        //     periodFormatter.format(periodFrom)
+        //   ) : (
+        //     <>
+        //       {periodFormatter.format(periodFrom)}
+        //       <span className="px-1.5 text-border">—</span>
+        //       {periodFormatter.format(periodTo)}
+        //     </>
+        //   )
+        // }
+        action={
+          <Select
+            value={range}
+            onValueChange={handleRangeChange}
+            disabled={isRangePending}
+          >
+            <SelectTrigger
+              className="h-10 rounded-lg bg-background shadow-none"
+              aria-label={t("range.label")}
+            >
+              <CalendarDays className="size-4" aria-hidden="true" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {memberDashboardRanges.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {t(`range.${value}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       <section
         className="grid overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-3"
@@ -167,22 +212,21 @@ export function MemberDashboard({ data }: { data: MemberDashboardData }) {
           />
         </aside>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 
 export function MemberDashboardSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6" aria-busy="true">
+    <PageContainer aria-busy="true">
       <div className="flex items-end justify-between gap-4">
         <div className="space-y-2">
           <Skeleton className="h-3 w-20" />
           <Skeleton className="h-8 w-36" />
           <Skeleton className="h-4 w-52" />
         </div>
-        <div className="hidden gap-2 sm:flex">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-28" />
+        <div className="hidden sm:block">
+          <Skeleton className="h-10 w-44" />
         </div>
       </div>
       <div className="grid overflow-hidden rounded-xl border sm:grid-cols-3">
@@ -208,7 +252,7 @@ export function MemberDashboardSkeleton() {
           ))}
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 
@@ -245,9 +289,9 @@ function MetricCard({
       <p className="mt-4 truncate text-[28px] font-semibold tracking-[-0.04em] tabular-nums text-foreground">
         {value}
       </p>
-      <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
+      {/* <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
         {t("metrics.today")} <span className="ml-1 font-medium text-foreground">{today}</span>
-      </p>
+      </p> */}
     </article>
   )
 }
@@ -272,7 +316,7 @@ function PerformanceCard({ data }: { data: MemberDashboardData }) {
               type="button"
               className={cn(
                 "h-8 rounded-md px-3 text-xs font-medium text-muted-foreground transition-colors",
-                metric === value && "bg-background text-foreground shadow-sm",
+                metric === value && "bg-background text-foreground",
               )}
               onClick={() => setMetric(value)}
             >
@@ -352,10 +396,10 @@ function PerformanceCard({ data }: { data: MemberDashboardData }) {
             </span>
             <p className="mt-4 text-sm font-medium">{t("performance.empty")}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button asChild size="sm" className="rounded-lg bg-[#5e6ad2] text-white hover:bg-[#828fff]">
+              <Button asChild size="sm" className="h-10 rounded-lg">
                 <Link href="/member/create">{t("actions.createLink")}</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="rounded-lg">
+              <Button asChild size="sm" variant="outline" className="h-10 rounded-lg">
                 <Link href="/member/links">{t("actions.myLinks")}</Link>
               </Button>
             </div>
@@ -423,7 +467,7 @@ function TopLinks({ data }: { data: MemberDashboardData }) {
         <CardTitle className="text-base tracking-[-0.02em]">
           {t("topLinks.title")}
         </CardTitle>
-        <Link href="/member/links" className="text-xs font-medium text-primary hover:text-[#828fff]">
+        <Link href="/member/links" className="text-xs font-medium text-primary transition-colors hover:text-primary/80">
           {t("actions.viewAll")}
         </Link>
       </CardHeader>

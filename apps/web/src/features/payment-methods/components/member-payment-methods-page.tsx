@@ -169,8 +169,8 @@ export function MemberPaymentMethodsManager() {
               data.defaultLocale,
             );
             return (
-              <Card key={account.id}>
-                <CardHeader>
+              <Card key={account.id} className="gap-4 py-5 sm:py-6">
+                <CardHeader className="px-5 sm:px-6">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted/30 text-primary">
@@ -191,7 +191,7 @@ export function MemberPaymentMethodsManager() {
                     ) : null}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 px-5 sm:px-6">
                   <dl className="space-y-2">
                     {translation?.fields.map((field) => (
                       <div

@@ -13,7 +13,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
   ];
 
   return (
-    <div className="space-y-5">
+    <PageContainer>
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -96,7 +96,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
       </Card>
 
       <section
-        className="grid overflow-hidden rounded-xl border bg-card shadow-sm sm:grid-cols-3"
+        className="grid overflow-hidden rounded-xl border bg-card sm:grid-cols-3"
         aria-label={t("summary")}
       >
         <ReferralMetric
@@ -117,15 +117,15 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
         />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="gap-0">
-          <CardHeader>
+      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <Card className="min-w-0 gap-4 py-5 sm:py-6">
+          <CardHeader className="px-5 sm:px-6">
             <CardTitle>{t("shareTitle")}</CardTitle>
             <CardDescription className="leading-6">
               {t("shareDescription")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-5 sm:px-6">
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-md border bg-muted/30 px-3">
                 <LinkIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -161,12 +161,12 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
           </CardContent>
         </Card>
 
-        <Card className="gap-0">
-          <CardHeader>
+        <Card className="min-w-0 gap-4 py-5 sm:py-6">
+          <CardHeader className="px-5 sm:px-6">
             <CardTitle>{t("howTitle")}</CardTitle>
             <CardDescription>{t("howDescription")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-5 sm:px-6">
             {[
               [LinkIcon, t("steps.copyTitle"), t("steps.copyDescription")],
               [UserCheck, t("steps.signupTitle"), t("steps.signupDescription")],
@@ -198,8 +198,8 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
         </Card>
       </div>
 
-      <Card className="gap-0">
-        <CardHeader className="flex flex-col gap-2 border-b sm:flex-row sm:items-center sm:justify-between">
+      <Card className="gap-0 overflow-hidden py-0">
+        <CardHeader className="flex flex-col gap-2 border-b px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <CardTitle>{t("tableTitle")}</CardTitle>
             <CardDescription className="mt-1">
@@ -311,8 +311,8 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
         </CardContent>
       </Card>
 
-      <Card className="gap-0">
-        <CardHeader className="border-b">
+      <Card className="gap-0 overflow-hidden py-0">
+        <CardHeader className="border-b px-5 py-5 sm:px-6">
           <CardTitle>{t("recentTitle")}</CardTitle>
           <CardDescription>{t("recentDescription")}</CardDescription>
         </CardHeader>
@@ -364,7 +364,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -382,22 +382,19 @@ function ReferralMetric({
   return (
     <div
       className={cn(
-        "border-b p-5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0",
-        primary ? "bg-primary text-primary-foreground" : "bg-card",
+        "border-b bg-card p-5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0",
       )}
     >
       <p
         className={cn(
-          "flex items-center gap-2 text-sm font-medium",
-          primary
-            ? "text-primary-foreground/80"
-            : "text-muted-foreground",
+          "flex items-center gap-2 text-sm font-medium [&_svg]:size-4",
+          primary ? "text-primary" : "text-muted-foreground",
         )}
       >
         {icon}
         {label}
       </p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground tabular-nums">
         {value}
       </p>
     </div>

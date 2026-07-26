@@ -18,12 +18,11 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
-  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { TablePagination } from "@/components/table-pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -170,7 +169,7 @@ export function LinksView({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] space-y-6">
+    <PageContainer>
       <PageHeader
         title={t("socialLinks")}
         description={t("description")}
@@ -193,13 +192,6 @@ export function LinksView({
         <LinksPageSkeleton />
       ) : (
         <>
-          <section className="grid overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-2 xl:grid-cols-4" aria-label={t("summary.label")}>
-            <SummaryMetric icon={Link2} label={t("summary.total")} value={numberFormatter.format(metrics.total)} />
-            <SummaryMetric icon={CircleCheck} label={t("summary.active")} value={numberFormatter.format(metrics.active)} accent />
-            <SummaryMetric icon={Activity} label={t("summary.views")} value={numberFormatter.format(metrics.views)} />
-            <SummaryMetric icon={CircleDollarSign} label={t("summary.revenue")} value={formatCurrency(metrics.revenue)} />
-          </section>
-
           <Card className="gap-3 border-border bg-card p-3 shadow-none">
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
               <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3">
@@ -345,7 +337,7 @@ export function LinksView({
       ) : null}
 
       {activeTab === "monetization" ? <MonetizationPanel {...monetizationLevels} /> : null}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -513,8 +505,8 @@ function MonetizationPanel({
         })}
       </section>
 
-      <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card shadow-none">
-        <CardHeader className="flex flex-col gap-3 border-b border-border sm:flex-row sm:items-start sm:justify-between">
+      <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
+        <CardHeader className="flex flex-col gap-3 border-b border-border px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
           <div>
             <CardTitle>{t("monetization.payoutTitle")}</CardTitle>
             <CardDescription className="mt-1 leading-5">{t("monetization.payoutDescription")}</CardDescription>
@@ -736,7 +728,7 @@ function FilterSelect({ label, id, children }: { label: string; id: string; chil
 
 function LinksEmptyState({ icon: Icon, title, description, children }: { icon: LucideIcon; title: string; description: string; children: ReactNode }) {
   return (
-    <div className="grid min-h-72 place-items-center rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
+    <div className="grid min-h-72 place-items-center rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <div className="max-w-sm">
         <span className="mx-auto grid size-11 place-items-center rounded-xl border border-border bg-muted/30 text-muted-foreground"><Icon className="size-5" /></span>
         <h2 className="mt-4 text-base font-semibold tracking-[-0.01em] text-foreground">{title}</h2>
@@ -749,10 +741,7 @@ function LinksEmptyState({ icon: Icon, title, description, children }: { icon: L
 
 function LinksPageSkeleton() {
   return (
-    <div className="space-y-5">
-      <div className="grid overflow-hidden rounded-xl border border-border sm:grid-cols-2 xl:grid-cols-5">
-        {[1, 2, 3, 4, 5].map((item) => <div key={item} className="flex min-h-24 items-center gap-3 border-b border-r border-border p-4"><Skeleton className="size-9 rounded-lg" /><div className="space-y-2"><Skeleton className="h-3 w-24" /><Skeleton className="h-6 w-14" /></div></div>)}
-      </div>
+    <div className="space-y-6">
       <Skeleton className="h-16 rounded-xl" />
       {[1, 2, 3].map((item) => <Skeleton key={item} className="h-52 rounded-xl" />)}
     </div>

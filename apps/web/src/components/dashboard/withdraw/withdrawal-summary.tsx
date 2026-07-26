@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowUpRight, CircleAlert, RefreshCcw } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  CircleAlert,
+  Clock3,
+  RefreshCcw,
+  WalletCards,
+} from "lucide-react";
 
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/dashboard/ui";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
-import {
-  CircleDollarSign,
-  Clock3,
-  WalletCards,
-  type LucideIcon,
-} from "lucide-react"
+import { cn } from "@/lib/utils";
 
 import type { WithdrawalDashboardData } from "./types";
 
@@ -106,7 +107,7 @@ export function WithdrawalEligibilityAlert({ data }: { data: WithdrawalDashboard
 
 export function WithdrawalSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Đang tải thông tin rút tiền" className="space-y-6">
+    <PageContainer aria-busy="true" aria-label="Đang tải thông tin rút tiền">
       <div><Skeleton className="h-8 w-36" /><Skeleton className="mt-2 h-4 w-[min(28rem,80%)]" /></div>
       <div className="grid border-y border-border py-5 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
@@ -116,16 +117,16 @@ export function WithdrawalSkeleton() {
         ))}
       </div>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)]">
-        <Skeleton className="h-[420px] rounded-lg" /><Skeleton className="h-[420px] rounded-lg" />
+        <Skeleton className="h-[420px] rounded-xl" /><Skeleton className="h-[420px] rounded-xl" />
       </div>
       <div><Skeleton className="h-6 w-40" /><div className="mt-4 border-t border-border">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="flex h-16 items-center gap-4 border-b border-border"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-24" /></div>)}</div></div>
-    </div>
+    </PageContainer>
   );
 }
 
 export function WithdrawalErrorState({ message, onRetry }: { message?: string; onRetry: () => void }) {
   return (
-    <div className="space-y-6">
+    <PageContainer>
       <PageHeader title="Rút tiền" description="Chuyển số dư khả dụng về phương thức thanh toán của bạn." />
       <Alert variant="destructive">
         <CircleAlert />
@@ -137,6 +138,6 @@ export function WithdrawalErrorState({ message, onRetry }: { message?: string; o
           </Button>
         </AlertDescription>
       </Alert>
-    </div>
+    </PageContainer>
   );
 }

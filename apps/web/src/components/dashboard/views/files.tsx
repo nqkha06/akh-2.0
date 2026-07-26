@@ -25,7 +25,7 @@ import { FilesToolbar } from "@/components/dashboard/files/files-toolbar";
 import { FilesUploadTray } from "@/components/dashboard/files/files-upload-tray";
 import { StorageUsage } from "@/components/dashboard/files/storage-usage";
 import { useFilesController } from "@/components/dashboard/files/use-files-controller";
-import { PageHeader } from "@/components/dashboard/ui";
+import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 
 export function FilesView() {
   const controller = useFilesController();
@@ -34,7 +34,7 @@ export function FilesView() {
   const initialLoading = controller.loading && controller.files.length === 0 && !controller.error;
 
   return (
-    <section className="mx-auto max-w-[1320px] space-y-6 [--primary:oklch(0.56_0.2_257)] [--ring:var(--primary)] [--files-success:oklch(0.53_0.15_154)] dark:[--primary:oklch(0.7_0.15_257)] dark:[--files-success:oklch(0.72_0.16_154)]">
+    <PageContainer>
       <PageHeader
         title="Files"
         description="Quản lý các tệp được sử dụng cho social links, link-in-bio và nội dung mở khóa."
@@ -69,6 +69,6 @@ export function FilesView() {
       <AlertDialog open={controller.bulkDeleteOpen} onOpenChange={controller.setBulkDeleteOpen}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Xóa {controller.selectedFiles.length} file?</AlertDialogTitle><AlertDialogDescription>Các file sẽ được chuyển vào thùng rác. Thao tác bị chặn nếu bất kỳ file nào còn được một link sử dụng.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Hủy</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void controller.confirmBulkDelete()}>Xóa các file</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
-    </section>
+    </PageContainer>
   );
 }
