@@ -27,6 +27,11 @@ import {
 
 import { BioWidgetEmbed } from "@/components/bio-widget-embed";
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
+import { BankDetailsRenderer, DividerRenderer } from "@/features/link-in-bio/content-blocks/simple-content-renderers";
+import { hasCompleteBankDetails } from "@/features/link-in-bio/content-blocks/simple-content-types";
+import { getLinkAnimationClassName, getLinkAnimationStyle } from "@/features/link-in-bio/content-blocks/link-animation";
+import { GalleryRenderer } from "@/features/link-in-bio/gallery/gallery-renderer";
+import { contentOrderKey, normalizeContentOrder } from "@/features/link-in-bio/gallery/gallery-types";
 import {
   getSiteHost,
   useSiteBrand,
@@ -279,11 +284,24 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
   const visibleLinks = bioPage.customLinks.filter(
     (link) => !bioPage.hiddenLinks.includes(link.id),
   );
+  const visibleSocials = bioPage.socialLinks.filter((social) => social.enabled !== false);
+  const visibleWidgets = bioPage.widgets.filter((widget) => widget.enabled !== false);
   const trackClick = () => {
     void trackBioClick(bioPage.slug).catch(() => undefined);
   };
-  const totalLinks =
-    visibleLinks.length + bioPage.socialLinks.length + bioPage.widgets.length;
+  const orderedContent = normalizeContentOrder(bioPage.contentOrder, {
+    socials: bioPage.socialLinks,
+    widgets: bioPage.widgets,
+    galleries: bioPage.galleries,
+    dividers: bioPage.dividers,
+    bankDetails: bioPage.bankDetails,
+    links: bioPage.customLinks,
+  });
+  const totalContent =
+    visibleLinks.length + visibleSocials.length + visibleWidgets.length +
+    bioPage.galleries.filter((gallery) => gallery.enabled && gallery.images.length > 0).length +
+    bioPage.dividers.filter((block) => block.enabled).length +
+    bioPage.bankDetails.filter((block) => block.enabled && hasCompleteBankDetails(block)).length;
   const isDarkButton =
     bioPage.appearance.buttonStyle === "glow" ||
     bioPage.appearance.buttonStyle === "accent-gradient" ||
@@ -320,74 +338,59 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
               {siteHost ? `${siteHost}/b/` : "/b/"}{bioPage.slug}
             </p>
             {bioPage.title ? <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-slate-700">{bioPage.title}</p> : null}
-            {bioPage.socialLinks.length > 0 ? (
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                {bioPage.socialLinks.slice(0, 8).map(({ id, url, platform }) => (
-                  <a key={id} href={url} onClick={trackClick} target="_blank" rel="noopener noreferrer" aria-label={platform} className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-950 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bio-accent)]">
-                    {getSocialIcon(platform)}
-                  </a>
-                ))}
-              </div>
-            ) : null}
           </header>
           <div className="space-y-4">
-          {bioPage.widgets.length > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
-                  Featured
-                </h2>
-              </div>
-              {bioPage.widgets.map((widget) => <BioWidgetEmbed key={widget.id} widget={widget} onExternalLink={trackClick} />)}
-            </div>
-          ) : null}
+          {orderedContent.map((item, contentIndex) => {
+            if (item.type === "social") {
+              return visibleSocials.length ? (
+                <div key={contentOrderKey(item)} className="flex flex-wrap justify-center gap-2">
+                  {visibleSocials.slice(0, 8).map(({ id, url, platform }) => (
+                    <a key={id} href={url} onClick={trackClick} target="_blank" rel="noopener noreferrer" aria-label={platform} className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-950 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bio-accent)]">
+                      {getSocialIcon(platform)}
+                    </a>
+                  ))}
+                </div>
+              ) : null;
+            }
+            if (item.type === "gallery") {
+              const gallery = bioPage.galleries.find((entry) => entry.id === item.id);
+              return gallery ? <GalleryRenderer key={contentOrderKey(item)} gallery={gallery} onExternalLink={trackClick} /> : null;
+            }
+            if (item.type === "divider") {
+              const block = bioPage.dividers.find((entry) => entry.id === item.id);
+              return block ? <DividerRenderer key={contentOrderKey(item)} block={block} /> : null;
+            }
+            if (item.type === "bank-details") {
+              const block = bioPage.bankDetails.find((entry) => entry.id === item.id);
+              return block ? <BankDetailsRenderer key={contentOrderKey(item)} block={block} /> : null;
+            }
+            if (item.type === "widget") {
+              const widget = visibleWidgets.find((entry) => entry.id === item.id);
+              return widget ? <BioWidgetEmbed key={contentOrderKey(item)} widget={widget} onExternalLink={trackClick} /> : null;
+            }
+            const link = visibleLinks.find((entry) => entry.id === item.id);
+            if (!link) return null;
+            return (
+              <a
+                key={contentOrderKey(item)}
+                href={link.url}
+                onClick={trackClick}
+                target="_blank"
+                rel="noreferrer"
+                className={`${getLinkButtonClass(bioPage.appearance.buttonStyle)} ${getLinkAnimationClassName(link.animationEffect)}`}
+                style={{ ...getLinkButtonStyle(bioPage.appearance.buttonStyle), ...getLinkAnimationStyle(contentIndex) }}
+              >
+                <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${getLinkIconClass(bioPage.appearance.buttonStyle)}`}><Link2 className="size-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block truncate text-base font-bold ${isDarkButton ? "text-white" : "text-slate-950"}`}>{link.title}</span>
+                  <span className={`mt-1 block truncate text-sm font-semibold ${isDarkButton ? "text-slate-300" : "text-slate-500"}`}>{getHost(link.url)}</span>
+                </span>
+                <span className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-200 ${isDarkButton ? "bg-white/10 text-white group-hover:bg-white group-hover:text-slate-950" : "bg-slate-100 text-slate-600 group-hover:bg-slate-950 group-hover:text-white"}`}><ArrowUpRight className="size-4" /></span>
+              </a>
+            );
+          })}
 
-          {visibleLinks.length > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
-                  Links
-                </h2>
-              </div>
-              {visibleLinks.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  onClick={trackClick}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={getLinkButtonClass(bioPage.appearance.buttonStyle)}
-                  style={getLinkButtonStyle(bioPage.appearance.buttonStyle)}
-                >
-                  <span
-                    className={`grid size-12 shrink-0 place-items-center rounded-2xl ${getLinkIconClass(
-                      bioPage.appearance.buttonStyle,
-                    )}`}
-                  >
-                    <Link2 className="size-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-base font-bold ${isDarkButton ? "text-white" : "text-slate-950"}`}>
-                      {link.title}
-                    </span>
-                    <span className={`mt-1 block truncate text-sm font-semibold ${isDarkButton ? "text-slate-300" : "text-slate-500"}`}>
-                      {getHost(link.url)}
-                    </span>
-                  </span>
-                  <span
-                    className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-200 ${isDarkButton
-                        ? "bg-white/10 text-white group-hover:bg-white group-hover:text-slate-950"
-                        : "bg-slate-100 text-slate-600 group-hover:bg-slate-950 group-hover:text-white"
-                      }`}
-                  >
-                    <ArrowUpRight className="size-4" />
-                  </span>
-                </a>
-              ))}
-            </div>
-          ) : null}
-
-          {totalLinks === 0 ? (
+          {totalContent === 0 ? (
             <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white/70 px-5 py-10 text-center">
               <p className="text-sm font-bold text-slate-600">
                 This bio does not have public links yet.

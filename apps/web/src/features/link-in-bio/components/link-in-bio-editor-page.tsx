@@ -64,7 +64,16 @@ export function LinkInBioEditorPage({ mode, initialBio }: { mode: "create" | "ed
       </div>
     </div>
 
-    <LinkInBioGenerator key={initialBio?.id || "create-bio"} initialBio={initialBio} onSavingChange={setIsSaving} />
+    <LinkInBioGenerator
+      key={initialBio?.id || "create-bio"}
+      initialBio={initialBio}
+      onSavingChange={setIsSaving}
+      onSaved={(bioPage) => {
+        if (editing) return
+        router.replace(`/member/bio/${bioPage.id}/edit`)
+        router.refresh()
+      }}
+    />
   </PageContainer>
 }
 

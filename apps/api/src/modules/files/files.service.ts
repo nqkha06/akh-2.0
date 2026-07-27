@@ -245,6 +245,19 @@ export class FilesService {
     };
   }
 
+  async previewPublishedImage(fileId: number) {
+    const file = await this.prisma.memberFile.findFirst({
+      where: { id: fileId, deletedAt: null, status: "completed" },
+    });
+    if (!file || !file.mimeType.startsWith("image/")) {
+      throw new NotFoundException("Không tìm thấy ảnh.");
+    }
+    return {
+      file: this.toResponse(file),
+      stream: new StreamableFile(createReadStream(this.resolveStoragePath(file.storageKey))),
+    };
+  }
+
   async downloadLinkDestination(slug: string) {
     const link = await this.prisma.link.findFirst({
       where: {

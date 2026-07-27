@@ -17,5 +17,6 @@ import {
       useExisting: LocalMultipartUploadStorage,
     },
   ],
+  exports: [FilesService],
 })
 export class FilesModule {}

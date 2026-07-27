@@ -4786,6 +4786,27 @@ describe("Member Bio Pages E2E", () => {
     const otherAuthorization = {
       Authorization: `Bearer ${other.body.accessToken}`,
     };
+    const galleryPng = Uint8Array.from(Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "base64",
+    ));
+    const initiateGalleryUpload = await request("/api/member/files/multipart", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({ fileName: "gallery.png", mimeType: "image/png", size: galleryPng.length, purpose: "cover" }),
+    });
+    assert.equal(initiateGalleryUpload.status, 201);
+    const galleryUpload = (await initiateGalleryUpload.json()) as { uploadId: string };
+    const galleryForm = new FormData();
+    galleryForm.append("chunk", new Blob([galleryPng], { type: "image/png" }), "part-1");
+    assert.equal((await request(`/api/member/files/multipart/${galleryUpload.uploadId}/parts/1`, {
+      method: "POST", headers: ownerAuthorization, body: galleryForm,
+    })).status, 201);
+    const galleryComplete = await request(`/api/member/files/multipart/${galleryUpload.uploadId}/complete`, {
+      method: "POST", headers: ownerAuthorization,
+    });
+    assert.equal(galleryComplete.status, 201);
+    const galleryFile = (await galleryComplete.json()) as { id: string };
     const draftPayload = {
       name: "Creator Bio",
       title: "Creator",
@@ -4803,9 +4824,53 @@ describe("Member Bio Pages E2E", () => {
           id: "link-1",
           title: "Portfolio",
           url: "https://example.com/portfolio",
+          animationEffect: "bounce",
         },
       ],
       widgets: [],
+      galleries: [{
+        id: "gallery-1",
+        type: "gallery",
+        title: "Projects",
+        enabled: true,
+        showTitle: true,
+        displayMode: "grid",
+        aspectRatio: "1:1",
+        columns: { mobile: 2, tablet: 3, desktop: 3 },
+        gap: "md",
+        radius: "md",
+        showCaption: true,
+        border: "none",
+        shadow: "none",
+        images: [{ id: "gallery-image-1", fileId: galleryFile.id, url: "/private", alt: "Project", sortOrder: 0 }],
+      }],
+      dividers: [{
+        id: "divider-1",
+        type: "divider",
+        enabled: true,
+        label: "Support",
+        showLabel: true,
+        style: "solid",
+        spacing: "md",
+      }],
+      bankDetails: [{
+        id: "bank-1",
+        type: "bank-details",
+        enabled: true,
+        title: "Bank transfer",
+        bankName: "Test Bank",
+        accountName: "TEST USER",
+        accountNumber: "123456789",
+        branch: "Test branch",
+        note: "Test transfer only",
+        showCopyButton: true,
+      }],
+      contentOrder: [
+        { type: "gallery", id: "gallery-1" },
+        { type: "divider", id: "divider-1" },
+        { type: "bank-details", id: "bank-1" },
+        { type: "link", id: "link-1" },
+      ],
       hiddenLinks: ["link-1"],
       appearance: {
         buttonStyle: "rounded",
@@ -4870,6 +4935,25 @@ describe("Member Bio Pages E2E", () => {
       404,
     );
 
+    const invalidPublishedBank = {
+      ...draftPayload,
+      status: "published",
+      bankDetails: draftPayload.bankDetails.map((block) => ({
+        ...block,
+        accountNumber: "",
+      })),
+    };
+    assert.equal(
+      (
+        await request(`/api/member/bio-pages/${created.id}`, {
+          method: "PATCH",
+          headers: ownerAuthorization,
+          body: JSON.stringify(invalidPublishedBank),
+        })
+      ).status,
+      400,
+    );
+
     assert.equal(
       (
         await request(`/api/member/bio-pages/${created.id}`, {
@@ -4880,10 +4964,23 @@ describe("Member Bio Pages E2E", () => {
       ).status,
       200,
     );
-    assert.equal(
-      (await request(`/api/public/bio-pages/${created.slug}`)).status,
-      200,
-    );
+    const publicBioResponse = await request(`/api/public/bio-pages/${created.slug}`);
+    assert.equal(publicBioResponse.status, 200);
+    const publicBio = (await publicBioResponse.json()) as {
+      galleries: Array<{ images: Array<{ url: string }> }>;
+      dividers: Array<{ id: string }>;
+      bankDetails: Array<{ accountNumber: string }>;
+      customLinks: Array<{ animationEffect: string }>;
+      contentOrder: Array<{ type: string; id: string }>;
+    };
+    assert.equal(publicBio.galleries[0].images[0].url, `/api/public/bio-pages/${created.slug}/media/${galleryFile.id}`);
+    assert.equal(publicBio.dividers[0].id, "divider-1");
+    assert.equal(publicBio.bankDetails[0].accountNumber, "123456789");
+    assert.equal(publicBio.customLinks[0].animationEffect, "bounce");
+    assert.deepEqual(publicBio.contentOrder.map(({ type }) => type), ["gallery", "divider", "bank-details", "link", "social"]);
+    const publicGalleryImage = await request(`/api/public/bio-pages/${created.slug}/media/${galleryFile.id}`);
+    assert.equal(publicGalleryImage.status, 200);
+    assert.equal(publicGalleryImage.headers.get("content-type"), "image/png");
 
     assert.equal(
       (

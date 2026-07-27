@@ -120,13 +120,17 @@ export type BioSocialLinkDto = {
   id: string;
   platform: string;
   url: string;
+  enabled?: boolean;
 };
 
 export type BioCustomLinkDto = {
   id: string;
   title: string;
   url: string;
+  animationEffect?: LinkAnimationEffect;
 };
+
+export type LinkAnimationEffect = "none" | "pulse" | "shake" | "bounce" | "glow";
 
 export type BioWidgetDto = {
   id: string;
@@ -134,6 +138,70 @@ export type BioWidgetDto = {
   title: string;
   url: string;
   description?: string;
+  enabled?: boolean;
+};
+
+export type BioGalleryImageDto = {
+  id: string;
+  fileId: string;
+  url: string;
+  thumbnailUrl?: string;
+  alt?: string;
+  caption?: string;
+  linkUrl?: string;
+  openInNewTab?: boolean;
+  sortOrder: number;
+  width?: number;
+  height?: number;
+};
+
+export type BioGalleryBlockDto = {
+  id: string;
+  type: "gallery";
+  title?: string;
+  enabled: boolean;
+  showTitle: boolean;
+  displayMode: "grid" | "slider";
+  aspectRatio: "1:1" | "4:5" | "16:9" | "original";
+  columns: {
+    mobile: number;
+    tablet: number;
+    desktop: number;
+  };
+  gap: "sm" | "md" | "lg";
+  radius: "none" | "sm" | "md" | "lg" | "full";
+  showCaption: boolean;
+  border: "none" | "subtle";
+  shadow: "none" | "sm" | "md";
+  images: BioGalleryImageDto[];
+};
+
+export type BioDividerBlockDto = {
+  id: string;
+  type: "divider";
+  enabled: boolean;
+  label?: string;
+  showLabel: boolean;
+  style: "solid" | "dashed" | "dotted";
+  spacing: "sm" | "md" | "lg";
+};
+
+export type BioBankDetailsBlockDto = {
+  id: string;
+  type: "bank-details";
+  enabled: boolean;
+  title: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  branch?: string;
+  note?: string;
+  showCopyButton: boolean;
+};
+
+export type BioContentOrderItemDto = {
+  type: "link" | "widget" | "gallery" | "social" | "divider" | "bank-details";
+  id: string;
 };
 
 export type BioAppearanceDto = {
@@ -157,6 +225,10 @@ export type BioPageDto = {
   socialLinks: BioSocialLinkDto[];
   customLinks: BioCustomLinkDto[];
   widgets: BioWidgetDto[];
+  galleries: BioGalleryBlockDto[];
+  dividers: BioDividerBlockDto[];
+  bankDetails: BioBankDetailsBlockDto[];
+  contentOrder: BioContentOrderItemDto[];
   hiddenLinks: string[];
   appearance: BioAppearanceDto;
   createdAt: string;
@@ -171,6 +243,10 @@ export type CreateBioPagePayload = {
   socialLinks: BioSocialLinkDto[];
   customLinks: BioCustomLinkDto[];
   widgets: BioWidgetDto[];
+  galleries: BioGalleryBlockDto[];
+  dividers: BioDividerBlockDto[];
+  bankDetails: BioBankDetailsBlockDto[];
+  contentOrder: BioContentOrderItemDto[];
   hiddenLinks: string[];
   appearance: BioAppearanceDto;
 };

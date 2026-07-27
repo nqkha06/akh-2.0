@@ -3,14 +3,16 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   Param,
   Patch,
   Post,
   Req,
+  Res,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
@@ -76,5 +78,21 @@ export class PublicBioPagesController {
   @HttpCode(200)
   trackClick(@Param("slug") slug: string) {
     return this.bioPagesService.trackClick(slug);
+  }
+
+  @Get(":slug/media/:fileId")
+  @Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+  async galleryImage(
+    @Param("slug") slug: string,
+    @Param("fileId") fileId: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.bioPagesService.findPublicGalleryImage(slug, fileId);
+    response.set({
+      "Content-Type": result.file.mimeType,
+      "Content-Length": result.file.size.toString(),
+      "Content-Disposition": `inline; filename="${encodeURIComponent(result.file.name)}"`,
+    });
+    return result.stream;
   }
 }

@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/features/admin-pages/schemas/page-schema.test.ts src/features/admin-users/schemas/user-schema.test.ts src/features/site-settings/schemas/appearance-schema.test.ts"
+    "test": "node --test src/features/admin-pages/schemas/page-schema.test.ts src/features/admin-users/schemas/user-schema.test.ts src/features/site-settings/schemas/appearance-schema.test.ts src/features/link-in-bio/gallery/gallery-types.test.ts src/features/link-in-bio/content-blocks/content-block-registry.test.ts src/features/link-in-bio/content-blocks/simple-content-types.test.ts src/features/link-in-bio/content-blocks/link-animation.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

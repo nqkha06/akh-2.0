@@ -23,9 +23,12 @@ export function bioPageToPayload(
     socialLinks: page.socialLinks,
     customLinks: page.customLinks,
     widgets: page.widgets,
+    galleries: page.galleries,
+    dividers: page.dividers,
+    bankDetails: page.bankDetails,
+    contentOrder: page.contentOrder,
     hiddenLinks: page.hiddenLinks,
     appearance: page.appearance,
     ...overrides,
   }
 }
-
