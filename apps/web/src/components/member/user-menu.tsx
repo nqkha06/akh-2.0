@@ -2,7 +2,6 @@
 
 import { useTransition, type ReactNode } from "react"
 import Link from "next/link"
-import { signOut, useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
 import { useLocale, useTranslations } from "next-intl"
 import {
@@ -36,13 +35,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { localeCookieName, locales, type AppLocale } from "@/i18n/config"
 import { useUiLanguages } from "@/features/languages/hooks/use-ui-languages"
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider"
+import { useAuthUser } from "@/features/auth/components/auth-user-provider"
+import { logoutAndRedirect } from "@/features/auth/api/auth.client"
 import { cn } from "@/lib/utils"
 
 function useAccount() {
   const brand = useSiteBrand()
-  const { data: session } = useSession()
-  const name = session?.user?.name || `Tài khoản ${brand.siteName}`
-  const email = session?.user?.email || ""
+  const currentUser = useAuthUser()
+  const name = currentUser.name || `Tài khoản ${brand.siteName}`
+  const email = currentUser.email
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -53,7 +54,7 @@ function useAccount() {
   return {
     name,
     email,
-    image: session?.user?.image || undefined,
+    image: currentUser.avatar || undefined,
     initials,
   }
 }
@@ -157,7 +158,7 @@ function UserMenuContent() {
       <DropdownMenuSeparator />
       <DropdownMenuItem
         variant="destructive"
-        onSelect={() => void signOut({ redirectTo: "/login" })}
+        onSelect={() => void logoutAndRedirect("/login")}
       >
         <LogOut className="size-4" />
         {t("topbar.logout")}

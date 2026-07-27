@@ -1,44 +1,24 @@
-import "server-only"
+import "server-only";
 
-import { createHash } from "node:crypto"
+import { createHash } from "node:crypto";
 
 import {
   AUTH_ERROR_CODES,
   type AuthErrorCode,
   readAuthError,
-} from "@/lib/auth/auth-errors"
+} from "@/lib/auth/auth-errors";
+import type { AuthResponse } from "@/features/auth/types";
 
-const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "")
+const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
 if (!backendApiUrl) {
-  throw new Error("Missing API_INTERNAL_URL environment variable.")
-}
-const refreshCookieName =
-  process.env.AUTH_REFRESH_COOKIE_NAME || "stu_refresh_token"
-
-export type BackendUser = {
-  id: number
-  name: string
-  email: string
-  emailVerifiedAt: string | null
-  avatar: string | null
-  rank?: "bronze" | "gold" | "diamond" | null
-  status: string
-  role: string
-  roles: string[]
-  permissions: string[]
+  throw new Error("Missing API_INTERNAL_URL environment variable.");
 }
 
-export type BackendAuthResponse = {
-  accessToken: string
-  tokenType: "Bearer"
-  expiresIn: string
-  accessTokenExpiresAt: number
-  user: BackendUser
-}
+export type BackendAuthResponse = AuthResponse;
 
-export type BackendAuthResult = BackendAuthResponse & {
-  refreshToken: string
-}
+export type BackendRefreshResult = BackendAuthResponse & {
+  setCookies: string[];
+};
 
 export class BackendRefreshError extends Error {
   constructor(
@@ -46,90 +26,79 @@ export class BackendRefreshError extends Error {
     readonly status: number,
     message: string,
   ) {
-    super(message)
-    this.name = "BackendRefreshError"
+    super(message);
+    this.name = "BackendRefreshError";
   }
 }
 
-const refreshRequests = new Map<string, Promise<BackendAuthResult>>()
-const SUCCESS_RESULT_GRACE_MS = 10_000
+const refreshRequests = new Map<string, Promise<BackendRefreshResult>>();
+const SUCCESS_RESULT_GRACE_MS = 10_000;
 
-export function extractRefreshToken(setCookie: string | null) {
-  if (!setCookie) return null
-  const match = new RegExp(
-    `(?:^|,\\s*)${refreshCookieName}=([^;]+)`,
-  ).exec(setCookie)
-  return match ? decodeURIComponent(match[1]) : null
-}
+export function refreshBackendSession(
+  cookieHeader: string,
+  origin?: string,
+) {
+  const requestKey = createHash("sha256").update(cookieHeader).digest("hex");
+  const inFlight = refreshRequests.get(requestKey);
+  if (inFlight) return inFlight;
 
-export function refreshBackendSession(refreshToken: string) {
-  const requestKey = createHash("sha256").update(refreshToken).digest("hex")
-  const inFlight = refreshRequests.get(requestKey)
-  if (inFlight) return inFlight
-
-  const request = executeRefresh(refreshToken)
-  refreshRequests.set(requestKey, request)
-
+  const request = executeRefresh(cookieHeader, origin);
+  refreshRequests.set(requestKey, request);
   void request.then(
     () => {
       const timer = setTimeout(() => {
         if (refreshRequests.get(requestKey) === request) {
-          refreshRequests.delete(requestKey)
+          refreshRequests.delete(requestKey);
         }
-      }, SUCCESS_RESULT_GRACE_MS)
-      timer.unref()
+      }, SUCCESS_RESULT_GRACE_MS);
+      timer.unref();
     },
     () => {
       if (refreshRequests.get(requestKey) === request) {
-        refreshRequests.delete(requestKey)
+        refreshRequests.delete(requestKey);
       }
     },
-  )
-
-  return request
+  );
+  return request;
 }
 
-async function executeRefresh(refreshToken: string) {
+async function executeRefresh(cookieHeader: string, origin?: string) {
   try {
+    const headers = new Headers({ Cookie: cookieHeader });
+    if (origin) headers.set("Origin", origin);
     const response = await fetch(`${backendApiUrl}/auth/refresh`, {
       method: "POST",
-      headers: {
-        Cookie: `${refreshCookieName}=${encodeURIComponent(refreshToken)}`,
-      },
-      credentials: "include",
+      headers,
       cache: "no-store",
-    })
-
+    });
     if (!response.ok) {
-      const error = await readAuthError(response)
+      const error = await readAuthError(response);
       throw new BackendRefreshError(
         error.code || AUTH_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
         error.status,
         error.message,
-      )
+      );
     }
-
-    const rotatedRefreshToken = extractRefreshToken(
-      response.headers.get("set-cookie"),
-    )
-    if (!rotatedRefreshToken) {
-      throw new BackendRefreshError(
-        AUTH_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
-        502,
-        "Backend refresh response không có refresh-token cookie.",
-      )
-    }
-
     return {
       ...((await response.json()) as BackendAuthResponse),
-      refreshToken: rotatedRefreshToken,
-    } satisfies BackendAuthResult
+      setCookies: getSetCookieHeaders(response.headers),
+    } satisfies BackendRefreshResult;
   } catch (error) {
-    if (error instanceof BackendRefreshError) throw error
+    if (error instanceof BackendRefreshError) throw error;
     throw new BackendRefreshError(
       AUTH_ERROR_CODES.NETWORK_ERROR,
       503,
       error instanceof Error ? error.message : "Không thể kết nối auth backend.",
-    )
+    );
   }
+}
+
+export function getSetCookieHeaders(headers: Headers) {
+  const enhancedHeaders = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const values = enhancedHeaders.getSetCookie?.();
+  if (values?.length) return values;
+  const combined = headers.get("set-cookie");
+  return combined ? combined.split(/,(?=\s*[^;,\s]+=)/) : [];
 }

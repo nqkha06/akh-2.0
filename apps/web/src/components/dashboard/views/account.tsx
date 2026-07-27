@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import {
   Bell,
   Camera,
@@ -58,6 +57,7 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
+import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import type { ReferralsDashboard } from "@/features/referrals/types";
 import {
   Select,
@@ -99,7 +99,7 @@ export function AccountView({
   const t = useTranslations("Account");
   const brand = useSiteBrand();
   const siteHost = getSiteHost(brand);
-  const { data: session } = useSession();
+  const currentUser = useAuthUser();
   const currencyPreferences = useMemberCurrency();
   const hydratedProfile = useRef(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -128,18 +128,18 @@ export function AccountView({
   const [showPasswords, setShowPasswords] = useState(false);
 
   useEffect(() => {
-    if (!session?.user || hydratedProfile.current) return;
+    if (hydratedProfile.current) return;
 
-    const nameParts = (session.user.name || "").trim().split(/\s+/).filter(Boolean);
+    const nameParts = (currentUser.name || "").trim().split(/\s+/).filter(Boolean);
     const firstName = nameParts.pop() || "";
     hydratedProfile.current = true;
     setProfile((current) => ({
       ...current,
       firstName,
       lastName: nameParts.join(" "),
-      email: session.user?.email || "",
+      email: currentUser.email,
     }));
-  }, [session]);
+  }, [currentUser.email, currentUser.name]);
 
   const displayName =
     [profile.lastName, profile.firstName].filter(Boolean).join(" ") ||
@@ -275,7 +275,7 @@ export function AccountView({
             >
               <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
                 <Avatar className="size-16 border border-border sm:size-20">
-                  <AvatarImage src={avatarPreview || session?.user?.image || undefined} alt={displayName} />
+                  <AvatarImage src={avatarPreview || currentUser.avatar || undefined} alt={displayName} />
                   <AvatarFallback className="text-base font-semibold sm:text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">

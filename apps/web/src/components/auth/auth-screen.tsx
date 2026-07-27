@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { Eye, EyeOff, LogIn, Mail, UserPlus } from "lucide-react";
 
@@ -17,13 +17,35 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SiteBrandDisplay } from "@/components/site-brand";
+import {
+  loginAccount,
+  loginWithGoogle,
+  registerAccount,
+} from "@/features/auth/api/auth.client";
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 import { cn } from "@/lib/utils";
-import { registerAccount } from "@/lib/api-client";
 
 type AuthMode = "login" | "register" | "forgot";
 type FieldName = "name" | "email" | "password" | "confirmPassword" | "terms";
 type FieldErrors = Partial<Record<FieldName, string>>;
+
+type GoogleIdentity = {
+  accounts: {
+    id: {
+      initialize(options: {
+        client_id: string;
+        callback: (response: { credential?: string }) => void;
+      }): void;
+      prompt(
+        callback?: (notification: {
+          isNotDisplayed(): boolean;
+          isSkippedMoment(): boolean;
+          isDismissedMoment(): boolean;
+        }) => void,
+      ): void;
+    };
+  };
+};
 
 const pageCopy = {
   login: {
@@ -135,13 +157,13 @@ function validateForm(mode: AuthMode, form: HTMLFormElement) {
 
 export function AuthScreen({
   mode,
-  googleEnabled = false,
+  googleClientId = "",
   redirectTo = "/member",
   referralCode,
   initialMessage = "",
 }: {
   mode: AuthMode;
-  googleEnabled?: boolean;
+  googleClientId?: string;
   redirectTo?: string;
   referralCode?: string;
   initialMessage?: string;
@@ -155,6 +177,7 @@ export function AuthScreen({
   const [message, setMessage] = useState(initialMessage);
   const [messageIsSuccess, setMessageIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
 
   const fieldId = (name: FieldName) => `${fieldPrefix}-${name}`;
 
@@ -193,26 +216,11 @@ export function AuthScreen({
         });
       }
 
-      const result = await signIn("credentials", {
+      await loginAccount({
         email: String(formData.get("email") || ""),
         password: String(formData.get("password") || ""),
-        redirect: false,
-        redirectTo,
       });
-
-      if (!result?.ok || result.error) {
-        setMessage(
-          mode === "register"
-            ? "Tài khoản đã tạo nhưng không thể đăng nhập tự động. Hãy đăng nhập lại."
-            : result?.error === "CredentialsSignin" ||
-                result?.code === "credentials"
-              ? "Email hoặc mật khẩu không chính xác."
-              : "Không thể đăng nhập lúc này. Vui lòng thử lại.",
-        );
-        return;
-      }
-
-      router.push(result.url || redirectTo);
+      router.push(redirectTo);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error
@@ -223,28 +231,52 @@ export function AuthScreen({
     }
   }
 
-  async function handleGoogle() {
+  function handleGoogle() {
     setErrors({});
     setMessageIsSuccess(false);
-    if (!googleEnabled) {
+    if (!googleClientId) {
       setMessage("Google OAuth chưa được cấu hình trong môi trường hiện tại.");
       return;
     }
-
-    setIsSubmitting(true);
-    if (referralCode) {
-      const referralResponse = await fetch("/api/auth/referral", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ referralCode }),
-      });
-      if (!referralResponse.ok) {
-        setMessage("Không thể lưu mã giới thiệu. Vui lòng thử lại.");
-        setIsSubmitting(false);
-        return;
-      }
+    const google = (window as Window & { google?: GoogleIdentity }).google;
+    if (!googleReady || !google) {
+      setMessage("Google OAuth chưa sẵn sàng. Vui lòng thử lại.");
+      return;
     }
-    await signIn("google", { redirectTo });
+    setIsSubmitting(true);
+    setMessage("");
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: ({ credential }) => {
+        if (!credential) {
+          setMessage("Google không trả về thông tin đăng nhập hợp lệ.");
+          setIsSubmitting(false);
+          return;
+        }
+        void loginWithGoogle({ idToken: credential, referralCode })
+          .then(() => {
+            router.push(redirectTo);
+            router.refresh();
+          })
+          .catch((error: unknown) => {
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "Không thể đăng nhập bằng Google.",
+            );
+            setIsSubmitting(false);
+          });
+      },
+    });
+    google.accounts.id.prompt((notification) => {
+      if (
+        notification.isNotDisplayed() ||
+        notification.isSkippedMoment() ||
+        notification.isDismissedMoment()
+      ) {
+        setIsSubmitting(false);
+      }
+    });
   }
 
   const submitIcon = mode === "login"
@@ -255,6 +287,13 @@ export function AuthScreen({
 
   return (
     <main className="container grid min-h-svh max-w-none items-center justify-center bg-background">
+      {googleClientId ? (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onReady={() => setGoogleReady(true)}
+        />
+      ) : null}
       <div className="fixed top-0 left-0 z-[2147483647] h-0.5 w-full bg-transparent" aria-hidden="true">
         <div className="h-full w-0 bg-muted-foreground" />
       </div>

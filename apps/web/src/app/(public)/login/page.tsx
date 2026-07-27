@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
+import { getOptionalServerUser } from "@/lib/auth/server-session";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSiteSettings();
@@ -34,24 +34,21 @@ export default async function LoginPage({
   const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
   const authError = Array.isArray(params.error) ? params.error[0] : params.error;
   const authCode = Array.isArray(params.code) ? params.code[0] : params.code;
-  const session = await auth();
+  const currentUser =
+    reason === "session-expired" ? null : await getOptionalServerUser();
   if (
     reason !== "session-expired" &&
-    session?.user &&
-    session.backendAccessToken &&
-    !session.authError
+    currentUser
   ) {
     redirect(callbackUrl);
   }
 
-  const googleEnabled = Boolean(
-    process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
-  );
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   return (
     <AuthScreen
       mode="login"
-      googleEnabled={googleEnabled}
+      googleClientId={googleClientId}
       redirectTo={callbackUrl}
       initialMessage={
         reason === "session-expired"

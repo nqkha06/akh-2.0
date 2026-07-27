@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import type { Request } from "express";
 
 import { PrismaService } from "../../../database/prisma/prisma.service";
 import {
@@ -9,6 +10,7 @@ import {
   userAuthorizationInclude,
 } from "../../authorization/user-authorization";
 import type { AccessJwtPayload } from "../auth.types";
+import { accessCookieName, readCookie } from "../auth-cookie";
 import {
   AUTH_ERROR_CODES,
   unauthorizedAuthError,
@@ -20,8 +22,12 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
     configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
+    const cookieName = accessCookieName(configService);
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: Request) => readCookie(request, cookieName) || null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
     });

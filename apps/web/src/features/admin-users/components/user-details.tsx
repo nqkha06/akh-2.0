@@ -10,7 +10,6 @@ import {
   Shield,
   Trash2,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -37,11 +36,11 @@ import {
 import { UserStatusBadge } from "@/features/admin-users/components/user-status-badge";
 import type { AdminUserDetail } from "@/features/admin-users/types";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
+import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 
 export function UserDetails({ user }: { user: AdminUserDetail }) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const currentUserId = Number(session?.user?.id || 0);
+  const currentUserId = useAuthUser().id;
   const permissions = useAdminPermissions();
   const canUpdate = permissions.includes("users.update");
   const canDelete = permissions.includes("users.delete");

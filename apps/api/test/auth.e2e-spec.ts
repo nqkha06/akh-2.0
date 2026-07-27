@@ -73,10 +73,19 @@ function decodeJwt(token: string) {
 }
 
 function refreshCookie(response: Response) {
-  const header = response.headers.get("set-cookie");
-  const match = /stu_refresh_token=([^;]+)/.exec(header || "");
-  assert.ok(match, "response must set a refresh-token cookie");
-  return `stu_refresh_token=${match[1]}`;
+  return authCookie(response, "stu_refresh_token");
+}
+
+function accessCookie(response: Response) {
+  return authCookie(response, "stu_access_token");
+}
+
+function authCookie(response: Response, name: string) {
+  const match = new RegExp(`${name}=([^;]+)`).exec(
+    response.headers.get("set-cookie") || "",
+  );
+  assert.ok(match, `response must set the ${name} cookie`);
+  return `${name}=${match[1]}`;
 }
 
 async function request(path: string, init: RequestInit = {}) {
@@ -186,6 +195,11 @@ describe("Authentication E2E", () => {
     assert.ok(valid.body.accessToken);
     assert.ok(valid.body.accessTokenExpiresAt > Date.now());
     assert.equal("passwordHash" in valid.body.user, false);
+    const setCookie = valid.response.headers.get("set-cookie") || "";
+    assert.match(setCookie, /stu_access_token=[^;]+/);
+    assert.match(setCookie, /stu_refresh_token=[^;]+/);
+    assert.match(setCookie, /HttpOnly/i);
+    assert.match(setCookie, /Path=\//i);
 
     const invalid = await request("/api/auth/login", {
       method: "POST",
@@ -215,7 +229,7 @@ describe("Authentication E2E", () => {
     });
   });
 
-  it("accepts a valid access token and rejects missing or expired tokens", async () => {
+  it("accepts access tokens from bearer headers and HttpOnly cookies", async () => {
     const current = await login();
     const me = await request("/api/auth/me", {
       headers: { Authorization: `Bearer ${current.body.accessToken}` },
@@ -223,6 +237,14 @@ describe("Authentication E2E", () => {
     assert.equal(me.status, 200);
     const user = (await me.json()) as Record<string, unknown>;
     assert.equal("passwordHash" in user, false);
+    assert.equal(
+      (
+        await request("/api/auth/me", {
+          headers: { Cookie: accessCookie(current.response) },
+        })
+      ).status,
+      200,
+    );
     assert.equal((await request("/api/auth/me")).status, 401);
 
     const payload = decodeJwt(current.body.accessToken);
@@ -371,15 +393,14 @@ describe("Authentication E2E", () => {
 
   it("logout is idempotent and invalidates the current session", async () => {
     const current = await login();
-    assert.equal(
-      (
-        await request("/api/auth/logout", {
-          method: "POST",
-          headers: { Cookie: current.cookie },
-        })
-      ).status,
-      204,
-    );
+    const logoutResponse = await request("/api/auth/logout", {
+      method: "POST",
+      headers: { Cookie: current.cookie },
+    });
+    assert.equal(logoutResponse.status, 204);
+    const clearedCookies = logoutResponse.headers.get("set-cookie") || "";
+    assert.match(clearedCookies, /stu_access_token=;/);
+    assert.match(clearedCookies, /stu_refresh_token=;/);
     assert.equal(
       (await request("/api/auth/logout", { method: "POST" })).status,
       204,

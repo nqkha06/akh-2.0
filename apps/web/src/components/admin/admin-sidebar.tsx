@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useSession } from "next-auth/react"
 import {
   IconDashboard,
   IconLink,
@@ -22,6 +21,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider"
+import { useAuthUser } from "@/features/auth/components/auth-user-provider"
 import {
   Sidebar,
   SidebarContent,
@@ -127,12 +127,12 @@ const data = {
 export function AdminSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { data: session } = useSession()
+  const currentUser = useAuthUser()
   const permissions = useAdminPermissions()
   const user = {
-    name: session?.user?.name || "Administrator",
-    email: session?.user?.email || "",
-    avatar: session?.user?.image || "",
+    name: currentUser.name || "Administrator",
+    email: currentUser.email,
+    avatar: currentUser.avatar || "",
   }
 
   return (

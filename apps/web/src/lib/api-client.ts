@@ -2,6 +2,7 @@ import {
   isTerminalAuthError,
   readAuthError,
 } from "@/lib/auth/auth-errors";
+import { logoutAndRedirect } from "@/features/auth/api/auth.client";
 
 const BROWSER_API_URL = "/api/backend";
 
@@ -227,12 +228,10 @@ function browserApiUrl(path: string) {
 }
 
 async function endExpiredSession(reason?: string) {
-  const { signOut } = await import("next-auth/react");
-  await signOut({ redirect: false });
   const callbackUrl = `${window.location.pathname}${window.location.search}`;
   const searchParams = new URLSearchParams({ callbackUrl });
   if (reason) searchParams.set("reason", reason);
-  window.location.assign(`/login?${searchParams.toString()}`);
+  await logoutAndRedirect(`/login?${searchParams.toString()}`);
 }
 
 export async function authenticatedApiFetch(path: string, init: RequestInit = {}) {
@@ -256,23 +255,6 @@ export async function authenticatedApiFetch(path: string, init: RequestInit = {}
     }
   }
   return response;
-}
-
-export async function registerAccount(payload: {
-  name: string;
-  email: string;
-  password: string;
-  referralCode?: string;
-}) {
-  const response = await fetch(requestApiUrl("/auth/register"), {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) throw new Error(await getApiError(response));
-  return response.json();
 }
 
 export async function createLink(payload: CreateLinkPayload) {

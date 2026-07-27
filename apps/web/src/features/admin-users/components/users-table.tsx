@@ -11,7 +11,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -24,6 +23,7 @@ import { DataTableSortList } from "@/components/data-table/data-table-sort-list"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
+import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import {
   updateAdminUsersStatus,
   updateAdminUserStatus,
@@ -50,8 +50,7 @@ export function UsersTable({
   pageCount,
   accessOptions,
 }: UsersTableData & { accessOptions: UsersAccessOptions }) {
-  const { data: session } = useSession();
-  const currentUserId = Number(session?.user?.id || 0);
+  const currentUserId = useAuthUser().id;
   const permissions = useAdminPermissions();
   const canUpdate = permissions.includes("users.update");
   const canDelete = permissions.includes("users.delete");

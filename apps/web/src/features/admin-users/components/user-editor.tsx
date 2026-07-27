@@ -11,7 +11,6 @@ import {
   Shield,
   UserRound,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -47,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
+import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import {
   createAdminUser,
   updateAdminUser,
@@ -71,13 +71,13 @@ export function UserEditor({
   accessOptions: UsersAccessOptions;
 }) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const currentUserId = Number(session?.user?.id || 0);
+  const currentUser = useAuthUser();
+  const currentUserId = currentUser.id;
   const permissions = useAdminPermissions();
   const canManageRoles = permissions.includes("users.manage-roles");
   const canManageStatus = permissions.includes("users.manage-status");
   const canVerifyEmail = permissions.includes("users.verify-email");
-  const isAdministrator = session?.user?.roles?.includes("admin") ?? false;
+  const isAdministrator = currentUser.roles.includes("admin");
   const isSelf = Boolean(user && user.id === currentUserId);
   const [saving, setSaving] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);

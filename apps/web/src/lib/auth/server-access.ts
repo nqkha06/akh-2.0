@@ -1,65 +1,35 @@
-import "server-only"
+import "server-only";
 
-import type { Session } from "next-auth"
-import { headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { cookies, headers as requestHeaders } from "next/headers";
+import { redirect } from "next/navigation";
 
 import {
   AUTH_ERROR_CODES,
   isTerminalAuthError,
   readAuthError,
-} from "@/lib/auth/auth-errors"
-import { getServerSession } from "@/lib/auth/server-session"
+} from "@/lib/auth/auth-errors";
 
-const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "")
-const ACCESS_TOKEN_REFRESH_SKEW_MS = 5_000
+const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
+const refreshCookieName =
+  process.env.AUTH_REFRESH_COOKIE_NAME || "stu_refresh_token";
 
 function safeCallbackUrl(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/member"
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/member";
 }
 
 export function loginUrl(callbackUrl: string, reason?: string) {
   const searchParams = new URLSearchParams({
     callbackUrl: safeCallbackUrl(callbackUrl),
-  })
-  if (reason) searchParams.set("reason", reason)
-  return `/login?${searchParams.toString()}`
+  });
+  if (reason) searchParams.set("reason", reason);
+  return `/login?${searchParams.toString()}`;
 }
 
 export function refreshSessionUrl(callbackUrl: string) {
   const searchParams = new URLSearchParams({
     callbackUrl: safeCallbackUrl(callbackUrl),
-  })
-  return `/api/auth/refresh-session?${searchParams.toString()}`
-}
-
-export function accessTokenNeedsRefresh(
-  session: Pick<Session, "backendAccessTokenExpiresAt">,
-) {
-  const expiresAt = Number(session.backendAccessTokenExpiresAt || 0)
-  return !expiresAt || Date.now() >= expiresAt - ACCESS_TOKEN_REFRESH_SKEW_MS
-}
-
-export async function requireFreshServerSession(
-  callbackUrl = "/member",
-): Promise<Session> {
-  const resolvedCallbackUrl = await currentProtectedUrl(callbackUrl)
-  const session = await getServerSession()
-  if (!session?.user) redirect(loginUrl(resolvedCallbackUrl))
-  if (isTerminalAuthError(session.authError)) {
-    redirect(loginUrl(resolvedCallbackUrl, "session-expired"))
-  }
-  if (!session.backendAccessToken) redirect(loginUrl(resolvedCallbackUrl))
-  if (session.authError) {
-    // NETWORK_ERROR/TIMEOUT are retryable and may remain on the Auth.js JWT
-    // after the API has recovered. Retry through a Route Handler so the
-    // rotated backend tokens can be persisted to the session cookie.
-    redirect(refreshSessionUrl(resolvedCallbackUrl))
-  }
-  if (accessTokenNeedsRefresh(session)) {
-    redirect(refreshSessionUrl(resolvedCallbackUrl))
-  }
-  return session
+  });
+  return `/api/auth/refresh-session?${searchParams.toString()}`;
 }
 
 export async function serverApiFetch(
@@ -68,12 +38,17 @@ export async function serverApiFetch(
   callbackUrl = "/member",
 ) {
   if (!backendApiUrl) {
-    throw new Error("Missing API_INTERNAL_URL environment variable.")
+    throw new Error("Missing API_INTERNAL_URL environment variable.");
   }
-  const session = await requireFreshServerSession(callbackUrl)
-  const resolvedCallbackUrl = await currentProtectedUrl(callbackUrl)
-  const headers = new Headers(init.headers)
-  headers.set("Authorization", `Bearer ${session.backendAccessToken}`)
+  const resolvedCallbackUrl = await currentProtectedUrl(callbackUrl);
+  const cookieStore = await cookies();
+  const headers = new Headers(init.headers);
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${encodeURIComponent(value)}`)
+    .join("; ");
+  if (cookieHeader) headers.set("Cookie", cookieHeader);
+
   const response = await fetch(
     `${backendApiUrl}${path.startsWith("/") ? path : `/${path}`}`,
     {
@@ -81,21 +56,26 @@ export async function serverApiFetch(
       headers,
       cache: init.cache ?? "no-store",
     },
-  )
+  );
 
   if (response.status === 401) {
-    const error = await readAuthError(response)
-    if (error.code === AUTH_ERROR_CODES.ACCESS_TOKEN_EXPIRED) {
-      redirect(refreshSessionUrl(resolvedCallbackUrl))
+    const error = await readAuthError(response);
+    const hasRefreshCookie = Boolean(cookieStore.get(refreshCookieName)?.value);
+    if (
+      hasRefreshCookie &&
+      (error.code === AUTH_ERROR_CODES.ACCESS_TOKEN_EXPIRED ||
+        error.code === AUTH_ERROR_CODES.ACCESS_TOKEN_INVALID)
+    ) {
+      redirect(refreshSessionUrl(resolvedCallbackUrl));
     }
     if (isTerminalAuthError(error.code)) {
-      redirect(loginUrl(resolvedCallbackUrl, "session-expired"))
+      redirect(loginUrl(resolvedCallbackUrl, "session-expired"));
     }
   }
-  return response
+  return response;
 }
 
 async function currentProtectedUrl(fallback: string) {
-  const value = (await headers()).get("x-stu-protected-url")
-  return value ? safeCallbackUrl(value) : safeCallbackUrl(fallback)
+  const value = (await requestHeaders()).get("x-stu-protected-url");
+  return value ? safeCallbackUrl(value) : safeCallbackUrl(fallback);
 }

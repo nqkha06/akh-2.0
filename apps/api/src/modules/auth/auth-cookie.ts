@@ -5,6 +5,10 @@ export function refreshCookieName(configService: ConfigService) {
   return configService.get<string>("AUTH_REFRESH_COOKIE_NAME") || "stu_refresh_token";
 }
 
+export function accessCookieName(configService: ConfigService) {
+  return configService.get<string>("AUTH_ACCESS_COOKIE_NAME") || "stu_access_token";
+}
+
 export function refreshCookieOptions(
   configService: ConfigService,
 ): CookieOptions {
@@ -19,8 +23,17 @@ export function refreshCookieOptions(
       configuredSecure === "true" ||
       (configuredSecure !== "false" && process.env.NODE_ENV === "production"),
     sameSite,
-    path: configService.get<string>("AUTH_COOKIE_PATH") || "/api/auth",
+    path: configService.get<string>("AUTH_COOKIE_PATH") || "/",
     domain,
+  };
+}
+
+export function accessCookieOptions(
+  configService: ConfigService,
+): CookieOptions {
+  return {
+    ...refreshCookieOptions(configService),
+    path: "/",
   };
 }
 

@@ -14,6 +14,8 @@ import type { Request, Response } from "express";
 
 import { parseDurationMs } from "../../config/env.validation";
 import {
+  accessCookieName,
+  accessCookieOptions,
   readCookie,
   refreshCookieName,
   refreshCookieOptions,
@@ -63,7 +65,11 @@ export class AuthController {
       request.user,
       this.sessionContext(request),
     );
-    this.setRefreshCookie(response, result.refreshToken);
+    this.setAuthCookies(
+      response,
+      result.response.accessToken,
+      result.refreshToken,
+    );
     return result.response;
   }
 
@@ -84,7 +90,11 @@ export class AuthController {
       user,
       this.sessionContext(request),
     );
-    this.setRefreshCookie(response, result.refreshToken);
+    this.setAuthCookies(
+      response,
+      result.response.accessToken,
+      result.refreshToken,
+    );
     return result.response;
   }
 
@@ -101,7 +111,11 @@ export class AuthController {
       request.user.refreshToken,
       this.sessionContext(request),
     );
-    this.setRefreshCookie(response, result.refreshToken);
+    this.setAuthCookies(
+      response,
+      result.response.accessToken,
+      result.refreshToken,
+    );
     return result.response;
   }
 
@@ -112,7 +126,7 @@ export class AuthController {
     await this.authService.logout(
       readCookie(request, refreshCookieName(this.configService)),
     );
-    this.clearRefreshCookie(response);
+    this.clearAuthCookies(response);
   }
 
   @Get("me")
@@ -121,8 +135,18 @@ export class AuthController {
     return this.authService.toPublicUser(request.user);
   }
 
-  private setRefreshCookie(response: Response, token: string) {
-    response.cookie(refreshCookieName(this.configService), token, {
+  private setAuthCookies(
+    response: Response,
+    accessToken: string,
+    refreshToken: string,
+  ) {
+    response.cookie(accessCookieName(this.configService), accessToken, {
+      ...accessCookieOptions(this.configService),
+      maxAge: parseDurationMs(
+        this.configService.getOrThrow<string>("JWT_ACCESS_EXPIRES_IN"),
+      ),
+    });
+    response.cookie(refreshCookieName(this.configService), refreshToken, {
       ...refreshCookieOptions(this.configService),
       maxAge: parseDurationMs(
         this.configService.getOrThrow<string>("JWT_REFRESH_EXPIRES_IN"),
@@ -130,7 +154,11 @@ export class AuthController {
     });
   }
 
-  private clearRefreshCookie(response: Response) {
+  private clearAuthCookies(response: Response) {
+    response.clearCookie(
+      accessCookieName(this.configService),
+      accessCookieOptions(this.configService),
+    );
     response.clearCookie(
       refreshCookieName(this.configService),
       refreshCookieOptions(this.configService),

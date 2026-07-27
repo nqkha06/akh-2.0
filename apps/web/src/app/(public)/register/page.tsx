@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
+import { getOptionalServerUser } from "@/lib/auth/server-session";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSiteSettings();
@@ -20,14 +20,12 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const session = await auth();
-  if (session?.user && session.backendAccessToken && !session.authError) {
+  const currentUser = await getOptionalServerUser();
+  if (currentUser) {
     redirect("/member");
   }
 
-  const googleEnabled = Boolean(
-    process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
-  );
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
   const rawReferralCode = (await searchParams).ref;
   const referralCode = (
     Array.isArray(rawReferralCode) ? rawReferralCode[0] : rawReferralCode
@@ -39,7 +37,7 @@ export default async function RegisterPage({
   return (
     <AuthScreen
       mode="register"
-      googleEnabled={googleEnabled}
+      googleClientId={googleClientId}
       referralCode={referralCode}
     />
   );

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AdminAuthorizationProvider } from "@/features/admin-authorization/components/admin-authorization-provider"
+import { AuthUserProvider } from "@/features/auth/components/auth-user-provider"
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server"
 import { requireAdmin } from "@/lib/auth/guards"
 
@@ -29,10 +30,9 @@ export default async function AdminLayout({
   const { currentUser } = await requireAdmin()
 
   return (
-    <AdminAuthorizationProvider
-      permissions={currentUser.permissions ?? []}
-    >
-      <TooltipProvider>
+    <AuthUserProvider user={currentUser}>
+      <AdminAuthorizationProvider permissions={currentUser.permissions}>
+        <TooltipProvider>
         <div className="min-h-svh bg-background text-foreground">
           <SidebarProvider
             // style={
@@ -50,7 +50,8 @@ export default async function AdminLayout({
             </SidebarInset>
           </SidebarProvider>
         </div>
-      </TooltipProvider>
-    </AdminAuthorizationProvider>
+        </TooltipProvider>
+      </AdminAuthorizationProvider>
+    </AuthUserProvider>
   )
 }

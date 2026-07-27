@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "prisma generate && nest start --watch",
+    "dev": "node scripts/dev.mjs",
     "dev:worker": "prisma generate && ts-node -r tsconfig-paths/register src/worker.ts",
     "build": "prisma generate && nest build",
     "start": "node dist/main.js",
