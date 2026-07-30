@@ -210,7 +210,10 @@ export type BioAppearanceDto = {
   backgroundImage?: string | null;
   backgroundMediaType?: "image" | "video" | "youtube" | null;
   backgroundMediaUrl?: string | null;
+  backgroundFileId?: string | null;
   selectedBackgroundId?: string | null;
+  avatarFileId?: string | null;
+  avatarUrl?: string | null;
 };
 
 export type BioPageDto = {
@@ -248,7 +251,7 @@ export type CreateBioPagePayload = {
   bankDetails: BioBankDetailsBlockDto[];
   contentOrder: BioContentOrderItemDto[];
   hiddenLinks: string[];
-  appearance: BioAppearanceDto;
+  appearance: Omit<BioAppearanceDto, "avatarUrl">;
 };
 
 export type CreateLinkPayload = {

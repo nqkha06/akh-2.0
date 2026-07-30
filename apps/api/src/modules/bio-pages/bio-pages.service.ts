@@ -73,7 +73,7 @@ export class BioPagesService {
           title: this.emptyToNull(dto.title),
           status,
           contentJson: this.serializeContent(dto),
-          appearanceJson: JSON.stringify(dto.appearance),
+          appearanceJson: this.serializeAppearance(dto),
           publishedAt: status === "published" ? new Date() : null,
         },
       });
@@ -115,7 +115,7 @@ export class BioPagesService {
           title: this.emptyToNull(dto.title),
           status,
           contentJson: this.serializeContent(dto),
-          appearanceJson: JSON.stringify(dto.appearance),
+          appearanceJson: this.serializeAppearance(dto),
           ...(status === "published" && !existing.publishedAt
             ? { publishedAt: new Date() }
             : {}),
@@ -202,14 +202,15 @@ export class BioPagesService {
     }
     const bioPage = await this.prisma.bioPage.findFirst({
       where: { slug, status: "published", deletedAt: null },
-      select: { contentJson: true },
+      select: { contentJson: true, appearanceJson: true },
     });
     if (!bioPage) throw new NotFoundException("Không tìm thấy bio page.");
 
     const content = this.parseJson<StoredBioContent>(bioPage.contentJson, EMPTY_CONTENT);
+    const appearance = this.parseJson<StoredBioAppearance>(bioPage.appearanceJson, DEFAULT_APPEARANCE);
     const referenced = content.galleries?.some((gallery) =>
       gallery.enabled && gallery.images.some((image) => image.fileId === fileIdValue),
-    );
+    ) || [appearance.avatarFileId, appearance.backgroundFileId].includes(fileIdValue);
     if (!referenced) throw new NotFoundException("Không tìm thấy ảnh.");
     return this.filesService.previewPublishedImage(fileId);
   }
@@ -286,6 +287,18 @@ export class BioPagesService {
       }
     }
 
+    if (dto.appearance.backgroundFileId && dto.appearance.backgroundMediaType !== "image") {
+      throw new BadRequestException("File nền chỉ hợp lệ với background dạng ảnh.");
+    }
+    for (const fileIdValue of [dto.appearance.avatarFileId, dto.appearance.backgroundFileId]) {
+      if (!fileIdValue) continue;
+      const fileId = Number(fileIdValue);
+      if (!Number.isSafeInteger(fileId) || fileId <= 0) {
+        throw new BadRequestException("Ảnh đại diện hoặc ảnh nền không hợp lệ.");
+      }
+      fileIds.add(fileId);
+    }
+
     if (fileIds.size > 0) {
       const files = await this.prisma.memberFile.findMany({
         where: { id: { in: [...fileIds] }, userId, deletedAt: null, status: "completed" },
@@ -341,6 +354,19 @@ export class BioPagesService {
       contentOrder: this.normalizeContentOrder(dto),
     };
     return JSON.stringify(content);
+  }
+
+  private serializeAppearance(dto: CreateBioPageDto) {
+    const appearance: StoredBioAppearance = {
+      ...dto.appearance,
+      backgroundImage: dto.appearance.backgroundFileId
+        ? `/api/backend/member/files/${dto.appearance.backgroundFileId}/preview`
+        : dto.appearance.backgroundImage,
+      backgroundMediaUrl: dto.appearance.backgroundFileId
+        ? `/api/backend/member/files/${dto.appearance.backgroundFileId}/preview`
+        : dto.appearance.backgroundMediaUrl,
+    };
+    return JSON.stringify(appearance);
   }
 
   private async createUniqueSlug(source: string) {
@@ -424,6 +450,21 @@ export class BioPagesService {
       bioPage.appearanceJson,
       DEFAULT_APPEARANCE,
     );
+    const resolveMediaUrl = (fileId: string) => publicResponse
+      ? `/api/public/bio-pages/${encodeURIComponent(bioPage.slug)}/media/${encodeURIComponent(fileId)}`
+      : `/api/backend/member/files/${fileId}/preview`;
+    const resolvedAppearance = {
+      ...appearance,
+      ...(appearance.avatarFileId
+        ? { avatarUrl: resolveMediaUrl(appearance.avatarFileId) }
+        : {}),
+      ...(appearance.backgroundFileId
+        ? {
+          backgroundImage: resolveMediaUrl(appearance.backgroundFileId),
+          backgroundMediaUrl: resolveMediaUrl(appearance.backgroundFileId),
+        }
+        : {}),
+    };
     const customLinks = content.customLinks.map(
       ({ isVisible: _isVisible, ...link }) => ({
         ...link,
@@ -473,7 +514,7 @@ export class BioPagesService {
       bankDetails,
       contentOrder: content.contentOrder?.length ? content.contentOrder : fallbackOrder,
       hiddenLinks,
-      appearance,
+      appearance: resolvedAppearance,
       publishedAt: bioPage.publishedAt,
       createdAt: bioPage.createdAt,
       updatedAt: bioPage.updatedAt,

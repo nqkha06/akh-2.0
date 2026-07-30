@@ -3,22 +3,12 @@
 
 import {
   GripVertical,
-  ImagePlus,
   Images,
-  LoaderCircle,
   Pencil,
   Replace,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type DragEvent,
-} from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ManagedImagePicker } from "@/components/media/managed-image-picker";
@@ -44,7 +34,6 @@ import {
 } from "@/components/ui/credenza";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sortable,
@@ -56,38 +45,22 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { FILE_CREATED_EVENT } from "@/components/dashboard/files/events";
 import { generateId } from "@/lib/id";
 import {
   getFilePreviewUrl,
   type BioGalleryBlockDto,
   type BioGalleryImageDto,
   type ManagedFileDto,
-  uploadFile,
 } from "@/lib/api-client";
 import {
   GALLERY_ACCEPTED_MIME_TYPES,
-  GALLERY_FILE_ACCEPT,
   GALLERY_IMAGE_MAX_SIZE,
   GALLERY_MAX_IMAGES,
   normalizeGalleryImages,
 } from "./gallery-types";
 
-type UploadItem = {
-  id: string;
-  name: string;
-  previewUrl: string;
-  progress: number;
-  status: "uploading" | "error";
-  error?: string;
-};
-
 function formatBytes(bytes: number) {
   return `${Math.round(bytes / 1024 / 1024)} MB`;
-}
-
-function fileFingerprint(file: File) {
-  return `${file.name}:${file.size}:${file.lastModified}`;
 }
 
 function isHttpUrl(value: string) {
@@ -97,23 +70,6 @@ function isHttpUrl(value: string) {
   } catch {
     return false;
   }
-}
-
-function readImageDimensions(file: File) {
-  return new Promise<{ width?: number; height?: number }>((resolve) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
-      URL.revokeObjectURL(url);
-      resolve(dimensions);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({});
-    };
-    image.src = url;
-  });
 }
 
 function toGalleryImage(file: ManagedFileDto, dimensions: { width?: number; height?: number }): BioGalleryImageDto {
@@ -142,16 +98,15 @@ function ImageSettingsDialog({
   onChange: (image: BioGalleryImageDto) => void;
   onDelete: () => void;
 }) {
-  const replaceInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(image);
-  const [replaceProgress, setReplaceProgress] = useState<number | null>(null);
+  const [replacePickerOpen, setReplacePickerOpen] = useState(false);
   const [error, setError] = useState("");
 
   if (!draft) return null;
   const invalidLink = Boolean(draft.linkUrl?.trim()) && !isHttpUrl(draft.linkUrl!.trim());
 
-  async function replaceImage(file: File) {
-    if (!GALLERY_ACCEPTED_MIME_TYPES.includes(file.type as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number])) {
+  function replaceImage(file: ManagedFileDto) {
+    if (!GALLERY_ACCEPTED_MIME_TYPES.includes(file.mimeType.toLowerCase() as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number])) {
       setError("Định dạng ảnh không được hỗ trợ.");
       return;
     }
@@ -160,29 +115,14 @@ function ImageSettingsDialog({
       return;
     }
     setError("");
-    setReplaceProgress(0);
-    try {
-      const dimensionsPromise = readImageDimensions(file);
-      const uploaded = await uploadFile(file, {
-        purpose: "cover",
-        onProgress: setReplaceProgress,
-      });
-      const dimensions = await dimensionsPromise;
-      const url = getFilePreviewUrl(uploaded);
-      setDraft((current) => current ? {
-        ...current,
-        fileId: uploaded.id,
-        url,
-        thumbnailUrl: url,
-        ...dimensions,
-      } : current);
-      window.dispatchEvent(new CustomEvent(FILE_CREATED_EVENT, { detail: uploaded }));
-      toast.success("Đã thay thế ảnh");
-    } catch (replaceError) {
-      setError(replaceError instanceof Error ? replaceError.message : "Không thể thay thế ảnh.");
-    } finally {
-      setReplaceProgress(null);
-    }
+    const url = getFilePreviewUrl(file);
+    setDraft((current) => current ? {
+      ...current,
+      fileId: file.id,
+      url,
+      thumbnailUrl: url,
+    } : current);
+    toast.success("Đã thay thế ảnh từ Media Manager");
   }
 
   return (
@@ -198,21 +138,8 @@ function ImageSettingsDialog({
               <div className="aspect-square overflow-hidden rounded-xl border border-border bg-muted/30">
                 <img src={draft.thumbnailUrl || draft.url} alt="" className="size-full object-cover" />
               </div>
-              <input
-                ref={replaceInput}
-                type="file"
-                accept={GALLERY_FILE_ACCEPT}
-                className="sr-only"
-                disabled={replaceProgress !== null}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void replaceImage(file);
-                  event.target.value = "";
-                }}
-              />
-              <Button type="button" variant="outline" size="sm" className="mt-2 w-full" disabled={replaceProgress !== null} onClick={() => replaceInput.current?.click()}>
-                {replaceProgress !== null ? <LoaderCircle className="animate-spin" /> : <Replace />}
-                {replaceProgress !== null ? `${replaceProgress}%` : "Thay thế ảnh"}
+              <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => setReplacePickerOpen(true)}>
+                <Replace />Thay thế ảnh
               </Button>
             </div>
             <div className="space-y-4">
@@ -235,16 +162,15 @@ function ImageSettingsDialog({
               </label>
             </div>
           </div>
-          {replaceProgress !== null ? <Progress value={replaceProgress} aria-label="Tiến trình thay thế ảnh" /> : null}
           {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         </CredenzaBody>
         <CredenzaFooter className="flex-col-reverse gap-2 border-border bg-card sm:flex-row sm:justify-between">
-          <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={replaceProgress !== null} onClick={onDelete}>
+          <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}>
             <Trash2 />Xóa ảnh
           </Button>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
-            <Button type="button" disabled={replaceProgress !== null || invalidLink} onClick={() => {
+            <Button type="button" disabled={invalidLink} onClick={() => {
               onChange({
                 ...draft,
                 alt: draft.alt?.trim() || undefined,
@@ -257,6 +183,15 @@ function ImageSettingsDialog({
           </div>
         </CredenzaFooter>
       </CredenzaContent>
+      <ManagedImagePicker
+        open={replacePickerOpen}
+        onOpenChange={setReplacePickerOpen}
+        selectedFileId={draft.fileId}
+        onSelect={replaceImage}
+        acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
+        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        title="Thay ảnh từ Media Manager"
+      />
     </Credenza>
   );
 }
@@ -274,120 +209,34 @@ export function GalleryBlockEditor({
   disabled?: boolean;
   embedded?: boolean;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef(gallery);
-  galleryRef.current = gallery;
-  const uploadedFingerprints = useRef(new Set<string>());
-  const uploadPreviews = useRef(new Set<string>());
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
-  const [draggingFiles, setDraggingFiles] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  useEffect(() => () => {
-    for (const url of uploadPreviews.current) URL.revokeObjectURL(url);
-  }, []);
-
   const selectedImage = gallery.images.find((image) => image.id === selectedImageId) || null;
-  const isUploading = uploads.some((item) => item.status === "uploading");
   const patchGallery = <K extends keyof BioGalleryBlockDto>(key: K, value: BioGalleryBlockDto[K]) => {
     onChange({ ...gallery, [key]: value });
   };
 
-  async function uploadImages(files: File[]) {
-    const remaining = GALLERY_MAX_IMAGES - gallery.images.length - uploads.filter((item) => item.status === "uploading").length;
-    if (remaining <= 0) {
-      toast.error(`Mỗi bộ sưu tập tối đa ${GALLERY_MAX_IMAGES} ảnh.`);
+  function addManagedImages(files: ManagedFileDto[]) {
+    const existingFileIds = new Set(gallery.images.map((image) => image.fileId));
+    const availableSlots = GALLERY_MAX_IMAGES - gallery.images.length;
+    const accepted = files.filter((file) =>
+      !existingFileIds.has(file.id) &&
+      GALLERY_ACCEPTED_MIME_TYPES.includes(file.mimeType.toLowerCase() as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number]) &&
+      file.size > 0 &&
+      file.size <= GALLERY_IMAGE_MAX_SIZE,
+    ).slice(0, availableSlots);
+    if (!accepted.length) {
+      toast.error("Ảnh đã có trong bộ sưu tập hoặc không hợp lệ.");
       return;
     }
-    const seen = new Set<string>();
-    const accepted: File[] = [];
-    const errors: string[] = [];
-    for (const file of files) {
-      const fingerprint = fileFingerprint(file);
-      if (seen.has(fingerprint) || uploadedFingerprints.current.has(fingerprint)) {
-        errors.push(`${file.name}: ảnh đã được chọn.`);
-        continue;
-      }
-      seen.add(fingerprint);
-      if (!GALLERY_ACCEPTED_MIME_TYPES.includes(file.type as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number])) {
-        errors.push(`${file.name}: định dạng không hỗ trợ.`);
-        continue;
-      }
-      if (file.size === 0 || file.size > GALLERY_IMAGE_MAX_SIZE) {
-        errors.push(`${file.name}: tối đa ${formatBytes(GALLERY_IMAGE_MAX_SIZE)}.`);
-        continue;
-      }
-      accepted.push(file);
-      if (accepted.length === remaining) break;
-    }
-    if (files.length > accepted.length + errors.length) errors.push(`Chỉ còn ${remaining} vị trí trống.`);
-    if (errors.length) toast.error(errors[0]);
-
-    const uploadedImages = await Promise.all(accepted.map(async (file) => {
-      const queueId = `upload-${generateId({ length: 10 })}`;
-      const previewUrl = URL.createObjectURL(file);
-      uploadPreviews.current.add(previewUrl);
-      setUploads((current) => [...current, { id: queueId, name: file.name, previewUrl, progress: 0, status: "uploading" }]);
-      try {
-        const dimensionsPromise = readImageDimensions(file);
-        const uploaded = await uploadFile(file, {
-          purpose: "cover",
-          onProgress: (progress) => setUploads((current) => current.map((item) => item.id === queueId ? { ...item, progress } : item)),
-        });
-        const dimensions = await dimensionsPromise;
-        const image = toGalleryImage(uploaded, dimensions);
-        uploadedFingerprints.current.add(fileFingerprint(file));
-        window.dispatchEvent(new CustomEvent(FILE_CREATED_EVENT, { detail: uploaded }));
-        setUploads((current) => current.filter((item) => item.id !== queueId));
-        URL.revokeObjectURL(previewUrl);
-        uploadPreviews.current.delete(previewUrl);
-        return image;
-      } catch (uploadError) {
-        setUploads((current) => current.map((item) => item.id === queueId ? {
-          ...item,
-          status: "error",
-          error: uploadError instanceof Error ? uploadError.message : "Upload thất bại.",
-        } : item));
-        return null;
-      }
-    }));
-    const successfulImages = uploadedImages.filter((image): image is BioGalleryImageDto => image !== null);
-    if (successfulImages.length) {
-      const latestGallery = galleryRef.current;
-      onChange({ ...latestGallery, images: normalizeGalleryImages([...latestGallery.images, ...successfulImages]) });
-      toast.success(`Đã thêm ${successfulImages.length} ảnh vào bộ sưu tập`);
-    }
-  }
-
-  function handleInput(event: ChangeEvent<HTMLInputElement>) {
-    if (event.target.files?.length) void uploadImages(Array.from(event.target.files));
-    event.target.value = "";
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDraggingFiles(false);
-    if (!disabled) void uploadImages(Array.from(event.dataTransfer.files));
-  }
-
-  function addManagedImage(file: ManagedFileDto) {
-    if (gallery.images.some((image) => image.fileId === file.id)) {
-      toast.error("Ảnh này đã có trong bộ sưu tập.");
-      return;
-    }
-    if (!GALLERY_ACCEPTED_MIME_TYPES.includes(file.mimeType.toLowerCase() as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number]) || file.size > GALLERY_IMAGE_MAX_SIZE) {
-      toast.error(`Chỉ hỗ trợ JPG, PNG, WEBP, GIF hoặc AVIF tối đa ${formatBytes(GALLERY_IMAGE_MAX_SIZE)}.`);
-      return;
-    }
-    if (gallery.images.length >= GALLERY_MAX_IMAGES) {
-      toast.error(`Mỗi bộ sưu tập tối đa ${GALLERY_MAX_IMAGES} ảnh.`);
-      return;
-    }
-    onChange({ ...gallery, images: normalizeGalleryImages([...gallery.images, toGalleryImage(file, {})]) });
-    toast.success("Đã thêm ảnh từ Media Manager");
+    onChange({ ...gallery, images: normalizeGalleryImages([
+      ...gallery.images,
+      ...accepted.map((file) => toGalleryImage(file, {})),
+    ]) });
+    toast.success(`Đã thêm ${accepted.length} ảnh từ Media Manager`);
   }
 
   const columnOptions = useMemo(() => ({
@@ -421,37 +270,14 @@ export function GalleryBlockEditor({
         </TabsList>
 
         <TabsContent value="images" className="mt-4 space-y-4">
-          <input ref={inputRef} type="file" accept={GALLERY_FILE_ACCEPT} multiple className="sr-only" disabled={disabled} onChange={handleInput} />
-          <div
-            onDragEnter={(event) => { event.preventDefault(); if (!disabled) setDraggingFiles(true); }}
-            onDragOver={(event) => event.preventDefault()}
-            onDragLeave={() => setDraggingFiles(false)}
-            onDrop={handleDrop}
-            className={`rounded-xl border border-dashed px-5 py-6 text-center transition-colors ${draggingFiles ? "border-primary bg-primary/5" : "border-border bg-muted/15"}`}
-          >
-            <UploadCloud className="mx-auto size-6 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium">Kéo nhiều ảnh vào đây hoặc chọn từ thiết bị</p>
-            <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, WEBP, GIF, AVIF · tối đa {formatBytes(GALLERY_IMAGE_MAX_SIZE)}/ảnh · {GALLERY_MAX_IMAGES} ảnh/bộ sưu tập</p>
-            <div className="mt-3 flex flex-wrap justify-center gap-2">
-              <Button type="button" size="sm" disabled={disabled || gallery.images.length >= GALLERY_MAX_IMAGES} onClick={() => inputRef.current?.click()}><ImagePlus />Chọn ảnh</Button>
-              <Button type="button" size="sm" variant="outline" disabled={disabled || gallery.images.length >= GALLERY_MAX_IMAGES} onClick={() => setMediaPickerOpen(true)}><Images />Media Manager</Button>
+          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-muted/15 px-4 py-4 sm:flex-row sm:items-center">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-background text-muted-foreground"><Images className="size-5" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Thêm ảnh qua Media Manager</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">Chọn ảnh đã có hoặc upload nhiều ảnh mới. JPG, PNG, WEBP, GIF, AVIF · tối đa {formatBytes(GALLERY_IMAGE_MAX_SIZE)}/ảnh.</p>
             </div>
+            <Button type="button" size="sm" disabled={disabled || gallery.images.length >= GALLERY_MAX_IMAGES} onClick={() => setMediaPickerOpen(true)}><Images />Mở Media Manager</Button>
           </div>
-
-          {uploads.length ? (
-            <div className="space-y-2" aria-live="polite">
-              {uploads.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2">
-                  <img src={item.previewUrl} alt="" className="size-10 shrink-0 rounded-md object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 text-xs"><span className="truncate font-medium">{item.name}</span><span className="tabular-nums text-muted-foreground">{item.status === "error" ? "Lỗi" : `${item.progress}%`}</span></div>
-                    {item.status === "error" ? <p className="mt-1 truncate text-xs text-destructive">{item.error}</p> : <Progress value={item.progress} className="mt-2 h-1.5" />}
-                  </div>
-                  {item.status === "error" ? <Button type="button" size="icon-sm" variant="ghost" aria-label="Bỏ lỗi upload" onClick={() => setUploads((current) => current.filter((upload) => upload.id !== item.id))}><Trash2 /></Button> : <LoaderCircle className="size-4 animate-spin text-muted-foreground" />}
-                </div>
-              ))}
-            </div>
-          ) : null}
 
           {gallery.images.length ? (
             <Sortable value={gallery.images} getItemValue={(image) => image.id} onValueChange={(images) => patchGallery("images", normalizeGalleryImages(images))} orientation="mixed">
@@ -468,9 +294,9 @@ export function GalleryBlockEditor({
                 ))}
               </SortableContent>
             </Sortable>
-          ) : !uploads.length ? (
+          ) : (
             <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">Chưa có ảnh. Thêm ảnh để bắt đầu bộ sưu tập.</div>
-          ) : null}
+          )}
         </TabsContent>
 
         <TabsContent value="shape" className="mt-4 space-y-4">
@@ -495,10 +321,20 @@ export function GalleryBlockEditor({
       </Tabs>
 
       {!embedded ? <div className="flex justify-end border-t border-border pt-3">
-        <Button type="button" variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={disabled || isUploading} onClick={() => setDeleteOpen(true)}><Trash2 />Xóa bộ sưu tập</Button>
+        <Button type="button" variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={disabled} onClick={() => setDeleteOpen(true)}><Trash2 />Xóa bộ sưu tập</Button>
       </div> : null}
 
-      <ManagedImagePicker open={mediaPickerOpen} onOpenChange={setMediaPickerOpen} onSelect={addManagedImage} title="Thêm ảnh vào bộ sưu tập" />
+      <ManagedImagePicker
+        open={mediaPickerOpen}
+        onOpenChange={setMediaPickerOpen}
+        onSelect={(file) => addManagedImages([file])}
+        onSelectMany={addManagedImages}
+        multiple
+        maxFiles={GALLERY_MAX_IMAGES - gallery.images.length}
+        acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
+        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        title="Thêm ảnh vào bộ sưu tập"
+      />
       <ImageSettingsDialog key={selectedImage?.id || "no-gallery-image"} image={selectedImage} open={settingsOpen} onOpenChange={setSettingsOpen} onChange={(nextImage) => patchGallery("images", gallery.images.map((image) => image.id === nextImage.id ? nextImage : image))} onDelete={() => {
         if (!selectedImage) return;
         patchGallery("images", normalizeGalleryImages(gallery.images.filter((image) => image.id !== selectedImage.id)));

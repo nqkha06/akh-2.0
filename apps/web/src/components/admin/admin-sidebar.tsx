@@ -16,6 +16,7 @@ import {
   IconMenu2,
   IconLifebuoy,
   IconAward,
+  IconBell,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -102,6 +103,12 @@ const data = {
       url: "/admin/support",
       icon: IconLifebuoy,
       permission: "support.read",
+    },
+    {
+      title: "Announcements",
+      url: "/admin/announcements",
+      icon: IconBell,
+      permission: "announcements.view",
     },
     {
       title: "Languages",

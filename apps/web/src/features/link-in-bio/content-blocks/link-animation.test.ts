@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   getLinkAnimationClassName,
+  getLinkAnimationPreviewClassName,
   getLinkAnimationStyle,
   linkAnimationPresets,
   normalizeLinkAnimationEffect,
@@ -29,5 +30,8 @@ describe("Link Bio link animations", () => {
     const style = getLinkAnimationStyle(3) as Record<string, string>;
     assert.equal(style["--link-animation-delay"], "540ms");
     assert.match(getLinkAnimationClassName("glow"), /link-bio-animation--glow/);
+    assert.match(getLinkAnimationPreviewClassName("glow"), /link-bio-animation--live-preview/);
+    const previewStyle = getLinkAnimationStyle(3, 90) as Record<string, string>;
+    assert.equal(previewStyle["--link-animation-delay"], "270ms");
   });
 });

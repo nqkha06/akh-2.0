@@ -13,6 +13,8 @@ import { MemberFooter } from "./member-footer"
 import { MemberHeader } from "./member-header"
 import { MemberSidebar } from "./member-sidebar"
 import { MobileSidebar } from "./mobile-sidebar"
+import { AnnouncementsProvider } from "@/features/announcements/components/announcements-provider"
+import { AnnouncementBanners, AnnouncementModal } from "@/features/announcements/components/announcement-surfaces"
 
 const SIDEBAR_STORAGE_KEY = "member:sidebar-collapsed"
 
@@ -52,6 +54,7 @@ export function MemberShell({
   }
 
   return (
+    <AnnouncementsProvider>
     <div className="fixed inset-0 flex min-h-0 overflow-clip bg-background text-foreground">
       <MemberSidebar
         collapsed={collapsed}
@@ -74,6 +77,7 @@ export function MemberShell({
           id="dashboard-main-content"
         >
           <div className="flex min-h-full flex-col">
+            <AnnouncementBanners />
             <div className="flex-1 px-4 pb-10 pt-5 sm:px-6 lg:px-8 lg:pt-6">
               {children}
             </div>
@@ -81,6 +85,8 @@ export function MemberShell({
           </div>
         </main>
       </div>
+      <AnnouncementModal />
     </div>
+    </AnnouncementsProvider>
   )
 }

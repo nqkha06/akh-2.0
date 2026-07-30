@@ -1,12 +1,11 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import type React from "react";
 
 import {
-  ArrowUpRight,
   Banknote,
   Headphones,
-  Link2,
   Users,
 } from "lucide-react";
 import {
@@ -29,7 +28,7 @@ import { BioWidgetEmbed } from "@/components/bio-widget-embed";
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
 import { BankDetailsRenderer, DividerRenderer } from "@/features/link-in-bio/content-blocks/simple-content-renderers";
 import { hasCompleteBankDetails } from "@/features/link-in-bio/content-blocks/simple-content-types";
-import { getLinkAnimationClassName, getLinkAnimationStyle } from "@/features/link-in-bio/content-blocks/link-animation";
+import { BioLinkButton } from "@/features/link-in-bio/components/bio-link-button";
 import { GalleryRenderer } from "@/features/link-in-bio/gallery/gallery-renderer";
 import { contentOrderKey, normalizeContentOrder } from "@/features/link-in-bio/gallery/gallery-types";
 import {
@@ -182,102 +181,6 @@ function getInitials(name: string) {
     .join("");
 }
 
-function getHost(url: string) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "Open link";
-  }
-}
-
-function getLinkButtonClass(buttonStyle: string) {
-  const base =
-    "group flex min-h-20 cursor-pointer items-center justify-between gap-4 px-4 py-4 backdrop-blur transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bio-accent)] sm:px-5";
-
-  switch (buttonStyle) {
-    case "minimalist":
-      return `${base} rounded-xl border border-slate-200 bg-white text-slate-950 shadow-none hover:border-slate-300 hover:bg-slate-50`;
-    case "mineral-square":
-      return `${base} rounded-lg border-2 border-slate-950 bg-white text-slate-950 shadow-[6px_6px_0_rgba(15,23,42,1)] hover:bg-slate-50`;
-    case "rounded-border":
-      return `${base} rounded-full border-2 bg-white text-slate-950 shadow-[0_14px_34px_rgba(15,23,42,0.09)] hover:bg-slate-50`;
-    case "mineral-rounded":
-      return `${base} rounded-[1.45rem] border border-white/80 bg-white/85 text-slate-950 shadow-[0_18px_52px_rgba(15,23,42,0.12)] hover:bg-white`;
-    case "glow":
-      return `${base} rounded-[1.55rem] border border-slate-700 bg-slate-950 text-white shadow-[0_18px_58px_rgba(37,99,235,0.34)] hover:bg-slate-900`;
-    case "soft-shadow":
-      return `${base} rounded-2xl border border-slate-100 bg-white text-slate-950 shadow-[0_18px_42px_rgba(15,23,42,0.12)] hover:border-slate-200 hover:shadow-[0_22px_52px_rgba(15,23,42,0.16)]`;
-    case "accent-gradient":
-      return `${base} rounded-[1.35rem] border border-transparent bg-gradient-to-r from-slate-950 via-slate-900 to-blue-700 text-white shadow-[0_18px_52px_rgba(37,99,235,0.24)] hover:from-slate-900 hover:to-blue-600`;
-    case "glass-outline":
-      return `${base} rounded-[1.35rem] border border-white/80 bg-white/70 text-slate-950 shadow-[0_18px_48px_rgba(15,23,42,0.10)] hover:bg-white/88`;
-    case "neon-outline":
-      return `${base} rounded-full border-2 border-cyan-300 bg-slate-950 text-white shadow-[0_0_30px_rgba(34,211,238,0.34)] hover:border-cyan-200 hover:bg-slate-900`;
-    case "compact-sharp":
-      return `${base} !min-h-12 rounded-md border border-slate-300 bg-white px-3 py-3 text-slate-950 shadow-sm hover:border-slate-500 hover:bg-slate-50`;
-    default:
-      return `${base} rounded-full border border-slate-950 bg-slate-950 text-white shadow-[0_18px_52px_rgba(15,23,42,0.18)] hover:bg-slate-800`;
-  }
-}
-
-function getLinkIconClass(buttonStyle: string) {
-  switch (buttonStyle) {
-    case "minimalist":
-      return "bg-slate-100 text-slate-700";
-    case "mineral-rounded":
-      return "bg-white text-slate-950 shadow-sm";
-    case "mineral-square":
-      return "bg-slate-950 text-white";
-    case "rounded-border":
-      return "bg-[color:var(--bio-accent)] text-white";
-    case "glow":
-      return "bg-white text-slate-950";
-    case "soft-shadow":
-      return "bg-slate-950 text-white";
-    case "accent-gradient":
-      return "bg-white text-slate-950";
-    case "glass-outline":
-      return "bg-white text-slate-950 shadow-sm";
-    case "neon-outline":
-      return "bg-[color:var(--bio-accent)] text-white";
-    case "compact-sharp":
-      return "bg-slate-100 text-slate-700";
-    default:
-      return "bg-white text-slate-950";
-  }
-}
-
-function getLinkButtonStyle(buttonStyle: string): React.CSSProperties | undefined {
-  if (buttonStyle === "rounded-border") {
-    return {
-      borderColor: "var(--bio-accent)",
-    };
-  }
-
-  if (buttonStyle === "glow") {
-    return {
-      boxShadow:
-        "0 18px 58px rgba(var(--bio-accent-rgb), 0.34), inset 0 1px 0 rgba(255,255,255,0.12)",
-    };
-  }
-
-  if (buttonStyle === "accent-gradient") {
-    return {
-      backgroundImage: "linear-gradient(135deg, #0f172a 0%, var(--bio-accent) 100%)",
-    };
-  }
-
-  if (buttonStyle === "neon-outline") {
-    return {
-      borderColor: "var(--bio-accent)",
-      boxShadow:
-        "0 0 30px rgba(var(--bio-accent-rgb), 0.36), inset 0 1px 0 rgba(255,255,255,0.1)",
-    };
-  }
-
-  return undefined;
-}
-
 export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
   const brand = useSiteBrand();
   const siteHost = getSiteHost(brand);
@@ -302,10 +205,6 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
     bioPage.galleries.filter((gallery) => gallery.enabled && gallery.images.length > 0).length +
     bioPage.dividers.filter((block) => block.enabled).length +
     bioPage.bankDetails.filter((block) => block.enabled && hasCompleteBankDetails(block)).length;
-  const isDarkButton =
-    bioPage.appearance.buttonStyle === "glow" ||
-    bioPage.appearance.buttonStyle === "accent-gradient" ||
-    bioPage.appearance.buttonStyle === "neon-outline";
   const backgroundMedia = getBackgroundMedia(bioPage);
   const youtubeEmbedUrl = backgroundMedia?.type === "youtube"
     ? getYouTubeEmbedUrl(backgroundMedia.url)
@@ -330,8 +229,9 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
         <div className="h-32 sm:h-36" style={getCoverStyle(bioPage)} />
         <div className="space-y-5 px-4 pb-5 sm:px-6 sm:pb-6">
           <header className="-mt-12 text-center">
-            <div className="mx-auto flex size-24 items-center justify-center rounded-[1.5rem] border-4 border-white bg-slate-950 text-3xl font-bold text-white shadow-xl sm:size-28 sm:text-4xl">
-              {getInitials(bioPage.name)}
+            <div className="relative mx-auto flex size-24 items-center justify-center overflow-hidden rounded-[1.5rem] border-4 border-white bg-slate-950 text-3xl font-bold text-white shadow-xl sm:size-28 sm:text-4xl">
+              <span>{getInitials(bioPage.name)}</span>
+              {bioPage.appearance.avatarUrl ? <img src={bioPage.appearance.avatarUrl} alt={`Ảnh đại diện của ${bioPage.name}`} className="absolute inset-0 size-full object-cover" onError={(event) => { event.currentTarget.hidden = true; }} /> : null}
             </div>
             <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{bioPage.name}</h1>
             <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -370,24 +270,7 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
             }
             const link = visibleLinks.find((entry) => entry.id === item.id);
             if (!link) return null;
-            return (
-              <a
-                key={contentOrderKey(item)}
-                href={link.url}
-                onClick={trackClick}
-                target="_blank"
-                rel="noreferrer"
-                className={`${getLinkButtonClass(bioPage.appearance.buttonStyle)} ${getLinkAnimationClassName(link.animationEffect)}`}
-                style={{ ...getLinkButtonStyle(bioPage.appearance.buttonStyle), ...getLinkAnimationStyle(contentIndex) }}
-              >
-                <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${getLinkIconClass(bioPage.appearance.buttonStyle)}`}><Link2 className="size-5" /></span>
-                <span className="min-w-0 flex-1">
-                  <span className={`block truncate text-base font-bold ${isDarkButton ? "text-white" : "text-slate-950"}`}>{link.title}</span>
-                  <span className={`mt-1 block truncate text-sm font-semibold ${isDarkButton ? "text-slate-300" : "text-slate-500"}`}>{getHost(link.url)}</span>
-                </span>
-                <span className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-200 ${isDarkButton ? "bg-white/10 text-white group-hover:bg-white group-hover:text-slate-950" : "bg-slate-100 text-slate-600 group-hover:bg-slate-950 group-hover:text-white"}`}><ArrowUpRight className="size-4" /></span>
-              </a>
-            );
+            return <BioLinkButton key={contentOrderKey(item)} link={link} buttonStyle={bioPage.appearance.buttonStyle} accentColor={accent} contentIndex={contentIndex} onClick={trackClick} />;
           })}
 
           {totalContent === 0 ? (

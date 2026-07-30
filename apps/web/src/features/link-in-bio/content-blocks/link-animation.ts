@@ -31,8 +31,13 @@ export function getLinkAnimationClassName(effect?: string) {
   return linkAnimationClassNames[normalizeLinkAnimationEffect(effect)];
 }
 
-export function getLinkAnimationStyle(index: number): React.CSSProperties {
+export function getLinkAnimationPreviewClassName(effect?: string) {
+  const className = getLinkAnimationClassName(effect);
+  return className ? `${className} link-bio-animation--live-preview` : "";
+}
+
+export function getLinkAnimationStyle(index: number, staggerMs = 180): React.CSSProperties {
   return {
-    "--link-animation-delay": `${Math.max(0, index) * 180}ms`,
+    "--link-animation-delay": `${Math.max(0, index) * staggerMs}ms`,
   } as React.CSSProperties;
 }

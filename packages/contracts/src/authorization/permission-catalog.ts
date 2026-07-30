@@ -241,6 +241,36 @@ export const permissionCatalog = [
     group: "support",
   },
   {
+    key: "announcements.view",
+    name: "Xem thông báo hệ thống",
+    description: "Xem danh sách, chi tiết và analytics thông báo.",
+    group: "announcements",
+  },
+  {
+    key: "announcements.create",
+    name: "Tạo thông báo hệ thống",
+    description: "Tạo và nhân bản thông báo hệ thống.",
+    group: "announcements",
+  },
+  {
+    key: "announcements.update",
+    name: "Sửa thông báo hệ thống",
+    description: "Cập nhật hoặc tạm dừng thông báo.",
+    group: "announcements",
+  },
+  {
+    key: "announcements.delete",
+    name: "Xóa thông báo hệ thống",
+    description: "Xóa mềm thông báo khỏi hệ thống.",
+    group: "announcements",
+  },
+  {
+    key: "announcements.publish",
+    name: "Phát hành thông báo hệ thống",
+    description: "Xuất bản thông báo tới member.",
+    group: "announcements",
+  },
+  {
     key: "languages.read",
     name: "Xem ngôn ngữ",
     description: "Xem danh mục ngôn ngữ của hệ thống.",

@@ -15,12 +15,22 @@ export function ManagedImagePicker({
   onOpenChange,
   selectedFileId,
   onSelect,
+  onSelectMany,
+  multiple = false,
+  maxFiles,
+  acceptedMimeTypes,
+  maxSize,
   title = "Chọn ảnh từ Media Manager",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedFileId?: string | null;
   onSelect: (file: ManagedFileDto) => void;
+  onSelectMany?: (files: ManagedFileDto[]) => void;
+  multiple?: boolean;
+  maxFiles?: number;
+  acceptedMimeTypes?: readonly string[];
+  maxSize?: number;
   title?: string;
 }) {
   const [files, setFiles] = React.useState<ManagedFileDto[]>([]);
@@ -38,7 +48,11 @@ export function ManagedImagePicker({
         status: "active",
         limit: 100,
       });
-      setFiles(response.items.filter((file) => file.mimeType.startsWith("image/")));
+      setFiles(response.items.filter((file) =>
+        file.mimeType.startsWith("image/") &&
+        (!acceptedMimeTypes || acceptedMimeTypes.includes(file.mimeType.toLowerCase())) &&
+        (!maxSize || file.size <= maxSize),
+      ));
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -48,7 +62,7 @@ export function ManagedImagePicker({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [acceptedMimeTypes, maxSize]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -57,17 +71,32 @@ export function ManagedImagePicker({
   }, [loadFiles, open]);
 
   async function handleFiles(selected: File[]) {
-    const image = selected.find((file) => file.type.startsWith("image/"));
-    if (!image) {
-      setError("Vui lòng chọn một file ảnh.");
+    const images = selected.filter((file) =>
+      file.type.startsWith("image/") &&
+      (!acceptedMimeTypes || acceptedMimeTypes.includes(file.type.toLowerCase())) &&
+      (!maxSize || file.size <= maxSize),
+    );
+    if (!images.length) {
+      setError("Ảnh không đúng định dạng hoặc vượt quá dung lượng cho phép.");
       return;
     }
+    const selectedImages = multiple ? images : images.slice(0, 1);
+    const uploadQueue = typeof maxFiles === "number"
+      ? selectedImages.slice(0, maxFiles)
+      : selectedImages;
+    if (!uploadQueue.length) return;
     setUploading(true);
     setError("");
     try {
-      const uploaded = await uploadFile(image, { purpose: "cover" });
-      setFiles((current) => [uploaded, ...current]);
-      onSelect(uploaded);
+      const uploaded = await Promise.all(
+        uploadQueue.map((image) => uploadFile(image, { purpose: "cover" })),
+      );
+      setFiles((current) => [...uploaded, ...current]);
+      if (multiple && onSelectMany) {
+        onSelectMany(uploaded);
+      } else {
+        onSelect(uploaded[0]);
+      }
       onOpenChange(false);
     } catch (uploadError) {
       setError(
@@ -118,6 +147,7 @@ export function ManagedImagePicker({
         isUploading: uploading,
         label: "Chọn ảnh",
         uploadingLabel: "Đang upload...",
+        multiple,
         onChange: handleInput,
         onFiles: handleFiles,
       }}

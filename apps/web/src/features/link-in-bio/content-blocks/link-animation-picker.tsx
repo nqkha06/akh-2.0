@@ -36,6 +36,18 @@ function AnimationOptions({
   selectedEffect: LinkAnimationEffect;
   onSelect: (effect: LinkAnimationEffect) => void;
 }) {
+  const [preview, setPreview] = useState<{ effect: LinkAnimationEffect; revision: number }>({
+    effect: selectedEffect,
+    revision: 0,
+  });
+
+  function replay(effect: LinkAnimationEffect) {
+    setPreview((current) => ({
+      effect,
+      revision: current.revision + 1,
+    }));
+  }
+
   return (
     <div className="grid grid-cols-2 gap-2 p-3 sm:p-4">
       {linkAnimationPresets.map(({ effect, label }) => {
@@ -46,7 +58,12 @@ function AnimationOptions({
             type="button"
             aria-pressed={selected}
             aria-label={`Dùng hiệu ứng ${label}`}
-            onClick={() => onSelect(effect)}
+            onClick={() => {
+              replay(effect);
+              onSelect(effect);
+            }}
+            onPointerEnter={() => replay(effect)}
+            onFocus={() => replay(effect)}
             className={cn(
               "link-animation-option relative min-h-20 rounded-lg border bg-background p-2.5 text-left outline-none transition-colors hover:bg-accent/45 focus-visible:ring-2 focus-visible:ring-ring",
               selected ? "border-primary bg-primary/5" : "border-border",
@@ -54,10 +71,12 @@ function AnimationOptions({
           >
             <span className="mb-2 flex h-7 items-center justify-center overflow-visible px-1">
               <span
+                key={`${effect}:${preview.effect === effect ? preview.revision : 0}`}
                 aria-hidden
                 className={cn(
                   "link-animation-option-preview block h-4 w-full max-w-20 rounded-full border border-primary/25 bg-primary/15",
                   getLinkAnimationClassName(effect),
+                  preview.effect === effect && effect !== "none" && "link-animation-option-preview--playing",
                 )}
               />
             </span>
@@ -88,7 +107,6 @@ export function LinkAnimationPicker({
 
   function select(nextEffect: LinkAnimationEffect) {
     onChange(nextEffect);
-    setOpen(false);
   }
 
   const triggerButton = (

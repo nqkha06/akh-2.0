@@ -1,17 +1,19 @@
 "use client"
+/* eslint-disable @next/next/no-img-element */
 
 import type React from "react"
 
 import { useState, type ComponentType } from "react"
 import {
+  Camera,
   ChevronDown,
   CircleCheck,
   Layers3,
-  Link as LinkIcon,
   Music,
   Palette,
   Settings,
   Shield,
+  Trash2,
   Users,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -27,7 +29,9 @@ import {
 
 import { BioWidgetEmbed } from "@/components/bio-widget-embed"
 import ImagePicker, { getYouTubeEmbedUrl, type BackgroundMedia } from "@/components/image-picker"
+import { ManagedImagePicker } from "@/components/media/managed-image-picker"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -41,6 +45,7 @@ import {
   type BioGalleryBlockDto,
   type CreateBioPagePayload,
   type LinkAnimationEffect,
+  getFilePreviewUrl,
 } from "@/lib/api-client"
 import {
   getSiteHost,
@@ -49,19 +54,17 @@ import {
 import {
   bioButtonStyles,
   getBioAccentColor,
-  getBioLinkClass,
-  getBioLinkIconClass,
-  getBioLinkIconStyle,
-  getBioLinkStyle,
   normalizeBioButtonStyle,
 } from "./bio-appearance"
+import { BioLinkButton } from "./bio-link-button"
 import { ContentSection } from "../content-blocks/content-section"
 import { BankDetailsRenderer, DividerRenderer } from "../content-blocks/simple-content-renderers"
 import { hasCompleteBankDetails } from "../content-blocks/simple-content-types"
-import { getLinkAnimationClassName, getLinkAnimationStyle } from "../content-blocks/link-animation"
 import { GalleryRenderer } from "../gallery/gallery-renderer"
 import {
   contentOrderKey,
+  GALLERY_ACCEPTED_MIME_TYPES,
+  GALLERY_IMAGE_MAX_SIZE,
   normalizeContentOrder,
 } from "../gallery/gallery-types"
 
@@ -82,6 +85,8 @@ interface CustomLink {
 interface ProfileDetails {
   name: string
   title: string
+  avatarFileId?: string
+  avatarUrl?: string
 }
 
 interface AppearanceSettings {
@@ -90,6 +95,7 @@ interface AppearanceSettings {
   backgroundImage?: string
   backgroundMediaType?: "image" | "video" | "youtube"
   backgroundMediaUrl?: string
+  backgroundFileId?: string
   selectedBackgroundId?: string
 }
 
@@ -168,6 +174,8 @@ export default function LinkInBioGenerator({
   const [profileDetails, setProfileDetails] = useState<ProfileDetails>({
     name: initialBio?.name || "",
     title: initialBio?.title || "",
+    avatarFileId: initialBio?.appearance.avatarFileId || undefined,
+    avatarUrl: initialBio?.appearance.avatarUrl || undefined,
   })
   const [customSlug, setCustomSlug] = useState(initialBio?.slug || "")
   const [status, setStatus] = useState<"published" | "draft">(
@@ -196,12 +204,14 @@ export default function LinkInBioGenerator({
     backgroundImage: initialBio?.appearance.backgroundImage || undefined,
     backgroundMediaType: initialBio?.appearance.backgroundMediaType || undefined,
     backgroundMediaUrl: initialBio?.appearance.backgroundMediaUrl || undefined,
+    backgroundFileId: initialBio?.appearance.backgroundFileId || undefined,
     selectedBackgroundId: initialBio?.appearance.selectedBackgroundId || undefined,
   })
   const [hiddenLinks, setHiddenLinks] = useState<string[]>(initialBio?.hiddenLinks || [])
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
   const [savedBio, setSavedBio] = useState<BioPageDto | null>(null)
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false)
 
   const setSectionOpen = (section: EditorSectionKey, open: boolean) => {
     setExpandedSections((current) => ({ ...current, [section]: open }))
@@ -256,7 +266,12 @@ export default function LinkInBioGenerator({
     })),
     contentOrder: normalizeContentOrder(contentOrder, { socials: socialLinks, widgets, galleries, dividers, bankDetails, links: customLinks }),
     hiddenLinks,
-    appearance: appearanceSettings,
+    appearance: {
+      ...appearanceSettings,
+      backgroundImage: appearanceSettings.backgroundFileId ? undefined : appearanceSettings.backgroundImage,
+      backgroundMediaUrl: appearanceSettings.backgroundFileId ? undefined : appearanceSettings.backgroundMediaUrl,
+      avatarFileId: profileDetails.avatarFileId,
+    },
   })
 
   const handleSaveBio = async (saveMode: "draft" | "published" | "current" = "current") => {
@@ -313,7 +328,7 @@ export default function LinkInBioGenerator({
   }
 
   const selectedBackgroundMedia: BackgroundMedia | null = appearanceSettings.backgroundMediaType && appearanceSettings.backgroundMediaUrl
-    ? { id: appearanceSettings.selectedBackgroundId || appearanceSettings.backgroundMediaType, type: appearanceSettings.backgroundMediaType, url: appearanceSettings.backgroundMediaUrl }
+    ? { id: appearanceSettings.selectedBackgroundId || appearanceSettings.backgroundMediaType, fileId: appearanceSettings.backgroundFileId, type: appearanceSettings.backgroundMediaType, url: appearanceSettings.backgroundMediaUrl }
     : appearanceSettings.backgroundImage
       ? { id: "legacy-image", type: "image", url: appearanceSettings.backgroundImage }
       : null
@@ -324,6 +339,7 @@ export default function LinkInBioGenerator({
       backgroundImage: media?.type === "image" ? media.url : undefined,
       backgroundMediaType: media?.type,
       backgroundMediaUrl: media?.url,
+      backgroundFileId: media?.type === "image" ? media.fileId : undefined,
       selectedBackgroundId: media?.id,
     }))
   }
@@ -356,6 +372,26 @@ export default function LinkInBioGenerator({
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start">
         <div className="min-w-0 space-y-3">
           <EditorSection title="Thông tin trang" icon={Settings} open={expandedSections.details} onOpenChange={(open) => setSectionOpen("details", open)}>
+            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/15 p-3 sm:flex-row sm:items-center">
+              <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-border bg-slate-950 text-xl font-semibold text-white shadow-sm">
+                <span>{profileDetails.name.trim().slice(0, 1).toUpperCase() || "R"}</span>
+                {profileDetails.avatarUrl ? <img src={profileDetails.avatarUrl} alt="Ảnh đại diện hiện tại" className="absolute inset-0 size-full object-cover" onError={(event) => { event.currentTarget.hidden = true }} /> : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">Ảnh đại diện</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">Chọn ảnh từ Media Manager hoặc upload ảnh mới ngay trong dialog.</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {profileDetails.avatarFileId ? (
+                  <Button type="button" size="icon-sm" variant="ghost" aria-label="Gỡ ảnh đại diện" onClick={() => setProfileDetails((current) => ({ ...current, avatarFileId: undefined, avatarUrl: undefined }))}>
+                    <Trash2 />
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" variant="outline" onClick={() => setAvatarPickerOpen(true)}>
+                  <Camera />{profileDetails.avatarFileId ? "Thay ảnh" : "Chọn ảnh"}
+                </Button>
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <FieldLabel required>Tên trang</FieldLabel>
@@ -450,7 +486,10 @@ export default function LinkInBioGenerator({
                   <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-white/70 bg-white/78 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
                     <div className="space-y-4 px-4 py-6 sm:px-5">
                       <header className="text-center">
-                        <div className="mx-auto grid size-20 place-items-center rounded-2xl border-4 border-white bg-slate-950 text-2xl font-semibold text-white shadow-lg">{profileDetails.name.trim().slice(0, 1).toUpperCase() || "R"}</div>
+                        <div className="relative mx-auto grid size-20 place-items-center overflow-hidden rounded-2xl border-4 border-white bg-slate-950 text-2xl font-semibold text-white shadow-lg">
+                          <span>{profileDetails.name.trim().slice(0, 1).toUpperCase() || "R"}</span>
+                          {profileDetails.avatarUrl ? <img src={profileDetails.avatarUrl} alt="" className="absolute inset-0 size-full object-cover" onError={(event) => { event.currentTarget.hidden = true }} /> : null}
+                        </div>
                         <h4 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">{profileDetails.name || "Tên của bạn"}</h4>
                         <p className="mt-1 truncate text-xs font-medium text-slate-500">
                           {siteHost ? `${siteHost}/b/` : "/b/"}{customSlug || "ten-cua-ban"}
@@ -482,7 +521,7 @@ export default function LinkInBioGenerator({
                           }
                           const link = customLinks.find((entry) => entry.id === item.id)
                           if (!link || hiddenLinks.includes(link.id)) return null
-                          return <button key={contentOrderKey(item)} type="button" className={`${getBioLinkClass(selectedButtonStyle)} ${getLinkAnimationClassName(link.animationEffect)}`} style={{ ...getBioLinkStyle(selectedButtonStyle, accentColor), ...getLinkAnimationStyle(contentIndex), "--bio-accent": accentColor } as React.CSSProperties}><span className="min-w-0 truncate">{link.title || "Liên kết chưa đặt tên"}</span><span className={`grid size-8 shrink-0 place-items-center rounded-full ${getBioLinkIconClass(selectedButtonStyle)}`} style={getBioLinkIconStyle(selectedButtonStyle, accentColor)}><LinkIcon className="size-4" /></span></button>
+                          return <BioLinkButton key={`${contentOrderKey(item)}:${link.animationEffect || "none"}`} link={link} buttonStyle={selectedButtonStyle} accentColor={accentColor} contentIndex={contentIndex} preview />
                         })}
                       </div>
                       {customLinks.every((link) => hiddenLinks.includes(link.id)) && socialLinks.every((social) => social.enabled === false) && widgets.every((widget) => widget.enabled === false) && galleries.every((gallery) => !gallery.enabled || gallery.images.length === 0) && dividers.every((block) => !block.enabled) && bankDetails.every((block) => !block.enabled || !hasCompleteBankDetails(block)) ? <div className="rounded-xl border border-dashed border-slate-300 bg-white/55 px-4 py-8 text-center text-sm text-slate-500">Thêm nội dung để xem trước tại đây.</div> : null}
@@ -497,6 +536,19 @@ export default function LinkInBioGenerator({
           </div>
         </aside>
       </div>
+      <ManagedImagePicker
+        open={avatarPickerOpen}
+        onOpenChange={setAvatarPickerOpen}
+        selectedFileId={profileDetails.avatarFileId}
+        acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
+        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        title="Chọn ảnh đại diện từ Media Manager"
+        onSelect={(file) => setProfileDetails((current) => ({
+          ...current,
+          avatarFileId: file.id,
+          avatarUrl: getFilePreviewUrl(file),
+        }))}
+      />
     </form>
   )
 }

@@ -5,6 +5,7 @@ import { validateEnvironment } from "./config/env.validation";
 
 import { PrismaModule } from "./database/prisma/prisma.module";
 import { AdminMediaModule } from "./modules/admin-media/admin-media.module";
+import { AnnouncementsModule } from "./modules/announcements/announcements.module";
 import { AdminDashboardModule } from "./modules/admin-dashboard/admin-dashboard.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { AuthorizationModule } from "./modules/authorization/authorization.module";
@@ -41,6 +42,7 @@ const visitAggregationScheduler =
     PrismaModule,
     AdminDashboardModule,
     AdminMediaModule,
+    AnnouncementsModule,
     AuthModule,
     AuthorizationModule,
     BioPagesModule,

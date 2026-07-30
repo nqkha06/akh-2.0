@@ -45,7 +45,14 @@ function validPayload() {
     dividers: [] as Array<Record<string, unknown>>,
     bankDetails: [] as Array<Record<string, unknown>>,
     contentOrder: [{ type: "gallery", id: "gallery-1" }],
-    appearance: { buttonStyle: "rounded", backgroundColor: "#ffffff" },
+    appearance: {
+      buttonStyle: "rounded",
+      backgroundColor: "#ffffff",
+      avatarFileId: undefined as string | undefined,
+      backgroundFileId: undefined as string | undefined,
+      backgroundMediaType: undefined as "image" | "video" | "youtube" | undefined,
+      backgroundMediaUrl: undefined as string | undefined,
+    },
   };
 }
 
@@ -53,6 +60,26 @@ describe("Bio gallery DTO", () => {
   it("accepts a complete gallery configuration", async () => {
     const errors = await validate(plainToInstance(CreateBioPageDto, validPayload()));
     assert.equal(errors.length, 0);
+  });
+
+  it("accepts Media Manager references for avatar and image background", async () => {
+    const payload = validPayload();
+    payload.appearance = {
+      ...payload.appearance,
+      avatarFileId: "1",
+      backgroundFileId: "1",
+      backgroundMediaType: "image",
+      backgroundMediaUrl: "https://example.com/api/backend/member/files/1/preview",
+    };
+    const errors = await validate(plainToInstance(CreateBioPageDto, payload));
+    assert.equal(errors.length, 0);
+  });
+
+  it("rejects malformed Media Manager file identifiers", async () => {
+    const payload = validPayload();
+    payload.appearance = { ...payload.appearance, avatarFileId: "x".repeat(33) };
+    const errors = await validate(plainToInstance(CreateBioPageDto, payload));
+    assert.ok(errors.length > 0);
   });
 
   it("rejects unsafe links, invalid breakpoints and more than 20 images", async () => {

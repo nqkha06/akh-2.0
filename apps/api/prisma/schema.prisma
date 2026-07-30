@@ -54,6 +54,9 @@ model User {
   meta                     UserMeta[]
   bioPages                 BioPage[]
   accessLogs               LinkAccessLog[]
+  createdAnnouncements     Announcement[]             @relation("AnnouncementCreatedBy")
+  updatedAnnouncements     Announcement[]             @relation("AnnouncementUpdatedBy")
+  announcementStates       AnnouncementUser[]
 
   @@index([status])
   @@index([monetizationLevelId])
@@ -756,6 +759,63 @@ model SupportTicketAttachment {
   @@index([messageId])
   @@index([uploadedById])
   @@map("support_ticket_attachments")
+}
+
+model Announcement {
+  id                      Int                @id @default(autoincrement())
+  title                   String
+  slug                    String             @unique
+  summary                 String?
+  content                 String
+  type                    String             @default("info")
+  priority                String             @default("normal")
+  displayType             String             @default("notification") @map("display_type")
+  status                  String             @default("draft")
+  targetType              String             @default("all") @map("target_type")
+  targetRulesJson         String             @default("{}") @map("target_rules")
+  actionLabel             String?            @map("action_label")
+  actionUrl               String?            @map("action_url")
+  isDismissible           Boolean            @default(true) @map("is_dismissible")
+  requiresAcknowledgement Boolean            @default(false) @map("requires_acknowledgement")
+  startsAt                DateTime?           @map("starts_at")
+  endsAt                  DateTime?           @map("ends_at")
+  publishedAt             DateTime?           @map("published_at")
+  createdById             Int?                @map("created_by")
+  updatedById             Int?                @map("updated_by")
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  deletedAt               DateTime?           @map("deleted_at")
+  createdBy               User?               @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy               User?               @relation("AnnouncementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  users                   AnnouncementUser[]
+
+  @@index([status, startsAt, endsAt])
+  @@index([displayType, status])
+  @@index([priority, createdAt])
+  @@index([targetType])
+  @@index([deletedAt])
+  @@map("announcements")
+}
+
+model AnnouncementUser {
+  id             Int          @id @default(autoincrement())
+  announcementId Int          @map("announcement_id")
+  userId         Int          @map("user_id")
+  seenAt         DateTime?    @map("seen_at")
+  readAt         DateTime?    @map("read_at")
+  dismissedAt    DateTime?    @map("dismissed_at")
+  acknowledgedAt DateTime?    @map("acknowledged_at")
+  ctaClickedAt   DateTime?    @map("cta_clicked_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId, readAt])
+  @@index([userId, dismissedAt])
+  @@index([announcementId, seenAt])
+  @@map("announcement_users")
 }
 
 model WebsiteSettings {

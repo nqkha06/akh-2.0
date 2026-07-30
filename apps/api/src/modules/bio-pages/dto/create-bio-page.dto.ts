@@ -298,8 +298,18 @@ class BioAppearanceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(32)
+  backgroundFileId?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(120)
   selectedBackgroundId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  avatarFileId?: string;
 }
 
 export class CreateBioPageDto {

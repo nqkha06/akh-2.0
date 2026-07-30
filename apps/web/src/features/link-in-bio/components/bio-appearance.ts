@@ -46,38 +46,38 @@ export function getBioAccentColor(value?: string) {
 }
 
 export function isDarkBioButtonStyle(value: string) {
-  return ["rounded", "glow", "accent-gradient", "neon-outline"].includes(value)
+  return ["rounded", "glow", "accent-gradient", "neon-outline"].includes(normalizeBioButtonStyle(value))
 }
 
 export function getBioLinkClass(value: string, compact = false) {
   const style = normalizeBioButtonStyle(value)
   const base = compact
     ? "flex w-full items-center justify-between gap-2 px-3 text-left text-xs font-semibold"
-    : "group flex w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+    : "group relative flex w-full min-w-0 items-center gap-3 px-3.5 py-3 text-left transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bio-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-white/80"
 
   switch (style) {
     case "minimalist":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-xl border border-slate-200 bg-white text-slate-950 shadow-none`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-xl border border-slate-200 bg-white text-slate-950 shadow-none hover:border-slate-300 hover:bg-slate-50`
     case "mineral-rounded":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-[1.35rem] border border-white/80 bg-white/80 text-slate-950 shadow-[0_10px_28px_rgba(15,23,42,0.10)] backdrop-blur-md`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-[1.25rem] border border-white/80 bg-white/82 text-slate-950 shadow-[0_10px_28px_rgba(15,23,42,0.10)] backdrop-blur-md hover:bg-white/95`
     case "mineral-square":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-md border-2 border-slate-950 bg-white text-slate-950 shadow-[4px_4px_0_rgba(15,23,42,1)]`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-md border-2 border-slate-950 bg-white text-slate-950 shadow-[4px_4px_0_rgba(15,23,42,1)] hover:bg-slate-50`
     case "rounded-border":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-full border-2 bg-white text-slate-950`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-full border-2 bg-white text-slate-950 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:bg-slate-50`
     case "glow":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-[1.45rem] border border-slate-700 bg-slate-950 text-white`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-[1.25rem] border border-slate-700 bg-slate-950 text-white hover:bg-slate-900`
     case "soft-shadow":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-2xl border border-slate-100 bg-white text-slate-950 shadow-[0_14px_34px_rgba(15,23,42,0.14)]`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-2xl border border-slate-100 bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.12)] hover:border-slate-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.15)]`
     case "accent-gradient":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-[1.25rem] border border-transparent text-white shadow-[0_14px_34px_rgba(15,23,42,0.16)]`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-[1.25rem] border border-transparent text-white shadow-[0_12px_32px_rgba(15,23,42,0.16)]`
     case "glass-outline":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-[1.25rem] border border-white/80 bg-white/65 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-[1.25rem] border border-white/80 bg-white/70 text-slate-950 shadow-[0_10px_28px_rgba(15,23,42,0.10)] backdrop-blur-xl hover:bg-white/85`
     case "neon-outline":
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-full border-2 bg-slate-950 text-white`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-full border-2 bg-slate-950 text-white hover:bg-slate-900`
     case "compact-sharp":
-      return `${base} ${compact ? "h-8" : "min-h-11"} rounded-md border border-slate-300 bg-white px-3 text-slate-950 shadow-sm`
+      return `${base} ${compact ? "h-8" : "min-h-14"} rounded-md border border-slate-300 bg-white px-3 py-2.5 text-slate-950 shadow-sm hover:border-slate-400 hover:bg-slate-50`
     default:
-      return `${base} ${compact ? "h-9" : "min-h-14"} rounded-full border border-slate-950 bg-slate-950 text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)]`
+      return `${base} ${compact ? "h-9" : "min-h-16"} rounded-full border border-slate-950 bg-slate-950 text-white shadow-[0_10px_26px_rgba(15,23,42,0.18)] hover:bg-slate-900`
   }
 }
 

@@ -76,7 +76,8 @@
       "new": "New",
       "loyalty": "Loyalty",
       "account": "Account",
-      "support": "Support"
+      "support": "Support",
+      "announcements": "Announcements"
     },
     "topbar": {
       "notifications": "Notifications",

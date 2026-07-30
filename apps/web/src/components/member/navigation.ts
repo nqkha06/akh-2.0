@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  Bell,
   CircleHelp,
   FileText,
   Folder,
@@ -22,6 +23,7 @@ export type NavigationItem = {
     | "nav.loyalty"
     | "nav.account"
     | "nav.support"
+    | "nav.announcements"
   href: string
   icon: LucideIcon
   permission?: string
@@ -68,6 +70,7 @@ export const navigationGroups: NavigationGroup[] = [
   {
     labelKey: "groups.system",
     items: [
+      { titleKey: "nav.announcements", href: "/member/announcements", icon: Bell },
       { titleKey: "nav.account", href: "/member/account", icon: User },
       { titleKey: "nav.support", href: "/member/support", icon: CircleHelp },
     ],
