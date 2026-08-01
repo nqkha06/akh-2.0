@@ -1,4 +1,5 @@
 import type { BioAppearanceDto } from "@/lib/api-client"
+import { getBioBackgroundPresetById } from "../backgrounds/background-presets"
 import { bioButtonStyles, normalizeBioButtonStyle } from "./bio-appearance"
 
 function getThemeName(appearance: BioAppearanceDto) {
@@ -8,6 +9,8 @@ function getThemeName(appearance: BioAppearanceDto) {
 
   if (appearance.backgroundMediaType === "video") return `${buttonStyle} · Video`
   if (appearance.backgroundMediaType === "youtube") return `${buttonStyle} · YouTube`
+  const preset = getBioBackgroundPresetById(appearance.selectedBackgroundId)
+  if (preset) return `${buttonStyle} · ${preset.name}`
   if (appearance.backgroundImage || appearance.backgroundMediaUrl) return `${buttonStyle} · Hình ảnh`
   return buttonStyle
 }

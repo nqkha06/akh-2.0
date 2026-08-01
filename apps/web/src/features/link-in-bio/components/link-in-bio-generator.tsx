@@ -58,6 +58,7 @@ import {
 } from "./bio-appearance"
 import { BioLinkButton } from "./bio-link-button"
 import { ContentSection } from "../content-blocks/content-section"
+import { getBioBackgroundPresetById } from "../backgrounds/background-presets"
 import { BankDetailsRenderer, DividerRenderer } from "../content-blocks/simple-content-renderers"
 import { hasCompleteBankDetails } from "../content-blocks/simple-content-types"
 import { GalleryRenderer } from "../gallery/gallery-renderer"
@@ -330,15 +331,19 @@ export default function LinkInBioGenerator({
   const selectedBackgroundMedia: BackgroundMedia | null = appearanceSettings.backgroundMediaType && appearanceSettings.backgroundMediaUrl
     ? { id: appearanceSettings.selectedBackgroundId || appearanceSettings.backgroundMediaType, fileId: appearanceSettings.backgroundFileId, type: appearanceSettings.backgroundMediaType, url: appearanceSettings.backgroundMediaUrl }
     : appearanceSettings.backgroundImage
-      ? { id: "legacy-image", type: "image", url: appearanceSettings.backgroundImage }
+      ? { id: appearanceSettings.selectedBackgroundId || "legacy-image", type: "image", url: appearanceSettings.backgroundImage }
       : null
 
   const selectBackgroundMedia = (media: BackgroundMedia | null) => {
+    const preset = media?.type === "image"
+      ? getBioBackgroundPresetById(media.id)
+      : undefined
+
     setAppearanceSettings((current) => ({
       ...current,
       backgroundImage: media?.type === "image" ? media.url : undefined,
-      backgroundMediaType: media?.type,
-      backgroundMediaUrl: media?.url,
+      backgroundMediaType: preset ? undefined : media?.type,
+      backgroundMediaUrl: preset ? undefined : media?.url,
       backgroundFileId: media?.type === "image" ? media.fileId : undefined,
       selectedBackgroundId: media?.id,
     }))

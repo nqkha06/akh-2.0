@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { ImageIcon, Images, Link2, PlayCircle, Video } from "lucide-react";
+import { ImageIcon, Images, Link2, Palette, PlayCircle, Video } from "lucide-react";
 import { useState } from "react";
 
 import { ManagedImagePicker } from "@/components/media/managed-image-picker";
@@ -16,6 +16,8 @@ import {
   GALLERY_ACCEPTED_MIME_TYPES,
   GALLERY_IMAGE_MAX_SIZE,
 } from "@/features/link-in-bio/gallery/gallery-types";
+import { BackgroundPresetPicker } from "@/features/link-in-bio/backgrounds/background-preset-picker";
+import { getBioBackgroundPresetById } from "@/features/link-in-bio/backgrounds/background-presets";
 
 export type BackgroundMediaType = "image" | "video" | "youtube";
 
@@ -69,6 +71,16 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
   const [youtubeUrl, setYoutubeUrl] = useState(selectedMedia?.type === "youtube" ? selectedMedia.url : "");
   const filteredVideos = backgroundVideos.filter((video) => videoCategory === "All" || video.categories.some((category) => category === videoCategory));
   const youtubeEmbedUrl = getYouTubeEmbedUrl(youtubeUrl);
+  const selectedPreset = selectedMedia?.type === "image"
+    ? getBioBackgroundPresetById(selectedMedia.id)
+    : undefined;
+  const defaultTab = selectedPreset
+    ? "presets"
+    : selectedMedia?.type === "video"
+      ? "videos"
+      : selectedMedia?.type === "youtube"
+        ? "embed"
+        : "images";
 
   function useYouTubeBackground() {
     if (!youtubeEmbedUrl) return;
@@ -77,12 +89,24 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
 
   return (
     <div className="rounded-lg border bg-card p-3">
-      <Tabs defaultValue={selectedMedia?.type === "video" ? "videos" : selectedMedia?.type === "youtube" ? "embed" : "images"}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="images"><ImageIcon />Ảnh</TabsTrigger>
+          <TabsTrigger value="presets"><Palette />Mẫu</TabsTrigger>
+          <TabsTrigger value="images"><Images />Thư viện</TabsTrigger>
           <TabsTrigger value="videos"><Video />Video</TabsTrigger>
           <TabsTrigger value="embed"><Link2 />Nhúng YT</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="presets" className="mt-4">
+          <BackgroundPresetPicker
+            selectedPresetId={selectedPreset?.id}
+            onSelect={(preset) => onMediaSelect({
+              id: preset.id,
+              type: "image",
+              url: preset.imageUrl,
+            })}
+          />
+        </TabsContent>
 
         <TabsContent value="images" className="mt-4">
           <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-muted/15 p-3">
@@ -92,11 +116,11 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
                 : <ImageIcon className="size-5" aria-hidden />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground">{selectedMedia?.type === "image" ? "Ảnh nền đã chọn" : "Chưa chọn ảnh nền"}</p>
+              <p className="text-sm font-medium text-foreground">{selectedMedia?.type === "image" && !selectedPreset ? "Ảnh nền đã chọn" : "Dùng ảnh của bạn"}</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">Chọn ảnh có sẵn hoặc upload ảnh mới trong Media Manager.</p>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={() => setMediaManagerOpen(true)}>
-              <Images />{selectedMedia?.type === "image" ? "Thay ảnh" : "Chọn ảnh"}
+              <ImageIcon />{selectedMedia?.type === "image" && !selectedPreset ? "Thay ảnh" : "Chọn ảnh"}
             </Button>
           </div>
         </TabsContent>
