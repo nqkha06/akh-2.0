@@ -29,8 +29,8 @@ const sharedFields = {
     .refine((value) => !value || URL.canParse(value), "Avatar URL không hợp lệ."),
   roles: z.array(z.string()).min(1, "Người dùng cần ít nhất một role."),
   permissions: z.array(z.string()),
+  monetizationLevelId: z.number().int().positive().nullable(),
   status: z.enum(userStatuses),
-  emailVerified: z.boolean(),
 };
 
 export const userEditorFormSchema = z.discriminatedUnion("mode", [

@@ -49,12 +49,6 @@ export function deleteAdminUsers(ids: number[]) {
   });
 }
 
-export function verifyAdminUserEmail(id: number) {
-  return request<AdminUserDetail>(`/admin/users/${id}/verify-email`, {
-    method: "POST",
-  });
-}
-
 export function revokeAdminUserSessions(id: number) {
   return request<{ id: number; revokedSessions: number }>(
     `/admin/users/${id}/revoke-sessions`,

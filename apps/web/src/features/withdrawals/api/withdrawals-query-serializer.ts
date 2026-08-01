@@ -26,6 +26,7 @@ export function serializeWithdrawalsTableQuery(
   });
 
   if (state.member.trim()) query.set("search", state.member.trim());
+  if (state.userId) query.set("userId", String(state.userId));
   if (state.status.length) query.set("status", state.status.join(","));
 
   return query.toString();

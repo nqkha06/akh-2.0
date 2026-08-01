@@ -30,6 +30,7 @@ export const socialLinksSearchParamsCache = createSearchParamsCache({
   ]),
   title: parseAsString.withDefault(""),
   owner: parseAsString.withDefault(""),
+  userId: parseAsInteger,
   status: parseAsArrayOf(parseAsStringEnum(statuses)).withDefault([]),
   destinationType: parseAsArrayOf(
     parseAsStringEnum(destinationTypes),

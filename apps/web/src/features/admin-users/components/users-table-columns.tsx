@@ -2,6 +2,7 @@
 
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
+  Award,
   Ban,
   CalendarDays,
   CheckCircle2,
@@ -10,12 +11,12 @@ import {
   Eye,
   KeyRound,
   LockKeyhole,
-  MailCheck,
   Pencil,
   Shield,
   Trash2,
   UserRound,
   WalletCards,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -47,7 +48,7 @@ import { formatDate } from "@/lib/format";
 
 export type UserRowAction = {
   row: Row<AdminUserListItem>;
-  variant: "delete" | "verify-email" | "revoke-sessions";
+  variant: "delete" | "revoke-sessions";
 };
 
 export function getUsersTableColumns({
@@ -55,7 +56,6 @@ export function getUsersTableColumns({
   canUpdate,
   canDelete,
   canManageStatus,
-  canVerifyEmail,
   canRevokeSessions,
   roleOptions,
   onStatusChange,
@@ -65,7 +65,6 @@ export function getUsersTableColumns({
   canUpdate: boolean;
   canDelete: boolean;
   canManageStatus: boolean;
-  canVerifyEmail: boolean;
   canRevokeSessions: boolean;
   roleOptions: Array<{ label: string; value: string; icon: typeof Shield }>;
   onStatusChange: (user: AdminUserListItem, status: UserStatus) => void;
@@ -198,6 +197,49 @@ export function getUsersTableColumns({
         icon: Shield,
       },
       enableColumnFilter: true,
+      enableSorting: false,
+    },
+    {
+      id: "loyaltyTier",
+      accessorFn: (row) => row.loyaltyTier?.name || "Chưa có",
+      header: "Tier",
+      cell: ({ row }) =>
+        row.original.loyaltyTier ? (
+          <Badge variant="secondary" className="whitespace-nowrap">
+            <Award className="size-3" /> {row.original.loyaltyTier.name}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-xs">Chưa có</span>
+        ),
+      meta: {
+        label: "Tier",
+        icon: Award,
+      },
+      enableSorting: false,
+    },
+    {
+      id: "monetizationLevel",
+      accessorFn: (row) => row.monetizationLevel?.name || "Chưa cấu hình",
+      header: "Cấp kiếm tiền",
+      cell: ({ row }) =>
+        row.original.monetizationLevel ? (
+          <div className="min-w-32">
+            <p className="whitespace-nowrap font-medium text-sm">
+              {row.original.monetizationLevel.name}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {row.original.usesDefaultMonetizationLevel
+                ? "Mặc định hệ thống"
+                : "Gán riêng"}
+            </p>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs">Chưa cấu hình</span>
+        ),
+      meta: {
+        label: "Cấp kiếm tiền",
+        icon: Zap,
+      },
       enableSorting: false,
     },
     {
@@ -354,15 +396,6 @@ export function getUsersTableColumns({
                   </DropdownMenuItem>
                 )}
               </>
-            ) : null}
-            {canVerifyEmail && !row.original.emailVerified ? (
-              <DropdownMenuItem
-                onSelect={() =>
-                  setRowAction({ row, variant: "verify-email" })
-                }
-              >
-                <MailCheck /> Xác minh email
-              </DropdownMenuItem>
             ) : null}
             {canRevokeSessions &&
             row.original.id !== currentUserId &&

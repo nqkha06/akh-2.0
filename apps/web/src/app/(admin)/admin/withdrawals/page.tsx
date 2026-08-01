@@ -55,5 +55,7 @@ async function WithdrawalsTableLoader({
 }) {
   const search = withdrawalsSearchParamsCache.parse(await searchParams);
   const result = await getAdminWithdrawalsTableData(search);
-  return <AdminWithdrawalsTable {...result} />;
+  return (
+    <AdminWithdrawalsTable {...result} filteredUserId={search.userId} />
+  );
 }

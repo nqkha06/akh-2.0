@@ -55,7 +55,6 @@ export function UsersTable({
   const canUpdate = permissions.includes("users.update");
   const canDelete = permissions.includes("users.delete");
   const canManageStatus = permissions.includes("users.manage-status");
-  const canVerifyEmail = permissions.includes("users.verify-email");
   const canRevokeSessions = permissions.includes("users.revoke-sessions");
   const router = useRouter();
   const [rowAction, setRowAction] = React.useState<UserRowAction | null>(null);
@@ -97,7 +96,6 @@ export function UsersTable({
         canDelete,
         canUpdate,
         canManageStatus,
-        canVerifyEmail,
         canRevokeSessions,
         roleOptions: accessOptions.roles.map((role) => ({
           label: role.name,
@@ -115,7 +113,6 @@ export function UsersTable({
       canManageStatus,
       canRevokeSessions,
       canUpdate,
-      canVerifyEmail,
       changeOneStatus,
       currentUserId,
       mutatingId,
@@ -132,6 +129,8 @@ export function UsersTable({
       sorting: [{ id: "createdAt", desc: true }],
       columnVisibility: {
         email: false,
+        balance: false,
+        createdAt: false,
         updatedAt: false,
         activeSessionsCount: false,
       },

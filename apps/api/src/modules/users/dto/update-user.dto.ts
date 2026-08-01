@@ -1,15 +1,17 @@
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsEmail,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   IsUrl,
   Matches,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 
@@ -58,4 +60,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsIn(USER_STATUSES)
   status?: UserStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  monetizationLevelId?: number | null;
 }

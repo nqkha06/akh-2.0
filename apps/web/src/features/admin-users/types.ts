@@ -24,12 +24,28 @@ export type AccessPermission = {
   group: string;
 };
 
+export type UserLoyaltyTier = {
+  id: number;
+  key: string;
+  name: string;
+  iconKey: string | null;
+  minimumValidViews: number;
+};
+
+export type UserMonetizationLevel = {
+  id: number;
+  key: string;
+  name: string;
+  status: string;
+  isDefault: boolean;
+};
+
+export type MonetizationLevelOption = UserMonetizationLevel;
+
 export type AdminUserListItem = {
   id: number;
   name: string;
   email: string;
-  emailVerifiedAt: string | null;
-  emailVerified: boolean;
   avatar: string | null;
   balance: string;
   status: UserStatus;
@@ -37,14 +53,59 @@ export type AdminUserListItem = {
   roles: AccessRole[];
   directPermissions: string[];
   permissions: string[];
+  loyaltyTier: UserLoyaltyTier | null;
+  loyaltyCurrentValue: number;
+  loyaltyWindowDays: number;
+  monetizationLevel: UserMonetizationLevel | null;
+  selectedMonetizationLevelId: number | null;
+  usesDefaultMonetizationLevel: boolean;
   linksCount: number;
   activeSessionsCount: number;
+  paymentMethodsCount: number;
+  withdrawalsCount: number;
   createdAt: string;
   updatedAt: string;
 };
 
 export type AdminUser = AdminUserListItem;
-export type AdminUserDetail = AdminUserListItem;
+
+export type AdminUserPaymentMethod = {
+  id: number;
+  paymentMethodId: number;
+  name: string;
+  status: string;
+  details: Array<{ key: string; label: string; value: string }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserDetail = AdminUserListItem & {
+  referralCode: string | null;
+  referrer: { id: number; name: string; email: string } | null;
+  storage: {
+    limitBytes: string | null;
+    usedBytes: string;
+    reservedBytes: string;
+  };
+  socialAccounts: Array<{
+    id: number;
+    provider: string;
+    connectedAt: string;
+  }>;
+  paymentMethods: AdminUserPaymentMethod[];
+  relationshipCounts: {
+    links: number;
+    snippets: number;
+    files: number;
+    bioPages: number;
+    paymentMethods: number;
+    withdrawals: number;
+    referrals: number;
+    supportTickets: number;
+    commissions: number;
+    sessions: number;
+  };
+};
 
 export type AdminUserSessionStatus = "active" | "revoked" | "expired";
 
@@ -69,7 +130,7 @@ export type CreateAdminUserPayload = {
   roles: string[];
   permissions: string[];
   status: UserStatus;
-  emailVerified: boolean;
+  monetizationLevelId?: number | null;
 };
 
 export type UpdateAdminUserPayload = {
@@ -79,6 +140,7 @@ export type UpdateAdminUserPayload = {
   roles?: string[];
   permissions?: string[];
   status?: UserStatus;
+  monetizationLevelId?: number | null;
 };
 
 export type NestPaginatedUsersResponse = {
@@ -100,4 +162,5 @@ export type UsersTableData = {
 export type UsersAccessOptions = {
   roles: AccessRole[];
   permissions: AccessPermission[];
+  monetizationLevels: MonetizationLevelOption[];
 };

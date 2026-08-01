@@ -14,8 +14,8 @@ describe("Admin Users form schema", () => {
       confirmPassword: "Secure123",
       roles: ["member"],
       permissions: [],
+      monetizationLevelId: null,
       status: "active",
-      emailVerified: false,
     });
     assert.equal(valid.success, true);
     if (valid.success) {
@@ -34,8 +34,8 @@ describe("Admin Users form schema", () => {
       confirmPassword: "different",
       roles: [],
       permissions: [],
+      monetizationLevelId: null,
       status: "active",
-      emailVerified: false,
     });
     assert.equal(invalid.success, false);
     if (!invalid.success) {

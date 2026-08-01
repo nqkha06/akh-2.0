@@ -3,13 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
+  Award,
   Eye,
   EyeOff,
   ImageIcon,
   Loader2,
   Save,
-  Shield,
-  UserRound,
+  Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -44,7 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import {
@@ -62,6 +61,7 @@ import type {
   UsersAccessOptions,
 } from "@/features/admin-users/types";
 import { userStatusConfig } from "@/features/admin-users/user-status";
+import { cn } from "@/lib/utils";
 
 export function UserEditor({
   user,
@@ -76,7 +76,6 @@ export function UserEditor({
   const permissions = useAdminPermissions();
   const canManageRoles = permissions.includes("users.manage-roles");
   const canManageStatus = permissions.includes("users.manage-status");
-  const canVerifyEmail = permissions.includes("users.verify-email");
   const isAdministrator = currentUser.roles.includes("admin");
   const isSelf = Boolean(user && user.id === currentUserId);
   const [saving, setSaving] = React.useState(false);
@@ -101,16 +100,6 @@ export function UserEditor({
           ),
     [accessOptions.roles, isAdministrator, permissions],
   );
-  const assignablePermissions = React.useMemo(
-    () =>
-      isAdministrator
-        ? accessOptions.permissions
-        : accessOptions.permissions.filter((permission) =>
-            permissions.includes(permission.key),
-          ),
-    [accessOptions.permissions, isAdministrator, permissions],
-  );
-
   React.useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasChanges || saving) return;
@@ -141,9 +130,9 @@ export function UserEditor({
           avatar: values.avatar || undefined,
           password: values.password,
           roles: canManageRoles ? values.roles : ["member"],
-          permissions: canManageRoles ? values.permissions : [],
+          permissions: [],
+          monetizationLevelId: values.monetizationLevelId,
           status: canManageStatus ? values.status : "active",
-          emailVerified: canVerifyEmail && values.emailVerified,
         };
         const created = await createAdminUser(payload);
         toast.success("Đã tạo người dùng.");
@@ -160,14 +149,16 @@ export function UserEditor({
         avatar: values.avatar || null,
         ...(!isSelf &&
         canManageRoles &&
-        (dirtyFields.roles || dirtyFields.permissions)
+        dirtyFields.roles
           ? {
               roles: values.roles,
-              permissions: values.permissions,
             }
           : {}),
         ...(!isSelf && canManageStatus && dirtyFields.status
           ? { status: values.status }
+          : {}),
+        ...(dirtyFields.monetizationLevelId
+          ? { monetizationLevelId: values.monetizationLevelId }
           : {}),
       };
       const updated = await updateAdminUser(user.id, payload);
@@ -191,7 +182,7 @@ export function UserEditor({
           className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-6"
         >
           <AdminPageHeader
-            title={user ? `Chỉnh sửa ${user.name}` : "Tạo User"}
+            title={user ? `Chỉnh sửa ${user.name}` : "Tạo người dùng"}
             description="Quản lý thông tin tài khoản, trạng thái và phạm vi truy cập."
             breadcrumbs={
               user
@@ -227,7 +218,7 @@ export function UserEditor({
                   disabled={saving || (Boolean(user) && !hasChanges)}
                 >
                   {saving ? <Loader2 className="animate-spin" /> : <Save />}
-                  {user ? "Lưu thay đổi" : "Tạo User"}
+                  {user ? "Lưu thay đổi" : "Tạo người dùng"}
                 </Button>
               </>
             }
@@ -282,7 +273,7 @@ export function UserEditor({
                     name="avatar"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Avatar URL</FormLabel>
+                        <FormLabel>Ảnh đại diện</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input
@@ -296,7 +287,7 @@ export function UserEditor({
                             variant="outline"
                             onClick={() => setImagePickerOpen(true)}
                           >
-                            <ImageIcon /> Media Manager
+                            <ImageIcon /> Chọn từ thư viện
                           </Button>
                         </div>
                         <FormMessage />
@@ -311,8 +302,7 @@ export function UserEditor({
                   <CardHeader>
                     <CardTitle>Mật khẩu ban đầu</CardTitle>
                     <CardDescription>
-                      Mật khẩu chỉ được gửi tới Backend khi tạo tài khoản và
-                      không bao giờ được trả lại Frontend.
+                      Thiết lập mật khẩu an toàn cho lần đăng nhập đầu tiên.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-5 sm:grid-cols-2">
@@ -334,29 +324,116 @@ export function UserEditor({
                 </Card>
               ) : null}
 
+              <Card>
+                <CardHeader>
+                  <CardTitle>Kiếm tiền và Tier</CardTitle>
+                  <CardDescription>
+                    Cấp kiếm tiền có thể gán riêng; Tier được hệ thống tự động
+                    tính từ lượt xem hợp lệ trong 7 ngày gần nhất.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="monetizationLevelId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cấp kiếm tiền</FormLabel>
+                        <Select
+                          value={
+                            field.value === null
+                              ? "system-default"
+                              : String(field.value)
+                          }
+                          onValueChange={(value) =>
+                            field.onChange(
+                              value === "system-default"
+                                ? null
+                                : Number(value),
+                            )
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="system-default">
+                              Mặc định hệ thống
+                            </SelectItem>
+                            {accessOptions.monetizationLevels.map((level) => (
+                              <SelectItem key={level.id} value={String(level.id)}>
+                                {level.name}
+                                {level.isDefault ? " · Mặc định" : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Chọn “Mặc định hệ thống” để tự động dùng cấp mặc định
+                          đang được xuất bản.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 font-medium text-sm">
+                      {user ? <Award className="size-4 text-primary" /> : <Zap className="size-4 text-primary" />}
+                      {user ? "Tier hiện tại" : "Cách xác định Tier"}
+                    </div>
+                    {user ? (
+                      <>
+                        <p className="mt-3 text-lg font-semibold">
+                          {user.loyaltyTier?.name || "Chưa đạt Tier"}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {user.loyaltyCurrentValue.toLocaleString("vi-VN")} lượt
+                          xem hợp lệ trong {user.loyaltyWindowDays} ngày.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                        Tài khoản mới bắt đầu ở Tier tương ứng với dữ liệu thực
+                        tế; quản trị viên không gán Tier thủ công.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               {canManageRoles ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Role và quyền trực tiếp</CardTitle>
+                    <CardTitle>Vai trò truy cập</CardTitle>
                     <CardDescription>
-                      Role cung cấp quyền mặc định; quyền trực tiếp chỉ dùng cho
-                      ngoại lệ. Không thể tự thay đổi quyền của chính mình.
+                      Chọn vai trò phù hợp với trách nhiệm của người dùng. Quyền
+                      chi tiết được quản lý tập trung trong Roles & Permissions.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4">
                     <FormField
                       control={form.control}
                       name="roles"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Roles</FormLabel>
-                          <div className="grid gap-2 rounded-lg border p-4 sm:grid-cols-2">
+                          <FormLabel>Vai trò</FormLabel>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             {assignableRoles.map((role) => (
                               <label
                                 key={role.id}
-                                className="flex items-center gap-2 text-sm"
+                                className={cn(
+                                  "flex items-start gap-3 rounded-lg border p-4 transition-colors",
+                                  !isSelf && "cursor-pointer hover:bg-muted/40",
+                                  field.value.includes(role.key) &&
+                                    "border-primary/40 bg-primary/5",
+                                  isSelf && "cursor-not-allowed opacity-60",
+                                )}
                               >
                                 <Checkbox
+                                  className="mt-0.5"
                                   checked={field.value.includes(role.key)}
                                   disabled={isSelf}
                                   onCheckedChange={(checked) =>
@@ -369,68 +446,40 @@ export function UserEditor({
                                     )
                                   }
                                 />
-                                {role.key === "admin" ? (
-                                  <Shield className="size-4 text-primary" />
-                                ) : (
-                                  <UserRound className="size-4 text-muted-foreground" />
-                                )}
-                                <span>{role.name}</span>
+                                <span className="min-w-0 space-y-1">
+                                  <span className="flex flex-wrap items-center gap-2 font-medium text-sm">
+                                    {role.name}
+                                  </span>
+                                  <span className="block text-xs leading-5 text-muted-foreground">
+                                    {role.permissionKeys?.length || 0} quyền được
+                                    cấp thông qua vai trò này.
+                                  </span>
+                                </span>
                               </label>
                             ))}
                           </div>
+                          <FormDescription>
+                            {isSelf
+                              ? "Bạn không thể tự thay đổi vai trò của chính mình."
+                              : "Mỗi người dùng cần có ít nhất một vai trò."}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="permissions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Quyền trực tiếp</FormLabel>
-                          <div className="grid gap-5 rounded-lg border p-4 md:grid-cols-2">
-                            {groupPermissions(assignablePermissions).map(
-                              ([group, groupItems]) => (
-                                <div key={group} className="space-y-2">
-                                  <p className="font-medium text-sm capitalize">
-                                    {group}
-                                  </p>
-                                  {groupItems.map((permission) => (
-                                    <label
-                                      key={permission.id}
-                                      className="flex items-start gap-2 text-sm"
-                                    >
-                                      <Checkbox
-                                        className="mt-0.5"
-                                        checked={field.value.includes(
-                                          permission.key,
-                                        )}
-                                        disabled={isSelf}
-                                        onCheckedChange={(checked) =>
-                                          field.onChange(
-                                            toggleValue(
-                                              field.value,
-                                              permission.key,
-                                              checked === true,
-                                            ),
-                                          )
-                                        }
-                                      />
-                                      <span>
-                                        {permission.name}
-                                        <span className="block font-mono text-[11px] text-muted-foreground">
-                                          {permission.key}
-                                        </span>
-                                      </span>
-                                    </label>
-                                  ))}
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+
+                    {user?.directPermissions.length ? (
+                      <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                        <p className="font-medium text-sm">
+                          Quyền ngoại lệ hiện có
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                          {user.directPermissions.length} quyền được gán trực
+                          tiếp sẽ được giữ nguyên. Form này chỉ thay đổi vai trò
+                          của người dùng.
+                        </p>
+                      </div>
+                    ) : null}
                   </CardContent>
                 </Card>
               ) : null}
@@ -439,88 +488,57 @@ export function UserEditor({
             <aside className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Trạng thái</CardTitle>
+                  <CardTitle>Quản trị tài khoản</CardTitle>
                   <CardDescription>
-                    Trạng thái khác Active sẽ chặn đăng nhập và thu hồi các
-                    session hiện tại.
+                    Trạng thái đăng nhập và xác minh danh tính của người dùng.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Select
-                          value={field.value}
-                          disabled={!canManageStatus || isSelf}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(userStatusConfig).map(
-                              ([value, config]) => (
-                                <SelectItem key={value} value={value}>
-                                  {config.label}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          {userStatusConfig[field.value].description}
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <p className="font-medium text-sm">Trạng thái</p>
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select
+                            value={field.value}
+                            disabled={!canManageStatus || isSelf}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(userStatusConfig).map(
+                                ([value, config]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {config.label}
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            {userStatusConfig[field.value].description}
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Xác minh email</CardTitle>
-                  <CardDescription>
-                    Chỉ đánh dấu thủ công khi đã kiểm tra quyền sở hữu email.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="emailVerified"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div>
-                          <FormLabel>Đã xác minh</FormLabel>
-                          {user ? (
-                            <FormDescription>
-                              Dùng action tại trang chi tiết để thay đổi.
-                            </FormDescription>
-                          ) : null}
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            disabled={Boolean(user) || !canVerifyEmail}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
                 </CardContent>
               </Card>
 
               {user ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Metadata</CardTitle>
+                    <CardTitle>Thông tin hệ thống</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
-                    <MetadataRow label="User ID" value={String(user.id)} />
+                    <MetadataRow label="ID người dùng" value={String(user.id)} />
                     <MetadataRow
                       label="Ngày tạo"
                       value={formatTimestamp(user.createdAt)}
@@ -614,8 +632,8 @@ function getDefaultValues(user: AdminUserDetail | null): UserEditorFormValues {
       confirmPassword: "",
       roles: ["member"],
       permissions: [],
+      monetizationLevelId: null,
       status: "active",
-      emailVerified: false,
     };
   }
   return {
@@ -627,8 +645,8 @@ function getDefaultValues(user: AdminUserDetail | null): UserEditorFormValues {
     confirmPassword: "",
     roles: user.roles.map((role) => role.key),
     permissions: user.directPermissions,
+    monetizationLevelId: user.selectedMonetizationLevelId,
     status: user.status,
-    emailVerified: user.emailVerified,
   };
 }
 
@@ -636,18 +654,6 @@ function toggleValue(values: string[], value: string, checked: boolean) {
   return checked
     ? [...new Set([...values, value])]
     : values.filter((item) => item !== value);
-}
-
-function groupPermissions(permissions: UsersAccessOptions["permissions"]) {
-  return Object.entries(
-    permissions.reduce<Record<string, typeof permissions>>(
-      (groups, permission) => {
-        (groups[permission.group] ||= []).push(permission);
-        return groups;
-      },
-      {},
-    ),
-  );
 }
 
 function MetadataRow({ label, value }: { label: string; value: string }) {

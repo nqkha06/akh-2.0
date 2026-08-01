@@ -16,13 +16,11 @@ import {
 import {
   deleteAdminUsers,
   revokeAdminUserSessions,
-  verifyAdminUserEmail,
 } from "@/features/admin-users/api/users.client";
 import type { AdminUserListItem } from "@/features/admin-users/types";
 
 export type UserConfirmationAction =
   | { type: "delete"; users: AdminUserListItem[] }
-  | { type: "verify-email"; users: [AdminUserListItem] }
   | { type: "revoke-sessions"; users: [AdminUserListItem] };
 
 export function UserActionDialog({
@@ -46,9 +44,6 @@ export function UserActionDialog({
           action.users.map((user) => user.id),
         );
         toast.success(`Đã xóa ${result.deleted} người dùng.`);
-      } else if (action.type === "verify-email") {
-        await verifyAdminUserEmail(action.users[0].id);
-        toast.success("Đã xác minh email người dùng.");
       } else {
         const result = await revokeAdminUserSessions(action.users[0].id);
         toast.success(`Đã thu hồi ${result.revokedSessions} phiên đăng nhập.`);
@@ -99,13 +94,6 @@ function getContent(action: UserConfirmationAction) {
     };
   }
   const user = action.users[0];
-  if (action.type === "verify-email") {
-    return {
-      title: "Xác minh email thủ công?",
-      description: `Email ${user.email} sẽ được đánh dấu là đã xác minh. Chỉ tiếp tục khi bạn đã kiểm tra quyền sở hữu email.`,
-      confirm: "Xác minh email",
-    };
-  }
   return {
     title: "Thu hồi toàn bộ phiên đăng nhập?",
     description: `${user.name} sẽ bị đăng xuất khỏi tất cả thiết bị và cần đăng nhập lại.`,

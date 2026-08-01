@@ -117,12 +117,6 @@ export class UsersController {
     return this.usersService.updateAccess(request.user, id, dto);
   }
 
-  @Post(":id/verify-email")
-  @Permissions("users.verify-email")
-  verifyEmail(@Param("id", ParseIntPipe) id: number) {
-    return this.usersService.verifyEmail(id);
-  }
-
   @Post(":id/revoke-sessions")
   @Permissions("users.revoke-sessions")
   revokeSessions(

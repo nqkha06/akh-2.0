@@ -8,6 +8,7 @@ import {
   Trash2,
   X,
 } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import * as React from "react"
 import { toast } from "sonner"
@@ -41,7 +42,8 @@ export function SocialLinksTable({
   pageCount,
   total,
   totalViews,
-}: AdminSocialLinksTableData) {
+  filteredUserId,
+}: AdminSocialLinksTableData & { filteredUserId: number | null }) {
   const permissions = useAdminPermissions()
   const canUpdate = permissions.includes("links.update")
   const canDelete = permissions.includes("links.delete")
@@ -82,6 +84,19 @@ export function SocialLinksTable({
 
   return (
     <div className="flex min-w-0 w-full flex-col gap-6">
+      {filteredUserId ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+          <p className="text-sm">
+            Đang hiển thị Social Links của người dùng #{filteredUserId}.
+          </p>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/admin/social-links">
+              <X /> Bỏ lọc người dùng
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <SummaryCard label="Kết quả" value={total} />
         <SummaryCard label="Tổng visit hoàn tất" value={totalViews} />

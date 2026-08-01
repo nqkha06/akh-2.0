@@ -107,10 +107,6 @@ export class ListUsersQueryDto {
   status?: Array<(typeof USER_STATUSES)[number]>;
 
   @IsOptional()
-  @IsIn(["verified", "unverified"])
-  emailVerified?: "verified" | "unverified";
-
-  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

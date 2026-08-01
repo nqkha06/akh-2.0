@@ -1373,39 +1373,6 @@ describe("Admin users CRUD E2E", () => {
     );
     assert.equal(systemFieldUpdate.status, 400);
 
-    const verifyEmail = await request(
-      `/api/admin/users/${created.id}/verify-email`,
-      {
-        method: "POST",
-        headers: authorization,
-      },
-    );
-    assert.equal(verifyEmail.status, 201, await verifyEmail.clone().text());
-    assert.equal(
-      ((await verifyEmail.json()) as { emailVerified: boolean }).emailVerified,
-      true,
-    );
-    const verifiedFilter = new URLSearchParams({
-      filters: JSON.stringify([
-        {
-          id: "emailVerifiedAt",
-          value: "true",
-          variant: "boolean",
-          operator: "eq",
-          filterId: "verified-filter",
-        },
-      ]),
-    });
-    const verifiedList = await request(
-      `/api/admin/users?${verifiedFilter}`,
-      { headers: authorization },
-    );
-    assert.equal(verifiedList.status, 200);
-    assert.ok(
-      ((await verifiedList.json()) as { items: Array<{ id: number }> }).items
-        .some((user) => user.id === created.id),
-    );
-
     const deactivate = await request(
       `/api/admin/users/${created.id}/status`,
       {

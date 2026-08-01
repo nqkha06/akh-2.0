@@ -22,7 +22,6 @@ export const usersSearchParamsCache = createSearchParamsCache({
   email: parseAsString.withDefault(""),
   role: parseAsArrayOf(parseAsString).withDefault([]),
   status: parseAsArrayOf(parseAsStringEnum([...userStatuses])).withDefault([]),
-  emailVerified: parseAsStringEnum(["verified", "unverified"]),
   filters: getFiltersStateParser<AdminUserListItem>().withDefault([]),
   joinOperator: parseAsStringEnum(["and", "or"]).withDefault("and"),
 });

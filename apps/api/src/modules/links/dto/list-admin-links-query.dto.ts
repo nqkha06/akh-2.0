@@ -113,6 +113,12 @@ export class ListAdminLinksQueryDto {
   owner?: string;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  userId?: number;
+
+  @IsOptional()
   @Transform(({ value }) => parseCsv(value))
   @IsArray()
   @ArrayMaxSize(statuses.length)

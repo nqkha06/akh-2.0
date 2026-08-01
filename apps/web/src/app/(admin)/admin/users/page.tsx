@@ -29,13 +29,13 @@ export default async function AdminUsersPage({
   return (
     <main className="flex flex-1 flex-col gap-6 px-4 py-4 lg:px-6 lg:py-6">
       <AdminPageHeader
-        title="Users"
-        description="Quản lý tài khoản, trạng thái và phạm vi truy cập của người dùng."
+        title="Người dùng"
+        description="Quản lý hồ sơ, Tier, cấp kiếm tiền, trạng thái và quyền truy cập."
         actions={
           currentUser.permissions.includes("users.create") ? (
             <Button asChild>
               <Link href="/admin/users/create">
-                <Plus /> Tạo User
+                <Plus /> Tạo người dùng
               </Link>
             </Button>
           ) : null
@@ -44,7 +44,7 @@ export default async function AdminUsersPage({
       <Suspense
         fallback={
           <DataTableSkeleton
-            columnCount={9}
+            columnCount={11}
             filterCount={2}
             cellWidths={["3rem", "18rem", "14rem", "8rem", "10rem"]}
             shrinkZero

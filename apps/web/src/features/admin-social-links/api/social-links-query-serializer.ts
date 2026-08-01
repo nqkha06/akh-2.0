@@ -14,6 +14,7 @@ export function serializeAdminSocialLinksQuery(
 
   if (state.title) query.set("title", state.title)
   if (state.owner) query.set("owner", state.owner)
+  if (state.userId) query.set("userId", String(state.userId))
   if (state.status.length) query.set("status", state.status.join(","))
   if (state.destinationType.length) {
     query.set("destinationType", state.destinationType.join(","))

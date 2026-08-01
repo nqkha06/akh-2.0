@@ -48,6 +48,12 @@ export class ListWithdrawalsQueryDto {
   search?: string;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  userId?: number;
+
+  @IsOptional()
   @IsIn(withdrawalSortFields)
   sortBy: (typeof withdrawalSortFields)[number] = "createdAt";
 

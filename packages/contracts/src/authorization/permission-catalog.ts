@@ -42,12 +42,6 @@ export const permissionCatalog = [
     group: "users",
   },
   {
-    key: "users.verify-email",
-    name: "Xác minh email người dùng",
-    description: "Cho phép quản trị viên xác minh email thủ công.",
-    group: "users",
-  },
-  {
     key: "users.revoke-sessions",
     name: "Thu hồi phiên người dùng",
     description: "Xem và đăng xuất từng phiên hoặc tất cả thiết bị của người dùng.",

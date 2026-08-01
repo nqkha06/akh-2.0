@@ -1,16 +1,17 @@
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsBoolean,
   IsEmail,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   IsUrl,
   Matches,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 
@@ -65,6 +66,8 @@ export class CreateUserDto {
   status!: UserStatus;
 
   @IsOptional()
-  @IsBoolean()
-  emailVerified = false;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  monetizationLevelId?: number | null;
 }

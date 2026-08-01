@@ -49,5 +49,5 @@ async function SocialLinksTableLoader({
 }) {
   const search = socialLinksSearchParamsCache.parse(await searchParams)
   const result = await getAdminSocialLinksTableData(search)
-  return <SocialLinksTable {...result} />
+  return <SocialLinksTable {...result} filteredUserId={search.userId} />
 }

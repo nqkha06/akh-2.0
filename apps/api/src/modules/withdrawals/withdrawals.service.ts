@@ -192,6 +192,7 @@ export class WithdrawalsService {
   async findAllForAdmin(query: ListWithdrawalsQueryDto) {
     const search = query.search?.trim();
     const where: Prisma.UserWithdrawalWhereInput = {
+      ...(query.userId ? { userId: query.userId } : {}),
       ...(query.status?.length ? { status: { in: query.status } } : {}),
       ...(search
         ? {

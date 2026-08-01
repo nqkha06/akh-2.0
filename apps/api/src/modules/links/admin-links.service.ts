@@ -183,6 +183,7 @@ export class AdminLinksService {
       : this.buildDeletionStateCondition(query.deletedState);
 
     return {
+      ...(query.userId ? { userId: query.userId } : {}),
       ...(deletion ?? {}),
       ...(query.status?.length ? { status: { in: query.status } } : {}),
       ...(query.destinationType?.length

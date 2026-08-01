@@ -1,5 +1,7 @@
 "use client";
 
+import { X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -7,6 +9,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { Button } from "@/components/ui/button";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import {
   getAdminWithdrawalsTableColumns,
@@ -27,7 +30,8 @@ import { useDataTable } from "@/hooks/use-data-table";
 export function AdminWithdrawalsTable({
   data,
   pageCount,
-}: AdminWithdrawalsTableData) {
+  filteredUserId,
+}: AdminWithdrawalsTableData & { filteredUserId: number | null }) {
   const permissions = useAdminPermissions();
   const canProcess = permissions.includes("withdrawals.process");
   const router = useRouter();
@@ -109,6 +113,19 @@ export function AdminWithdrawalsTable({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
+      {filteredUserId ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+          <p className="text-sm">
+            Đang hiển thị yêu cầu rút tiền của người dùng #{filteredUserId}.
+          </p>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/admin/withdrawals">
+              <X /> Bỏ lọc người dùng
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
       <DataTable
         table={table}
         emptyMessage="Chưa có yêu cầu rút tiền phù hợp."

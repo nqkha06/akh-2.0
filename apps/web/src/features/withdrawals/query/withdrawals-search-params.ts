@@ -27,6 +27,7 @@ export const withdrawalsSearchParamsCache = createSearchParamsCache({
     { id: "createdAt", desc: true },
   ]),
   member: parseAsString.withDefault(""),
+  userId: parseAsInteger,
   status: parseAsArrayOf(parseAsStringEnum(statuses)).withDefault([]),
 });
 

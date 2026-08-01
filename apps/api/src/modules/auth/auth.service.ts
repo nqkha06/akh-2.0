@@ -119,8 +119,7 @@ export class AuthService {
     if (
       !user?.passwordHash ||
       user.status !== "active" ||
-      !passwordMatches ||
-      (this.requiresVerifiedEmail() && !user.emailVerifiedAt)
+      !passwordMatches
     ) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
@@ -193,8 +192,7 @@ export class AuthService {
       );
     }
     if (
-      session.user.status !== "active" ||
-      (this.requiresVerifiedEmail() && !session.user.emailVerifiedAt)
+      session.user.status !== "active"
     ) {
       throw unauthorizedAuthError(
         AUTH_ERROR_CODES.USER_DISABLED,
@@ -418,10 +416,6 @@ export class AuthService {
 
   private refreshSecret() {
     return this.configService.getOrThrow<string>("JWT_REFRESH_SECRET");
-  }
-
-  private requiresVerifiedEmail() {
-    return this.configService.get<string>("AUTH_REQUIRE_EMAIL_VERIFICATION") === "true";
   }
 
   private async findOrCreateGoogleUser(input: {

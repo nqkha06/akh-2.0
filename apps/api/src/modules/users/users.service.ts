@@ -24,10 +24,27 @@ const userSelect = {
   id: true,
   name: true,
   email: true,
-  emailVerifiedAt: true,
   avatar: true,
   balance: true,
   status: true,
+  referralCode: true,
+  referredById: true,
+  monetizationLevelId: true,
+  storageLimitBytes: true,
+  storageUsedBytes: true,
+  storageReservedBytes: true,
+  monetizationLevel: {
+    select: {
+      id: true,
+      key: true,
+      status: true,
+      isDefault: true,
+      translations: {
+        select: { locale: true, name: true },
+        orderBy: { locale: "asc" as const },
+      },
+    },
+  },
   roles: {
     select: {
       role: {
@@ -52,7 +69,76 @@ const userSelect = {
 } satisfies Prisma.UserSelect;
 
 type UserRecord = Prisma.UserGetPayload<{ select: typeof userSelect }> & {
-  _count?: { links: number; authSessions: number };
+  _count?: {
+    links: number;
+    authSessions: number;
+    paymentMethods: number;
+    withdrawals: number;
+  };
+};
+
+const userDetailSelect = {
+  ...userSelect,
+  referrer: {
+    select: { id: true, name: true, email: true },
+  },
+  socialAccounts: {
+    select: { id: true, provider: true, createdAt: true },
+    orderBy: { createdAt: "asc" as const },
+  },
+  paymentMethods: {
+    select: {
+      id: true,
+      detailsJson: true,
+      createdAt: true,
+      updatedAt: true,
+      paymentMethod: {
+        select: {
+          id: true,
+          status: true,
+          translations: {
+            select: { locale: true, name: true, fieldsJson: true },
+            orderBy: { locale: "asc" as const },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" as const },
+  },
+  _count: {
+    select: {
+      links: { where: { deletedAt: null } },
+      snippets: { where: { deletedAt: null } },
+      memberFiles: { where: { deletedAt: null } },
+      bioPages: { where: { deletedAt: null } },
+      paymentMethods: true,
+      withdrawals: true,
+      referrals: true,
+      supportTickets: { where: { deletedAt: null } },
+      commissionsReceived: true,
+      authSessions: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+type UserDetailRecord = Prisma.UserGetPayload<{
+  select: typeof userDetailSelect;
+}>;
+
+type LoyaltyTierSummary = {
+  id: number;
+  key: string;
+  name: string;
+  iconKey: string | null;
+  minimumValidViews: number;
+};
+
+type MonetizationLevelSummary = {
+  id: number;
+  key: string;
+  name: string;
+  status: string;
+  isDefault: boolean;
 };
 
 @Injectable()
@@ -77,11 +163,6 @@ export class UsersService {
         ? { roles: { some: { role: { key: { in: query.role } } } } }
         : {}),
       ...(query.status?.length ? { status: { in: query.status } } : {}),
-      ...(query.emailVerified === "verified"
-        ? { emailVerifiedAt: { not: null } }
-        : query.emailVerified === "unverified"
-          ? { emailVerifiedAt: null }
-          : {}),
       ...(search
         ? {
             OR: [
@@ -105,7 +186,8 @@ export class UsersService {
       expiresAt: { gt: new Date() },
     } satisfies Prisma.AuthSessionWhereInput;
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total, loyaltyTiers, defaultMonetizationLevel] =
+      await this.prisma.$transaction([
       this.prisma.user.findMany({
         where,
         skip,
@@ -115,15 +197,47 @@ export class UsersService {
           ...userSelect,
           _count: {
             select: {
-              links: true,
+              links: { where: { deletedAt: null } },
               authSessions: { where: activeSessionWhere },
+              paymentMethods: true,
+              withdrawals: true,
             },
           },
         },
       }),
       this.prisma.user.count({ where }),
+      this.prisma.loyaltyTier.findMany({
+        where: { status: "published" },
+        select: {
+          id: true,
+          key: true,
+          iconKey: true,
+          minimumValidViews: true,
+          translations: {
+            select: { locale: true, name: true },
+            orderBy: { locale: "asc" },
+          },
+        },
+        orderBy: [{ minimumValidViews: "asc" }, { sortOrder: "asc" }],
+      }),
+      this.prisma.monetizationLevel.findFirst({
+        where: { status: "published", isDefault: true },
+        select: userSelect.monetizationLevel.select,
+      }),
     ]);
-    const data = items.map((user) => this.toResponse(user));
+    const rollingViews = await this.getRollingEarnedViews(
+      items.map(({ id }) => id),
+    );
+    const data = items.map((user) =>
+      this.toResponse(user, {
+        defaultMonetizationLevel,
+        loyaltyTier: this.resolveLoyaltyTier(
+          loyaltyTiers,
+          rollingViews.get(user.id) ?? 0,
+        ),
+        loyaltyCurrentValue: rollingViews.get(user.id) ?? 0,
+      }),
+    );
     const pageCount = Math.max(1, Math.ceil(total / perPage));
 
     return {
@@ -141,7 +255,6 @@ export class UsersService {
         email: email || null,
         role: query.role || [],
         status: query.status || [],
-        emailVerified: query.emailVerified || null,
         advanced: query.filters || [],
         joinOperator: query.joinOperator,
       },
@@ -149,7 +262,42 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    return this.toResponse(await this.findUserRecord(id));
+    const [user, activeSessionsCount, loyaltyTiers, defaultMonetizationLevel] =
+      await Promise.all([
+        this.findUserRecord(id),
+        this.prisma.authSession.count({
+          where: { userId: id, revokedAt: null, expiresAt: { gt: new Date() } },
+        }),
+        this.prisma.loyaltyTier.findMany({
+          where: { status: "published" },
+          select: {
+            id: true,
+            key: true,
+            iconKey: true,
+            minimumValidViews: true,
+            translations: {
+              select: { locale: true, name: true },
+              orderBy: { locale: "asc" },
+            },
+          },
+          orderBy: [{ minimumValidViews: "asc" }, { sortOrder: "asc" }],
+        }),
+        this.prisma.monetizationLevel.findFirst({
+          where: { status: "published", isDefault: true },
+          select: userSelect.monetizationLevel.select,
+        }),
+      ]);
+    const rollingViews = await this.getRollingEarnedViews([id]);
+    const loyaltyCurrentValue = rollingViews.get(id) ?? 0;
+    return this.toDetailResponse(user, {
+      activeSessionsCount,
+      defaultMonetizationLevel,
+      loyaltyTier: this.resolveLoyaltyTier(
+        loyaltyTiers,
+        loyaltyCurrentValue,
+      ),
+      loyaltyCurrentValue,
+    });
   }
 
   async findSessions(currentAdmin: AuthenticatedUser, id: number) {
@@ -192,7 +340,7 @@ export class UsersService {
   }
 
   async getAccessOptions() {
-    const [roles, permissions] = await Promise.all([
+    const [roles, permissions, monetizationLevels] = await Promise.all([
       this.prisma.role.findMany({
         select: {
           id: true,
@@ -215,6 +363,20 @@ export class UsersService {
         },
         orderBy: [{ group: "asc" }, { key: "asc" }],
       }),
+      this.prisma.monetizationLevel.findMany({
+        where: { status: "published" },
+        select: {
+          id: true,
+          key: true,
+          isDefault: true,
+          status: true,
+          translations: {
+            select: { locale: true, name: true },
+            orderBy: { locale: "asc" },
+          },
+        },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      }),
     ]);
     return {
       roles: roles.map((role) => ({
@@ -227,6 +389,13 @@ export class UsersService {
         ),
       })),
       permissions,
+      monetizationLevels: monetizationLevels.map((level) => ({
+        id: level.id,
+        key: level.key,
+        name: this.localizedName(level.translations, level.key),
+        status: level.status,
+        isDefault: level.isDefault,
+      })),
     };
   }
 
@@ -240,14 +409,13 @@ export class UsersService {
     ) {
       this.assertPermission(currentAdmin, "users.manage-roles");
     }
-    if (dto.emailVerified) {
-      this.assertPermission(currentAdmin, "users.verify-email");
-    }
-
     const assignments = await this.resolveAssignments(
       currentAdmin,
       dto.roles,
       dto.permissions,
+    );
+    const monetizationLevelId = await this.validateMonetizationLevelId(
+      dto.monetizationLevelId,
     );
     try {
       const user = await this.prisma.user.create({
@@ -255,9 +423,9 @@ export class UsersService {
           name: dto.name,
           email: dto.email,
           avatar: dto.avatar || null,
-          emailVerifiedAt: dto.emailVerified ? new Date() : null,
           passwordHash: await hash(dto.password, 12),
           status: dto.status,
+          monetizationLevelId,
           roles: {
             create: assignments.roleIds.map((roleId) => ({ roleId })),
           },
@@ -269,10 +437,7 @@ export class UsersService {
         },
         select: userSelect,
       });
-      return this.toResponse({
-        ...user,
-        _count: { links: 0, authSessions: 0 },
-      });
+      return this.findOne(user.id);
     } catch (error) {
       this.rethrowPersistenceError(error);
       throw error;
@@ -314,6 +479,10 @@ export class UsersService {
             dto.permissions || existingPermissionKeys,
           )
         : null;
+    const monetizationLevelId =
+      dto.monetizationLevelId !== undefined
+        ? await this.validateMonetizationLevelId(dto.monetizationLevelId)
+        : undefined;
     const emailChanged =
       dto.email !== undefined && dto.email !== existing.email;
     const securityChanged = Boolean(
@@ -339,6 +508,9 @@ export class UsersService {
               ? { avatar: dto.avatar || null }
               : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
+            ...(dto.monetizationLevelId !== undefined
+              ? { monetizationLevelId }
+              : {}),
             ...(securityChanged ? { tokenVersion: { increment: 1 } } : {}),
           },
         });
@@ -455,15 +627,6 @@ export class UsersService {
     });
   }
 
-  async verifyEmail(id: number) {
-    await this.assertExists(id);
-    await this.prisma.user.update({
-      where: { id },
-      data: { emailVerifiedAt: new Date() },
-    });
-    return this.findOne(id);
-  }
-
   async revokeSessions(currentAdmin: AuthenticatedUser, id: number) {
     await this.assertExists(id);
     if (currentAdmin.id === id) {
@@ -570,9 +733,7 @@ export class UsersService {
   private buildFilterCondition(
     filter: UserFilterDto,
   ): Prisma.UserWhereInput | undefined {
-    if (
-      ["createdAt", "updatedAt", "emailVerifiedAt"].includes(filter.id)
-    ) {
+    if (["createdAt", "updatedAt"].includes(filter.id)) {
       return this.buildDateFilter(filter);
     }
     if (filter.id === "role") return this.buildRoleFilter(filter);
@@ -686,29 +847,9 @@ export class UsersService {
   private buildDateFilter(
     filter: UserFilterDto,
   ): Prisma.UserWhereInput | undefined {
-    const field = filter.id as "createdAt" | "updatedAt" | "emailVerifiedAt";
+    const field = filter.id as "createdAt" | "updatedAt";
     const value = typeof filter.value === "string" ? filter.value : undefined;
     const values = Array.isArray(filter.value) ? filter.value : undefined;
-    if (
-      field === "emailVerifiedAt" &&
-      filter.variant === "boolean" &&
-      (filter.operator === "eq" || filter.operator === "ne") &&
-      (value === "true" || value === "false")
-    ) {
-      const expectsVerified =
-        filter.operator === "eq" ? value === "true" : value !== "true";
-      return expectsVerified
-        ? { emailVerifiedAt: { not: null } }
-        : { emailVerifiedAt: null };
-    }
-    if (filter.operator === "isEmpty") {
-      return field === "emailVerifiedAt" ? { emailVerifiedAt: null } : undefined;
-    }
-    if (filter.operator === "isNotEmpty") {
-      return field === "emailVerifiedAt"
-        ? { emailVerifiedAt: { not: null } }
-        : undefined;
-    }
     const date = value ? this.parseDateValue(value) : null;
     let condition: Prisma.DateTimeNullableFilter | undefined;
     switch (filter.operator) {
@@ -778,17 +919,7 @@ export class UsersService {
   private async findUserRecord(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        ...userSelect,
-        _count: {
-          select: {
-            links: true,
-            authSessions: {
-              where: { revokedAt: null, expiresAt: { gt: new Date() } },
-            },
-          },
-        },
-      },
+      select: userDetailSelect,
     });
     if (!user) throw new NotFoundException("Không tìm thấy người dùng.");
     return user;
@@ -1021,14 +1152,22 @@ export class UsersService {
     return date;
   }
 
-  private toResponse(user: UserRecord) {
+  private toResponse(
+    user: UserRecord,
+    context?: {
+      activeSessionsCount?: number;
+      defaultMonetizationLevel?: UserRecord["monetizationLevel"];
+      loyaltyTier?: LoyaltyTierSummary | null;
+      loyaltyCurrentValue?: number;
+    },
+  ) {
     const authorization = resolveUserAuthorization(user);
+    const effectiveMonetizationLevel =
+      user.monetizationLevel ?? context?.defaultMonetizationLevel ?? null;
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      emailVerifiedAt: user.emailVerifiedAt,
-      emailVerified: Boolean(user.emailVerifiedAt),
       avatar: user.avatar,
       balance: user.balance.toString(),
       status: user.status,
@@ -1042,11 +1181,218 @@ export class UsersService {
         ({ permission }) => permission.key,
       ),
       permissions: authorization.permissions,
+      loyaltyTier: context?.loyaltyTier ?? null,
+      loyaltyCurrentValue: context?.loyaltyCurrentValue ?? 0,
+      loyaltyWindowDays: 7,
+      monetizationLevel: effectiveMonetizationLevel
+        ? this.toMonetizationLevelSummary(effectiveMonetizationLevel)
+        : null,
+      selectedMonetizationLevelId: user.monetizationLevelId,
+      usesDefaultMonetizationLevel: user.monetizationLevelId === null,
       linksCount: user._count?.links || 0,
-      activeSessionsCount: user._count?.authSessions || 0,
+      activeSessionsCount:
+        context?.activeSessionsCount ?? user._count?.authSessions ?? 0,
+      paymentMethodsCount: user._count?.paymentMethods || 0,
+      withdrawalsCount: user._count?.withdrawals || 0,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  private toDetailResponse(
+    user: UserDetailRecord,
+    context: {
+      activeSessionsCount: number;
+      defaultMonetizationLevel: UserRecord["monetizationLevel"];
+      loyaltyTier: LoyaltyTierSummary | null;
+      loyaltyCurrentValue: number;
+    },
+  ) {
+    return {
+      ...this.toResponse(user, context),
+      referralCode: user.referralCode,
+      referrer: user.referrer,
+      storage: {
+        limitBytes: user.storageLimitBytes?.toString() ?? null,
+        usedBytes: user.storageUsedBytes.toString(),
+        reservedBytes: user.storageReservedBytes.toString(),
+      },
+      socialAccounts: user.socialAccounts.map((account) => ({
+        id: account.id,
+        provider: account.provider,
+        connectedAt: account.createdAt,
+      })),
+      paymentMethods: user.paymentMethods.map((account) =>
+        this.toUserPaymentMethodSummary(account),
+      ),
+      relationshipCounts: {
+        links: user._count.links,
+        snippets: user._count.snippets,
+        files: user._count.memberFiles,
+        bioPages: user._count.bioPages,
+        paymentMethods: user._count.paymentMethods,
+        withdrawals: user._count.withdrawals,
+        referrals: user._count.referrals,
+        supportTickets: user._count.supportTickets,
+        commissions: user._count.commissionsReceived,
+        sessions: user._count.authSessions,
+      },
+    };
+  }
+
+  private async getRollingEarnedViews(userIds: number[]) {
+    if (!userIds.length) return new Map<number, number>();
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setUTCDate(start.getUTCDate() - 6);
+    const end = new Date(today);
+    end.setUTCDate(end.getUTCDate() + 1);
+    const groups = await this.prisma.linkAccessLog.groupBy({
+      by: ["userId"],
+      where: {
+        userId: { in: userIds },
+        isEarn: true,
+        completedAt: { gte: start, lt: end },
+      },
+      _count: { _all: true },
+    });
+    return new Map(
+      groups.map((group) => [group.userId, group._count._all] as const),
+    );
+  }
+
+  private resolveLoyaltyTier(
+    tiers: Array<{
+      id: number;
+      key: string;
+      iconKey: string | null;
+      minimumValidViews: number;
+      translations: Array<{ locale: string; name: string }>;
+    }>,
+    currentValue: number,
+  ): LoyaltyTierSummary | null {
+    let resolved: (typeof tiers)[number] | null = null;
+    for (const tier of tiers) {
+      if (currentValue < tier.minimumValidViews) break;
+      resolved = tier;
+    }
+    return resolved
+      ? {
+          id: resolved.id,
+          key: resolved.key,
+          name: this.localizedName(resolved.translations, resolved.key),
+          iconKey: resolved.iconKey,
+          minimumValidViews: resolved.minimumValidViews,
+        }
+      : null;
+  }
+
+  private toMonetizationLevelSummary(
+    level: NonNullable<UserRecord["monetizationLevel"]>,
+  ): MonetizationLevelSummary {
+    return {
+      id: level.id,
+      key: level.key,
+      name: this.localizedName(level.translations, level.key),
+      status: level.status,
+      isDefault: level.isDefault,
+    };
+  }
+
+  private toUserPaymentMethodSummary(
+    account: UserDetailRecord["paymentMethods"][number],
+  ) {
+    const translation =
+      account.paymentMethod.translations.find(({ locale }) => locale === "vi") ??
+      account.paymentMethod.translations.find(({ locale }) => locale === "en") ??
+      account.paymentMethod.translations[0];
+    const details = this.parseJsonRecord(account.detailsJson);
+    const fields = this.parsePaymentFields(translation?.fieldsJson ?? null);
+    return {
+      id: account.id,
+      paymentMethodId: account.paymentMethod.id,
+      name: translation?.name || `Phương thức #${account.paymentMethod.id}`,
+      status: account.paymentMethod.status,
+      details: fields
+        .filter((field) => details[field.key])
+        .map((field) => ({
+          key: field.key,
+          label: field.label,
+          value: this.maskPaymentValue(details[field.key] || "", field.type),
+        })),
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt,
+    };
+  }
+
+  private localizedName(
+    translations: Array<{ locale: string; name: string | null }>,
+    fallback: string,
+  ) {
+    return (
+      translations.find(({ locale }) => locale === "vi")?.name ??
+      translations.find(({ locale }) => locale === "en")?.name ??
+      translations.find(({ name }) => Boolean(name))?.name ??
+      fallback
+    );
+  }
+
+  private parseJsonRecord(value: string): Record<string, string> {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return {};
+      }
+      return Object.fromEntries(
+        Object.entries(parsed).filter(
+          (entry): entry is [string, string] => typeof entry[1] === "string",
+        ),
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  private parsePaymentFields(value: string | null) {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (field): field is { key: string; label: string; type: string } =>
+          Boolean(field) &&
+          typeof field === "object" &&
+          typeof field.key === "string" &&
+          typeof field.label === "string" &&
+          typeof field.type === "string",
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  private maskPaymentValue(value: string, type: string) {
+    if (type === "email" && value.includes("@")) {
+      const [local, domain] = value.split("@");
+      return `${local?.slice(0, 1) || "*"}•••@${domain}`;
+    }
+    const visible = value.replace(/\s+/g, "").slice(-4);
+    return visible ? `•••• ${visible}` : "Đã cấu hình";
+  }
+
+  private async validateMonetizationLevelId(id?: number | null) {
+    if (id === undefined || id === null) return null;
+    const level = await this.prisma.monetizationLevel.findFirst({
+      where: { id, status: "published" },
+      select: { id: true },
+    });
+    if (!level) {
+      throw new BadRequestException(
+        "Cấp độ kiếm tiền không tồn tại hoặc chưa được xuất bản.",
+      );
+    }
+    return level.id;
   }
 
   private rethrowPersistenceError(error: unknown): never | void {

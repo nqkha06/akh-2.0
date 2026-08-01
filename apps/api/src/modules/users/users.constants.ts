@@ -14,7 +14,6 @@ export const USER_SORTABLE_COLUMNS = [
   "email",
   "balance",
   "status",
-  "emailVerifiedAt",
   "createdAt",
   "updatedAt",
 ] as const;
@@ -26,7 +25,6 @@ export const USER_FILTERABLE_COLUMNS = [
   "balance",
   "role",
   "status",
-  "emailVerifiedAt",
   "createdAt",
   "updatedAt",
 ] as const;
