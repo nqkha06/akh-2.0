@@ -57,6 +57,7 @@ process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 process.env.FRONTEND_ORIGIN = "http://localhost:3000";
 process.env.AUTH_COOKIE_SECURE = "false";
 process.env.AUTH_COOKIE_SAME_SITE = "lax";
+process.env.AUTH_GOOGLE_ID = "test-google-client.apps.googleusercontent.com";
 process.env.QUEUE_ENABLED = "false";
 process.env.VISIT_AGGREGATION_DISABLED = "true";
 
@@ -66,6 +67,22 @@ let prisma!: PrismaService;
 let jwtService!: JwtService;
 let adminAccessToken = "";
 let requestSequence = 0;
+let googleAuthService!: {
+  googleClient: {
+    verifyIdToken(options: {
+      idToken: string;
+      audience: string;
+    }): Promise<{
+      getPayload(): {
+        sub: string;
+        email: string;
+        email_verified: boolean;
+        name: string;
+        picture: string;
+      };
+    }>;
+  };
+};
 
 function decodeJwt(token: string) {
   const body = token.split(".")[1];
@@ -133,9 +150,10 @@ before(async () => {
     { env: { ...process.env, RUST_LOG: "info" } },
   );
 
-  const [{ AppModule }, prismaModule] = await Promise.all([
+  const [{ AppModule }, prismaModule, authModule] = await Promise.all([
     import("../src/app.module"),
     import("../src/database/prisma/prisma.service"),
+    import("../src/modules/auth/auth.service"),
   ]);
   app = await NestFactory.create(AppModule, { logger: false });
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
@@ -152,6 +170,7 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
   prisma = app.get(prismaModule.PrismaService);
   jwtService = app.get(JwtService);
+  googleAuthService = app.get(authModule.AuthService) as unknown as typeof googleAuthService;
 });
 
 after(async () => {
@@ -200,6 +219,7 @@ describe("Authentication E2E", () => {
     assert.match(setCookie, /stu_refresh_token=[^;]+/);
     assert.match(setCookie, /HttpOnly/i);
     assert.match(setCookie, /Path=\//i);
+    assert.doesNotMatch(setCookie, /Max-Age=/i);
 
     const invalid = await request("/api/auth/login", {
       method: "POST",
@@ -208,6 +228,74 @@ describe("Authentication E2E", () => {
     assert.equal(invalid.status, 401);
     const body = (await invalid.json()) as { message: string };
     assert.equal(body.message, "Email hoặc mật khẩu không chính xác.");
+  });
+
+  it("persists cookies only when remember me is selected", async () => {
+    const remembered = await request("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: "auth@example.com",
+        password: "Secure123",
+        rememberMe: true,
+      }),
+    });
+    assert.equal(remembered.status, 200);
+    const loginCookies = remembered.headers.get("set-cookie") || "";
+    assert.match(loginCookies, /Max-Age=900/i);
+    assert.match(loginCookies, /Max-Age=604800/i);
+
+    const refreshed = await request("/api/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: refreshCookie(remembered) },
+    });
+    assert.equal(refreshed.status, 200);
+    const refreshedCookies = refreshed.headers.get("set-cookie") || "";
+    assert.match(refreshedCookies, /Max-Age=900/i);
+    assert.match(refreshedCookies, /Max-Age=604800/i);
+  });
+
+  it("signs in with a verified Google ID token and records the auth method", async () => {
+    const originalVerifyIdToken = googleAuthService.googleClient.verifyIdToken;
+    googleAuthService.googleClient.verifyIdToken = async ({
+      idToken,
+      audience,
+    }) => {
+      assert.equal(idToken, "test-google-id-token-1234567890");
+      assert.equal(audience, process.env.AUTH_GOOGLE_ID);
+      return {
+        getPayload: () => ({
+          sub: "google-account-123",
+          email: "google-auth@example.com",
+          email_verified: true,
+          name: "Google Auth Test",
+          picture: "https://example.com/avatar.png",
+        }),
+      };
+    };
+
+    try {
+      const response = await request("/api/auth/google", {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: "test-google-id-token-1234567890",
+          rememberMe: true,
+        }),
+      });
+      assert.equal(response.status, 200, await response.clone().text());
+      assert.match(response.headers.get("set-cookie") || "", /Max-Age=604800/i);
+      const body = (await response.json()) as AuthResponse;
+      assert.equal(body.user.email, "google-auth@example.com");
+
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { email: "google-auth@example.com" },
+        include: { socialAccounts: true, authSessions: true },
+      });
+      assert.equal(user.emailVerifiedAt instanceof Date, true);
+      assert.equal(user.socialAccounts[0]?.provider, "google");
+      assert.equal(user.authSessions[0]?.authMethod, "google");
+    } finally {
+      googleAuthService.googleClient.verifyIdToken = originalVerifyIdToken;
+    }
   });
 
   it("blocks a locked account", async () => {
@@ -1212,6 +1300,68 @@ describe("Admin users CRUD E2E", () => {
       headers: authorization,
     });
     assert.equal(detail.status, 200);
+
+    const managedLogin = await loginAs("managed@example.com", "Managed123");
+    const sessionPayload = decodeJwt(managedLogin.body.accessToken);
+    const sessionsResponse = await request(
+      `/api/admin/users/${created.id}/sessions`,
+      { headers: authorization },
+    );
+    assert.equal(sessionsResponse.status, 200);
+    const sessionsBody = (await sessionsResponse.json()) as {
+      items: Array<{
+        id: string;
+        authMethod: string;
+        status: string;
+        isCurrent: boolean;
+        refreshTokenHash?: string;
+      }>;
+    };
+    const managedSession = sessionsBody.items.find(
+      (session) => session.id === sessionPayload.sid,
+    );
+    assert.equal(managedSession?.authMethod, "password");
+    assert.equal(managedSession?.status, "active");
+    assert.equal(managedSession?.isCurrent, false);
+    assert.equal("refreshTokenHash" in (managedSession || {}), false);
+
+    const currentSessionPayload = decodeJwt(current.body.accessToken);
+    const currentSessions = await request(
+      `/api/admin/users/${currentUser.id}/sessions`,
+      { headers: authorization },
+    );
+    assert.equal(currentSessions.status, 200);
+    assert.equal(
+      ((await currentSessions.json()) as typeof sessionsBody).items.some(
+        (session) =>
+          session.id === currentSessionPayload.sid && session.isCurrent,
+      ),
+      true,
+    );
+
+    const revokeOne = await request(
+      `/api/admin/users/${created.id}/sessions/${sessionPayload.sid}/revoke`,
+      { method: "POST", headers: authorization },
+    );
+    assert.equal(revokeOne.status, 201);
+    assert.equal(
+      ((await revokeOne.json()) as { revoked: boolean }).revoked,
+      true,
+    );
+    assert.equal(
+      (
+        await request("/api/auth/me", {
+          headers: { Authorization: `Bearer ${managedLogin.body.accessToken}` },
+        })
+      ).status,
+      401,
+    );
+
+    const revokeCurrent = await request(
+      `/api/admin/users/${currentUser.id}/sessions/${currentSessionPayload.sid}/revoke`,
+      { method: "POST", headers: authorization },
+    );
+    assert.equal(revokeCurrent.status, 400);
 
     const systemFieldUpdate = await request(
       `/api/admin/users/${created.id}`,

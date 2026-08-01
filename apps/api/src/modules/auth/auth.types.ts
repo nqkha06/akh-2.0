@@ -1,3 +1,5 @@
+export type AuthMethod = "password" | "google";
+
 export type AuthenticatedUser = {
   id: number;
   name: string;
@@ -25,6 +27,7 @@ export type RefreshJwtPayload = {
   sid: string;
   rot: number;
   type: "refresh";
+  rememberMe?: boolean;
 };
 
 export type RefreshAuthenticatedRequestUser = {

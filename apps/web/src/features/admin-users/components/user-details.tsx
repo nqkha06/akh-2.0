@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Ban,
   CheckCircle2,
-  KeyRound,
   MailCheck,
   Pencil,
   Shield,
@@ -34,6 +33,7 @@ import {
   type UserConfirmationAction,
 } from "@/features/admin-users/components/user-action-dialog";
 import { UserStatusBadge } from "@/features/admin-users/components/user-status-badge";
+import { UserSessionsCard } from "@/features/admin-users/components/user-sessions-card";
 import type { AdminUserDetail } from "@/features/admin-users/types";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import { useAuthUser } from "@/features/auth/components/auth-user-provider";
@@ -48,6 +48,7 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
   const canVerifyEmail = permissions.includes("users.verify-email");
   const canRevokeSessions = permissions.includes("users.revoke-sessions");
   const isSelf = user.id === currentUserId;
+  const showSecurityActions = canVerifyEmail && !user.emailVerified;
   const [action, setAction] = React.useState<UserConfirmationAction | null>(
     null,
   );
@@ -195,12 +196,11 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={!showSecurityActions ? "lg:col-span-2" : undefined}>
             <CardHeader>
               <CardTitle>Hoạt động tài khoản</CardTitle>
               <CardDescription>
-                Chỉ tải các bộ đếm cần thiết, không tải toàn bộ sessions hoặc
-                nội dung liên quan.
+                Tổng quan nội dung và số phiên đăng nhập còn hiệu lực.
               </CardDescription>
             </CardHeader>
             <CardContent className="divide-y">
@@ -215,15 +215,15 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Security actions</CardTitle>
-              <CardDescription>
-                Các thao tác nhạy cảm luôn yêu cầu xác nhận.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {canVerifyEmail && !user.emailVerified ? (
+          {showSecurityActions ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Security actions</CardTitle>
+                <CardDescription>
+                  Các thao tác nhạy cảm luôn yêu cầu xác nhận.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -232,22 +232,18 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
                 >
                   <MailCheck /> Xác minh email
                 </Button>
-              ) : null}
-              {canRevokeSessions &&
-              !isSelf &&
-              user.activeSessionsCount > 0 ? (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setAction({ type: "revoke-sessions", users: [user] })
-                  }
-                >
-                  <KeyRound /> Thu hồi sessions
-                </Button>
-              ) : null}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
+
+        {canRevokeSessions ? (
+          <UserSessionsCard
+            userId={user.id}
+            userName={user.name}
+            isSelf={isSelf}
+          />
+        ) : null}
 
         {canDelete && !isSelf ? (
           <Card className="border-destructive/30">

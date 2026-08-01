@@ -152,6 +152,45 @@ export class UsersService {
     return this.toResponse(await this.findUserRecord(id));
   }
 
+  async findSessions(currentAdmin: AuthenticatedUser, id: number) {
+    await this.assertExists(id);
+    const now = new Date();
+    const sessions = await this.prisma.authSession.findMany({
+      where: { userId: id },
+      select: {
+        id: true,
+        authMethod: true,
+        ipAddress: true,
+        userAgent: true,
+        expiresAt: true,
+        revokedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    return {
+      items: sessions.map((session) => ({
+        id: session.id,
+        authMethod: session.authMethod,
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        status: session.revokedAt
+          ? "revoked"
+          : session.expiresAt <= now
+            ? "expired"
+            : "active",
+        isCurrent: session.id === currentAdmin.sessionId,
+        expiresAt: session.expiresAt,
+        revokedAt: session.revokedAt,
+        createdAt: session.createdAt,
+        lastActiveAt: session.updatedAt,
+      })),
+    };
+  }
+
   async getAccessOptions() {
     const [roles, permissions] = await Promise.all([
       this.prisma.role.findMany({
@@ -444,6 +483,36 @@ export class UsersService {
       }),
     ]);
     return { id, revokedSessions: sessions.count };
+  }
+
+  async revokeSession(
+    currentAdmin: AuthenticatedUser,
+    id: number,
+    sessionId: string,
+  ) {
+    const session = await this.prisma.authSession.findFirst({
+      where: { id: sessionId, userId: id },
+      select: { id: true },
+    });
+    if (!session) {
+      throw new NotFoundException("Không tìm thấy phiên đăng nhập.");
+    }
+    if (currentAdmin.sessionId === session.id) {
+      throw new BadRequestException(
+        "Không thể thu hồi phiên quản trị viên đang sử dụng.",
+      );
+    }
+
+    const result = await this.prisma.authSession.updateMany({
+      where: {
+        id: session.id,
+        userId: id,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { revokedAt: new Date() },
+    });
+    return { id, sessionId: session.id, revoked: result.count === 1 };
   }
 
   async remove(currentAdmin: AuthenticatedUser, id: number) {

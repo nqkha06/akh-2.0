@@ -57,18 +57,20 @@ export class AuthController {
   @AuthRateLimit(10, 15 * 60_000)
   @HttpCode(HttpStatus.OK)
   async login(
-    @Body() _loginDto: LoginDto,
+    @Body() loginDto: LoginDto,
     @Req() request: AccessRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.authService.createSession(
       request.user,
       this.sessionContext(request),
+      loginDto.rememberMe === true,
     );
     this.setAuthCookies(
       response,
       result.response.accessToken,
       result.refreshToken,
+      loginDto.rememberMe === true,
     );
     return result.response;
   }
@@ -89,11 +91,14 @@ export class AuthController {
     const result = await this.authService.createSession(
       user,
       this.sessionContext(request),
+      body.rememberMe === true,
+      "google",
     );
     this.setAuthCookies(
       response,
       result.response.accessToken,
       result.refreshToken,
+      body.rememberMe === true,
     );
     return result.response;
   }
@@ -115,6 +120,7 @@ export class AuthController {
       response,
       result.response.accessToken,
       result.refreshToken,
+      request.user.payload.rememberMe === true,
     );
     return result.response;
   }
@@ -139,18 +145,30 @@ export class AuthController {
     response: Response,
     accessToken: string,
     refreshToken: string,
+    rememberMe: boolean,
   ) {
+    const accessOptions = accessCookieOptions(this.configService);
+    const refreshOptions = refreshCookieOptions(this.configService);
+
     response.cookie(accessCookieName(this.configService), accessToken, {
-      ...accessCookieOptions(this.configService),
-      maxAge: parseDurationMs(
-        this.configService.getOrThrow<string>("JWT_ACCESS_EXPIRES_IN"),
-      ),
+      ...accessOptions,
+      ...(rememberMe
+        ? {
+            maxAge: parseDurationMs(
+              this.configService.getOrThrow<string>("JWT_ACCESS_EXPIRES_IN"),
+            ),
+          }
+        : {}),
     });
     response.cookie(refreshCookieName(this.configService), refreshToken, {
-      ...refreshCookieOptions(this.configService),
-      maxAge: parseDurationMs(
-        this.configService.getOrThrow<string>("JWT_REFRESH_EXPIRES_IN"),
-      ),
+      ...refreshOptions,
+      ...(rememberMe
+        ? {
+            maxAge: parseDurationMs(
+              this.configService.getOrThrow<string>("JWT_REFRESH_EXPIRES_IN"),
+            ),
+          }
+        : {}),
     });
   }
 

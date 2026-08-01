@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { type FormEvent, type ReactNode, useId, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Eye, EyeOff, LogIn, Mail, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -26,7 +34,13 @@ import { useSiteBrand } from "@/features/site-settings/components/site-brand-pro
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register" | "forgot";
-type FieldName = "name" | "email" | "password" | "confirmPassword" | "terms";
+type FieldName =
+  | "name"
+  | "email"
+  | "password"
+  | "confirmPassword"
+  | "terms"
+  | "rememberMe";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
 type GoogleIdentity = {
@@ -36,12 +50,18 @@ type GoogleIdentity = {
         client_id: string;
         callback: (response: { credential?: string }) => void;
       }): void;
-      prompt(
-        callback?: (notification: {
-          isNotDisplayed(): boolean;
-          isSkippedMoment(): boolean;
-          isDismissedMoment(): boolean;
-        }) => void,
+      renderButton(
+        parent: HTMLElement,
+        options: {
+          type: "standard";
+          theme: "outline";
+          size: "large";
+          text: "signin_with" | "signup_with";
+          shape: "rectangular";
+          logo_alignment: "left";
+          width: number;
+          locale: string;
+        },
       ): void;
     };
   };
@@ -82,17 +102,6 @@ function Brand() {
         nameClassName="text-xl font-medium"
       />
     </Link>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
-      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.39a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.97-4.33 2.97-7.4Z" />
-      <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.43l-3.24-2.53c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.61A10 10 0 0 0 12 22Z" />
-      <path fill="#FBBC05" d="M6.39 13.87A6.02 6.02 0 0 1 6.07 12c0-.65.11-1.28.32-1.87V7.52H3.04A10 10 0 0 0 2 12c0 1.61.39 3.14 1.04 4.48l3.35-2.61Z" />
-      <path fill="#EA4335" d="M12 6c1.47 0 2.79.51 3.83 1.5l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.52l3.35 2.61C7.18 7.76 9.39 6 12 6Z" />
-    </svg>
   );
 }
 
@@ -173,11 +182,14 @@ export function AuthScreen({
   const fieldPrefix = useId();
   const copy = pageCopy[mode];
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState(initialMessage);
   const [messageIsSuccess, setMessageIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const rememberMeRef = useRef(rememberMe);
 
   const fieldId = (name: FieldName) => `${fieldPrefix}-${name}`;
 
@@ -185,6 +197,61 @@ export function AuthScreen({
     if (errors[field]) setErrors((current) => ({ ...current, [field]: undefined }));
     if (message) setMessage("");
   }
+
+  useEffect(() => {
+    rememberMeRef.current = rememberMe;
+  }, [rememberMe]);
+
+  useEffect(() => {
+    const container = googleButtonRef.current;
+    const google = (window as Window & { google?: GoogleIdentity }).google;
+    if (!googleClientId || !googleReady || !container || !google) return;
+
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: ({ credential }) => {
+        if (!credential) {
+          setMessage("Google không trả về thông tin đăng nhập hợp lệ.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        setErrors({});
+        setMessage("");
+        setMessageIsSuccess(false);
+        setIsSubmitting(true);
+        void loginWithGoogle({
+          idToken: credential,
+          referralCode,
+          rememberMe: rememberMeRef.current,
+        })
+          .then(() => {
+            router.push(redirectTo);
+            router.refresh();
+          })
+          .catch((error: unknown) => {
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "Không thể đăng nhập bằng Google.",
+            );
+            setIsSubmitting(false);
+          });
+      },
+    });
+
+    container.replaceChildren();
+    google.accounts.id.renderButton(container, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      text: mode === "register" ? "signup_with" : "signin_with",
+      shape: "rectangular",
+      logo_alignment: "left",
+      width: Math.min(Math.max(container.clientWidth, 200), 400),
+      locale: "vi",
+    });
+  }, [googleClientId, googleReady, mode, redirectTo, referralCode, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -219,6 +286,7 @@ export function AuthScreen({
       await loginAccount({
         email: String(formData.get("email") || ""),
         password: String(formData.get("password") || ""),
+        rememberMe,
       });
       router.push(redirectTo);
       router.refresh();
@@ -231,54 +299,6 @@ export function AuthScreen({
     }
   }
 
-  function handleGoogle() {
-    setErrors({});
-    setMessageIsSuccess(false);
-    if (!googleClientId) {
-      setMessage("Google OAuth chưa được cấu hình trong môi trường hiện tại.");
-      return;
-    }
-    const google = (window as Window & { google?: GoogleIdentity }).google;
-    if (!googleReady || !google) {
-      setMessage("Google OAuth chưa sẵn sàng. Vui lòng thử lại.");
-      return;
-    }
-    setIsSubmitting(true);
-    setMessage("");
-    google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: ({ credential }) => {
-        if (!credential) {
-          setMessage("Google không trả về thông tin đăng nhập hợp lệ.");
-          setIsSubmitting(false);
-          return;
-        }
-        void loginWithGoogle({ idToken: credential, referralCode })
-          .then(() => {
-            router.push(redirectTo);
-            router.refresh();
-          })
-          .catch((error: unknown) => {
-            setMessage(
-              error instanceof Error
-                ? error.message
-                : "Không thể đăng nhập bằng Google.",
-            );
-            setIsSubmitting(false);
-          });
-      },
-    });
-    google.accounts.id.prompt((notification) => {
-      if (
-        notification.isNotDisplayed() ||
-        notification.isSkippedMoment() ||
-        notification.isDismissedMoment()
-      ) {
-        setIsSubmitting(false);
-      }
-    });
-  }
-
   const submitIcon = mode === "login"
     ? <LogIn aria-hidden="true" />
     : mode === "register"
@@ -289,9 +309,12 @@ export function AuthScreen({
     <main className="container grid min-h-svh max-w-none items-center justify-center bg-background">
       {googleClientId ? (
         <Script
-          src="https://accounts.google.com/gsi/client"
+          src="https://accounts.google.com/gsi/client?hl=vi"
           strategy="afterInteractive"
           onReady={() => setGoogleReady(true)}
+          onError={() =>
+            setMessage("Không thể tải Google Sign-In. Vui lòng thử lại.")
+          }
         />
       ) : null}
       <div className="fixed top-0 left-0 z-[2147483647] h-0.5 w-full bg-transparent" aria-hidden="true">
@@ -427,6 +450,23 @@ export function AuthScreen({
                 </div>
               ) : null}
 
+              {mode === "login" ? (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={fieldId("rememberMe")}
+                    name="rememberMe"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  />
+                  <label
+                    htmlFor={fieldId("rememberMe")}
+                    className="cursor-pointer text-sm text-muted-foreground select-none"
+                  >
+                    Ghi nhớ đăng nhập
+                  </label>
+                </div>
+              ) : null}
+
               {message ? (
                 <p
                   className={cn(
@@ -447,7 +487,7 @@ export function AuthScreen({
                 {isSubmitting ? "Đang xử lý..." : copy.submit}
               </Button>
 
-              {mode !== "forgot" ? (
+              {mode !== "forgot" && googleClientId ? (
                 <>
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -455,9 +495,14 @@ export function AuthScreen({
                       <span className="bg-card px-2 text-muted-foreground">Hoặc tiếp tục với</span>
                     </div>
                   </div>
-                  <Button type="button" variant="outline" onClick={handleGoogle} disabled={isSubmitting}>
-                    <GoogleIcon /> Google
-                  </Button>
+                  <div
+                    ref={googleButtonRef}
+                    className={cn(
+                      "flex min-h-10 w-full justify-center overflow-hidden",
+                      isSubmitting && "pointer-events-none opacity-60",
+                    )}
+                    aria-busy={isSubmitting}
+                  />
                 </>
               ) : null}
 

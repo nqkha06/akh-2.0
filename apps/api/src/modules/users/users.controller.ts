@@ -53,6 +53,15 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Get(":id/sessions")
+  @Permissions("users.revoke-sessions")
+  findSessions(
+    @Req() request: AdminRequest,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.usersService.findSessions(request.user, id);
+  }
+
   @Post()
   @Permissions("users.create")
   create(@Req() request: AdminRequest, @Body() dto: CreateUserDto) {
@@ -121,6 +130,16 @@ export class UsersController {
     @Param("id", ParseIntPipe) id: number,
   ) {
     return this.usersService.revokeSessions(request.user, id);
+  }
+
+  @Post(":id/sessions/:sessionId/revoke")
+  @Permissions("users.revoke-sessions")
+  revokeSession(
+    @Req() request: AdminRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Param("sessionId") sessionId: string,
+  ) {
+    return this.usersService.revokeSession(request.user, id, sessionId);
   }
 
   @Delete(":id")

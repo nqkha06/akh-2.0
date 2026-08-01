@@ -24,6 +24,7 @@ import {
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type {
   AccessJwtPayload,
+  AuthMethod,
   AuthenticatedUser,
   RefreshJwtPayload,
   SessionContext,
@@ -127,16 +128,27 @@ export class AuthService {
     return this.toAuthenticatedUser(user);
   }
 
-  async createSession(user: AuthenticatedUser, context: SessionContext) {
+  async createSession(
+    user: AuthenticatedUser,
+    context: SessionContext,
+    rememberMe = false,
+    authMethod: AuthMethod = "password",
+  ) {
     const sessionId = randomUUID();
     const rotationCounter = 0;
     const expiresAt = new Date(Date.now() + this.refreshLifetimeMs());
-    const tokens = await this.issueTokenPair(user, sessionId, rotationCounter);
+    const tokens = await this.issueTokenPair(
+      user,
+      sessionId,
+      rotationCounter,
+      rememberMe,
+    );
 
     await this.prisma.authSession.create({
       data: {
         id: sessionId,
         userId: user.id,
+        authMethod,
         refreshTokenHash: this.hashRefreshToken(tokens.refreshToken),
         rotationCounter,
         expiresAt,
@@ -199,7 +211,12 @@ export class AuthService {
 
     const user = await this.toAuthenticatedUser(session.user);
     const nextRotation = session.rotationCounter + 1;
-    const tokens = await this.issueTokenPair(user, session.id, nextRotation);
+    const tokens = await this.issueTokenPair(
+      user,
+      session.id,
+      nextRotation,
+      payload.rememberMe === true,
+    );
     const nextHash = this.hashRefreshToken(tokens.refreshToken);
     const now = new Date();
     const rotated = await this.prisma.authSession.updateMany({
@@ -307,6 +324,7 @@ export class AuthService {
     user: AuthenticatedUser,
     sessionId: string,
     rotationCounter: number,
+    rememberMe: boolean,
   ) {
     const accessPayload: AccessJwtPayload = {
       sub: user.id,
@@ -320,6 +338,7 @@ export class AuthService {
       sid: sessionId,
       rot: rotationCounter,
       type: "refresh",
+      rememberMe,
     };
     const accessExpiresIn = this.configService.getOrThrow<string>(
       "JWT_ACCESS_EXPIRES_IN",

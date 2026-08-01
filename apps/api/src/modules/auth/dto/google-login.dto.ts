@@ -1,5 +1,6 @@
 import { Transform } from "class-transformer";
 import {
+  IsBoolean,
   IsOptional,
   IsString,
   Matches,
@@ -23,4 +24,8 @@ export class GoogleLoginDto {
     typeof value === "string" ? value.trim().toLowerCase() : value,
   )
   referralCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

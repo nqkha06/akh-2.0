@@ -2,6 +2,7 @@
 
 import type {
   AdminUserDetail,
+  AdminUserSession,
   CreateAdminUserPayload,
   UpdateAdminUserPayload,
   UserStatus,
@@ -59,6 +60,22 @@ export function revokeAdminUserSessions(id: number) {
     `/admin/users/${id}/revoke-sessions`,
     { method: "POST" },
   );
+}
+
+export function getAdminUserSessions(id: number) {
+  return request<{ items: AdminUserSession[] }>(`/admin/users/${id}/sessions`, {
+    method: "GET",
+  });
+}
+
+export function revokeAdminUserSession(id: number, sessionId: string) {
+  return request<{
+    id: number;
+    sessionId: string;
+    revoked: boolean;
+  }>(`/admin/users/${id}/sessions/${encodeURIComponent(sessionId)}/revoke`, {
+    method: "POST",
+  });
 }
 
 async function request<T>(path: string, init: RequestInit) {

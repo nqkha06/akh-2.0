@@ -50,7 +50,7 @@ export const permissionCatalog = [
   {
     key: "users.revoke-sessions",
     name: "Thu hồi phiên người dùng",
-    description: "Đăng xuất người dùng khỏi tất cả thiết bị.",
+    description: "Xem và đăng xuất từng phiên hoặc tất cả thiết bị của người dùng.",
     group: "users",
   },
   {

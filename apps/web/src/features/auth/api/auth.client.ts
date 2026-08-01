@@ -2,7 +2,11 @@
 
 const authApiBase = "/api/backend/auth";
 
-export function loginAccount(payload: { email: string; password: string }) {
+export function loginAccount(payload: {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}) {
   return request(`${authApiBase}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -26,6 +30,7 @@ export function registerAccount(payload: {
 export function loginWithGoogle(payload: {
   idToken: string;
   referralCode?: string;
+  rememberMe: boolean;
 }) {
   return request(`${authApiBase}/google`, {
     method: "POST",

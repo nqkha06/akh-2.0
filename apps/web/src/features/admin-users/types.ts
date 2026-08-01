@@ -46,6 +46,21 @@ export type AdminUserListItem = {
 export type AdminUser = AdminUserListItem;
 export type AdminUserDetail = AdminUserListItem;
 
+export type AdminUserSessionStatus = "active" | "revoked" | "expired";
+
+export type AdminUserSession = {
+  id: string;
+  authMethod: "password" | "google" | string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  status: AdminUserSessionStatus;
+  isCurrent: boolean;
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+};
+
 export type CreateAdminUserPayload = {
   name: string;
   email: string;

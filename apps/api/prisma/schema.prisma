@@ -148,6 +148,7 @@ model UserHasPermission {
 model AuthSession {
   id               String    @id @default(cuid())
   userId           Int       @map("user_id")
+  authMethod       String    @default("password") @map("auth_method")
   refreshTokenHash String    @map("refresh_token_hash")
   rotationCounter  Int       @default(0) @map("rotation_counter")
   expiresAt        DateTime  @map("expires_at")
