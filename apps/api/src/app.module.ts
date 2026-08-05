@@ -21,6 +21,7 @@ import { PaymentMethodsModule } from "./modules/payment-methods/payment-methods.
 import { PagesModule } from "./modules/pages/pages.module";
 import { ReferralsModule } from "./modules/referrals/referrals.module";
 import { SiteSettingsModule } from "./modules/site-settings/site-settings.module";
+import { StuAccessLogsModule } from "./modules/stu-access-logs/stu-access-logs.module";
 import { SnippetsModule } from "./modules/snippets/snippets.module";
 import { SupportModule } from "./modules/support/support.module";
 import { VisitAggregationSchedulerModule } from "./modules/system-jobs/visit-aggregation-scheduler.module";
@@ -57,6 +58,7 @@ const visitAggregationScheduler =
     PagesModule,
     ReferralsModule,
     SiteSettingsModule,
+    StuAccessLogsModule,
     SnippetsModule,
     SupportModule,
     ...visitAggregationScheduler,

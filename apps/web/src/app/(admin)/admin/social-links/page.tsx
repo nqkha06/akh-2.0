@@ -22,7 +22,7 @@ export default function AdminSocialLinksPage({
       <Suspense
         fallback={
           <DataTableSkeleton
-            columnCount={10}
+            columnCount={9}
             filterCount={4}
             cellWidths={[
               "3rem",

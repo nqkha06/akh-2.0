@@ -81,7 +81,13 @@ function loginRedirect(request: NextRequest, callbackUrl: string) {
 function safeCallbackUrl(value: string | null) {
   if (
     value &&
-    (value === "/member" ||
+    (value === "/" ||
+      value === "/login" ||
+      value.startsWith("/login?") ||
+      value === "/register" ||
+      value.startsWith("/register?") ||
+      value === "/forgot-password" ||
+      value === "/member" ||
       value.startsWith("/member/") ||
       value === "/admin" ||
       value.startsWith("/admin/"))

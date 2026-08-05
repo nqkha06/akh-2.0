@@ -11,5 +11,6 @@ export function adaptAdminSocialLinksResponse(
     pageCount: Math.max(1, Math.ceil(response.total / response.limit)),
     total: response.total,
     totalViews: response.totalViews,
+    totalRevenue: response.totalRevenue,
   }
 }

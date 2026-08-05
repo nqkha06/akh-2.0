@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
+import { getSignedInRedirect } from "@/lib/auth/redirects";
 import { getOptionalServerUser } from "@/lib/auth/server-session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,9 +21,9 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const currentUser = await getOptionalServerUser();
+  const currentUser = await getOptionalServerUser("/register");
   if (currentUser) {
-    redirect("/member");
+    redirect(getSignedInRedirect(currentUser));
   }
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";

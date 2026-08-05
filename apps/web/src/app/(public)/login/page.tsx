@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server";
+import { getSignedInRedirect } from "@/lib/auth/redirects";
 import { getOptionalServerUser } from "@/lib/auth/server-session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -34,13 +35,12 @@ export default async function LoginPage({
   const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
   const authError = Array.isArray(params.error) ? params.error[0] : params.error;
   const authCode = Array.isArray(params.code) ? params.code[0] : params.code;
-  const currentUser =
-    reason === "session-expired" ? null : await getOptionalServerUser();
-  if (
-    reason !== "session-expired" &&
-    currentUser
-  ) {
-    redirect(callbackUrl);
+  const loginCallbackUrl = callbackCandidate
+    ? `/login?callbackUrl=${encodeURIComponent(callbackCandidate)}`
+    : "/login";
+  const currentUser = await getOptionalServerUser(loginCallbackUrl);
+  if (currentUser) {
+    redirect(getSignedInRedirect(currentUser, callbackCandidate));
   }
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";

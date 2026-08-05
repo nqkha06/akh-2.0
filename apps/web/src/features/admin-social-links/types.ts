@@ -61,6 +61,7 @@ export type NestPaginatedAdminSocialLinksResponse = {
   page: number
   limit: number
   totalViews: number
+  totalRevenue: string
 }
 
 export type AdminSocialLinksTableData = {
@@ -68,4 +69,5 @@ export type AdminSocialLinksTableData = {
   pageCount: number
   total: number
   totalViews: number
+  totalRevenue: string
 }

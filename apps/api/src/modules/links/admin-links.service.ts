@@ -79,7 +79,7 @@ export class AdminLinksService {
       this.prisma.link.count({ where }),
       this.prisma.link.aggregate({
         where,
-        _sum: { views: true },
+        _sum: { views: true, revenue: true },
       }),
     ]);
 
@@ -91,6 +91,7 @@ export class AdminLinksService {
       total,
       pageCount: Math.max(1, Math.ceil(total / query.perPage)),
       totalViews: aggregate._sum.views ?? 0,
+      totalRevenue: aggregate._sum.revenue?.toString() ?? "0",
     };
   }
 

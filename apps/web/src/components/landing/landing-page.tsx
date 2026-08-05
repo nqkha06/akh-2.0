@@ -147,6 +147,7 @@ function resolvePublicHref(href: string, anchorPrefix: string) {
 export function Navbar({
   settings,
   menus,
+  dashboardHref = null,
   semantic = false,
   showThemeToggle = false,
   themeToggleLabel = "Toggle color theme",
@@ -154,6 +155,7 @@ export function Navbar({
 }: {
   settings: PublicSiteSettings;
   menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+  dashboardHref?: string | null;
   semantic?: boolean;
   showThemeToggle?: boolean;
   themeToggleLabel?: string;
@@ -172,12 +174,22 @@ export function Navbar({
   const mobileLinks = menus?.["mobile-primary"]?.items.length
     ? menus["mobile-primary"].items
     : links;
-  const actions = menus?.["header-actions"]?.items.length
-    ? menus["header-actions"].items
-    : [
-        { id: -5, label: "Sign in", href: "/login", target: "_self" as const, rel: null },
-        { id: -6, label: "Start creating", href: "/register", target: "_self" as const, rel: null },
-      ];
+  const actions = dashboardHref
+    ? [
+        {
+          id: -7,
+          label: "Dashboard",
+          href: dashboardHref,
+          target: "_self" as const,
+          rel: null,
+        },
+      ]
+    : menus?.["header-actions"]?.items.length
+      ? menus["header-actions"].items
+      : [
+          { id: -5, label: "Sign in", href: "/login", target: "_self" as const, rel: null },
+          { id: -6, label: "Start creating", href: "/register", target: "_self" as const, rel: null },
+        ];
 
   return (
     <header className={`${styles.navbar} ${semantic ? styles.semanticNavbar : ""}`}>
@@ -248,7 +260,7 @@ function HeroPhone() {
   );
 }
 
-export function HeroSection() {
+export function HeroSection({ dashboardHref }: { dashboardHref: string | null }) {
   return (
     <section className={styles.hero} id="top">
       <div className={styles.container}>
@@ -258,7 +270,7 @@ export function HeroSection() {
             <h1>One link.<br /><span>More momentum.</span></h1>
             <p>Turn every click into a follow, subscriber, fan, or customer with link-in-bio pages and verified unlock actions.</p>
             <div className={styles.heroButtons}>
-              <a className={styles.primaryButton} href="/register">Create your free page <ArrowRight size={17} /></a>
+              <a className={styles.primaryButton} href={dashboardHref || "/register"}>{dashboardHref ? "Go to dashboard" : "Create your free page"} <ArrowRight size={17} /></a>
               <a className={styles.secondaryButton} href="#unlock-demo"><Play size={15} fill="currentColor" /> See how it works</a>
             </div>
             <div className={styles.microProof}><CircleCheck size={15} /> No credit card required <i /> Launch in minutes</div>
@@ -558,7 +570,7 @@ function UseCasePreview({ active }: { active: string }) {
   );
 }
 
-export function UseCaseTabs() {
+export function UseCaseTabs({ dashboardHref }: { dashboardHref: string | null }) {
   const [active, setActive] = useState("video");
   const current = useCases.find((item) => item.key === active)!;
   return (
@@ -569,7 +581,7 @@ export function UseCaseTabs() {
           {useCases.map((item) => <button key={item.key} role="tab" aria-selected={active === item.key} aria-controls="use-case-panel" onClick={() => setActive(item.key)} className={active === item.key ? styles.activeUseCase : ""}>{item.label}</button>)}
         </div>
         <div className={styles.useCaseLayout} id="use-case-panel" role="tabpanel">
-          <div className={styles.useCaseCopy}><h3>{current.title}</h3><p>{current.body}</p><div className={styles.workflowLine}>{current.steps.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b>{index < current.steps.length - 1 && <ArrowRight size={16} />}</div>)}</div><a href="/register">Build this workflow <ArrowRight size={16} /></a></div>
+          <div className={styles.useCaseCopy}><h3>{current.title}</h3><p>{current.body}</p><div className={styles.workflowLine}>{current.steps.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b>{index < current.steps.length - 1 && <ArrowRight size={16} />}</div>)}</div><a href={dashboardHref || "/register"}>{dashboardHref ? "Open dashboard" : "Build this workflow"} <ArrowRight size={16} /></a></div>
           <UseCasePreview active={active} />
         </div>
       </div>
@@ -577,7 +589,7 @@ export function UseCaseTabs() {
   );
 }
 
-export function FinalCTA() {
+export function FinalCTA({ dashboardHref }: { dashboardHref: string | null }) {
   return (
     <section className={styles.finalSection} id="pricing">
       <Reveal className={styles.finalCta}>
@@ -586,7 +598,7 @@ export function FinalCTA() {
         <div className={`${styles.ctaIcon} ${styles.ctaIconThree}`}><Sparkles size={18} /></div>
         <h2>Your next big click<br />starts right here.</h2>
         <p>Build a page your audience remembers and a growth loop that keeps working.</p>
-        <a className={styles.primaryButton} href="/register">Start creating for free <ArrowRight size={17} /></a>
+        <a className={styles.primaryButton} href={dashboardHref || "/register"}>{dashboardHref ? "Go to dashboard" : "Start creating for free"} <ArrowRight size={17} /></a>
         <small>No credit card required <i /> Free plan available</small>
       </Reveal>
     </section>
@@ -667,21 +679,23 @@ export function Footer({
 export function LandingPage({
   settings,
   menus,
+  dashboardHref,
 }: {
   settings: PublicSiteSettings;
   menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
+  dashboardHref: string | null;
 }) {
   return (
     <main className={styles.page}>
-      <Navbar menus={menus} semantic settings={settings} showThemeToggle />
-      <HeroSection />
+      <Navbar dashboardHref={dashboardHref} menus={menus} semantic settings={settings} showThemeToggle />
+      <HeroSection dashboardHref={dashboardHref} />
       <IntegrationStrip />
       <ProcessTimeline />
       <UnlockDemoSection />
       <FeatureShowcase />
       <SocialProofSection />
-      <UseCaseTabs />
-      <FinalCTA />
+      <UseCaseTabs dashboardHref={dashboardHref} />
+      <FinalCTA dashboardHref={dashboardHref} />
       <Footer menus={menus} semantic settings={settings} />
     </main>
   );

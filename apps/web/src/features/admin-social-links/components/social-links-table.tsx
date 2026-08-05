@@ -26,6 +26,7 @@ import {
 import { DeleteSocialLinksDialog } from "@/features/admin-social-links/components/delete-social-links-dialog"
 import { RestoreSocialLinksDialog } from "@/features/admin-social-links/components/restore-social-links-dialog"
 import { SocialLinkEditorDialog } from "@/features/admin-social-links/components/social-link-editor-dialog"
+import { SocialLinkDetailsSheet } from "@/features/admin-social-links/components/social-link-details-sheet"
 import {
   getSocialLinksTableColumns,
   type SocialLinkRowAction,
@@ -42,6 +43,7 @@ export function SocialLinksTable({
   pageCount,
   total,
   totalViews,
+  totalRevenue,
   filteredUserId,
 }: AdminSocialLinksTableData & { filteredUserId: number | null }) {
   const permissions = useAdminPermissions()
@@ -97,9 +99,10 @@ export function SocialLinksTable({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Kết quả" value={total} />
-        <SummaryCard label="Tổng visit hoàn tất" value={totalViews} />
+        <SummaryCard label="Tổng view" value={totalViews} />
+        <SummaryCard label="Tổng rev" value={formatMoney(totalRevenue)} />
         <SummaryCard
           label="Đang hoạt động trên trang"
           value={data.filter((link) => link.status === "active").length}
@@ -141,6 +144,13 @@ export function SocialLinksTable({
         }
         onOpenChange={() => setRowAction(null)}
         onSuccess={refresh}
+      />
+
+      <SocialLinkDetailsSheet
+        link={
+          rowAction?.variant === "view" ? rowAction.row.original : null
+        }
+        onOpenChange={() => setRowAction(null)}
       />
 
       <DeleteSocialLinksDialog
@@ -290,13 +300,31 @@ function SocialLinksSelectionActionBar({
   )
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+function SummaryCard({
+  label,
+  value,
+}: {
+  label: string
+  value: number | string
+}) {
   return (
     <div className="rounded-lg border bg-card px-4 py-3">
       <p className="text-muted-foreground text-xs">{label}</p>
       <p className="mt-1 font-semibold text-2xl tabular-nums">
-        {new Intl.NumberFormat("vi-VN").format(value)}
+        {typeof value === "number"
+          ? new Intl.NumberFormat("vi-VN").format(value)
+          : value}
       </p>
     </div>
   )
+}
+
+function formatMoney(value: string) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return value
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(amount)
 }

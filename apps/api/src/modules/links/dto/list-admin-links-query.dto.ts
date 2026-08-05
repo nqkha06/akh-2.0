@@ -20,6 +20,7 @@ const sortableColumns = [
   "title",
   "status",
   "views",
+  "revenue",
 ] as const;
 const statuses = ["active", "inactive", "paused"] as const;
 const destinationTypes = ["url", "file", "snippet"] as const;

@@ -48,6 +48,30 @@ export const permissionCatalog = [
     group: "users",
   },
   {
+    key: "stu_access_logs.view",
+    name: "Xem access logs",
+    description: "Xem danh sách, chi tiết và báo cáo access log.",
+    group: "stu-access-logs",
+  },
+  {
+    key: "stu_access_logs.view_sensitive",
+    name: "Xem dữ liệu access log nhạy cảm",
+    description: "Xem đầy đủ địa chỉ IP trong access log và báo cáo điều tra.",
+    group: "stu-access-logs",
+  },
+  {
+    key: "stu_access_logs.review",
+    name: "Review access logs",
+    description: "Đánh dấu kết quả review access log của quản trị viên.",
+    group: "stu-access-logs",
+  },
+  {
+    key: "stu_access_logs.manage_rules",
+    name: "Quản lý rule access logs",
+    description: "Dành cho cấu hình rule phát hiện bất thường trong tương lai.",
+    group: "stu-access-logs",
+  },
+  {
     key: "links.read",
     name: "Xem social link",
     description: "Xem danh sách và chi tiết social link của hệ thống.",

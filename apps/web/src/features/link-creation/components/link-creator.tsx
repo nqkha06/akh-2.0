@@ -3072,11 +3072,7 @@ export default function SocialLinksGenerator({
             )}
 
             <h3
-              className={
-                title
-                  ? "text-lg font-semibold tracking-[-0.02em] text-slate-950 dark:text-[#f7f8f8]"
-                  : "text-base font-normal text-slate-600 dark:text-[#8a8f98]"
-              }
+              className="text-lg font-semibold tracking-[-0.02em] text-slate-950 dark:text-[#f7f8f8]"
             >
               {title || t("unlockLink")}
             </h3>

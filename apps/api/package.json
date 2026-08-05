@@ -10,7 +10,7 @@
     "start:worker": "node dist/worker.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/bio-gallery.dto-spec.ts test/auth.e2e-spec.ts",
+    "test": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/bio-gallery.dto-spec.ts test/access-fraud.rules-spec.ts test/auth.e2e-spec.ts",
     "test:e2e": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/auth.e2e-spec.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

@@ -4,9 +4,10 @@ import type { ColumnDef, Row } from "@tanstack/react-table"
 import {
   CalendarIcon,
   CircleDashed,
+  CircleDollarSign,
   Ellipsis,
   ExternalLink,
-  FileText,
+  Eye,
   Link2,
   MousePointerClick,
   RotateCcw,
@@ -31,19 +32,13 @@ import type { AdminSocialLink } from "@/features/admin-social-links/types"
 
 export type SocialLinkRowAction = {
   row: Row<AdminSocialLink>
-  variant: "update" | "delete" | "restore"
+  variant: "view" | "update" | "delete" | "restore"
 }
 
 const statusOptions = [
   { label: "Hoạt động", value: "active" },
   { label: "Không hoạt động", value: "inactive" },
   { label: "Tạm dừng", value: "paused" },
-]
-
-const destinationOptions = [
-  { label: "URL", value: "url" },
-  { label: "File", value: "file" },
-  { label: "Snippet", value: "snippet" },
 ]
 
 const deletionOptions = [
@@ -173,30 +168,27 @@ export function getSocialLinksTableColumns({
       enableColumnFilter: true,
     },
     {
-      id: "destinationType",
-      accessorKey: "destinationType",
+      id: "revenue",
+      accessorKey: "revenue",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Destination" />
+        <DataTableColumnHeader column={column} label="Rev" />
       ),
       cell: ({ row }) => (
-        <Badge variant="outline" className="uppercase">
-          {row.original.destinationType}
-        </Badge>
+        <span className="font-medium tabular-nums">
+          {formatMoney(row.original.revenue)}
+        </span>
       ),
       meta: {
-        label: "Destination",
-        variant: "multiSelect",
-        options: destinationOptions,
-        icon: FileText,
+        label: "Rev",
+        icon: CircleDollarSign,
       },
-      enableColumnFilter: true,
-      enableSorting: false,
+      enableColumnFilter: false,
     },
     {
       id: "views",
       accessorKey: "views",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Visit hoàn tất" />
+        <DataTableColumnHeader column={column} label="View" />
       ),
       cell: ({ row }) => (
         <span className="tabular-nums">
@@ -204,30 +196,12 @@ export function getSocialLinksTableColumns({
         </span>
       ),
       meta: {
-        label: "Visit hoàn tất",
-        placeholder: "Nhập số visit...",
+        label: "View",
+        placeholder: "Nhập số view...",
         variant: "number",
         icon: MousePointerClick,
       },
       enableColumnFilter: true,
-    },
-    {
-      id: "actionsCount",
-      accessorKey: "actionsCount",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <span className="tabular-nums">{row.original.actionsCount}</span>
-          <div className="flex max-w-32 gap-1 overflow-hidden">
-            {row.original.platforms.slice(0, 2).map((platform) => (
-              <Badge key={platform} variant="secondary" className="text-xs">
-                {platform}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      ),
-      enableSorting: false,
     },
     {
       id: "deletedState",
@@ -272,62 +246,58 @@ export function getSocialLinksTableColumns({
       id: "actions",
       enableHiding: false,
       enableSorting: false,
-      cell: ({ row }) =>
-        canDelete || canUpdate ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-label={`Mở menu ${row.original.title}`}
-                variant="ghost"
-                className="flex size-8 p-0 data-[state=open]:bg-muted"
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label={`Mở menu ${row.original.title}`}
+              variant="ghost"
+              className="flex size-8 p-0 data-[state=open]:bg-muted"
+            >
+              <Ellipsis />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onSelect={() => setRowAction({ row, variant: "view" })}
+            >
+              <Eye /> Xem chi tiết
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a
+                href={`/l/${row.original.slug}`}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Ellipsis />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <a
-                  href={`/l/${row.original.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink /> Mở link công khai
-                </a>
+                <ExternalLink /> Mở link công khai
+              </a>
+            </DropdownMenuItem>
+            {canUpdate && !row.original.deletedAt ? (
+              <DropdownMenuItem
+                onSelect={() => setRowAction({ row, variant: "update" })}
+              >
+                <Workflow /> Chỉnh sửa
               </DropdownMenuItem>
-              {canUpdate && !row.original.deletedAt ? (
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setRowAction({ row, variant: "update" })
-                  }
-                >
-                  <Workflow /> Chỉnh sửa
-                </DropdownMenuItem>
-              ) : null}
-              {(canUpdate || canDelete) && (
-                <DropdownMenuSeparator />
-              )}
-              {canUpdate && row.original.deletedAt ? (
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setRowAction({ row, variant: "restore" })
-                  }
-                >
-                  <RotateCcw /> Khôi phục
-                </DropdownMenuItem>
-              ) : null}
-              {canDelete && !row.original.deletedAt ? (
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() =>
-                    setRowAction({ row, variant: "delete" })
-                  }
-                >
-                  <Trash2 /> Chuyển vào thùng rác
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null,
+            ) : null}
+            {(canUpdate || canDelete) && <DropdownMenuSeparator />}
+            {canUpdate && row.original.deletedAt ? (
+              <DropdownMenuItem
+                onSelect={() => setRowAction({ row, variant: "restore" })}
+              >
+                <RotateCcw /> Khôi phục
+              </DropdownMenuItem>
+            ) : null}
+            {canDelete && !row.original.deletedAt ? (
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => setRowAction({ row, variant: "delete" })}
+              >
+                <Trash2 /> Chuyển vào thùng rác
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ]
 }
@@ -369,4 +339,14 @@ function formatDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value))
+}
+
+function formatMoney(value: string) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return value
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(amount)
 }

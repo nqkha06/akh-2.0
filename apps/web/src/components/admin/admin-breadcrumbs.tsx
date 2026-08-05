@@ -21,6 +21,7 @@ export type AdminBreadcrumbItem = {
 const sectionLabels: Record<string, string> = {
   users: "Users",
   "social-links": "Social Links",
+  "stu-access-logs": "Access Logs",
   pages: "Pages",
   media: "Admin Media",
   menus: "Website Menus",
@@ -39,6 +40,7 @@ const leafLabels: Record<string, string> = {
   preview: "Preview",
   appearance: "Website Settings",
   currencies: "Tiền tệ & tỷ giá",
+  "access-analysis": "Access Analysis",
 }
 
 export function AdminBreadcrumbs({

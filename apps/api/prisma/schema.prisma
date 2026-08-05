@@ -54,6 +54,7 @@ model User {
   meta                     UserMeta[]
   bioPages                 BioPage[]
   accessLogs               LinkAccessLog[]
+  accessLogReviews         AccessLogReview[]         @relation("AccessLogReviewedBy")
   createdAnnouncements     Announcement[]             @relation("AnnouncementCreatedBy")
   updatedAnnouncements     Announcement[]             @relation("AnnouncementUpdatedBy")
   announcementStates       AnnouncementUser[]
@@ -263,7 +264,9 @@ model LinkAccessLog {
   link             Link      @relation(fields: [linkId], references: [id], onDelete: Cascade)
   user             User      @relation(fields: [userId], references: [id], onDelete: Restrict)
   userAgent        UserAgent @relation(fields: [agentHash], references: [hash], onDelete: Restrict)
+  review           AccessLogReview?
 
+  @@index([createdAt])
   @@index([linkId, createdAt])
   @@index([userId, createdAt])
   @@index([ipAddress, createdAt])
@@ -272,6 +275,22 @@ model LinkAccessLog {
   @@index([userId, ipAddress, completedAt])
   @@index([userId, isEarn, completedAt])
   @@map("stu_access_logs")
+}
+
+model AccessLogReview {
+  id           Int           @id @default(autoincrement())
+  accessLogId  String        @unique @map("access_log_id")
+  status       String
+  note         String?
+  reviewedById Int           @map("reviewed_by_id")
+  reviewedAt   DateTime      @default(now()) @map("reviewed_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  accessLog    LinkAccessLog @relation(fields: [accessLogId], references: [id], onDelete: Cascade)
+  reviewedBy   User          @relation("AccessLogReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([status, reviewedAt])
+  @@index([reviewedById])
+  @@map("stu_access_log_reviews")
 }
 
 model AccessLogAggregationRun {

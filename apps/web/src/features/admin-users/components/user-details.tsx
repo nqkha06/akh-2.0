@@ -17,6 +17,7 @@ import {
   Network,
   Pencil,
   Shield,
+  ShieldAlert,
   Trash2,
   UserPlus,
   WalletCards,
@@ -62,6 +63,7 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
   const canRevokeSessions = permissions.includes("users.revoke-sessions");
   const canViewSocialLinks = permissions.includes("links.read");
   const canViewWithdrawals = permissions.includes("withdrawals.read");
+  const canViewAccessLogs = permissions.includes("stu_access_logs.view");
   const isSelf = user.id === currentUserId;
   const [action, setAction] = React.useState<UserConfirmationAction | null>(
     null,
@@ -139,6 +141,13 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
                 <Button variant="outline" asChild>
                   <Link href={`/admin/withdrawals?userId=${user.id}`}>
                     <CircleDollarSign /> Yêu cầu rút tiền
+                  </Link>
+                </Button>
+              ) : null}
+              {canViewAccessLogs ? (
+                <Button variant="outline" asChild>
+                  <Link href={`/admin/users/${user.id}/access-analysis`}>
+                    <ShieldAlert /> Phân tích traffic
                   </Link>
                 </Button>
               ) : null}
