@@ -1,7 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  Logger,
+  NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -12,6 +15,7 @@ import { compare, hash } from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import {
   createHash,
+  randomBytes,
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
@@ -21,6 +25,7 @@ import {
   resolveUserAuthorization,
   userAuthorizationInclude,
 } from "../authorization/user-authorization";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type {
   AccessJwtPayload,
@@ -34,22 +39,36 @@ import {
   unauthorizedAuthError,
 } from "./auth-errors";
 import type { RegisterDto } from "./dto/register.dto";
+import { PasswordResetMailer } from "./password-reset-mailer.service";
 
 const INVALID_CREDENTIALS_MESSAGE = "Email hoặc mật khẩu không chính xác.";
 const DUMMY_PASSWORD_HASH =
   "$2b$12$M6oVeaKyMkEGNAg1J4aQSe8d8r94bHIpATvndSBH0cmJb9aJw8R5u";
+const PASSWORD_RESET_RESPONSE =
+  "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.";
 
 @Injectable()
 export class AuthService {
   private readonly googleClient = new OAuth2Client();
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly passwordResetMailer: PasswordResetMailer,
+    private readonly businessSettings: BusinessSettingsService,
   ) {}
 
   async register(dto: RegisterDto) {
+    const settings = await this.businessSettings.getRuntime();
+    if (!settings.registrationEnabled || settings.maintenanceMode) {
+      throw new ServiceUnavailableException(
+        settings.maintenanceMode
+          ? "Hệ thống đang bảo trì. Vui lòng quay lại sau."
+          : "Hệ thống đang tạm dừng đăng ký tài khoản mới.",
+      );
+    }
     const email = this.normalizeEmail(dto.email);
     const referrer = dto.referralCode
       ? await this.prisma.user.findFirst({
@@ -74,6 +93,9 @@ export class AuthService {
             name: dto.name.trim(),
             email,
             passwordHash,
+            emailVerifiedAt: settings.emailVerificationRequired
+              ? null
+              : new Date(),
             status: "active",
             referralCode: this.generateReferralCode(),
             referredById: referrer?.id,
@@ -82,7 +104,18 @@ export class AuthService {
             },
           },
         });
-        return this.toPublicUser(await this.toAuthenticatedUser(user));
+        if (settings.emailVerificationRequired) {
+          try {
+            await this.issueEmailVerification(user, null);
+          } catch (error) {
+            await this.prisma.user.delete({ where: { id: user.id } });
+            throw error;
+          }
+        }
+        return {
+          ...this.toPublicUser(await this.toAuthenticatedUser(user)),
+          requiresEmailVerification: settings.emailVerificationRequired,
+        };
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -106,6 +139,185 @@ export class AuthService {
     );
   }
 
+  async requestPasswordReset(emailInput: string, context: SessionContext) {
+    const email = this.normalizeEmail(emailInput);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+      },
+    });
+
+    if (!user || user.status !== "active") {
+      return { message: PASSWORD_RESET_RESPONSE };
+    }
+
+    const token = randomBytes(32).toString("base64url");
+    const tokenHash = this.hashOpaqueToken(token);
+    const expiresInMinutes = this.passwordResetLifetimeMinutes();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiresInMinutes * 60_000);
+
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+          requestedIp: context.ipAddress,
+        },
+      }),
+    ]);
+
+    const resetUrl = new URL(this.passwordResetUrl());
+    resetUrl.searchParams.set("token", token);
+
+    try {
+      await this.passwordResetMailer.sendPasswordReset({
+        to: user.email,
+        name: user.name,
+        resetUrl: resetUrl.toString(),
+        expiresInMinutes,
+      });
+    } catch (error) {
+      await this.prisma.passwordResetToken.deleteMany({ where: { tokenHash } });
+      this.logger.error(
+        "Yêu cầu đặt lại mật khẩu đã được tiếp nhận nhưng email không gửi được.",
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+
+    return { message: PASSWORD_RESET_RESPONSE };
+  }
+
+  async requestEmailVerification(emailInput: string, context: SessionContext) {
+    const email = this.normalizeEmail(emailInput);
+    const settings = await this.businessSettings.getRuntime();
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, name: true, email: true, emailVerifiedAt: true, status: true },
+    });
+    if (
+      settings.emailVerificationRequired &&
+      user?.status === "active" &&
+      !user.emailVerifiedAt
+    ) {
+      await this.issueEmailVerification(user, context.ipAddress);
+    }
+    return {
+      message:
+        "Nếu tài khoản cần xác minh, chúng tôi đã gửi một liên kết mới đến email của bạn.",
+    };
+  }
+
+  async verifyEmail(token: string) {
+    const tokenHash = this.hashOpaqueToken(token);
+    const now = new Date();
+    await this.prisma.$transaction(async (prisma) => {
+      const verification = await prisma.emailVerificationToken.findFirst({
+        where: {
+          tokenHash,
+          usedAt: null,
+          expiresAt: { gt: now },
+          user: { status: "active" },
+        },
+        select: { id: true, userId: true },
+      });
+      if (!verification) {
+        throw new BadRequestException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+      const claimed = await prisma.emailVerificationToken.updateMany({
+        where: { id: verification.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (claimed.count !== 1) {
+        throw new BadRequestException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+      await prisma.user.update({
+        where: { id: verification.userId },
+        data: { emailVerifiedAt: now },
+      });
+      await prisma.emailVerificationToken.updateMany({
+        where: { userId: verification.userId, usedAt: null },
+        data: { usedAt: now },
+      });
+    });
+    return { message: "Email đã được xác minh. Bạn có thể đăng nhập." };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const tokenHash = this.hashOpaqueToken(token);
+    const now = new Date();
+    const passwordHash = await hash(password, 12);
+
+    await this.prisma.$transaction(async (prisma) => {
+      const resetToken = await prisma.passwordResetToken.findFirst({
+        where: {
+          tokenHash,
+          usedAt: null,
+          expiresAt: { gt: now },
+          user: { status: "active" },
+        },
+        select: {
+          id: true,
+          userId: true,
+          user: { select: { emailVerifiedAt: true } },
+        },
+      });
+      if (!resetToken) {
+        throw new BadRequestException(
+          "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      const claimed = await prisma.passwordResetToken.updateMany({
+        where: {
+          id: resetToken.id,
+          usedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: { usedAt: now },
+      });
+      if (claimed.count !== 1) {
+        throw new BadRequestException(
+          "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      await prisma.user.update({
+        where: { id: resetToken.userId },
+        data: {
+          passwordHash,
+          emailVerifiedAt: resetToken.user.emailVerifiedAt ?? now,
+          tokenVersion: { increment: 1 },
+        },
+      });
+      await prisma.authSession.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await prisma.passwordResetToken.updateMany({
+        where: { userId: resetToken.userId, usedAt: null },
+        data: { usedAt: now },
+      });
+    });
+
+    return {
+      message: "Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.",
+    };
+  }
+
   async validateCredentials(emailInput: string, password: string) {
     const email = this.normalizeEmail(emailInput);
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -124,6 +336,14 @@ export class AuthService {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
+    const settings = await this.businessSettings.getRuntime();
+    if (settings.emailVerificationRequired && !user.emailVerifiedAt) {
+      throw new ForbiddenException({
+        code: "EMAIL_VERIFICATION_REQUIRED",
+        message: "Bạn cần xác minh email trước khi đăng nhập.",
+      });
+    }
+
     return this.toAuthenticatedUser(user);
   }
 
@@ -132,6 +352,7 @@ export class AuthService {
     context: SessionContext,
     rememberMe = false,
     authMethod: AuthMethod = "password",
+    impersonator?: { userId: number; sessionId: string },
   ) {
     const sessionId = randomUUID();
     const rotationCounter = 0;
@@ -148,6 +369,8 @@ export class AuthService {
         id: sessionId,
         userId: user.id,
         authMethod,
+        impersonatorUserId: impersonator?.userId,
+        impersonatorSessionId: impersonator?.sessionId,
         refreshTokenHash: this.hashRefreshToken(tokens.refreshToken),
         rotationCounter,
         expiresAt,
@@ -207,7 +430,10 @@ export class AuthService {
       return this.rejectRefreshTokenReuse(session.id);
     }
 
-    const user = await this.toAuthenticatedUser(session.user);
+    const user = await this.attachImpersonation(
+      await this.toAuthenticatedUser(session.user),
+      session.impersonatorUserId,
+    );
     const nextRotation = session.rotationCounter + 1;
     const tokens = await this.issueTokenPair(
       user,
@@ -265,6 +491,12 @@ export class AuthService {
   }
 
   async loginWithGoogle(idToken: string, referralCode?: string) {
+    const settings = await this.businessSettings.getRuntime();
+    if (!settings.googleLoginEnabled) {
+      throw new ServiceUnavailableException(
+        "Đăng nhập Google đang tạm dừng.",
+      );
+    }
     const clientId = this.configService.get<string>("AUTH_GOOGLE_ID");
 
     if (!clientId) {
@@ -295,6 +527,7 @@ export class AuthService {
       name: payload.name?.trim() || email.split("@")[0],
       avatar: payload.picture || null,
       referralCode,
+      allowRegistration: settings.registrationEnabled,
     });
 
     if (user.status !== "active") {
@@ -315,7 +548,97 @@ export class AuthService {
       role: user.role,
       roles: user.roles,
       permissions: user.permissions,
+      impersonation: user.impersonation ?? null,
     };
+  }
+
+  async startImpersonation(
+    actor: AuthenticatedUser,
+    targetUserId: number,
+    context: SessionContext,
+  ) {
+    if (!actor.sessionId || actor.impersonation) {
+      throw new ForbiddenException(
+        "Không thể bắt đầu một phiên impersonation từ phiên hiện tại.",
+      );
+    }
+    if (actor.id === targetUserId) {
+      throw new BadRequestException(
+        "Bạn không thể đăng nhập với tư cách chính mình.",
+      );
+    }
+
+    const targetRecord = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: userAuthorizationInclude,
+    });
+    if (!targetRecord) {
+      throw new NotFoundException("Không tìm thấy người dùng.");
+    }
+    if (targetRecord.status !== "active") {
+      throw new BadRequestException(
+        "Chỉ có thể đăng nhập với tư cách tài khoản đang hoạt động.",
+      );
+    }
+
+    const target = await this.toAuthenticatedUser(targetRecord);
+    if (target.permissions.includes("admin.access")) {
+      throw new ForbiddenException(
+        "Không thể impersonate tài khoản có quyền quản trị.",
+      );
+    }
+
+    const result = await this.createSession(
+      {
+        ...target,
+        impersonation: {
+          actorId: actor.id,
+          actorName: actor.name,
+          actorEmail: actor.email,
+        },
+      },
+      context,
+      false,
+      "impersonation",
+      { userId: actor.id, sessionId: actor.sessionId },
+    );
+    await this.revokeSession(actor.sessionId);
+    return result;
+  }
+
+  async stopImpersonation(
+    currentUser: AuthenticatedUser,
+    context: SessionContext,
+  ) {
+    if (!currentUser.sessionId || !currentUser.impersonation) {
+      throw new BadRequestException("Phiên hiện tại không phải impersonation.");
+    }
+
+    const actorRecord = await this.prisma.user.findUnique({
+      where: { id: currentUser.impersonation.actorId },
+      include: userAuthorizationInclude,
+    });
+    if (!actorRecord || actorRecord.status !== "active") {
+      throw new ForbiddenException(
+        "Tài khoản quản trị gốc không còn khả dụng.",
+      );
+    }
+
+    const actor = await this.toAuthenticatedUser(actorRecord);
+    if (!actor.permissions.includes("admin.access")) {
+      throw new ForbiddenException(
+        "Tài khoản quản trị gốc không còn quyền truy cập admin.",
+      );
+    }
+
+    const result = await this.createSession(
+      actor,
+      context,
+      false,
+      "impersonation_return",
+    );
+    await this.revokeSession(currentUser.sessionId);
+    return result;
   }
 
   private async issueTokenPair(
@@ -424,6 +747,7 @@ export class AuthService {
     name: string;
     avatar: string | null;
     referralCode?: string;
+    allowRegistration: boolean;
   }) {
     const linkedAccount = await this.prisma.socialAccount.findUnique({
       where: {
@@ -442,6 +766,12 @@ export class AuthService {
         const existingUser = await prisma.user.findUnique({
           where: { email: input.email },
         });
+
+        if (!existingUser && !input.allowRegistration) {
+          throw new ServiceUnavailableException(
+            "Hệ thống đang tạm dừng đăng ký tài khoản mới.",
+          );
+        }
 
         const referrer =
           !existingUser && input.referralCode
@@ -540,8 +870,98 @@ export class AuthService {
     };
   }
 
+  private async attachImpersonation(
+    user: AuthenticatedUser,
+    impersonatorUserId: number | null,
+  ): Promise<AuthenticatedUser> {
+    if (!impersonatorUserId) return user;
+    const actor = await this.prisma.user.findUnique({
+      where: { id: impersonatorUserId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!actor) {
+      throw new UnauthorizedException(
+        "Phiên impersonation không còn hợp lệ.",
+      );
+    }
+    return {
+      ...user,
+      impersonation: {
+        actorId: actor.id,
+        actorName: actor.name,
+        actorEmail: actor.email,
+      },
+    };
+  }
+
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
+  }
+
+  private hashOpaqueToken(token: string) {
+    return createHash("sha256").update(token).digest("hex");
+  }
+
+  private async issueEmailVerification(
+    user: { id: number; name: string; email: string },
+    requestedIp: string | null,
+  ) {
+    const token = randomBytes(32).toString("base64url");
+    const tokenHash = this.hashOpaqueToken(token);
+    const expiresInHours = 24;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiresInHours * 60 * 60_000);
+    await this.prisma.$transaction([
+      this.prisma.emailVerificationToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.emailVerificationToken.create({
+        data: { userId: user.id, tokenHash, expiresAt, requestedIp },
+      }),
+    ]);
+
+    const verificationUrl = new URL(this.emailVerificationUrl());
+    verificationUrl.searchParams.set("token", token);
+    try {
+      await this.passwordResetMailer.sendEmailVerification({
+        to: user.email,
+        name: user.name,
+        verificationUrl: verificationUrl.toString(),
+        expiresInHours,
+      });
+    } catch (error) {
+      await this.prisma.emailVerificationToken.deleteMany({ where: { tokenHash } });
+      throw error;
+    }
+  }
+
+  private emailVerificationUrl() {
+    const frontendOrigin = this.configService
+      .getOrThrow<string>("FRONTEND_ORIGIN")
+      .split(",")[0]
+      .trim();
+    return new URL("/verify-email", frontendOrigin).toString();
+  }
+
+  private passwordResetLifetimeMinutes() {
+    const value = Number(
+      this.configService.get<string>("PASSWORD_RESET_TOKEN_TTL_MINUTES") || 30,
+    );
+    return Number.isInteger(value) && value >= 5 && value <= 1_440 ? value : 30;
+  }
+
+  private passwordResetUrl() {
+    const configured = this.configService
+      .get<string>("PASSWORD_RESET_URL")
+      ?.trim();
+    if (configured) return configured;
+
+    const frontendOrigin = this.configService
+      .getOrThrow<string>("FRONTEND_ORIGIN")
+      .split(",")[0]
+      .trim();
+    return new URL("/reset-password", frontendOrigin).toString();
   }
 
   private normalizeLegacyHash(passwordHash: string) {

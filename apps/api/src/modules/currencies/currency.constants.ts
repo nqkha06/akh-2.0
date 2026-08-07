@@ -1,4 +1,4 @@
-export const BASE_CURRENCY_CODE = "USD";
+export { FALLBACK_BASE_CURRENCY_CODE } from "@stu/contracts";
 export const USER_CURRENCY_META_KEY = "preferences.currency";
 
 export const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;

@@ -14,6 +14,7 @@ import {
   HardDrive,
   Link2,
   LifeBuoy,
+  LogIn,
   Network,
   Pencil,
   Shield,
@@ -61,6 +62,7 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
   const canDelete = permissions.includes("users.delete");
   const canManageStatus = permissions.includes("users.manage-status");
   const canRevokeSessions = permissions.includes("users.revoke-sessions");
+  const canImpersonate = permissions.includes("users.impersonate");
   const canViewSocialLinks = permissions.includes("links.read");
   const canViewWithdrawals = permissions.includes("withdrawals.read");
   const canViewAccessLogs = permissions.includes("stu_access_logs.view");
@@ -149,6 +151,19 @@ export function UserDetails({ user }: { user: AdminUserDetail }) {
                   <Link href={`/admin/users/${user.id}/access-analysis`}>
                     <ShieldAlert /> Phân tích traffic
                   </Link>
+                </Button>
+              ) : null}
+              {canImpersonate &&
+              !isSelf &&
+              user.status === "active" &&
+              !user.permissions.includes("admin.access") ? (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setAction({ type: "impersonate", users: [user] })
+                  }
+                >
+                  <LogIn /> Đăng nhập với tư cách user
                 </Button>
               ) : null}
               {canManageStatus && !isSelf ? (

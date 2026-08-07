@@ -3,8 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, extname, join, normalize } from "node:path";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set([
   "png",
   "jpg",
@@ -24,18 +24,24 @@ type ValidatedAttachment = {
 export class SupportTicketStorageService {
   private readonly storageRoot: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    private readonly businessSettings: BusinessSettingsService,
+  ) {
     this.storageRoot =
       config.get<string>("SUPPORT_TICKETS_UPLOAD_DIR") ||
       join(process.cwd(), "uploads");
   }
 
-  validate(file: Express.Multer.File): ValidatedAttachment {
+  async validate(file: Express.Multer.File): Promise<ValidatedAttachment> {
     if (!file.buffer?.length) {
       throw new BadRequestException("Tệp đính kèm không hợp lệ.");
     }
-    if (file.size > MAX_FILE_SIZE) {
-      throw new BadRequestException("Mỗi tệp đính kèm tối đa 5 MB.");
+    const settings = await this.businessSettings.getRuntime();
+    if (file.size > settings.supportAttachmentMaxBytes) {
+      throw new BadRequestException(
+        `Mỗi tệp đính kèm tối đa ${Math.round(settings.supportAttachmentMaxBytes / 1024 / 1024)} MB.`,
+      );
     }
 
     const extension = extname(file.originalname).slice(1).toLowerCase();
@@ -49,6 +55,11 @@ export class SupportTicketStorageService {
     if (!mimeType) {
       throw new BadRequestException(
         `Không thể xác thực định dạng tệp ${file.originalname}.`,
+      );
+    }
+    if (!settings.uploadAllowedMimeTypes.includes(mimeType)) {
+      throw new BadRequestException(
+        "Loại tệp đính kèm này chưa được quản trị viên cho phép.",
       );
     }
     return { extension, mimeType };

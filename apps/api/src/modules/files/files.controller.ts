@@ -23,6 +23,7 @@ import type { Request, Response } from "express";
 import { memoryStorage } from "multer";
 
 import type { AuthenticatedUser } from "../auth/auth.types";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { BulkFilesDto } from "./dto/bulk-files.dto";
 import { InitiateMultipartUploadDto } from "./dto/initiate-multipart-upload.dto";
@@ -42,6 +43,7 @@ type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 export class FilesController {
   constructor(
     private readonly filesService: FilesService,
+    private readonly businessSettings: BusinessSettingsService,
     @Inject(MULTIPART_UPLOAD_STORAGE)
     private readonly multipartUploadStorage: MultipartUploadStorage,
   ) {}
@@ -52,11 +54,11 @@ export class FilesController {
   }
 
   @Post("multipart")
-  initiateMultipartUpload(
+  async initiateMultipartUpload(
     @Req() request: AuthenticatedRequest,
     @Body() body: InitiateMultipartUploadDto,
   ) {
-    this.validatePurpose(body);
+    await this.validateUpload(body);
     return this.multipartUploadStorage.initiate(request.user.id, {
       fileName: body.fileName,
       mimeType: body.mimeType,
@@ -152,13 +154,23 @@ export class FilesController {
     return result.stream;
   }
 
-  private validatePurpose(body: InitiateMultipartUploadDto) {
+  private async validateUpload(body: InitiateMultipartUploadDto) {
+    const settings = await this.businessSettings.getRuntime();
+    if (!settings.uploadAllowedMimeTypes.includes(body.mimeType.toLowerCase())) {
+      throw new BadRequestException("Loại file này chưa được quản trị viên cho phép.");
+    }
+    const limit =
+      body.purpose === "cover"
+        ? settings.coverImageMaxBytes
+        : settings.memberFileMaxBytes;
+    if (body.size > limit) {
+      throw new BadRequestException(
+        `File vượt giới hạn ${Math.round(limit / 1024 / 1024)} MB.`,
+      );
+    }
     if (body.purpose !== "cover") return;
     if (!body.mimeType.toLowerCase().startsWith("image/")) {
       throw new BadRequestException("Cover image phải là file ảnh.");
-    }
-    if (body.size > 10 * 1024 * 1024) {
-      throw new BadRequestException("Cover image tối đa 10 MB.");
     }
   }
 }

@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 
 import { FileUploadItem } from "./file-upload-item";
-import { FILE_SIZE_LIMIT, formatBytes } from "./file-utils";
+import { formatBytes } from "./file-utils";
 import type { UploadQueueItem } from "./types";
 
 type FileUploadDialogProps = {
@@ -20,9 +20,10 @@ type FileUploadDialogProps = {
   onRetry: (id: string) => void;
   onCancel: (id: string) => void;
   onRemove: (id: string) => void;
+  fileSizeLimit: number;
 };
 
-export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, onRetry, onCancel, onRemove }: FileUploadDialogProps) {
+export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, onRetry, onCancel, onRemove, fileSizeLimit }: FileUploadDialogProps) {
   const brand = useSiteBrand();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -59,7 +60,7 @@ export function FileUploadDialog({ open, queue, onOpenChange, onFilesSelected, o
             onDrop={handleDrop}
             className={`grid min-h-36 place-items-center rounded-lg border border-dashed px-5 py-6 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${dragging ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:bg-muted/40"}`}
           >
-            <div><FileUp className="mx-auto size-6 text-primary" /><p className="mt-3 text-sm font-medium text-foreground">Kéo file vào đây hoặc chọn từ thiết bị</p><p id="supported-formats" className="mt-1.5 text-xs leading-5 text-muted-foreground">Tối đa {formatBytes(FILE_SIZE_LIMIT)} mỗi file. Hỗ trợ hình ảnh, video, âm thanh, tài liệu và file nén.</p></div>
+            <div><FileUp className="mx-auto size-6 text-primary" /><p className="mt-3 text-sm font-medium text-foreground">Kéo file vào đây hoặc chọn từ thiết bị</p><p id="supported-formats" className="mt-1.5 text-xs leading-5 text-muted-foreground">Tối đa {formatBytes(fileSizeLimit)} mỗi file. Định dạng do quản trị viên cấu hình.</p></div>
           </div>
           <input ref={inputRef} type="file" multiple className="sr-only" onChange={(event) => { if (event.target.files?.length) onFilesSelected(Array.from(event.target.files)); event.target.value = ""; }} />
         </div>

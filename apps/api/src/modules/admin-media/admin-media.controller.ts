@@ -18,6 +18,7 @@ import { FilesInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes } from "@nestjs/swagger";
 import type { Request, Response } from "express";
 import { memoryStorage } from "multer";
+import { ABSOLUTE_HTTP_UPLOAD_MAX_BYTES } from "@stu/contracts";
 
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { Permissions } from "../auth/decorators/permissions.decorator";
@@ -64,7 +65,7 @@ export class AdminMediaController {
   @UseInterceptors(
     FilesInterceptor("files", 20, {
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024, files: 20 },
+      limits: { fileSize: ABSOLUTE_HTTP_UPLOAD_MAX_BYTES, files: 20 },
     }),
   )
   upload(

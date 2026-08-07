@@ -22,6 +22,7 @@ export type AdminDashboardData = {
   operations: {
     pendingWithdrawals: number
     openTickets: number
+    pendingReports: number
   }
   series: Array<{
     date: string

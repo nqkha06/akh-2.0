@@ -87,7 +87,7 @@ export class AdminMediaService {
 
     const created: AdminMedia[] = [];
     for (const file of files) {
-      const image = this.storage.validateImage(file);
+      const image = await this.storage.validateImage(file);
       const id = randomUUID();
       const storageKey = this.storage.buildStorageKey(
         folderId,

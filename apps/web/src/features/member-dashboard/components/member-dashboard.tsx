@@ -82,37 +82,23 @@ export function MemberDashboard({
   const [isRangePending, startRangeTransition] = useTransition()
   const { formatCurrency } = useMemberCurrency()
   const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale])
-  const periodFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }),
-    [locale],
-  )
   const metrics = [
     {
       label: t("metrics.earnings"),
       value: formatCurrency(data.analytics.metrics.revenue),
-      today: formatCurrency(data.analytics.today.revenue),
       icon: CircleDollarSign,
-      accent: true,
     },
     {
       label: t("metrics.views"),
       value: numberFormatter.format(data.analytics.metrics.successfulOpens),
-      today: numberFormatter.format(data.analytics.today.successfulOpens),
       icon: MousePointerClick,
     },
     {
       label: t("metrics.averageCpm"),
       value: formatCurrency(data.analytics.metrics.averageCpm),
-      today: formatCurrency(data.analytics.today.averageCpm),
       icon: BarChart3,
     },
   ] as const
-  const periodFrom = new Date(data.analytics.period.from)
-  const periodTo = new Date(data.analytics.period.to)
-  const isSingleDay =
-    periodFrom.toISOString().slice(0, 10) ===
-    periodTo.toISOString().slice(0, 10)
-
   function handleRangeChange(value: string) {
     if (!memberDashboardRanges.includes(value as MemberDashboardRange)) return
     if (value === range) return
@@ -131,17 +117,6 @@ export function MemberDashboard({
     <PageContainer>
       <PageHeader
         title={t("title")}
-        // description={
-        //   isSingleDay ? (
-        //     periodFormatter.format(periodFrom)
-        //   ) : (
-        //     <>
-        //       {periodFormatter.format(periodFrom)}
-        //       <span className="px-1.5 text-border">—</span>
-        //       {periodFormatter.format(periodTo)}
-        //     </>
-        //   )
-        // }
         action={
           <Select
             value={range}
@@ -167,15 +142,11 @@ export function MemberDashboard({
       />
 
       <section
-        className="grid overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-3"
+        className="grid gap-4 sm:grid-cols-3"
         aria-label={t("metrics.label", { days: data.analytics.periodDays })}
       >
-        {metrics.map((metric, index) => (
-          <MetricCard
-            key={metric.label}
-            {...metric}
-            className={cn(index > 0 && "border-t sm:border-l sm:border-t-0")}
-          />
+        {metrics.map((metric) => (
+          <MetricCard key={metric.label} {...metric} />
         ))}
       </section>
 
@@ -229,15 +200,18 @@ export function MemberDashboardSkeleton() {
           <Skeleton className="h-10 w-44" />
         </div>
       </div>
-      <div className="grid overflow-hidden rounded-xl border sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }, (_, index) => (
           <div
             key={index}
-            className={cn("space-y-4 p-5", index > 0 && "border-t sm:border-l sm:border-t-0")}
+            className="relative min-h-36 overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6"
           >
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-3 w-32" />
+            <div className="absolute -right-7 -top-8 size-24 rounded-full bg-primary/[0.04]" />
+            <div className="flex items-center justify-between gap-4">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="size-9 rounded-lg" />
+            </div>
+            <Skeleton className="mt-6 h-9 w-24" />
           </div>
         ))}
       </div>
@@ -259,39 +233,27 @@ export function MemberDashboardSkeleton() {
 function MetricCard({
   label,
   value,
-  today,
   icon: Icon,
-  accent = false,
-  className,
 }: {
   label: string
   value: string
-  today: string
   icon: LucideIcon
-  accent?: boolean
-  className?: string
 }) {
-  const t = useTranslations("MemberDashboard")
-
   return (
-    <article className={cn("min-w-0 p-5 sm:p-6", className)}>
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <span
-          className={cn(
-            "grid size-8 shrink-0 place-items-center rounded-md border border-border bg-muted/30 text-muted-foreground",
-            accent && "border-primary/20 bg-primary/10 text-primary",
-          )}
-        >
-          <Icon className="size-4" aria-hidden="true" />
+    <article className="relative min-h-36 min-w-0 overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6">
+      <span
+        className="absolute -right-7 -top-8 size-24 rounded-full bg-primary/[0.04]"
+        aria-hidden="true"
+      />
+      <div className="relative flex items-center justify-between gap-4">
+        <p className="text-[13px] font-medium leading-5 text-muted-foreground">{label}</p>
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+          <Icon className="size-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
-      <p className="mt-4 truncate text-[28px] font-semibold tracking-[-0.04em] tabular-nums text-foreground">
+      <p className="relative mt-6 truncate text-[32px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-foreground">
         {value}
       </p>
-      {/* <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-        {t("metrics.today")} <span className="ml-1 font-medium text-foreground">{today}</span>
-      </p> */}
     </article>
   )
 }

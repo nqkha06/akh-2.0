@@ -10,6 +10,7 @@ import {
   Ellipsis,
   Eye,
   KeyRound,
+  LogIn,
   LockKeyhole,
   Pencil,
   Shield,
@@ -48,7 +49,7 @@ import { formatDate } from "@/lib/format";
 
 export type UserRowAction = {
   row: Row<AdminUserListItem>;
-  variant: "delete" | "revoke-sessions";
+  variant: "delete" | "revoke-sessions" | "impersonate";
 };
 
 export function getUsersTableColumns({
@@ -57,6 +58,7 @@ export function getUsersTableColumns({
   canDelete,
   canManageStatus,
   canRevokeSessions,
+  canImpersonate,
   roleOptions,
   onStatusChange,
   setRowAction,
@@ -66,6 +68,7 @@ export function getUsersTableColumns({
   canDelete: boolean;
   canManageStatus: boolean;
   canRevokeSessions: boolean;
+  canImpersonate: boolean;
   roleOptions: Array<{ label: string; value: string; icon: typeof Shield }>;
   onStatusChange: (user: AdminUserListItem, status: UserStatus) => void;
   setRowAction: React.Dispatch<React.SetStateAction<UserRowAction | null>>;
@@ -365,6 +368,18 @@ export function getUsersTableColumns({
                 <Eye /> Xem chi tiết
               </Link>
             </DropdownMenuItem>
+            {canImpersonate &&
+            row.original.id !== currentUserId &&
+            row.original.status === "active" &&
+            !row.original.permissions.includes("admin.access") ? (
+              <DropdownMenuItem
+                onSelect={() =>
+                  setRowAction({ row, variant: "impersonate" })
+                }
+              >
+                <LogIn /> Đăng nhập với tư cách user
+              </DropdownMenuItem>
+            ) : null}
             {canUpdate ? (
               <DropdownMenuItem asChild>
                 <Link href={`/admin/users/${row.original.id}/edit`}>

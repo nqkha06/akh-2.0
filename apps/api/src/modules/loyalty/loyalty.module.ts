@@ -5,9 +5,10 @@ import { LanguagesModule } from "../languages/languages.module";
 import { AdminLoyaltyTiersController } from "./admin-loyalty-tiers.controller";
 import { MemberLoyaltyController } from "./member-loyalty.controller";
 import { LoyaltyService } from "./loyalty.service";
+import { LoyaltyRollupModule } from "./loyalty-rollup.module";
 
 @Module({
-  imports: [AuthModule, LanguagesModule],
+  imports: [AuthModule, LanguagesModule, LoyaltyRollupModule],
   controllers: [AdminLoyaltyTiersController, MemberLoyaltyController],
   providers: [LoyaltyService],
 })

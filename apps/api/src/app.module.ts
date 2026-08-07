@@ -10,10 +10,12 @@ import { AdminDashboardModule } from "./modules/admin-dashboard/admin-dashboard.
 import { AuthModule } from "./modules/auth/auth.module";
 import { AuthorizationModule } from "./modules/authorization/authorization.module";
 import { BioPagesModule } from "./modules/bio-pages/bio-pages.module";
+import { BusinessSettingsModule } from "./modules/business-settings/business-settings.module";
 import { CurrenciesModule } from "./modules/currencies/currencies.module";
 import { FilesModule } from "./modules/files/files.module";
 import { LinksModule } from "./modules/links/links.module";
 import { LanguagesModule } from "./modules/languages/languages.module";
+import { LinkReportsModule } from "./modules/link-reports/link-reports.module";
 import { LoyaltyModule } from "./modules/loyalty/loyalty.module";
 import { MonetizationLevelsModule } from "./modules/monetization-levels/monetization-levels.module";
 import { MemberDashboardModule } from "./modules/member-dashboard/member-dashboard.module";
@@ -25,6 +27,7 @@ import { StuAccessLogsModule } from "./modules/stu-access-logs/stu-access-logs.m
 import { SnippetsModule } from "./modules/snippets/snippets.module";
 import { SupportModule } from "./modules/support/support.module";
 import { VisitAggregationSchedulerModule } from "./modules/system-jobs/visit-aggregation-scheduler.module";
+import { LoyaltyRollupSchedulerModule } from "./modules/system-jobs/loyalty-rollup-scheduler.module";
 import { UsersModule } from "./modules/users/users.module";
 import { WithdrawalsModule } from "./modules/withdrawals/withdrawals.module";
 import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module";
@@ -32,7 +35,7 @@ import { WebsiteMenusModule } from "./modules/website-menus/website-menus.module
 const visitAggregationScheduler =
   process.env.QUEUE_ENABLED === "false"
     ? []
-    : [VisitAggregationSchedulerModule];
+    : [VisitAggregationSchedulerModule, LoyaltyRollupSchedulerModule];
 
 @Module({
   imports: [
@@ -47,10 +50,12 @@ const visitAggregationScheduler =
     AuthModule,
     AuthorizationModule,
     BioPagesModule,
+    BusinessSettingsModule,
     CurrenciesModule,
     FilesModule,
     LinksModule,
     LanguagesModule,
+    LinkReportsModule,
     LoyaltyModule,
     MemberDashboardModule,
     MonetizationLevelsModule,

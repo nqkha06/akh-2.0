@@ -63,7 +63,7 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
 
   if (!data.payoutMethods.length) {
     return (
-      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm shadow-black/[0.025] sm:p-6">
         <div className="grid min-h-72 place-items-center text-center">
           <div className="max-w-sm"><div className="mx-auto grid size-11 place-items-center rounded-lg border border-border bg-muted/40 text-primary"><Building2 className="size-5" /></div><h2 className="mt-4 text-lg font-semibold">Bạn chưa thiết lập phương thức nhận tiền</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Thêm một phương thức nhận tiền trong phần cài đặt tài khoản trước khi tạo yêu cầu rút.</p><Button className="mt-5" asChild><Link href="/member/account#payment-method">Thêm phương thức nhận tiền</Link></Button></div>
         </div>
@@ -72,10 +72,9 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="text-base font-semibold tracking-[-0.01em]">Tạo yêu cầu rút tiền</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Chọn số tiền và kiểm tra thông tin trước khi xác nhận.</p>
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-black/[0.025]">
+      <div className="border-b border-border/80 px-5 py-5 sm:px-6">
+        <h2 className="text-base font-semibold tracking-[-0.015em] sm:text-[17px]">Tạo yêu cầu rút tiền</h2>
       </div>
       <form className="space-y-5 p-5 sm:p-6" onSubmit={(event) => { event.preventDefault(); requestConfirmation(); }}>
         <AmountInput controller={controller} />
@@ -89,13 +88,12 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
           </Select>
           {selectedMethod ? <p className="text-xs text-muted-foreground">{selectedMethod.accountHolder} · Phí {formatCurrency(selectedMethod.withdrawFee)}</p> : null}
         </div>
-        <div className="rounded-md border border-border bg-muted/20 p-4"><WithdrawalBreakdown controller={controller} /></div>
+        <div className="rounded-xl border border-border bg-muted/[0.18] p-4"><WithdrawalBreakdown controller={controller} /></div>
         {data.processingEstimate ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Clock3 className="size-4" />Dự kiến nhận tiền trong {data.processingEstimate}</p> : null}
         {submitError ? <Alert variant="destructive"><AlertCircle /><AlertTitle>Không thể tạo yêu cầu</AlertTitle><AlertDescription>{submitError}</AlertDescription></Alert> : null}
         <Button type="submit" className="h-11 w-full sm:w-auto sm:min-w-36" disabled={!formValid || submitting || !formEligible}>
           {submitting ? <><LoaderCircle className="animate-spin" />Đang gửi yêu cầu…</> : "Rút tiền"}
         </Button>
-        <p className="text-xs leading-5 text-muted-foreground">Bằng việc tiếp tục, bạn xác nhận thông tin nhận tiền là chính xác.</p>
       </form>
     </section>
   );

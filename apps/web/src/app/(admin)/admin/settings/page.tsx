@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Banknote, ChevronRight, ImageIcon } from "lucide-react";
+import { Banknote, ChevronRight, ImageIcon, SlidersHorizontal } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/guards";
 
 const settingItems = [
+  {
+    title: "Business settings",
+    description:
+      "Đăng ký, tiền hạch toán, hoa hồng, loyalty, upload, vận hành và thư viện preset.",
+    href: "/admin/settings/business",
+    permission: "settings.read",
+    icon: SlidersHorizontal,
+  },
   {
     title: "Thông tin & nhận diện",
     description:
@@ -18,7 +26,7 @@ const settingItems = [
   {
     title: "Tiền tệ & tỷ giá",
     description:
-      "Danh mục tiền tệ hiển thị, tỷ giá quy đổi theo USD và tiền tệ mặc định.",
+      "Danh mục tiền hiển thị, tỷ giá theo tiền hạch toán và tiền hiển thị mặc định.",
     href: "/admin/settings/currencies",
     permission: "currencies.read",
     icon: Banknote,

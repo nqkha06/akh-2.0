@@ -1,11 +1,11 @@
 import type { BioAppearanceDto } from "@/lib/api-client"
-import { getBioBackgroundPresetById } from "../backgrounds/background-presets"
+import { getBioBackgroundPresetById, getBioPresetTheme } from "../backgrounds/background-presets"
 import { bioButtonStyles, normalizeBioButtonStyle } from "./bio-appearance"
 
 function getThemeName(appearance: BioAppearanceDto) {
   const buttonStyle = bioButtonStyles.find(
     (style) => style.value === normalizeBioButtonStyle(appearance.buttonStyle),
-  )?.label || "Bo tròn đặc"
+  )?.label || "Bo mềm"
 
   if (appearance.backgroundMediaType === "video") return `${buttonStyle} · Video`
   if (appearance.backgroundMediaType === "youtube") return `${buttonStyle} · YouTube`
@@ -16,7 +16,7 @@ function getThemeName(appearance: BioAppearanceDto) {
 }
 
 export function LinkInBioThemeIndicator({ appearance }: { appearance: BioAppearanceDto }) {
-  const color = appearance.backgroundColor || "var(--primary)"
+  const color = getBioPresetTheme(appearance.selectedBackgroundId, appearance.backgroundImage, appearance.backgroundColor).accentColor
   return (
     <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
       <span className="size-2.5 shrink-0 rounded-full border border-border" style={{ backgroundColor: color }} aria-hidden="true" />
@@ -26,5 +26,6 @@ export function LinkInBioThemeIndicator({ appearance }: { appearance: BioAppeara
 }
 
 export function LinkInBioThemeAccent({ appearance }: { appearance: BioAppearanceDto }) {
-  return <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: appearance.backgroundColor || "var(--primary)" }} aria-hidden="true" />
+  const color = getBioPresetTheme(appearance.selectedBackgroundId, appearance.backgroundImage, appearance.backgroundColor).accentColor
+  return <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: color }} aria-hidden="true" />
 }

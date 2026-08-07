@@ -24,12 +24,10 @@ export function LinkInBioSkeleton() {
   return (
     <div className="grid gap-4 min-[1280px]:grid-cols-2">
       {[1, 2, 3, 4].map((item) => (
-        <div key={item} className="h-[236px] overflow-hidden rounded-xl border border-border bg-card p-5">
+        <div key={item} className="overflow-hidden rounded-xl border border-border bg-card">
           <Skeleton className="h-1 w-full rounded-none" />
-          <div className="mt-4 flex justify-between gap-4"><div className="space-y-2"><Skeleton className="h-5 w-36" /><Skeleton className="h-4 w-48" /></div><Skeleton className="h-6 w-24" /></div>
-          <Skeleton className="mt-5 h-4 w-56" />
-          <div className="mt-5 grid grid-cols-3 gap-4"><Skeleton className="h-10" /><Skeleton className="h-10" /><Skeleton className="h-10" /></div>
-          <div className="mt-5 flex items-center justify-between border-t border-border pt-4"><Skeleton className="h-4 w-28" /><Skeleton className="h-9 w-28" /></div>
+          <div className="flex items-start justify-between gap-4 p-5"><div className="space-y-2"><Skeleton className="h-5 w-36" /><Skeleton className="h-4 w-48" /></div><Skeleton className="h-6 w-24" /></div>
+          <div className="flex min-h-14 items-center justify-between border-t border-border px-5 py-2.5"><Skeleton className="h-4 w-28" /><Skeleton className="h-9 w-28" /></div>
         </div>
       ))}
     </div>

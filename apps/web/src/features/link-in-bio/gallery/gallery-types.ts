@@ -5,7 +5,6 @@ import type {
 } from "@/lib/api-client";
 
 export const GALLERY_MAX_IMAGES = 20;
-export const GALLERY_IMAGE_MAX_SIZE = 10 * 1024 * 1024;
 export const GALLERY_ACCEPTED_MIME_TYPES = [
   "image/jpeg",
   "image/png",

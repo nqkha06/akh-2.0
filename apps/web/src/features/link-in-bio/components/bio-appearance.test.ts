@@ -2,26 +2,29 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  bioButtonStyles,
   getBioLinkClass,
-  isDarkBioButtonStyle,
   normalizeBioButtonStyle,
 } from "./bio-appearance.ts";
 
 describe("Link Bio button appearance", () => {
-  it("treats the default rounded button as a dark surface", () => {
-    assert.equal(isDarkBioButtonStyle("rounded"), true);
-    assert.equal(isDarkBioButtonStyle("minimalist"), false);
-    assert.equal(isDarkBioButtonStyle("legacy"), true);
+  it("only exposes the three beginner-friendly border shapes", () => {
+    assert.deepEqual(
+      bioButtonStyles.map((style) => style.value),
+      ["rounded", "rounded-border", "mineral-square"],
+    );
   });
 
-  it("keeps unknown legacy styles on the safe default", () => {
+  it("maps old styles to the simplified choices", () => {
+    assert.equal(normalizeBioButtonStyle("neon-outline"), "rounded-border");
+    assert.equal(normalizeBioButtonStyle("compact-sharp"), "mineral-square");
     assert.equal(normalizeBioButtonStyle("legacy"), "rounded");
   });
 
-  it("uses the compact shared layout for public and editor renderers", () => {
+  it("uses the premium touch-friendly layout for public and editor renderers", () => {
     const className = getBioLinkClass("rounded");
-    assert.match(className, /min-h-16/);
-    assert.match(className, /bg-slate-950/);
+    assert.match(className, /min-h-\[4\.25rem\]/);
+    assert.match(className, /rounded-2xl/);
     assert.doesNotMatch(className, /min-h-20/);
   });
 });

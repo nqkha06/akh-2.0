@@ -10,6 +10,7 @@ import {
   Monitor,
   MousePointerClick,
   Network,
+  ShieldAlert,
   Smartphone,
   Tablet,
   Users,
@@ -312,6 +313,13 @@ function OperationsCard({ data }: { data: AdminDashboardData }) {
       hint: "Đang mở hoặc chờ phản hồi",
       href: "/admin/support",
       icon: MessagesSquare,
+    },
+    {
+      label: "Báo cáo liên kết",
+      value: data.operations.pendingReports,
+      hint: "Đang chờ hoặc đang kiểm tra",
+      href: "/admin/link-reports",
+      icon: ShieldAlert,
     },
   ] as const
 

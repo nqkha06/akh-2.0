@@ -9,7 +9,7 @@ import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import {
-  BASE_CURRENCY_CODE,
+  FALLBACK_BASE_CURRENCY_CODE,
   USER_CURRENCY_META_KEY,
 } from "./currency.constants";
 import type { CreateCurrencyDto } from "./dto/create-currency.dto";
@@ -20,16 +20,22 @@ export class CurrenciesService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
+    const configuredBase = await this.prisma.currency.findFirst({
+      where: { isBase: true },
+      select: { id: true },
+    });
     const usd = await this.prisma.currency.upsert({
-      where: { code: BASE_CURRENCY_CODE },
-      update: { isBase: true, exchangeRate: new Prisma.Decimal(1) },
+      where: { code: FALLBACK_BASE_CURRENCY_CODE },
+      update: configuredBase
+        ? {}
+        : { isBase: true, exchangeRate: new Prisma.Decimal(1) },
       create: {
-        code: BASE_CURRENCY_CODE,
+        code: FALLBACK_BASE_CURRENCY_CODE,
         name: "US Dollar",
         symbol: "$",
         exchangeRate: new Prisma.Decimal(1),
         decimalDigits: 2,
-        isBase: true,
+        isBase: !configuredBase,
         isDefault: true,
         isActive: true,
         sortOrder: 10,
@@ -56,10 +62,10 @@ export class CurrenciesService implements OnModuleInit {
       total: items.length,
       baseCurrency:
         items.find((currency) => currency.isBase)?.code ??
-        BASE_CURRENCY_CODE,
+        FALLBACK_BASE_CURRENCY_CODE,
       defaultCurrency:
         items.find((currency) => currency.isDefault)?.code ??
-        BASE_CURRENCY_CODE,
+        FALLBACK_BASE_CURRENCY_CODE,
     };
   }
 
@@ -99,7 +105,7 @@ export class CurrenciesService implements OnModuleInit {
       currency: selected.code,
       baseCurrency:
         currencies.find((currency) => currency.isBase)?.code ??
-        BASE_CURRENCY_CODE,
+        FALLBACK_BASE_CURRENCY_CODE,
       defaultCurrency: defaultCurrency.code,
       currencies: currencies.map((currency) => this.toResponse(currency)),
     };
@@ -175,7 +181,7 @@ export class CurrenciesService implements OnModuleInit {
       this.assertPositiveRate(dto.exchangeRate);
       if (existing.isBase && !new Prisma.Decimal(dto.exchangeRate).equals(1)) {
         throw new BadRequestException(
-          "Tỷ giá của tiền tệ cơ sở USD luôn phải bằng 1.",
+          `Tỷ giá của tiền tệ cơ sở ${existing.code} luôn phải bằng 1.`,
         );
       }
     }
@@ -245,7 +251,7 @@ export class CurrenciesService implements OnModuleInit {
     if (currency.isBase) {
       throw new ConflictException({
         code: "BASE_CURRENCY_DELETE_FORBIDDEN",
-        message: "Không thể xóa tiền tệ cơ sở USD.",
+        message: `Không thể xóa tiền tệ cơ sở ${currency.code}.`,
       });
     }
     if (currency.isDefault) {

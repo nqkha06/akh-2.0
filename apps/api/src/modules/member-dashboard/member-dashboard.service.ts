@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { DEVICE_TYPE_NAMES } from "@stu/contracts";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { MemberDashboardRange } from "./dto/member-dashboard-query.dto";
@@ -293,8 +294,7 @@ export class MemberDashboardService {
   }
 
   private deviceLabel(device: number) {
-    if (device === 1) return "mobile";
-    if (device === 3) return "tablet";
-    return "desktop";
+    const resolved = DEVICE_TYPE_NAMES[device];
+    return resolved === "unknown" || !resolved ? "desktop" : resolved;
   }
 }

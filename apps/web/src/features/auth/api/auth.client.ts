@@ -20,10 +20,26 @@ export function registerAccount(payload: {
   password: string;
   referralCode?: string;
 }) {
-  return request(`${authApiBase}/register`, {
+  return requestJson<{ requiresEmailVerification: boolean }>(`${authApiBase}/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function verifyEmail(token: string) {
+  return requestJson<{ message: string }>(`${authApiBase}/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function resendEmailVerification(email: string) {
+  return requestJson<{ message: string }>(`${authApiBase}/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
   });
 }
 
@@ -37,6 +53,31 @@ export function loginWithGoogle(payload: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+}
+
+export async function requestPasswordReset(payload: { email: string }) {
+  const response = await fetch(`${authApiBase}/forgot-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return response.json() as Promise<{ message: string }>;
+}
+
+export async function resetPassword(payload: {
+  token: string;
+  password: string;
+}) {
+  const response = await fetch(`${authApiBase}/reset-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return response.json() as Promise<{ message: string }>;
 }
 
 export async function logoutAccount() {
@@ -57,9 +98,24 @@ export async function logoutAndRedirect(callbackUrl = "/login") {
   }
 }
 
+export async function stopImpersonatingAndRedirect() {
+  const response = await fetch(`${authApiBase}/impersonation/stop`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error(await readApiError(response));
+  window.location.assign("/admin");
+}
+
 async function request(url: string, init: RequestInit) {
   const response = await fetch(url, { ...init, credentials: "include" });
   if (!response.ok) throw new Error(await readApiError(response));
+}
+
+async function requestJson<T>(url: string, init: RequestInit) {
+  const response = await fetch(url, { ...init, credentials: "include" });
+  if (!response.ok) throw new Error(await readApiError(response));
+  return response.json() as Promise<T>;
 }
 
 async function readApiError(response: Response) {

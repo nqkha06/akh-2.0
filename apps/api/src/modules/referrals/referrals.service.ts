@@ -7,9 +7,8 @@ import { Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
-import { BASE_CURRENCY_CODE } from "../currencies/currency.constants";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 
-export const REFERRAL_COMMISSION_RATE = new Prisma.Decimal("5.00");
 export const REFERRAL_COMMISSIONABLE_TYPE = "user_withdrawal";
 
 type PaidWithdrawalSource = {
@@ -20,9 +19,13 @@ type PaidWithdrawalSource = {
 
 @Injectable()
 export class ReferralsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly businessSettings: BusinessSettingsService,
+  ) {}
 
   async getMemberDashboard(userId: number) {
+    const settings = await this.businessSettings.getRuntime();
     const referralCode = await this.ensureReferralCode(userId);
     const [
       referrals,
@@ -97,8 +100,8 @@ export class ReferralsService {
     return {
       referralCode,
       referralPath: `/register?ref=${encodeURIComponent(referralCode)}`,
-      currency: BASE_CURRENCY_CODE,
-      commissionRate: REFERRAL_COMMISSION_RATE.toFixed(2),
+      currency: settings.baseCurrencyCode,
+      commissionRate: settings.referralCommissionRate.toFixed(2),
       commissionBasis: "net_amount",
       summary: {
         totalReferrals: referralCount,
@@ -144,6 +147,7 @@ export class ReferralsService {
   async creditPaidWithdrawal(
     tx: Prisma.TransactionClient,
     withdrawal: PaidWithdrawalSource,
+    commissionRate: Prisma.Decimal,
   ) {
     const source = await tx.user.findUnique({
       where: { id: withdrawal.userId },
@@ -153,7 +157,7 @@ export class ReferralsService {
     if (!referrerId || referrerId === withdrawal.userId) return null;
 
     const amount = withdrawal.netAmount
-      .mul(REFERRAL_COMMISSION_RATE)
+      .mul(commissionRate)
       .div(100)
       .toDecimalPlaces(2);
     if (amount.lessThanOrEqualTo(0)) return null;
@@ -163,7 +167,7 @@ export class ReferralsService {
         userId: referrerId,
         fromUserId: withdrawal.userId,
         amount,
-        rate: REFERRAL_COMMISSION_RATE,
+        rate: commissionRate,
         commissionableType: REFERRAL_COMMISSIONABLE_TYPE,
         commissionableId: withdrawal.id,
         note: `Hoa hồng từ withdrawal #${withdrawal.id}`,

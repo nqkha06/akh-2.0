@@ -21,7 +21,7 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const currentUser = await getOptionalServerUser("/register");
+  const currentUser = await getOptionalServerUser();
   if (currentUser) {
     redirect(getSignedInRedirect(currentUser));
   }

@@ -126,7 +126,7 @@ export function PublicCreatorLayout({
   return (
     <main
       className={cn(
-        "relative isolate flex min-h-[100svh] flex-col overflow-x-hidden",
+        "relative isolate flex min-h-[100svh] flex-col overflow-x-clip",
         variant === "linear"
           ? "bg-slate-50 text-slate-950 dark:bg-[#010102] dark:text-[#f7f8f8]"
           : "bg-slate-100 text-slate-950 dark:bg-slate-950",
@@ -165,7 +165,7 @@ export function PublicCreatorLayout({
       </div>
 
       {/* Header */}
-      <div className="relative z-30 shrink-0">
+      <div className="sticky top-0 z-30 shrink-0">
         <ShowHeader
           onShare={shareCurrentLink}
           variant={variant}

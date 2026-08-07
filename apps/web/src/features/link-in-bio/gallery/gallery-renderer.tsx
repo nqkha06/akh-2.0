@@ -113,7 +113,7 @@ export function GalleryRenderer({
   return (
     <section className={cn("min-w-0", className)} aria-label={gallery.title || "Bộ sưu tập ảnh"}>
       {gallery.showTitle && gallery.title ? (
-        <h2 className="mb-2.5 px-0.5 text-sm font-semibold tracking-tight text-foreground">
+        <h2 className="mb-2.5 px-0.5 text-sm font-semibold tracking-tight text-[color:var(--bio-text,var(--foreground))]">
           {gallery.title}
         </h2>
       ) : null}

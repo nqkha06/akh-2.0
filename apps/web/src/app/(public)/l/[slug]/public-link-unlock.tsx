@@ -30,6 +30,7 @@ import {
   Check,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { DEFAULT_BACKGROUND_IMAGE_PRESETS } from "@stu/contracts";
 
 import { PublicCreatorLayout } from "@/components/public-creator-layout";
 import {
@@ -40,48 +41,8 @@ import { cn } from "@/lib/utils";
 
 const ACTION_DELAY_SECONDS = 6;
 
-const backgroundImages = [
-  {
-    id: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "2",
-    imageUrl:
-      "https://images.unsplash.com/photo-1515405295579-ba7b45403062?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "3",
-    imageUrl:
-      "https://images.unsplash.com/photo-1465101178521-c1a9136a3f11?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "4",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505483531331-5095d1f4b0f5?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "5",
-    imageUrl:
-      "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "6",
-    imageUrl:
-      "https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "7",
-    imageUrl:
-      "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "8",
-    imageUrl:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80",
-  },
-] as const;
+// Compatibility fallback for links saved before backgroundMediaUrl was persisted.
+const backgroundImages = DEFAULT_BACKGROUND_IMAGE_PRESETS;
 
 const actionLabels: Record<string, string> = {
   subscribe: "Subscribe to channel",
@@ -867,12 +828,21 @@ export function PublicLinkUnlock({
           </div>
         </section>
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-1 text-xs">
           <Link
             href="/member/create"
             className="rounded-md px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-950 dark:text-[#8a8f98] dark:hover:bg-white/5 dark:hover:text-[#d0d6e0]"
           >
             {t("createOwn")}
+          </Link>
+          <span aria-hidden="true" className="text-slate-300 dark:text-white/15">
+            ·
+          </span>
+          <Link
+            href={`/report-link?url=${encodeURIComponent(`/l/${link.slug}`)}`}
+            className="rounded-md px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-black/5 hover:text-slate-950 dark:text-[#8a8f98] dark:hover:bg-white/5 dark:hover:text-[#d0d6e0]"
+          >
+            {t("reportLink")}
           </Link>
         </div>
       </div>

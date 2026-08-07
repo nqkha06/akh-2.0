@@ -48,6 +48,12 @@ export const permissionCatalog = [
     group: "users",
   },
   {
+    key: "users.impersonate",
+    name: "Đăng nhập với tư cách người dùng",
+    description: "Cho phép quản trị viên mở phiên member thay mặt người dùng để hỗ trợ và kiểm tra.",
+    group: "users",
+  },
+  {
     key: "stu_access_logs.view",
     name: "Xem access logs",
     description: "Xem danh sách, chi tiết và báo cáo access log.",
@@ -257,6 +263,24 @@ export const permissionCatalog = [
     name: "Quản lý ticket hỗ trợ",
     description: "Gán người xử lý, độ ưu tiên và trạng thái ticket.",
     group: "support",
+  },
+  {
+    key: "link-reports.read",
+    name: "Xem báo cáo liên kết",
+    description: "Xem danh sách và chi tiết báo cáo liên kết từ người dùng.",
+    group: "moderation",
+  },
+  {
+    key: "link-reports.manage",
+    name: "Xử lý báo cáo liên kết",
+    description: "Cập nhật trạng thái và kết luận kiểm duyệt báo cáo liên kết.",
+    group: "moderation",
+  },
+  {
+    key: "link-reports.delete",
+    name: "Xóa báo cáo liên kết",
+    description: "Xóa mềm báo cáo liên kết khỏi hàng đợi quản trị.",
+    group: "moderation",
   },
   {
     key: "announcements.view",

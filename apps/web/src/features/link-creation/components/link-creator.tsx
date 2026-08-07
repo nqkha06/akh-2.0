@@ -16,6 +16,7 @@ import {
   useSiteBrand,
 } from "@/features/site-settings/components/site-brand-provider"
 import { LINK_CREATED_EVENT } from "@/features/links/events"
+import { useBusinessConfig } from "@/features/business-settings/use-business-config"
 import {
   Credenza,
   CredenzaBody,
@@ -29,7 +30,6 @@ import { useTranslations } from "next-intl"
 import { actionCategories, platformCategories } from "../catalog"
 import {
   COVER_IMAGE_EXTENSIONS,
-  COVER_IMAGE_MAX_SIZE,
   formatSnippetSize,
   getYouTubeEmbedUrl,
   isImageFile,
@@ -630,204 +630,7 @@ function getLocalDateInputValue(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-const backgroundImages = [
-  {
-    id: "1",
-    name: "Neon Flow",
-    imageUrl: "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "2",
-    name: "Aurora Mist",
-    imageUrl: "https://images.unsplash.com/photo-1515405295579-ba7b45403062?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "3",
-    name: "Cosmic Dust",
-    imageUrl: "https://images.unsplash.com/photo-1465101178521-c1a9136a3f11?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "4",
-    name: "Blue Mirage",
-    imageUrl: "https://images.unsplash.com/photo-1505483531331-5095d1f4b0f5?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "5",
-    name: "Glass Bloom",
-    imageUrl: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "6",
-    name: "Chromatic Wave",
-    imageUrl: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "7",
-    name: "Prism Haze",
-    imageUrl: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "8",
-    name: "Liquid Light",
-    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "9",
-    name: "Velvet Pulse",
-    imageUrl: "https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "10",
-    name: "Soft Glow",
-    imageUrl: "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "11",
-    name: "Satin Wave",
-    imageUrl: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "12",
-    name: "Inferno Bloom",
-    imageUrl: "https://images.unsplash.com/photo-1518632642078-03f0d1f3a6b7?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "13",
-    name: "Candy Cloud",
-    imageUrl: "https://images.unsplash.com/photo-1526318472351-c75fcf070305?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "14",
-    name: "Golden Drift",
-    imageUrl: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "15",
-    name: "Midnight Bloom",
-    imageUrl: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "16",
-    name: "Desert Halo",
-    imageUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "17",
-    name: "Tropical Echo",
-    imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "18",
-    name: "Creator Desk",
-    imageUrl: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "19",
-    name: "Glass Geometry",
-    imageUrl: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "20",
-    name: "Aurora Gradient",
-    imageUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "21",
-    name: "Minimal Studio",
-    imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "22",
-    name: "Digital Workspace",
-    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
-  },
-]
-
 type BackgroundMediaType = "image" | "video" | "youtube"
-
-const backgroundImageCategoryMap: Record<string, string[]> = {
-  "1": ["Abstract", "Gradient"],
-  "2": ["Gradient", "Nature"],
-  "3": ["Abstract", "Tech"],
-  "4": ["Abstract", "Gradient"],
-  "5": ["Texture", "Abstract"],
-  "6": ["Gradient", "Abstract"],
-  "7": ["Abstract", "Geometric"],
-  "8": ["Gradient", "Tech"],
-  "9": ["Texture", "Abstract"],
-  "10": ["Gradient", "Minimal"],
-  "11": ["Abstract", "Texture"],
-  "12": ["Abstract", "Gradient"],
-  "13": ["Gradient", "Texture"],
-  "14": ["Nature", "Texture"],
-  "15": ["Nature", "Abstract"],
-  "16": ["Nature", "Minimal"],
-  "17": ["Nature"],
-  "18": ["Creator", "Workspace"],
-  "19": ["Geometric", "Professional"],
-  "20": ["Gradient", "Abstract"],
-  "21": ["Workspace", "Professional"],
-  "22": ["Tech", "Workspace"],
-}
-
-const backgroundVideos = [
-  {
-    id: "coverr-ai-gradient",
-    name: "Soft AI Gradient",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/abstract",
-    videoUrl: "https://cdn.coverr.co/videos/user-ai-generation-kv9zE4fNgqFS/1080p.mp4",
-    categories: ["Abstract", "Gradient"],
-  },
-  {
-    id: "coverr-luminous-flow",
-    name: "Luminous Flow",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/abstract",
-    videoUrl: "https://cdn.coverr.co/videos/user-ai-generation-VlzTMEbjgVkr/1080p.mp4",
-    categories: ["Abstract", "Gradient"],
-  },
-  {
-    id: "coverr-mountain-focus",
-    name: "Creator Journey",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/background",
-    videoUrl: "https://cdn.coverr.co/videos/coverr-walking-to-the-mountain-top-8360/1080p.mp4",
-    categories: ["Creator", "Nature"],
-  },
-  {
-    id: "coverr-water-calm",
-    name: "Calm Reflection",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/background",
-    videoUrl: "https://cdn.coverr.co/videos/coverr-tree-reflection-in-the-water-8825/360p.mp4",
-    categories: ["Nature", "Minimal"],
-  },
-  {
-    id: "coverr-phone-focus",
-    name: "Mobile Creator",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/technology",
-    videoUrl: "https://cdn.coverr.co/videos/coverr-close-up-of-man-using-iphone-15/360p.mp4",
-    categories: ["Tech", "Creator"],
-  },
-  {
-    id: "coverr-industrial-grid",
-    name: "Grid Reflection",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/industrial",
-    videoUrl: "https://cdn.coverr.co/videos/coverr-river-viewed-through-a-square-grid-6554/1080p.mp4",
-    categories: ["Geometric", "Texture"],
-  },
-  {
-    id: "coverr-studio-phone",
-    name: "Studio Tech",
-    source: "Coverr",
-    sourceUrl: "https://coverr.co/stock-video-footage/technology",
-    videoUrl: "https://cdn.coverr.co/videos/coverr-close-up-of-iphone-15/360p.mp4",
-    categories: ["Tech", "Professional"],
-  },
-]
 
 export default function SocialLinksGenerator({
   embedded = false,
@@ -841,6 +644,9 @@ export default function SocialLinksGenerator({
   actionHistory?: LinkDto[]
 } = {}) {
   const t = useTranslations("CreateLink")
+  const businessConfig = useBusinessConfig()
+  const backgroundImages = businessConfig.presetLibrary.images
+  const backgroundVideos = businessConfig.presetLibrary.videos
   const brand = useSiteBrand()
   const siteHost = getSiteHost(brand)
   const initialInputType =
@@ -1217,7 +1023,7 @@ export default function SocialLinksGenerator({
       return
     }
 
-    if (file.size > COVER_IMAGE_MAX_SIZE) {
+    if (file.size > businessConfig.uploads.coverImageMaxBytes) {
       setCoverFileError(t("coverMaxSize"))
       return
     }
@@ -1338,7 +1144,6 @@ export default function SocialLinksGenerator({
       : inputType === "file"
         ? isFileDestinationValid
         : isSnippetDestinationValid
-  const isTitleValid = title.trim().length > 0
   const completedActions = actions.filter((a) => a.isValid).length
   const totalActions = actions.length
   const allActionUrlsValid = totalActions > 0 && completedActions === totalActions
@@ -1351,7 +1156,7 @@ export default function SocialLinksGenerator({
       ? Number.isFinite(expiryTimestamp) && expiryTimestamp > expiryValidationNow
       : Number.isInteger(expiryClickLimit) && expiryClickLimit > 0
   )
-  const canCreateLink = isDestinationValid && isTitleValid && allActionUrlsValid && isExpiryValid
+  const canCreateLink = isDestinationValid && allActionUrlsValid && isExpiryValid
   const selectedBackground = backgroundImages.find((bg) => bg.id === selectedBackgroundId)
   const selectedSnippetData = snippets.find((snippet) => snippet.id === selectedSnippet)
   const selectedFileData = availableFiles.find((file) => file.id === selectedFile)
@@ -1371,7 +1176,7 @@ export default function SocialLinksGenerator({
       : backgroundMediaUrl
   const backgroundImageCategories = [
     "All",
-    ...Array.from(new Set(Object.values(backgroundImageCategoryMap).flat())).sort(),
+    ...Array.from(new Set(backgroundImages.flatMap((image) => image.categories))).sort(),
   ]
   const backgroundVideoCategories = [
     "All",
@@ -1379,7 +1184,7 @@ export default function SocialLinksGenerator({
   ]
   const filteredBackgroundImages = backgroundImages.filter((background) => (
     backgroundImageCategory === "All" ||
-    backgroundImageCategoryMap[background.id]?.includes(backgroundImageCategory)
+    background.categories.includes(backgroundImageCategory)
   ))
   const filteredBackgroundVideos = backgroundVideos.filter((video) => (
     backgroundVideoCategory === "All" || video.categories.includes(backgroundVideoCategory)
@@ -1652,19 +1457,11 @@ export default function SocialLinksGenerator({
                 </div>
                 <div>
                   <Input
-                    aria-describedby={validationAttempted && !isTitleValid ? "url-title-error" : undefined}
-                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={cn(
-                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
-                      validationAttempted && !isTitleValid && "border-destructive",
-                    )}
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
-                  {validationAttempted && !isTitleValid ? (
-                    <p id="url-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
-                  ) : null}
                 </div>
               </TabsContent>
 
@@ -1726,19 +1523,11 @@ export default function SocialLinksGenerator({
                 ) : null}
                 <div>
                   <Input
-                    aria-describedby={validationAttempted && !isTitleValid ? "file-title-error" : undefined}
-                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={cn(
-                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
-                      validationAttempted && !isTitleValid && "border-destructive",
-                    )}
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
-                  {validationAttempted && !isTitleValid ? (
-                    <p id="file-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
-                  ) : null}
                 </div>
               </TabsContent>
 
@@ -1797,19 +1586,11 @@ export default function SocialLinksGenerator({
 
                 <div>
                   <Input
-                    aria-describedby={validationAttempted && !isTitleValid ? "snippet-title-error" : undefined}
-                    aria-invalid={validationAttempted && !isTitleValid}
                     placeholder={t("titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={cn(
-                      "h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground",
-                      validationAttempted && !isTitleValid && "border-destructive",
-                    )}
+                    className="h-10 rounded-lg border-border bg-background text-foreground shadow-none placeholder:text-muted-foreground"
                   />
-                  {validationAttempted && !isTitleValid ? (
-                    <p id="snippet-title-error" className="mt-1 text-sm text-destructive">{t("titleRequired")}</p>
-                  ) : null}
                 </div>
               </TabsContent>
             </Tabs>

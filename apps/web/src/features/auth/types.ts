@@ -8,6 +8,11 @@ export type AuthUser = {
   role: string;
   roles: string[];
   permissions: string[];
+  impersonation: {
+    actorId: number;
+    actorName: string;
+    actorEmail: string;
+  } | null;
 };
 
 export type AuthResponse = {

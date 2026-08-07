@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useLocale, useTranslations } from "next-intl"
 import {
+  ArrowUpRight,
   CircleHelp,
   Languages,
   LogOut,
@@ -12,6 +13,7 @@ import {
   Moon,
   MoreHorizontal,
   Settings,
+  ShieldCheck,
   Sun,
 } from "lucide-react"
 
@@ -32,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { localeCookieName, locales, type AppLocale } from "@/i18n/config"
+import { localeCookieName, type AppLocale } from "@/i18n/config"
 import { useUiLanguages } from "@/features/languages/hooks/use-ui-languages"
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider"
 import { useAuthUser } from "@/features/auth/components/auth-user-provider"
@@ -72,19 +74,21 @@ function AccountAvatar({ className }: { className?: string }) {
 
 function UserMenuContent() {
   const account = useAccount()
+  const currentUser = useAuthUser()
   const t = useTranslations("Dashboard")
   const { theme = "light", setTheme } = useTheme()
   const currentTheme = theme === "dark" ? "dark" : "light"
   const locale = useLocale() as AppLocale
   const [isChangingLocale, startLocaleTransition] = useTransition()
   const uiLanguages = useUiLanguages()
+  const canAccessAdmin = currentUser.permissions.includes("admin.access")
 
   const localeLabels = Object.fromEntries(
     uiLanguages.items.map((item) => [item.locale, item.label]),
   ) as Record<AppLocale, string>
 
   const handleLocaleChange = (value: string) => {
-    const nextLocale = locales.find((item) => item === value)
+    const nextLocale = uiLanguages.items.find((item) => item.locale === value)?.locale
     if (!nextLocale || nextLocale === locale) return
 
     document.cookie = [
@@ -110,8 +114,22 @@ function UserMenuContent() {
       </DropdownMenuLabel>
 
       <DropdownMenuSeparator />
+      {canAccessAdmin ? (
+        <>
+          <DropdownMenuItem
+            asChild
+            className="bg-primary/[0.06] text-primary focus:bg-primary/10 focus:text-primary"
+          >
+            <Link href="/admin">
+              <ShieldCheck className="size-4" />
+              <span className="flex-1">{t("topbar.adminArea")}</span>
+              <ArrowUpRight className="size-3.5 opacity-70" />
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </>
+      ) : null}
       <DropdownMenuGroup>
-     
         <DropdownMenuItem asChild>
           <Link href="/member/account">
             <Settings className="size-4" />
@@ -138,7 +156,9 @@ function UserMenuContent() {
         <DropdownMenuSubTrigger disabled={isChangingLocale}>
           <Languages className="size-4" />
           <span className="flex-1">{t("topbar.language")}</span>
-          <span className="mr-1 text-xs text-muted-foreground">{localeLabels[locale]}</span>
+          <span className="mr-1 text-xs text-muted-foreground">
+            {localeLabels[locale] ?? locale.toUpperCase()}
+          </span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="min-w-40">
           <DropdownMenuRadioGroup value={locale} onValueChange={handleLocaleChange}>

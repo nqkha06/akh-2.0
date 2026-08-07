@@ -4,6 +4,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
   Post,
   Req,
   Res,
@@ -27,13 +29,18 @@ import type {
   SessionContext,
 } from "./auth.types";
 import { AuthRateLimit } from "./decorators/auth-rate-limit.decorator";
+import { Permissions } from "./decorators/permissions.decorator";
 import { GoogleLoginDto } from "./dto/google-login.dto";
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { AuthOriginGuard } from "./guards/auth-origin.guard";
 import { JwtAccessGuard } from "./guards/jwt-access.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
+import { PermissionsGuard } from "./guards/permissions.guard";
 
 type AccessRequest = Request & { user: AuthenticatedUser };
 type RefreshRequest = Request & { user: RefreshAuthenticatedRequestUser };
@@ -103,6 +110,55 @@ export class AuthController {
     return result.response;
   }
 
+  @Post("forgot-password")
+  @UseGuards(AuthOriginGuard)
+  @AuthRateLimit(5, 15 * 60_000)
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() body: ForgotPasswordDto, @Req() request: Request) {
+    return this.authService.requestPasswordReset(
+      body.email,
+      this.sessionContext(request),
+    );
+  }
+
+  @Post("reset-password")
+  @UseGuards(AuthOriginGuard)
+  @AuthRateLimit(10, 15 * 60_000)
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() body: ResetPasswordDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.resetPassword(
+      body.token,
+      body.password,
+    );
+    this.clearAuthCookies(response);
+    return result;
+  }
+
+  @Post("verify-email")
+  @UseGuards(AuthOriginGuard)
+  @AuthRateLimit(10, 15 * 60_000)
+  @HttpCode(HttpStatus.OK)
+  verifyEmail(@Body() body: VerifyEmailDto) {
+    return this.authService.verifyEmail(body.token);
+  }
+
+  @Post("resend-verification")
+  @UseGuards(AuthOriginGuard)
+  @AuthRateLimit(5, 15 * 60_000)
+  @HttpCode(HttpStatus.OK)
+  resendVerification(
+    @Body() body: ForgotPasswordDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.requestEmailVerification(
+      body.email,
+      this.sessionContext(request),
+    );
+  }
+
   @Post("refresh")
   @UseGuards(AuthOriginGuard, JwtRefreshGuard)
   @AuthRateLimit(30, 60_000)
@@ -133,6 +189,51 @@ export class AuthController {
       readCookie(request, refreshCookieName(this.configService)),
     );
     this.clearAuthCookies(response);
+  }
+
+  @Post("impersonation/stop")
+  @UseGuards(AuthOriginGuard, JwtAccessGuard)
+  @AuthRateLimit(20, 60_000)
+  @HttpCode(HttpStatus.OK)
+  async stopImpersonation(
+    @Req() request: AccessRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.stopImpersonation(
+      request.user,
+      this.sessionContext(request),
+    );
+    this.setAuthCookies(
+      response,
+      result.response.accessToken,
+      result.refreshToken,
+      false,
+    );
+    return result.response;
+  }
+
+  @Post("impersonation/:id")
+  @UseGuards(AuthOriginGuard, JwtAccessGuard, PermissionsGuard)
+  @Permissions("users.impersonate")
+  @AuthRateLimit(20, 60_000)
+  @HttpCode(HttpStatus.OK)
+  async startImpersonation(
+    @Param("id", ParseIntPipe) id: number,
+    @Req() request: AccessRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.startImpersonation(
+      request.user,
+      id,
+      this.sessionContext(request),
+    );
+    this.setAuthCookies(
+      response,
+      result.response.accessToken,
+      result.refreshToken,
+      false,
+    );
+    return result.response;
   }
 
   @Get("me")

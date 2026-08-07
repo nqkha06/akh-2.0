@@ -16,6 +16,7 @@ import { PermissionsGuard } from "../auth/guards/permissions.guard";
 import { CreateLanguageDto } from "./dto/create-language.dto";
 import { ReorderLanguagesDto } from "./dto/reorder-languages.dto";
 import { UpdateLanguageDto } from "./dto/update-language.dto";
+import { UpdateUiTranslationsDto } from "./dto/update-ui-translations.dto";
 import { LanguagesService } from "./languages.service";
 
 @Controller("admin/languages")
@@ -51,6 +52,21 @@ export class AdminLanguagesController {
   @Permissions("languages.update")
   setDefault(@Param("id", ParseIntPipe) id: number) {
     return this.languagesService.setDefault(id);
+  }
+
+  @Get(":id/ui-translations")
+  @Permissions("languages.read")
+  findUiTranslations(@Param("id", ParseIntPipe) id: number) {
+    return this.languagesService.findUiTranslations(id);
+  }
+
+  @Patch(":id/ui-translations")
+  @Permissions("languages.update")
+  updateUiTranslations(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateUiTranslationsDto,
+  ) {
+    return this.languagesService.updateUiTranslations(id, dto);
   }
 
   @Patch(":id")

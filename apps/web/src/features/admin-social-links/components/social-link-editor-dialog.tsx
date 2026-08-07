@@ -47,10 +47,7 @@ export function SocialLinkEditorDialog({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!link || !values.title.trim()) {
-      setError("Tiêu đề là bắt buộc.")
-      return
-    }
+    if (!link) return
     if (
       link.destinationType === "url" &&
       !/^https?:\/\/\\S+$/i.test(values.destinationUrl ?? "")
@@ -99,7 +96,9 @@ export function SocialLinkEditorDialog({
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-5">
           <div className="grid gap-2">
-            <Label htmlFor="admin-link-title">Tiêu đề</Label>
+            <Label htmlFor="admin-link-title">
+              Tiêu đề (không bắt buộc)
+            </Label>
             <Input
               id="admin-link-title"
               value={values.title}

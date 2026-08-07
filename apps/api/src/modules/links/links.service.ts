@@ -90,10 +90,7 @@ export class LinksService {
   ) {}
 
   async create(userId: number, createLinkDto: CreateLinkDto) {
-    const title = createLinkDto.title.trim();
-    if (!title) {
-      throw new BadRequestException("Tiêu đề không được để trống.");
-    }
+    const title = createLinkDto.title?.trim() ?? "";
 
     const destination = await this.resolveDestination(userId, createLinkDto);
     const customAlias = this.normalizeAlias(createLinkDto.customAlias);
@@ -233,10 +230,7 @@ export class LinksService {
   }
 
   async update(userId: number, id: number, updateLinkDto: CreateLinkDto) {
-    const title = updateLinkDto.title.trim();
-    if (!title) {
-      throw new BadRequestException("Tiêu đề không được để trống.");
-    }
+    const title = updateLinkDto.title?.trim() ?? "";
 
     const existing = await this.findOwnedLink(userId, id);
     const destination = await this.resolveDestination(userId, updateLinkDto);

@@ -12,9 +12,15 @@ export type Language = {
   status: PublicationStatus;
   sortOrder: number;
   isRtl: boolean;
+  uiTranslation?: {
+    translatedKeys: number;
+    catalogSize: number;
+    version: number;
+    updatedAt: string | null;
+  };
 };
 
-export type LanguagePayload = Omit<Language, "id">;
+export type LanguagePayload = Omit<Language, "id" | "uiTranslation">;
 
 export type LanguagesResponse = {
   items: Language[];
@@ -29,4 +35,13 @@ export type PublicLanguagesResponse = {
     }
   >;
   defaultLocale: string | null;
+};
+
+export type UiTranslationsResponse = {
+  language: Language;
+  messages: Record<string, string>;
+  translatedKeys: number;
+  catalogSize: number;
+  version: number;
+  updatedAt: string | null;
 };

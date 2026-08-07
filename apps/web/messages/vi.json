@@ -54,6 +54,62 @@
     "noteTitle": "Lưu ý về tỷ lệ",
     "note": "Tỷ lệ thanh toán có thể thay đổi theo chất lượng traffic, quốc gia và loại thiết bị."
   },
+  "ReportLink": {
+    "eyebrow": "An toàn cộng đồng",
+    "title": "Báo cáo một liên kết",
+    "description": "Cho chúng tôi biết khi một liên kết có dấu hiệu lừa đảo, gây hại hoặc vi phạm. Mỗi báo cáo sẽ được đội ngũ kiểm duyệt xem xét.",
+    "themeToggle": "Chuyển giao diện sáng hoặc tối",
+    "form": {
+      "title": "Thông tin báo cáo",
+      "description": "Cung cấp URL chính xác và mô tả ngắn gọn để quá trình kiểm tra nhanh hơn.",
+      "submit": "Gửi báo cáo",
+      "submitting": "Đang gửi..."
+    },
+    "fields": {
+      "email": "Email liên hệ",
+      "emailPlaceholder": "you@example.com",
+      "emailHelp": "Email được dùng khi đội ngũ kiểm duyệt cần trao đổi thêm.",
+      "url": "URL cần báo cáo",
+      "urlPlaceholder": "https://example.com/link",
+      "urlHelp": "Chỉ chấp nhận địa chỉ bắt đầu bằng http:// hoặc https://.",
+      "reason": "Lý do báo cáo",
+      "reasonPlaceholder": "Chọn một lý do",
+      "details": "Chi tiết",
+      "detailsPlaceholder": "Mô tả nội dung hoặc hành vi bạn nhận thấy...",
+      "detailsHelp": "Không gửi mật khẩu, mã xác thực hoặc dữ liệu cá nhân nhạy cảm."
+    },
+    "reasons": {
+      "spam": "Spam hoặc nội dung gây hiểu nhầm",
+      "malware": "Lừa đảo, mã độc hoặc nội dung gây hại",
+      "impersonation": "Mạo danh cá nhân hoặc tổ chức",
+      "copyright": "Vi phạm bản quyền hoặc sở hữu trí tuệ",
+      "adult": "Nội dung người lớn hoặc không phù hợp",
+      "other": "Lý do khác"
+    },
+    "errors": {
+      "email": "Vui lòng nhập email hợp lệ.",
+      "url": "Vui lòng nhập URL http hoặc https hợp lệ.",
+      "reason": "Vui lòng chọn lý do báo cáo.",
+      "details": "Vui lòng mô tả ít nhất 20 ký tự.",
+      "submit": "Không thể gửi báo cáo. Vui lòng thử lại."
+    },
+    "success": {
+      "title": "Đã tiếp nhận báo cáo",
+      "description": "Đội ngũ kiểm duyệt sẽ xem xét thông tin. Hãy lưu lại mã tham chiếu nếu bạn cần trao đổi thêm.",
+      "action": "Về trang chủ",
+      "toast": "Đã gửi báo cáo liên kết."
+    },
+    "guidance": {
+      "title": "Để báo cáo được xử lý tốt hơn",
+      "description": "Chỉ gửi thông tin liên quan trực tiếp đến liên kết cần kiểm tra.",
+      "items": {
+        "url": "• Gửi đúng URL nơi nội dung vi phạm xuất hiện.",
+        "evidence": "• Mô tả dấu hiệu cụ thể thay vì chỉ nêu nhận định chung.",
+        "privacy": "• Không đưa thông tin bí mật hoặc dữ liệu riêng tư vào báo cáo."
+      }
+    },
+    "urgent": "Nếu bạn hoặc người khác đang gặp nguy hiểm tức thời, hãy liên hệ cơ quan chức năng tại địa phương."
+  },
   "Dashboard": {
     "groups": {
       "overview": "Tổng quan",
@@ -104,6 +160,7 @@
       "editProfile": "Chỉnh hồ sơ",
       "subscription": "Gói dịch vụ",
       "accountSettings": "Cài đặt tài khoản",
+      "adminArea": "Khu vực admin",
       "logout": "Đăng xuất",
       "language": "Ngôn ngữ"
     },
@@ -433,11 +490,15 @@
   "Account": {
     "eyebrow": "Cài đặt",
     "title": "Tài khoản",
-    "description": "Quản lý hồ sơ, bảo mật, thanh toán, thông báo và tuỳ chọn giao diện.",
-    "context": "Quản lý thông tin tài khoản và các thiết lập dùng chung. Những thay đổi trong bản FE-first này chỉ được lưu trong phiên trình duyệt hiện tại.",
+    "description": "Quản lý hồ sơ, bảo mật, phương thức nhận tiền và các thiết lập cá nhân.",
+    "context": "Thông tin tài khoản và các thiết lập quan trọng của bạn được quản lý tập trung tại đây.",
     "verified": "Đã xác minh",
     "editProfile": "Chỉnh hồ sơ",
     "saveChanges": "Lưu thay đổi",
+    "overview": {
+      "security": "Bảo mật tài khoản",
+      "protected": "Được bảo vệ"
+    },
     "toast": {
       "saved": "Đã lưu thay đổi",
       "sectionSaved": "Đã lưu {section}",
@@ -828,7 +889,8 @@
     "destinationReady": "Nội dung đích đã sẵn sàng để mở.",
     "destinationProtected": "Nội dung đích được ẩn cho đến khi hoàn thành tất cả yêu cầu.",
     "protectedBy": "Được bảo vệ bởi {brand}",
-    "createOwn": "Tạo Social Link của bạn"
+    "createOwn": "Tạo Social Link của bạn",
+    "reportLink": "Báo cáo liên kết"
   },
   "CreateLink": {
     "actionLabels": {
@@ -878,7 +940,7 @@
     },
     "tabs": { "url": "URL", "file": "File", "snippet": "Snippet" },
     "destinationUrlPlaceholder": "Nhập URL đích*",
-    "titlePlaceholder": "Nhập tiêu đề*",
+    "titlePlaceholder": "Nhập tiêu đề (không bắt buộc)",
     "invalidUrl": "Vui lòng nhập URL hợp lệ",
     "fileSelected": "Đã chọn file",
     "selectFile": "Chọn file",
@@ -1059,7 +1121,6 @@
     "revealSnippet": "Hiện snippet",
     "unlockProgress": "Tiến độ mở khóa {completed}/{total}",
     "completeActionsHint": "Hoàn thành các hành động để mở khóa",
-    "titleRequired": "Tiêu đề là bắt buộc",
     "destinationRequired": "Cần nhập URL đích hợp lệ",
     "fileRequired": "Hãy chọn file đích",
     "snippetRequired": "Hãy chọn snippet",

@@ -160,6 +160,16 @@ export class PaymentMethodsService {
   }
 
   async createForMember(userId: number, dto: CreateUserPaymentMethodDto) {
+    const existingAccount = await this.prisma.userPaymentMethod.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+    if (existingAccount) {
+      throw new ConflictException(
+        "Mỗi tài khoản chỉ được sử dụng một phương thức thanh toán. Hãy chỉnh sửa phương thức hiện tại.",
+      );
+    }
+
     const method = await this.findPublishedMethod(dto.paymentMethodId);
     const details = this.validateDetails(method, dto.details);
     const account = await this.prisma.userPaymentMethod.create({

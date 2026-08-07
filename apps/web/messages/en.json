@@ -54,6 +54,62 @@
     "noteTitle": "About these rates",
     "note": "Payout rates may change based on traffic quality, country, and device type."
   },
+  "ReportLink": {
+    "eyebrow": "Community safety",
+    "title": "Report a link",
+    "description": "Tell us when a link appears deceptive, harmful, or in violation. Every report is reviewed by the moderation team.",
+    "themeToggle": "Switch between light and dark theme",
+    "form": {
+      "title": "Report details",
+      "description": "Provide the exact URL and a concise description to help us review it faster.",
+      "submit": "Submit report",
+      "submitting": "Submitting..."
+    },
+    "fields": {
+      "email": "Contact email",
+      "emailPlaceholder": "you@example.com",
+      "emailHelp": "We use this email if the moderation team needs more information.",
+      "url": "URL to report",
+      "urlPlaceholder": "https://example.com/link",
+      "urlHelp": "Only addresses beginning with http:// or https:// are accepted.",
+      "reason": "Reason for reporting",
+      "reasonPlaceholder": "Select a reason",
+      "details": "Details",
+      "detailsPlaceholder": "Describe the content or behavior you observed...",
+      "detailsHelp": "Do not include passwords, authentication codes, or sensitive personal data."
+    },
+    "reasons": {
+      "spam": "Spam or misleading content",
+      "malware": "Phishing, malware, or harmful content",
+      "impersonation": "Impersonation of a person or organization",
+      "copyright": "Copyright or intellectual-property violation",
+      "adult": "Adult or inappropriate content",
+      "other": "Another reason"
+    },
+    "errors": {
+      "email": "Enter a valid email address.",
+      "url": "Enter a valid HTTP or HTTPS URL.",
+      "reason": "Select a reason for reporting.",
+      "details": "Provide at least 20 characters of detail.",
+      "submit": "The report could not be submitted. Please try again."
+    },
+    "success": {
+      "title": "Report received",
+      "description": "The moderation team will review the information. Keep the reference code if you need to contact us later.",
+      "action": "Back to home",
+      "toast": "Link report submitted."
+    },
+    "guidance": {
+      "title": "Help us review your report",
+      "description": "Only submit information directly related to the link under review.",
+      "items": {
+        "url": "• Submit the exact URL where the violating content appears.",
+        "evidence": "• Describe specific indicators instead of a general conclusion.",
+        "privacy": "• Do not include secrets or private information in your report."
+      }
+    },
+    "urgent": "If you or someone else is in immediate danger, contact your local authorities."
+  },
   "Dashboard": {
     "groups": {
       "overview": "Overview",
@@ -104,6 +160,7 @@
       "editProfile": "Edit profile",
       "subscription": "Subscription",
       "accountSettings": "Account settings",
+      "adminArea": "Admin area",
       "logout": "Log out",
       "language": "Language"
     },
@@ -433,11 +490,15 @@
   "Account": {
     "eyebrow": "Settings",
     "title": "Account",
-    "description": "Manage your profile, security, payout, notifications, and interface preferences.",
-    "context": "Manage your account information and shared settings. Changes in this frontend-first version are stored only for the current browser session.",
+    "description": "Manage your profile, security, payout methods, and personal settings.",
+    "context": "Your account information and important settings are managed together here.",
     "verified": "Verified",
     "editProfile": "Edit profile",
     "saveChanges": "Save changes",
+    "overview": {
+      "security": "Account security",
+      "protected": "Protected"
+    },
     "toast": {
       "saved": "Changes saved",
       "sectionSaved": "Saved {section}",
@@ -828,7 +889,8 @@
     "destinationReady": "The destination is ready to open.",
     "destinationProtected": "The destination stays hidden until every requirement is complete.",
     "protectedBy": "Protected by {brand}",
-    "createOwn": "Create your Social Link"
+    "createOwn": "Create your Social Link",
+    "reportLink": "Report this link"
   },
   "CreateLink": {
     "actionLabels": {
@@ -878,7 +940,7 @@
     },
     "tabs": { "url": "URL", "file": "File", "snippet": "Snippet" },
     "destinationUrlPlaceholder": "Enter a destination URL*",
-    "titlePlaceholder": "Enter a title*",
+    "titlePlaceholder": "Enter a title (optional)",
     "invalidUrl": "Please enter a valid URL",
     "fileSelected": "File selected",
     "selectFile": "Select file",
@@ -1059,7 +1121,6 @@
     "revealSnippet": "Reveal snippet",
     "unlockProgress": "Unlock progress {completed}/{total}",
     "completeActionsHint": "Complete the actions to unlock",
-    "titleRequired": "Title is required",
     "destinationRequired": "Valid destination URL is required",
     "fileRequired": "Select a destination file",
     "snippetRequired": "Select a snippet",

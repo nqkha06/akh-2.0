@@ -1,6 +1,5 @@
 import type { ManagedFileDto } from "@/lib/api-client";
 
-export const COVER_IMAGE_MAX_SIZE = 10 * 1024 * 1024;
 export const COVER_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "avif", "bmp", "svg"];
 
 export function formatSnippetSize(content: string) {

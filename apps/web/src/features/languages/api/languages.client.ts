@@ -5,6 +5,7 @@ import type {
   LanguagePayload,
   LanguagesResponse,
   PublicLanguagesResponse,
+  UiTranslationsResponse,
 } from "../types";
 
 async function readError(response: Response) {
@@ -74,6 +75,30 @@ export function deleteLanguage(id: number) {
   return request<{ success: true; id: number }>(`/admin/languages/${id}`, {
     method: "DELETE",
   });
+}
+
+export function getUiTranslations(id: number) {
+  return request<UiTranslationsResponse>(
+    `/admin/languages/${id}/ui-translations`,
+  );
+}
+
+export function updateUiTranslations(
+  id: number,
+  payload: {
+    version: number;
+    catalogSize: number;
+    entries: Array<{ key: string; value: string }>;
+    removedKeys: string[];
+  },
+) {
+  return request<UiTranslationsResponse>(
+    `/admin/languages/${id}/ui-translations`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function getPublicLanguages() {

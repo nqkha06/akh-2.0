@@ -3,8 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, extname, join, normalize } from "node:path";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MIME_BY_EXTENSION: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -24,23 +24,27 @@ type ValidatedImage = {
 export class AdminMediaStorageService {
   private readonly storageRoot: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    private readonly businessSettings: BusinessSettingsService,
+  ) {
     this.storageRoot =
       config.get<string>("ADMIN_MEDIA_UPLOAD_DIR") ||
       join(process.cwd(), "uploads");
   }
 
-  validateImage(file: Express.Multer.File): ValidatedImage {
+  async validateImage(file: Express.Multer.File): Promise<ValidatedImage> {
     if (!file.buffer?.length) {
       throw new BadRequestException({
         code: "INVALID_MEDIA_FILE",
         message: "File tải lên không hợp lệ.",
       });
     }
-    if (file.size > MAX_IMAGE_SIZE) {
+    const settings = await this.businessSettings.getRuntime();
+    if (file.size > settings.adminMediaMaxBytes) {
       throw new BadRequestException({
         code: "MEDIA_FILE_TOO_LARGE",
-        message: "Ảnh Admin Media tối đa 10 MB.",
+        message: `Ảnh Admin Media tối đa ${Math.round(settings.adminMediaMaxBytes / 1024 / 1024)} MB.`,
       });
     }
 

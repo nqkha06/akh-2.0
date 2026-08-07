@@ -256,7 +256,7 @@ export type CreateBioPagePayload = {
 
 export type CreateLinkPayload = {
   destinationUrl: string;
-  title: string;
+  title?: string;
   inputType: "url" | "file" | "snippet";
   selectedSnippet?: string;
   selectedFile?: string;

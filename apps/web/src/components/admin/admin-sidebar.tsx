@@ -13,6 +13,7 @@ import {
   IconDashboard,
   IconFileDescription,
   IconFiles,
+  IconFlag,
   IconLanguage,
   IconLifebuoy,
   IconLink,
@@ -157,6 +158,12 @@ const data: { navMain: NavItem[] } = {
       title: "Bảo mật & kiểm tra",
       icon: IconShieldSearch,
       items: [
+        {
+          title: "Báo cáo liên kết",
+          url: "/admin/link-reports",
+          icon: IconFlag,
+          permission: "link-reports.read",
+        },
         {
           title: "Nhật ký truy cập",
           url: "/admin/stu-access-logs",

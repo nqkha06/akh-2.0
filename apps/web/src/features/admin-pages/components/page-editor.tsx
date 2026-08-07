@@ -52,6 +52,8 @@ import {
   updateAdminPage,
   updateAdminPageStatus,
 } from "@/features/admin-pages/api/pages.client";
+import { PagePublicActions } from "@/features/admin-pages/components/page-public-actions";
+import { PageStatusDialog } from "@/features/admin-pages/components/page-status-dialog";
 import { PageStatusBadge } from "@/features/admin-pages/components/page-status-badge";
 import {
   emptyTiptapDocument,
@@ -82,6 +84,11 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
   const [savedStatus, setSavedStatus] = React.useState<PageStatus>(
     page?.status ?? "DRAFT",
   );
+  const [savedSlug, setSavedSlug] = React.useState(page?.slug ?? "");
+  const [pendingStatusChange, setPendingStatusChange] = React.useState<{
+    values: PageFormValues;
+    status: PageStatus;
+  } | null>(null);
   const form = useForm<PageFormValues>({
     resolver: zodResolver(pageFormSchema),
     defaultValues: getDefaultValues(page),
@@ -151,6 +158,7 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
       form.reset(values);
       setSelectedStatus(targetStatus);
       setSavedStatus(targetStatus);
+      setSavedSlug(values.slug.trim());
       toast.success("Đã cập nhật trang.");
       router.refresh();
     } catch (error) {
@@ -162,10 +170,26 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
     }
   }
 
-  const persist = form.handleSubmit((values) => save(values, selectedStatus));
+  function requestSave(values: PageFormValues, status: PageStatus) {
+    if (page && status !== savedStatus) {
+      setPendingStatusChange({ values, status });
+      return;
+    }
+    void save(values, status);
+  }
+
+  const persist = form.handleSubmit((values) =>
+    requestSave(values, selectedStatus),
+  );
 
   function persistAs(status: PageStatus) {
-    void form.handleSubmit((values) => save(values, status))();
+    void form.handleSubmit((values) => requestSave(values, status))();
+  }
+
+  async function confirmStatusChange() {
+    if (!pendingStatusChange) return;
+    await save(pendingStatusChange.values, pendingStatusChange.status);
+    setPendingStatusChange(null);
   }
 
   return (
@@ -215,6 +239,13 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
                       <Eye /> Preview
                     </Link>
                   </Button>
+                ) : null}
+                {page ? (
+                  <PagePublicActions
+                    slug={savedSlug}
+                    status={savedStatus}
+                    showCopy={false}
+                  />
                 ) : null}
                 <Button
                   type="button"
@@ -582,6 +613,15 @@ export function PageEditor({ page }: { page: AdminPage | null }) {
             shouldDirty: true,
           });
           setFeaturedImageUrl(file.url);
+        }}
+      />
+      <PageStatusDialog
+        count={pendingStatusChange ? 1 : 0}
+        status={pendingStatusChange?.status ?? null}
+        busy={saving}
+        onConfirm={() => void confirmStatusChange()}
+        onOpenChange={(open) => {
+          if (!open) setPendingStatusChange(null);
         }}
       />
     </>

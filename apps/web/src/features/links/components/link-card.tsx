@@ -162,7 +162,7 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
     };
 
     const handleDelete = async () => {
-        if (isMutating || !window.confirm(`${t("delete")}: ${link.title}?`)) return;
+        if (isMutating || !window.confirm(`${t("delete")}: ${link.title || link.slug}?`)) return;
 
         try {
             setIsMutating(true);
@@ -198,11 +198,11 @@ export function LinkCard({ link, onChanged }: LinkCardProps) {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <h3 className="truncate text-base font-semibold tracking-tight sm:text-[17px]">
-                                                {link.title}
+                                                {link.title || link.slug}
                                             </h3>
                                         </TooltipTrigger>
                                         <TooltipContent side="top" sideOffset={6} className="max-w-sm">
-                                            {link.title}
+                                            {link.title || link.slug}
                                         </TooltipContent>
                                     </Tooltip>
 

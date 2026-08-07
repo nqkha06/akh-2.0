@@ -14,10 +14,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getFilePreviewUrl } from "@/lib/api-client";
 import {
   GALLERY_ACCEPTED_MIME_TYPES,
-  GALLERY_IMAGE_MAX_SIZE,
 } from "@/features/link-in-bio/gallery/gallery-types";
 import { BackgroundPresetPicker } from "@/features/link-in-bio/backgrounds/background-preset-picker";
 import { getBioBackgroundPresetById } from "@/features/link-in-bio/backgrounds/background-presets";
+import { useBusinessConfig } from "@/features/business-settings/use-business-config";
 
 export type BackgroundMediaType = "image" | "video" | "youtube";
 
@@ -27,18 +27,6 @@ export type BackgroundMedia = {
   type: BackgroundMediaType;
   url: string;
 };
-
-const backgroundVideos = [
-  { id: "coverr-ai-gradient", name: "Soft AI Gradient", source: "Coverr", url: "https://cdn.coverr.co/videos/user-ai-generation-kv9zE4fNgqFS/1080p.mp4", categories: ["Abstract", "Gradient"] },
-  { id: "coverr-luminous-flow", name: "Luminous Flow", source: "Coverr", url: "https://cdn.coverr.co/videos/user-ai-generation-VlzTMEbjgVkr/1080p.mp4", categories: ["Abstract", "Gradient"] },
-  { id: "coverr-mountain-focus", name: "Creator Journey", source: "Coverr", url: "https://cdn.coverr.co/videos/coverr-walking-to-the-mountain-top-8360/1080p.mp4", categories: ["Creator", "Nature"] },
-  { id: "coverr-water-calm", name: "Calm Reflection", source: "Coverr", url: "https://cdn.coverr.co/videos/coverr-tree-reflection-in-the-water-8825/360p.mp4", categories: ["Nature", "Minimal"] },
-  { id: "coverr-phone-focus", name: "Mobile Creator", source: "Coverr", url: "https://cdn.coverr.co/videos/coverr-close-up-of-man-using-iphone-15/360p.mp4", categories: ["Tech", "Creator"] },
-  { id: "coverr-industrial-grid", name: "Grid Reflection", source: "Coverr", url: "https://cdn.coverr.co/videos/coverr-river-viewed-through-a-square-grid-6554/1080p.mp4", categories: ["Geometric", "Texture"] },
-  { id: "coverr-studio-phone", name: "Studio Tech", source: "Coverr", url: "https://cdn.coverr.co/videos/coverr-close-up-of-iphone-15/360p.mp4", categories: ["Tech", "Professional"] },
-] as const;
-
-const videoCategories = ["All", ...Array.from(new Set(backgroundVideos.flatMap((video) => video.categories))).sort()];
 
 export function getYouTubeEmbedUrl(value: string) {
   try {
@@ -66,6 +54,9 @@ type ImagePickerProps = {
 };
 
 export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePickerProps) {
+  const businessConfig = useBusinessConfig();
+  const backgroundVideos = businessConfig.presetLibrary.videos;
+  const videoCategories = ["All", ...Array.from(new Set(backgroundVideos.flatMap((video) => video.categories))).sort()];
   const [mediaManagerOpen, setMediaManagerOpen] = useState(false);
   const [videoCategory, setVideoCategory] = useState("All");
   const [youtubeUrl, setYoutubeUrl] = useState(selectedMedia?.type === "youtube" ? selectedMedia.url : "");
@@ -131,7 +122,7 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
           <div className="grid max-h-90 grid-cols-2 gap-3 overflow-y-auto pr-2 sm:grid-cols-3">
             {filteredVideos.map((video) => {
               const selected = selectedMedia?.type === "video" && selectedMedia.id === video.id;
-              return <Button key={video.id} type="button" variant="outline" aria-pressed={selected} className="relative aspect-square h-auto w-full overflow-hidden p-0" onClick={() => onMediaSelect({ id: video.id, type: "video", url: video.url })}><video src={video.url} muted loop playsInline preload="metadata" onMouseEnter={(event) => void event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} className="size-full object-cover" /><span className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-transparent" /><span className="absolute inset-x-2 bottom-2 text-left"><Badge variant="secondary"><PlayCircle />{video.source}</Badge><span className="mt-1 block truncate text-xs font-medium text-white">{video.name}</span></span>{selected ? <Badge className="absolute top-2 right-2">Đã chọn</Badge> : null}</Button>;
+              return <Button key={video.id} type="button" variant="outline" aria-pressed={selected} className="relative aspect-square h-auto w-full overflow-hidden p-0" onClick={() => onMediaSelect({ id: video.id, type: "video", url: video.videoUrl })}><video src={video.videoUrl} muted loop playsInline preload="metadata" onMouseEnter={(event) => void event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} className="size-full object-cover" /><span className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-transparent" /><span className="absolute inset-x-2 bottom-2 text-left"><Badge variant="secondary"><PlayCircle />{video.source}</Badge><span className="mt-1 block truncate text-xs font-medium text-white">{video.name}</span></span>{selected ? <Badge className="absolute top-2 right-2">Đã chọn</Badge> : null}</Button>;
             })}
           </div>
         </TabsContent>
@@ -150,7 +141,7 @@ export default function ImagePicker({ selectedMedia, onMediaSelect }: ImagePicke
         onOpenChange={setMediaManagerOpen}
         selectedFileId={selectedMedia?.type === "image" ? selectedMedia.fileId : undefined}
         acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
-        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        maxSize={businessConfig.uploads.coverImageMaxBytes}
         title="Chọn ảnh nền từ Media Manager"
         onSelect={(file) => onMediaSelect({
           id: `file:${file.id}`,

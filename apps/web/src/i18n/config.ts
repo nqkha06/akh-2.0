@@ -1,10 +1,8 @@
-export const locales = ["vi", "en"] as const;
+export type AppLocale = string;
 
-export type AppLocale = (typeof locales)[number];
-
-export const defaultLocale: AppLocale = "vi";
+export const defaultLocale = "vi";
 export const localeCookieName = "NEXT_LOCALE";
 
-export function isAppLocale(value: string | undefined): value is AppLocale {
-  return Boolean(value && locales.includes(value as AppLocale));
+export function isLocaleSyntax(value: string | undefined): value is AppLocale {
+  return Boolean(value && /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(value));
 }

@@ -72,6 +72,14 @@ export function revokeAdminUserSession(id: number, sessionId: string) {
   });
 }
 
+export async function impersonateAdminUser(id: number) {
+  const response = await authenticatedApiFetch(`/auth/impersonation/${id}`, {
+    method: "POST",
+  });
+  if (!response.ok) throw new Error(await readApiError(response));
+  window.location.assign("/member");
+}
+
 async function request<T>(path: string, init: RequestInit) {
   const response = await authenticatedApiFetch(path, init);
   if (!response.ok) throw new Error(await readApiError(response));

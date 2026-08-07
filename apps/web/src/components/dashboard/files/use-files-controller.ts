@@ -5,8 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { bulkDeleteFiles, deleteFile, getFiles, type ManagedFileDto, updateFile, uploadFile } from "@/lib/api-client";
+import { useBusinessConfig } from "@/features/business-settings/use-business-config";
 
-import { FILE_SIZE_LIMIT } from "./file-utils";
 import { FILE_CREATED_EVENT } from "./events";
 import type { FileSortOption, FilesFilters, FileStatusFilter, FileTypeFilter, ManagedFileView, UploadQueueItem } from "./types";
 
@@ -37,6 +37,7 @@ function apiSort(sort: FileSortOption) {
 function withViewData(file: ManagedFileDto): ManagedFileView { return { ...file, usageCount: file.usageCount }; }
 
 export function useFilesController() {
+  const fileSizeLimit = useBusinessConfig().uploads.memberFileMaxBytes;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -274,14 +275,14 @@ export function useFilesController() {
       id: `${Date.now()}-${index}-${file.name}`,
       file,
       status:
-        file.size > FILE_SIZE_LIMIT || file.size === 0
+        file.size > fileSizeLimit || file.size === 0
           ? "error"
           : "pending",
       progress: 0,
       indeterminate: file.size < INDETERMINATE_FILE_SIZE,
       error:
-        file.size > FILE_SIZE_LIMIT
-          ? "File vượt quá giới hạn 100 MB."
+        file.size > fileSizeLimit
+          ? `File vượt quá giới hạn ${Math.round(fileSizeLimit / 1024 / 1024)} MB.`
           : file.size === 0
             ? "File rỗng không thể tải lên."
             : undefined,
@@ -328,7 +329,7 @@ export function useFilesController() {
   }
 
   return {
-    files, visibleFiles, filteredTotal: totalItems, totalSize, storageLimit, reservedSize, query, filters, sort, page: Math.min(page, pageCount), pageSize, pageCount, loading, error,
+    files, visibleFiles, filteredTotal: totalItems, totalSize, storageLimit, reservedSize, fileSizeLimit, query, filters, sort, page: Math.min(page, pageCount), pageSize, pageCount, loading, error,
     selectedIds, selectedFiles, busy, uploadOpen, uploadQueue, previewFile, previewOpen, filePendingRename, filePendingDelete, bulkDeleteOpen,
     setQuery, setType, setStatus, setSort, setPage, setPageSize, clearCriteria, refresh: loadFiles,
     setUploadOpen, addFiles, retryUpload, cancelUpload, removeUpload, openPreview, setPreviewOpen, openRename, setFilePendingRename, renameFile,

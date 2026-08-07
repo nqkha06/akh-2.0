@@ -4,7 +4,6 @@ import * as React from "react";
 
 import {
   defaultLocale,
-  locales,
   type AppLocale,
 } from "@/i18n/config";
 
@@ -32,11 +31,8 @@ export function useUiLanguages() {
       .then((result) => {
         if (!active) return;
         const available = result.items
-          .filter((language) =>
-            locales.includes(language.locale as AppLocale),
-          )
           .map((language) => ({
-            locale: language.locale as AppLocale,
+            locale: language.locale,
             label: language.nativeName || language.name,
           }));
         if (available.length) {

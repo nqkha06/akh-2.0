@@ -33,6 +33,21 @@ const pageInclude = {
 
 type PageRecord = Prisma.PageGetPayload<{ include: typeof pageInclude }>;
 
+const publicPageSelect = {
+  title: true,
+  slug: true,
+  excerpt: true,
+  contentHtml: true,
+  featuredImage: { select: featuredImageSelect },
+  seoTitle: true,
+  seoDescription: true,
+  seoKeywords: true,
+  canonicalUrl: true,
+  robotsIndex: true,
+  robotsFollow: true,
+  publishedAt: true,
+} satisfies Prisma.PageSelect;
+
 @Injectable()
 export class PagesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -90,6 +105,28 @@ export class PagesService {
 
   async findOne(id: number) {
     return this.toResponse(await this.findRecord(id));
+  }
+
+  async findPublicBySlug(input: string) {
+    const slug = input.trim().toLowerCase();
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      throw new NotFoundException("Không tìm thấy trang.");
+    }
+
+    const page = await this.prisma.page.findFirst({
+      where: {
+        slug,
+        status: "PUBLISHED",
+        deletedAt: null,
+      },
+      select: publicPageSelect,
+    });
+    if (!page) throw new NotFoundException("Không tìm thấy trang.");
+
+    return {
+      ...page,
+      contentHtml: this.sanitizeContent(page.contentHtml),
+    };
   }
 
   async create(dto: CreatePageDto, user: AuthenticatedUser) {

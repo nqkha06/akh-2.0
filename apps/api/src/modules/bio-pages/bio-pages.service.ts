@@ -8,10 +8,10 @@ import { Prisma, type BioPage } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { FilesService } from "../files/files.service";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { CreateBioPageDto } from "./dto/create-bio-page.dto";
 import {
   GALLERY_ACCEPTED_MIME_TYPES,
-  GALLERY_IMAGE_MAX_SIZE,
   GALLERY_MAX_IMAGES,
 } from "./gallery.constants";
 
@@ -57,6 +57,7 @@ export class BioPagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    private readonly businessSettings: BusinessSettingsService,
   ) {}
 
   async create(userId: number, dto: CreateBioPageDto) {
@@ -300,6 +301,7 @@ export class BioPagesService {
     }
 
     if (fileIds.size > 0) {
+      const settings = await this.businessSettings.getRuntime();
       const files = await this.prisma.memberFile.findMany({
         where: { id: { in: [...fileIds] }, userId, deletedAt: null, status: "completed" },
         select: { id: true, mimeType: true, size: true },
@@ -308,7 +310,7 @@ export class BioPagesService {
         files.length !== fileIds.size ||
         files.some((file) =>
           !GALLERY_ACCEPTED_MIME_TYPES.has(file.mimeType.toLowerCase()) ||
-          file.size > GALLERY_IMAGE_MAX_SIZE,
+          file.size > settings.coverImageMaxBytes,
         )
       ) {
         throw new BadRequestException("Một hoặc nhiều ảnh không hợp lệ, không còn tồn tại hoặc không thuộc tài khoản.");

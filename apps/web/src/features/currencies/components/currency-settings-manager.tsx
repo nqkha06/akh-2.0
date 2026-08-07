@@ -235,7 +235,7 @@ export function CurrencySettingsManager({
           <div>
             <h2 className="font-semibold">Danh mục tiền tệ</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ví dụ VND = 22.000 nghĩa là 1 USD = 22.000 VND.
+              Ví dụ VND = 22.000 nghĩa là 1 {data.baseCurrency} = 22.000 VND.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -271,7 +271,7 @@ export function CurrencySettingsManager({
             <TableHeader className="bg-muted/30">
               <TableRow>
                 <TableHead className="pl-4 sm:pl-5">Tiền tệ</TableHead>
-                <TableHead>Tỷ giá theo 1 USD</TableHead>
+                <TableHead>Tỷ giá theo 1 {data.baseCurrency}</TableHead>
                 <TableHead>Số lẻ</TableHead>
                 <TableHead>Thứ tự</TableHead>
                 <TableHead>Trạng thái</TableHead>
@@ -401,6 +401,7 @@ export function CurrencySettingsManager({
       </Card>
 
       <CurrencyDialog
+        baseCurrency={data.baseCurrency}
         open={formOpen}
         editing={editing}
         form={form}
@@ -470,6 +471,7 @@ function SummaryCard({
 }
 
 function CurrencyDialog({
+  baseCurrency,
   open,
   editing,
   form,
@@ -478,6 +480,7 @@ function CurrencyDialog({
   onChange,
   onSubmit,
 }: {
+  baseCurrency: string;
   open: boolean;
   editing: Currency | null;
   form: CurrencyFormState;
@@ -495,7 +498,7 @@ function CurrencyDialog({
               {editing ? `Chỉnh sửa ${editing.code}` : "Thêm tiền tệ"}
             </DialogTitle>
             <DialogDescription>
-              Tỷ giá luôn được tính theo USD. Mã tiền tệ không thể đổi sau khi
+              Tỷ giá luôn được tính theo tiền hạch toán {baseCurrency}. Mã tiền tệ không thể đổi sau khi
               tạo để bảo toàn lựa chọn đã lưu của user.
             </DialogDescription>
           </DialogHeader>
@@ -554,7 +557,7 @@ function CurrencyDialog({
                 required
               />
             </Field>
-            <Field label="1 USD bằng" htmlFor="currency-rate">
+            <Field label={`1 ${baseCurrency} bằng`} htmlFor="currency-rate">
               <Input
                 id="currency-rate"
                 type="number"

@@ -5,8 +5,10 @@ import {
   Archive,
   CalendarDays,
   CircleDashed,
+  Copy,
   Ellipsis,
   Eye,
+  ExternalLink,
   FileText,
   Pencil,
   RotateCcw,
@@ -37,6 +39,10 @@ import type {
   AdminPageListItem,
   PageStatus,
 } from "@/features/admin-pages/types";
+import {
+  canViewPublicPage,
+  publicPagePath,
+} from "@/features/pages/public-page-url";
 
 export type PageRowAction = {
   row: Row<AdminPageListItem>;
@@ -48,12 +54,14 @@ export function getPagesTableColumns({
   canDelete,
   canPublish,
   onStatusChange,
+  onCopyPublicUrl,
   setRowAction,
 }: {
   canUpdate: boolean;
   canDelete: boolean;
   canPublish: boolean;
   onStatusChange: (page: AdminPageListItem, status: PageStatus) => void;
+  onCopyPublicUrl: (page: AdminPageListItem) => void;
   setRowAction: React.Dispatch<React.SetStateAction<PageRowAction | null>>;
 }): ColumnDef<AdminPageListItem>[] {
   return [
@@ -266,6 +274,24 @@ export function getPagesTableColumns({
                 <Eye /> Preview
               </Link>
             </DropdownMenuItem>
+            {canViewPublicPage(row.original) ? (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={publicPagePath(row.original.slug) || "/"}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink /> Xem trang
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => onCopyPublicUrl(row.original)}
+                >
+                  <Copy /> Sao chép URL public
+                </DropdownMenuItem>
+              </>
+            ) : null}
             {canUpdate && row.original.status !== "ARCHIVED" ? (
               <DropdownMenuItem asChild>
                 <Link href={`/admin/pages/${row.original.id}/edit`}>

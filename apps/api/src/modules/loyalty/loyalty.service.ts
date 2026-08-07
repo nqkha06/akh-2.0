@@ -9,14 +9,13 @@ import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { LanguagesService } from "../languages/languages.service";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import type { CreateLoyaltyTierDto } from "./dto/create-loyalty-tier.dto";
 import type { ListLoyaltyTiersQueryDto } from "./dto/list-loyalty-tiers-query.dto";
 import type { LoyaltyTierTranslationDto } from "./dto/loyalty-tier-config.dto";
 import type { UpdateLoyaltyTierDto } from "./dto/update-loyalty-tier.dto";
 
 const DAY_MS = 86_400_000;
-const LOYALTY_WINDOW_DAYS = 7;
-const LOYALTY_HISTORY_DAYS = 7;
 
 const loyaltyTierInclude = {
   translations: { orderBy: { locale: "asc" as const } },
@@ -51,6 +50,7 @@ export class LoyaltyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly languagesService: LanguagesService,
+    private readonly businessSettings: BusinessSettingsService,
   ) {}
 
   async findAllTiers(query: ListLoyaltyTiersQueryDto) {
@@ -229,6 +229,9 @@ export class LoyaltyService {
   }
 
   async getMemberOverview(userId: number, requestedLocale?: string) {
+    const settings = await this.businessSettings.getRuntime();
+    const loyaltyWindowDays = settings.loyaltyWindowDays;
+    const loyaltyHistoryDays = settings.loyaltyHistoryDays;
     const records = await this.prisma.loyaltyTier.findMany({
       where: { status: "published" },
       include: loyaltyTierInclude,
@@ -239,12 +242,12 @@ export class LoyaltyService {
     );
 
     const today = this.startOfUtcDay(new Date());
-    const metricDayCount = LOYALTY_WINDOW_DAYS + LOYALTY_HISTORY_DAYS - 1;
+    const metricDayCount = loyaltyWindowDays + loyaltyHistoryDays - 1;
     const metricDays = Array.from({ length: metricDayCount }, (_, index) =>
       this.addUtcDays(today, index - metricDayCount + 1),
     );
 
-    const [dailyCounts, latestAggregation] = await Promise.all([
+    const [dailyCounts, latestAggregation, loyaltySnapshot] = await Promise.all([
       this.prisma.$transaction(
         metricDays.map((day) =>
           this.prisma.linkAccessLog.count({
@@ -263,14 +266,24 @@ export class LoyaltyService {
         where: { userId, isEarn: true },
         _max: { processedAt: true },
       }),
+      this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: {
+          loyaltyTierId: true,
+          loyaltyValidViews: true,
+          loyaltyWindowStartedAt: true,
+          loyaltyWindowEndedAt: true,
+          loyaltyCalculatedAt: true,
+        },
+      }),
     ]);
 
     const history = metricDays
-      .slice(LOYALTY_WINDOW_DAYS - 1)
+      .slice(loyaltyWindowDays - 1)
       .map((day, historyIndex) => {
-        const metricIndex = historyIndex + LOYALTY_WINDOW_DAYS - 1;
+        const metricIndex = historyIndex + loyaltyWindowDays - 1;
         const rollingValidViews = dailyCounts
-          .slice(metricIndex - LOYALTY_WINDOW_DAYS + 1, metricIndex + 1)
+          .slice(metricIndex - loyaltyWindowDays + 1, metricIndex + 1)
           .reduce((total, count) => total + count, 0);
         const tier = this.resolveTier(tiers, rollingValidViews);
 
@@ -282,8 +295,15 @@ export class LoyaltyService {
         };
       });
 
-    const currentValue = history[history.length - 1]?.rollingValidViews ?? 0;
-    const currentTier = this.resolveTier(tiers, currentValue);
+    const liveCurrentValue = history[history.length - 1]?.rollingValidViews ?? 0;
+    const hasDailySnapshot = loyaltySnapshot.loyaltyCalculatedAt !== null;
+    const currentValue = hasDailySnapshot
+      ? loyaltySnapshot.loyaltyValidViews
+      : liveCurrentValue;
+    const currentTier = hasDailySnapshot
+      ? tiers.find((tier) => tier.id === loyaltySnapshot.loyaltyTierId) ??
+        this.resolveTier(tiers, currentValue)
+      : this.resolveTier(tiers, currentValue);
     const currentTierIndex = currentTier
       ? tiers.findIndex((tier) => tier.id === currentTier.id)
       : -1;
@@ -292,9 +312,13 @@ export class LoyaltyService {
     return {
       calculation: {
         metric: "earned_views",
-        windowDays: LOYALTY_WINDOW_DAYS,
+        windowDays: loyaltyWindowDays,
         timezone: "UTC",
         lastAggregatedAt: latestAggregation._max.processedAt,
+        lastRankedAt: loyaltySnapshot.loyaltyCalculatedAt,
+        windowStartedAt: loyaltySnapshot.loyaltyWindowStartedAt,
+        windowEndedAt: loyaltySnapshot.loyaltyWindowEndedAt,
+        source: hasDailySnapshot ? "daily_rollup" : "live_fallback",
       },
       summary: {
         currentValue,

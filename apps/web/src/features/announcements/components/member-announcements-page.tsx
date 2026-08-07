@@ -2,38 +2,63 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CheckCheck, ChevronDown, ExternalLink, LoaderCircle, RefreshCw } from "lucide-react";
+import {
+  CheckCheck,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
+import { PageContainer } from "@/components/dashboard/ui";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+
 import { listMemberAnnouncements } from "../api/announcements.client";
 import type { MemberAnnouncement } from "../types";
-import { announcementDisplayLabels } from "../types";
-import { AnnouncementContent, AnnouncementIcon, announcementPlainText, announcementTone } from "./announcement-ui";
+import {
+  AnnouncementContent,
+  AnnouncementIcon,
+  announcementPlainText,
+  announcementTone,
+} from "./announcement-ui";
 import { useAnnouncements } from "./announcements-provider";
+
+type AnnouncementFilter = "all" | "unread" | "read";
 
 export function MemberAnnouncementsPage() {
   const { markRead, markAllRead, trackClick } = useAnnouncements();
   const [items, setItems] = React.useState<MemberAnnouncement[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [filter, setFilter] = React.useState<"all" | "unread" | "read">("all");
+  const [markingAll, setMarkingAll] = React.useState(false);
+  const [filter, setFilter] = React.useState<AnnouncementFilter>("all");
   const [expanded, setExpanded] = React.useState<number | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const result = await listMemberAnnouncements({ displayType: "notification", perPage: 50 });
+      const result = await listMemberAnnouncements({
+        displayType: "notification",
+        perPage: 50,
+      });
       setItems(result.items);
-      const focusId = Number(new URLSearchParams(window.location.search).get("focus"));
-      if (Number.isInteger(focusId) && result.items.some((item) => item.id === focusId)) {
+      const focusId = Number(
+        new URLSearchParams(window.location.search).get("focus"),
+      );
+      if (
+        Number.isInteger(focusId) &&
+        result.items.some((item) => item.id === focusId)
+      ) {
         setExpanded(focusId);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể tải thông báo.");
+      toast.error(
+        error instanceof Error ? error.message : "Không thể tải thông báo.",
+      );
     } finally {
       setLoading(false);
     }
@@ -44,7 +69,20 @@ export function MemberAnnouncementsPage() {
     return () => window.clearTimeout(initialLoad);
   }, [load]);
 
-  const visible = items.filter((item) => filter === "all" || (filter === "unread" ? !item.state.readAt : Boolean(item.state.readAt)));
+  const counts = React.useMemo(() => {
+    const unread = items.filter((item) => !item.state.readAt).length;
+    return { all: items.length, unread, read: items.length - unread };
+  }, [items]);
+
+  const visible = React.useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          filter === "all" ||
+          (filter === "unread" ? !item.state.readAt : Boolean(item.state.readAt)),
+      ),
+    [filter, items],
+  );
 
   async function toggle(item: MemberAnnouncement) {
     const next = expanded === item.id ? null : item.id;
@@ -52,32 +90,290 @@ export function MemberAnnouncementsPage() {
     if (next && !item.state.readAt) {
       try {
         await markRead(item.id);
-        setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, state: { ...entry.state, readAt: new Date().toISOString() } } : entry));
+        setItems((current) =>
+          current.map((entry) =>
+            entry.id === item.id
+              ? {
+                  ...entry,
+                  state: { ...entry.state, readAt: new Date().toISOString() },
+                }
+              : entry,
+          ),
+        );
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Không thể đánh dấu đã đọc.");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể đánh dấu đã đọc.",
+        );
       }
     }
   }
 
+  async function handleMarkAllRead() {
+    setMarkingAll(true);
+    try {
+      await markAllRead();
+      const readAt = new Date().toISOString();
+      setItems((current) =>
+        current.map((item) => ({
+          ...item,
+          state: { ...item.state, readAt: item.state.readAt || readAt },
+        })),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật thông báo.",
+      );
+    } finally {
+      setMarkingAll(false);
+    }
+  }
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Trung tâm thông báo</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Thông báo hệ thống</h1><p className="mt-1 text-sm text-muted-foreground">Cập nhật vận hành, tính năng và những việc cần bạn chú ý.</p></div>
-        <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw className={loading ? "animate-spin" : ""} />Làm mới</Button><Button variant="outline" size="sm" onClick={() => void markAllRead().then(load).catch((error) => toast.error(error instanceof Error ? error.message : "Không thể cập nhật thông báo."))}><CheckCheck />Đánh dấu tất cả đã đọc</Button></div>
+    <PageContainer className="max-w-5xl">
+      <header className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-[-0.035em] text-foreground">
+          Thông báo
+        </h1>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label="Làm mới"
+          title="Làm mới"
+          disabled={loading}
+          onClick={() => void load()}
+        >
+          <RefreshCw className={loading ? "animate-spin" : ""} />
+        </Button>
+      </header>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs
+          value={filter}
+          onValueChange={(value) => setFilter(value as AnnouncementFilter)}
+        >
+          <TabsList className="w-full sm:w-auto">
+            <FilterTab value="all" label="Tất cả" count={counts.all} />
+            <FilterTab value="unread" label="Chưa đọc" count={counts.unread} />
+            <FilterTab value="read" label="Đã đọc" count={counts.read} />
+          </TabsList>
+        </Tabs>
+
+        <div className="flex items-center justify-end gap-2">
+          {counts.unread > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={markingAll}
+              onClick={() => void handleMarkAllRead()}
+            >
+              <CheckCheck />
+              Đánh dấu đã đọc
+            </Button>
+          ) : null}
+        </div>
       </div>
-      <Tabs value={filter} onValueChange={(value) => setFilter(value as typeof filter)}><TabsList><TabsTrigger value="all">Tất cả</TabsTrigger><TabsTrigger value="unread">Chưa đọc</TabsTrigger><TabsTrigger value="read">Đã đọc</TabsTrigger></TabsList></Tabs>
-      {loading ? <Card className="flex min-h-52 items-center justify-center"><LoaderCircle className="size-5 animate-spin text-muted-foreground" /></Card> : visible.length ? <div className="space-y-3">{visible.map((item) => {
-        const open = expanded === item.id;
-        const unread = !item.state.readAt;
-        return <Card key={item.id} className={cn("gap-0 overflow-hidden py-0", unread && "border-primary/30")}>
-          <button type="button" onClick={() => void toggle(item)} className="flex w-full items-start gap-3 px-4 py-4 text-left sm:px-5">
-            <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl border", announcementTone(item.type))}><AnnouncementIcon type={item.type} className="size-5" /></span>
-            <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold">{item.title}</span>{unread ? <span className="size-2 rounded-full bg-primary" aria-label="Chưa đọc" /> : null}<Badge variant="outline" className="h-5 text-[10px]">{announcementDisplayLabels[item.displayType]}</Badge></span><span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">{announcementPlainText(item.summary || item.content)}</span><span className="mt-2 block text-[11px] text-muted-foreground">{new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.publishedAt || item.createdAt))}</span></span>
-            <ChevronDown className={cn("mt-2 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
-          </button>
-          {open ? <div className="border-t border-border bg-muted/10 px-4 py-4 sm:px-5"><AnnouncementContent content={item.content} />{item.actionLabel && item.actionUrl ? <Button asChild size="sm" className="mt-4"><Link href={item.actionUrl} target={item.actionUrl.startsWith("/") ? undefined : "_blank"} rel="noopener noreferrer" onClick={() => void trackClick(item.id).catch((error) => toast.error(error instanceof Error ? error.message : "Không thể ghi nhận thao tác."))}>{item.actionLabel}<ExternalLink /></Link></Button> : null}</div> : null}
-        </Card>;
-      })}</div> : <Card className="flex min-h-52 flex-col items-center justify-center text-center"><AnnouncementIcon type="info" className="size-7 text-muted-foreground" /><p className="mt-3 text-sm font-medium">Không có thông báo phù hợp</p><p className="mt-1 text-xs text-muted-foreground">Thông báo mới sẽ xuất hiện tại đây.</p></Card>}
+
+      {loading ? (
+        <AnnouncementsSkeleton />
+      ) : visible.length ? (
+        <div className="space-y-2.5">
+          {visible.map((item) => (
+            <AnnouncementRow
+              key={item.id}
+              item={item}
+              open={expanded === item.id}
+              onToggle={() => void toggle(item)}
+              onAction={() =>
+                void trackClick(item.id).catch((error) =>
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Không thể ghi nhận thao tác.",
+                  ),
+                )
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyAnnouncements filter={filter} />
+      )}
+    </PageContainer>
+  );
+}
+
+function FilterTab({
+  value,
+  label,
+  count,
+}: {
+  value: AnnouncementFilter;
+  label: string;
+  count: number;
+}) {
+  return (
+    <TabsTrigger value={value} className="flex-1 gap-1.5 sm:flex-none">
+      {label}
+      <span className="min-w-5 rounded-full bg-background/70 px-1.5 text-[10px] tabular-nums text-muted-foreground">
+        {count}
+      </span>
+    </TabsTrigger>
+  );
+}
+
+function AnnouncementRow({
+  item,
+  open,
+  onToggle,
+  onAction,
+}: {
+  item: MemberAnnouncement;
+  open: boolean;
+  onToggle: () => void;
+  onAction: () => void;
+}) {
+  const unread = !item.state.readAt;
+  const externalAction = Boolean(
+    item.actionUrl && !item.actionUrl.startsWith("/"),
+  );
+
+  return (
+    <Card
+      className={cn(
+        "gap-0 overflow-hidden rounded-xl border-border py-0 shadow-none transition-colors",
+        unread && "border-primary/25 bg-primary/[0.02]",
+      )}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/30 sm:gap-4 sm:px-5"
+      >
+        <span
+          className={cn(
+            "grid size-10 shrink-0 place-items-center rounded-xl border",
+            announcementTone(item.type),
+          )}
+        >
+          <AnnouncementIcon type={item.type} className="size-[18px]" />
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="flex items-start gap-2">
+            <span
+              className={cn(
+                "min-w-0 flex-1 text-sm leading-5",
+                unread ? "font-semibold text-foreground" : "font-medium",
+              )}
+            >
+              {item.title}
+            </span>
+            {unread ? (
+              <span
+                className="mt-1.5 size-2 shrink-0 rounded-full bg-primary"
+                aria-label="Chưa đọc"
+              />
+            ) : null}
+          </span>
+
+          {!open ? (
+            <span className="mt-1.5 block text-xs leading-5 text-muted-foreground">
+              {announcementPreview(item.summary || item.content)}
+            </span>
+          ) : null}
+
+          <time
+            dateTime={item.publishedAt || item.createdAt}
+            className="mt-2 block text-[11px] tabular-nums text-muted-foreground"
+          >
+            {formatAnnouncementDate(item.publishedAt || item.createdAt)}
+          </time>
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "mt-1 size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open ? (
+        <div className="border-t border-border/80 bg-muted/[0.12] px-4 py-5 sm:px-[4.75rem]">
+          <AnnouncementContent content={item.content} />
+          {item.actionLabel && item.actionUrl ? (
+            <Button asChild size="sm" className="mt-4">
+              <Link
+                href={item.actionUrl}
+                target={externalAction ? "_blank" : undefined}
+                rel={externalAction ? "noopener noreferrer" : undefined}
+                onClick={onAction}
+              >
+                {item.actionLabel}
+                {externalAction ? <ExternalLink /> : <ChevronRight />}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
+function AnnouncementsSkeleton() {
+  return (
+    <div className="space-y-2.5" aria-label="Đang tải thông báo">
+      {[0, 1, 2].map((item) => (
+        <div
+          key={item}
+          className="flex items-start gap-4 rounded-xl border border-border px-4 py-4 sm:px-5"
+        >
+          <Skeleton className="size-10 shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
     </div>
   );
+}
+
+function EmptyAnnouncements({ filter }: { filter: AnnouncementFilter }) {
+  const message =
+    filter === "unread"
+      ? "Không có thông báo chưa đọc."
+      : filter === "read"
+        ? "Chưa có thông báo đã đọc."
+        : "Chưa có thông báo.";
+
+  return (
+    <div className="flex min-h-56 flex-col items-center justify-center rounded-xl border border-dashed border-border text-center">
+      <span className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
+        <AnnouncementIcon type="info" className="size-5" />
+      </span>
+      <p className="mt-3 text-sm font-medium">{message}</p>
+    </div>
+  );
+}
+
+function announcementPreview(value: string, maxLength = 180) {
+  const plainText = announcementPlainText(value);
+  if (plainText.length <= maxLength) return plainText;
+  const candidate = plainText.slice(0, maxLength + 1);
+  const lastSpace = candidate.lastIndexOf(" ");
+  return `${candidate.slice(0, lastSpace > 100 ? lastSpace : maxLength).trim()}…`;
+}
+
+function formatAnnouncementDate(value: string) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }

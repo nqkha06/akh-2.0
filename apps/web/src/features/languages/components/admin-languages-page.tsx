@@ -2,10 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { BUNDLED_UI_LOCALES } from "@stu/contracts";
 import {
   ArrowDown,
   ArrowUp,
+  BookOpenText,
   Languages,
+  Info,
   LoaderCircle,
   Pencil,
   Plus,
@@ -26,8 +29,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { useAdminPermissions } from "@/features/admin-authorization/components/admin-authorization-provider";
 import { publicationStatusLabel } from "@/types/publication-status";
@@ -130,7 +135,7 @@ export function AdminLanguagesPage() {
     <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-6 pb-8">
       <AdminPageHeader
         title="Ngôn ngữ"
-        description="Quản lý locale nội dung, ngôn ngữ mặc định và thứ tự xuất hiện trong các màn hình biên tập."
+        description="Quản lý locale cho nội dung và giao diện member từ một nơi duy nhất."
         actions={
           canCreate ? (
             <Button asChild>
@@ -142,6 +147,14 @@ export function AdminLanguagesPage() {
           ) : null
         }
       />
+      <Alert>
+        <Info aria-hidden="true" />
+        <AlertTitle>Ngôn ngữ đã publish sẽ xuất hiện cho member</AlertTitle>
+        <AlertDescription>
+          Tiếng Việt và English có sẵn toàn bộ bản dịch. Với locale mới, key chưa
+          dịch sẽ fallback sang English để giao diện luôn hoạt động.
+        </AlertDescription>
+      </Alert>
 
       {loading ? (
         <div className="flex min-h-64 items-center justify-center gap-2 rounded-2xl border bg-card text-sm text-muted-foreground">
@@ -210,6 +223,17 @@ export function AdminLanguagesPage() {
                   <Meta label="Direction" value={language.isRtl ? "RTL" : "LTR"} />
                   <Meta label="Thứ tự" value={String(language.sortOrder)} />
                 </dl>
+
+                <UiTranslationProgress language={language} />
+
+                {canUpdate ? (
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/admin/languages/${language.id}/translations`}>
+                      <BookOpenText />
+                      Dịch giao diện member
+                    </Link>
+                  </Button>
+                ) : null}
 
                 <div className="flex items-center justify-between border-t pt-4">
                   <div className="flex gap-1">
@@ -291,6 +315,30 @@ export function AdminLanguagesPage() {
         }}
         onDeleted={() => void load()}
       />
+    </div>
+  );
+}
+
+function UiTranslationProgress({ language }: { language: Language }) {
+  const bundled = BUNDLED_UI_LOCALES.includes(
+    language.locale as (typeof BUNDLED_UI_LOCALES)[number],
+  );
+  const total = bundled
+    ? Math.max(language.uiTranslation?.catalogSize ?? 0, 1)
+    : (language.uiTranslation?.catalogSize ?? 0);
+  const translated = bundled
+    ? total
+    : (language.uiTranslation?.translatedKeys ?? 0);
+  const percentage = total ? Math.round((translated / total) * 100) : 0;
+  return (
+    <div className="space-y-2 rounded-xl border bg-muted/15 px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3 text-xs">
+        <span className="font-medium">Bản dịch giao diện</span>
+        <span className="text-muted-foreground">
+          {bundled ? "Tích hợp sẵn" : `${translated}/${total || "—"} key`}
+        </span>
+      </div>
+      <Progress value={percentage} />
     </div>
   );
 }

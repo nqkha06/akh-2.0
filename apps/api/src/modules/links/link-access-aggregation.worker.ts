@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
+import { DEVICE_TYPE_NAMES } from "@stu/contracts";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { MonetizationRateDto } from "../monetization-levels/dto/monetization-level-config.dto";
@@ -363,9 +364,8 @@ export class LinkAccessAggregationWorker {
   }
 
   private deviceType(device: number): MonetizationRateDto["deviceType"] {
-    if (device === 1) return "mobile";
-    if (device === 3) return "tablet";
-    return "desktop";
+    const resolved = DEVICE_TYPE_NAMES[device];
+    return resolved === "unknown" || !resolved ? "desktop" : resolved;
   }
 
   private addLinkView(

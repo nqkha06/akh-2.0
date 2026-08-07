@@ -11,6 +11,7 @@ import { PrismaService } from "../../database/prisma/prisma.service";
 import type { CreateLanguageDto } from "./dto/create-language.dto";
 import type { ReorderLanguagesDto } from "./dto/reorder-languages.dto";
 import type { UpdateLanguageDto } from "./dto/update-language.dto";
+import type { UpdateUiTranslationsDto } from "./dto/update-ui-translations.dto";
 
 const publicLanguageSelect = {
   id: true,
@@ -21,23 +22,17 @@ const publicLanguageSelect = {
   regional: true,
   flag: true,
   isDefault: true,
+  status: true,
   isRtl: true,
   sortOrder: true,
+  uiMessagesJson: true,
+  uiCatalogSize: true,
+  uiTranslationVersion: true,
+  uiUpdatedAt: true,
 } satisfies Prisma.LanguageSelect;
-
-type PublishedLanguagesResult = {
-  items: Array<
-    Prisma.LanguageGetPayload<{ select: typeof publicLanguageSelect }>
-  >;
-  defaultLocale: string | null;
-};
 
 @Injectable()
 export class LanguagesService implements OnModuleInit {
-  private publishedCache:
-    | { expiresAt: number; value: PublishedLanguagesResult }
-    | undefined;
-
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
@@ -88,9 +83,10 @@ export class LanguagesService implements OnModuleInit {
   async findAllForAdmin() {
     const items = await this.prisma.language.findMany({
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      select: publicLanguageSelect,
     });
     return {
-      items,
+      items: items.map((language) => this.toLanguageResponse(language, true)),
       total: items.length,
       defaultLocale:
         items.find((language) => language.isDefault)?.locale ?? null,
@@ -98,32 +94,104 @@ export class LanguagesService implements OnModuleInit {
   }
 
   async findPublished() {
-    if (this.publishedCache && this.publishedCache.expiresAt > Date.now()) {
-      return this.publishedCache.value;
-    }
     const items = await this.prisma.language.findMany({
       where: { status: "published" },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       select: publicLanguageSelect,
     });
     const value = {
-      items,
+      items: items.map((language) => this.toLanguageResponse(language, false)),
       defaultLocale:
         items.find((language) => language.isDefault)?.locale ??
         items[0]?.locale ??
         null,
     };
-    this.publishedCache = {
-      expiresAt: Date.now() + 5 * 60_000,
-      value,
-    };
     return value;
   }
 
   async findOne(id: number) {
-    const language = await this.prisma.language.findUnique({ where: { id } });
+    const language = await this.prisma.language.findUnique({
+      where: { id },
+      select: publicLanguageSelect,
+    });
     if (!language) throw new NotFoundException("Không tìm thấy ngôn ngữ.");
-    return language;
+    return this.toLanguageResponse(language, true);
+  }
+
+  async findUiTranslations(id: number) {
+    const language = await this.prisma.language.findUnique({
+      where: { id },
+      select: publicLanguageSelect,
+    });
+    if (!language) throw new NotFoundException("Không tìm thấy ngôn ngữ.");
+    const messages = this.parseUiMessages(language.uiMessagesJson);
+    return {
+      language: this.toLanguageResponse(language, true),
+      messages,
+      translatedKeys: Object.keys(messages).length,
+      catalogSize: language.uiCatalogSize,
+      version: language.uiTranslationVersion,
+      updatedAt: language.uiUpdatedAt,
+    };
+  }
+
+  async findPublicUiMessages(locale: string) {
+    if (!/^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(locale)) {
+      throw new NotFoundException("Không tìm thấy ngôn ngữ.");
+    }
+    const language = await this.prisma.language.findFirst({
+      where: { locale, status: "published" },
+      select: publicLanguageSelect,
+    });
+    if (!language) throw new NotFoundException("Không tìm thấy ngôn ngữ.");
+    return {
+      locale: language.locale,
+      isRtl: language.isRtl,
+      messages: this.parseUiMessages(language.uiMessagesJson),
+      version: language.uiTranslationVersion,
+    };
+  }
+
+  async updateUiTranslations(id: number, dto: UpdateUiTranslationsDto) {
+    const language = await this.prisma.language.findUnique({
+      where: { id },
+      select: { id: true, uiMessagesJson: true },
+    });
+    if (!language) throw new NotFoundException("Không tìm thấy ngôn ngữ.");
+
+    const messages = this.parseUiMessages(language.uiMessagesJson);
+    const removedKeys = new Set(dto.removedKeys ?? []);
+    const seenKeys = new Set<string>();
+    for (const entry of dto.entries) {
+      if (!entry.value.trim()) continue;
+      if (removedKeys.has(entry.key)) {
+        throw new BadRequestException(
+          `Translation key vừa cập nhật vừa xóa: ${entry.key}.`,
+        );
+      }
+      if (seenKeys.has(entry.key)) {
+        throw new BadRequestException(`Translation key bị trùng: ${entry.key}.`);
+      }
+      seenKeys.add(entry.key);
+      messages[entry.key] = entry.value;
+    }
+    for (const key of removedKeys) delete messages[key];
+
+    const updated = await this.prisma.language.updateMany({
+      where: { id, uiTranslationVersion: dto.version },
+      data: {
+        uiMessagesJson: JSON.stringify(messages),
+        uiCatalogSize: dto.catalogSize,
+        uiTranslationVersion: { increment: 1 },
+        uiUpdatedAt: new Date(),
+      },
+    });
+    if (!updated.count) {
+      throw new ConflictException(
+        "Bản dịch vừa được quản trị viên khác cập nhật. Hãy tải lại trang.",
+      );
+    }
+    return this.findUiTranslations(id);
   }
 
   async create(dto: CreateLanguageDto) {
@@ -144,8 +212,7 @@ export class LanguagesService implements OnModuleInit {
           data: this.normalizeCreate(dto),
         });
       });
-      this.invalidatePublishedCache();
-      return language;
+      return this.findOne(language.id);
     } catch (error) {
       this.rethrowUnique(error);
       throw error;
@@ -202,8 +269,7 @@ export class LanguagesService implements OnModuleInit {
           },
         });
       });
-      this.invalidatePublishedCache();
-      return language;
+      return this.findOne(language.id);
     } catch (error) {
       this.rethrowUnique(error);
       throw error;
@@ -222,8 +288,7 @@ export class LanguagesService implements OnModuleInit {
         data: { isDefault: true, status: "published" },
       });
     });
-    this.invalidatePublishedCache();
-    return result;
+    return this.findOne(result.id);
   }
 
   async reorder(dto: ReorderLanguagesDto) {
@@ -245,7 +310,6 @@ export class LanguagesService implements OnModuleInit {
         }),
       ),
     );
-    this.invalidatePublishedCache();
     return this.findAllForAdmin();
   }
 
@@ -256,7 +320,6 @@ export class LanguagesService implements OnModuleInit {
     }
     await this.assertLocaleIsUnused(language.locale);
     await this.prisma.language.delete({ where: { id } });
-    this.invalidatePublishedCache();
     return { success: true, id };
   }
 
@@ -343,7 +406,43 @@ export class LanguagesService implements OnModuleInit {
     }
   }
 
-  private invalidatePublishedCache() {
-    this.publishedCache = undefined;
+  private parseUiMessages(value: string) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+      return Object.fromEntries(
+        Object.entries(parsed).filter(
+          (entry): entry is [string, string] => typeof entry[1] === "string",
+        ),
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  private toLanguageResponse(
+    language: Prisma.LanguageGetPayload<{ select: typeof publicLanguageSelect }>,
+    includeStatus: boolean,
+  ) {
+    const messages = this.parseUiMessages(language.uiMessagesJson);
+    return {
+      id: language.id,
+      name: language.name,
+      nativeName: language.nativeName,
+      locale: language.locale,
+      code: language.code,
+      regional: language.regional,
+      flag: language.flag,
+      isDefault: language.isDefault,
+      ...(includeStatus ? { status: language.status } : {}),
+      sortOrder: language.sortOrder,
+      isRtl: language.isRtl,
+      uiTranslation: {
+        translatedKeys: Object.keys(messages).length,
+        catalogSize: language.uiCatalogSize,
+        version: language.uiTranslationVersion,
+        updatedAt: language.uiUpdatedAt,
+      },
+    };
   }
 }

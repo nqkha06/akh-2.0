@@ -38,9 +38,9 @@ export function BackgroundPresetPicker({
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-foreground">Background thiết kế sẵn</p>
+          <p className="text-sm font-medium text-foreground">Chọn một phong cách có sẵn</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Tối ưu tỷ lệ 9:16 và chừa vùng trung tâm cho nội dung Link Bio.
+            Mỗi mẫu đã phối sẵn background, màu nút, chữ và các khối nội dung.
           </p>
         </div>
         <Badge variant="secondary" className="shrink-0 tabular-nums">
@@ -90,7 +90,34 @@ export function BackgroundPresetPicker({
                 decoding="async"
                 className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               />
-              <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
+              <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+              <span
+                className="absolute inset-x-2 top-[22%] rounded-md border px-1.5 py-2 shadow-sm backdrop-blur-sm"
+                style={{
+                  backgroundColor: preset.theme.surfaceColor,
+                  borderColor: preset.theme.surfaceBorderColor,
+                }}
+                aria-hidden
+              >
+                <span
+                  className="mx-auto mb-1.5 block size-3 rounded-full"
+                  style={{ backgroundColor: preset.theme.accentColor }}
+                />
+                <span
+                  className="block h-2.5 rounded-full border"
+                  style={{
+                    backgroundColor: preset.theme.buttonColor,
+                    borderColor: preset.theme.buttonBorderColor,
+                  }}
+                />
+                <span
+                  className="mt-1 block h-2.5 rounded-full border"
+                  style={{
+                    backgroundColor: preset.theme.sectionColor,
+                    borderColor: preset.theme.sectionBorderColor,
+                  }}
+                />
+              </span>
               <span className="absolute inset-x-0 bottom-0 p-2">
                 <span className="block line-clamp-2 text-[11px] font-semibold leading-4 text-white">
                   {preset.name}

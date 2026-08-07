@@ -6,6 +6,7 @@ import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from "nod
 import { join, resolve } from "node:path";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { buildStoredFileName, type UploadedDiskFile } from "./files.service";
 
 export const MULTIPART_UPLOAD_STORAGE = Symbol("MULTIPART_UPLOAD_STORAGE");
@@ -51,21 +52,21 @@ export interface MultipartUploadStorage {
 export class LocalMultipartUploadStorage implements MultipartUploadStorage {
   private readonly uploadRoot: string;
   private readonly multipartRoot: string;
-  private readonly defaultStorageLimit: bigint;
 
   constructor(
     private readonly prisma: PrismaService,
     configService: ConfigService,
+    private readonly businessSettings: BusinessSettingsService,
   ) {
     this.uploadRoot = resolve(
       configService.get<string>("MEMBER_FILES_UPLOAD_DIR") ||
         join(process.cwd(), "uploads", "member-files"),
     );
     this.multipartRoot = join(this.uploadRoot, ".multipart");
-    this.defaultStorageLimit = this.parseLimit(configService.get<string>("MEMBER_STORAGE_LIMIT_BYTES"));
   }
 
   async initiate(userId: number, input: InitiateMultipartUploadInput) {
+    const settings = await this.businessSettings.getRuntime();
     await this.cleanupExpiredUploads();
     const uploadId = randomUUID();
     const now = new Date();
@@ -92,7 +93,7 @@ export class LocalMultipartUploadStorage implements MultipartUploadStorage {
     await this.prisma.$transaction(async (prisma) => {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundException("Không tìm thấy tài khoản.");
-      const limit = user.storageLimitBytes ?? this.defaultStorageLimit;
+      const limit = user.storageLimitBytes ?? BigInt(settings.memberStorageQuotaBytes);
       const incoming = BigInt(input.size);
       if (user.storageUsedBytes + user.storageReservedBytes + incoming > limit) {
         throw new PayloadTooLargeException({
@@ -259,12 +260,4 @@ export class LocalMultipartUploadStorage implements MultipartUploadStorage {
     ));
   }
 
-  private parseLimit(value?: string) {
-    try {
-      const parsed = BigInt(value || 1024 * 1024 * 1024);
-      return parsed > 0n ? parsed : 1024n * 1024n * 1024n;
-    } catch {
-      return 1024n * 1024n * 1024n;
-    }
-  }
 }

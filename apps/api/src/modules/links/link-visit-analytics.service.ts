@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { DEVICE_TYPE_CODES } from "@stu/contracts";
 import { createHash } from "node:crypto";
 
 import type {
@@ -164,9 +165,7 @@ export class LinkVisitAnalyticsService {
   }
 
   private deviceCode(deviceType: VisitorRouteContext["deviceType"]) {
-    if (deviceType === "mobile") return 1;
-    if (deviceType === "tablet") return 3;
-    return 2;
+    return DEVICE_TYPE_CODES[deviceType];
   }
 
   private detectOperatingSystem(userAgent: string) {

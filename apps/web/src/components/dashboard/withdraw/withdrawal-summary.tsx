@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CircleAlert,
+  CircleDollarSign,
   Clock3,
   RefreshCcw,
   WalletCards,
@@ -23,65 +24,75 @@ export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
     {
       label: "Có thể rút",
       value: data.availableBalance,
-      description: "Có thể tạo yêu cầu rút ngay",
-      icon: WalletCards
+      icon: WalletCards,
+      accentClassName: "bg-emerald-500",
+      iconClassName: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+      valueClassName: "text-emerald-700 dark:text-emerald-400",
     },
     {
       label: "Đang xử lý",
       value: data.pendingBalance,
-      description: "Các yêu cầu đang được xử lý",
-      icon: Clock3
+      icon: Clock3,
+      accentClassName: "bg-amber-500",
+      iconClassName: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      valueClassName: "text-amber-700 dark:text-amber-400",
     },
     {
       label: "Tổng đã nhận",
       value: data.totalReceived,
-      description: "Tổng tiền đã thanh toán",
-      icon: WalletCards
+      icon: CircleDollarSign,
+      accentClassName: "bg-sky-500",
+      iconClassName: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+      valueClassName: "text-sky-700 dark:text-sky-400",
     },
   ];
 
   return (
-    <section
-  aria-label="Tổng quan số dư"
-  className="overflow-hidden rounded-xl border border-border bg-card"
->
-  <div className="grid sm:grid-cols-3">
-    {metrics.map((metric, index) => {
-      const Icon = metric.icon
+    <section aria-label="Tổng quan số dư" className="grid gap-3 sm:grid-cols-3">
+      {metrics.map((metric) => {
+        const Icon = metric.icon;
+        const formattedValue = formatCurrency(metric.value, {
+          sourceCurrency: data.currency,
+        });
 
-      return (
-        <div
-          key={metric.label}
-          className={cn(
-            "group relative flex gap-4 p-4 transition-colors hover:bg-muted/40 sm:p-5",
-            index > 0 &&
-              "border-t border-border sm:border-l sm:border-t-0",
-          )}
-        >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground transition-colors group-hover:bg-background group-hover:text-foreground">
-            <Icon className="size-5" strokeWidth={1.8} />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted-foreground">
-              {metric.label}
+        return (
+          <article
+            key={metric.label}
+            className="group relative overflow-hidden rounded-2xl border border-border bg-transparent px-5 py-4 shadow-sm shadow-black/[0.025] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-border/80 hover:shadow-md hover:shadow-black/[0.04]"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-x-0 top-0 h-0.5 opacity-80",
+                metric.accentClassName,
+              )}
+            />
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-muted-foreground">
+                {metric.label}
+              </p>
+              <span
+                className={cn(
+                  "grid size-9 shrink-0 place-items-center rounded-xl ring-1 ring-current/10",
+                  metric.iconClassName,
+                )}
+              >
+                <Icon className="size-[18px]" strokeWidth={1.9} />
+              </span>
+            </div>
+            <p
+              title={formattedValue}
+              className={cn(
+                "mt-3 truncate text-[1.35rem] font-semibold tracking-[-0.03em] tabular-nums lg:text-2xl",
+                metric.valueClassName,
+              )}
+            >
+              {formattedValue}
             </p>
-
-            <p className="mt-1.5 truncate text-xl font-semibold tracking-[-0.02em] text-foreground tabular-nums lg:text-2xl">
-              {formatCurrency(metric.value, {
-                sourceCurrency: data.currency,
-              })}
-            </p>
-
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {metric.description}
-            </p>
-          </div>
-        </div>
-      )
-    })}
-  </div>
-</section>
+          </article>
+        );
+      })}
+    </section>
   );
 }
 
@@ -109,10 +120,10 @@ export function WithdrawalSkeleton() {
   return (
     <PageContainer aria-busy="true" aria-label="Đang tải thông tin rút tiền">
       <div><Skeleton className="h-8 w-36" /><Skeleton className="mt-2 h-4 w-[min(28rem,80%)]" /></div>
-      <div className="grid border-y border-border py-5 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className={cn("px-1 py-3 sm:px-5", index > 0 && "border-t border-border sm:border-l sm:border-t-0")}>
-            <Skeleton className="h-3 w-20" /><Skeleton className="mt-3 h-7 w-36" /><Skeleton className="mt-2 h-3 w-44 max-w-full" />
+          <div key={index} className="rounded-2xl border border-border px-5 py-4">
+            <div className="flex items-center justify-between"><Skeleton className="h-4 w-20" /><Skeleton className="size-9 rounded-xl" /></div><Skeleton className="mt-3 h-7 w-36 max-w-full" />
           </div>
         ))}
       </div>

@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getAdminPage } from "@/features/admin-pages/api/pages.server";
+import { PagePublicActions } from "@/features/admin-pages/components/page-public-actions";
 import { PageStatusBadge } from "@/features/admin-pages/components/page-status-badge";
 import { requireAdmin } from "@/lib/auth/guards";
 
@@ -52,6 +53,7 @@ export default async function AdminPageDetail({
                 <Eye /> Preview
               </Link>
             </Button>
+            <PagePublicActions slug={page.slug} status={page.status} />
             {canEdit ? (
               <Button asChild>
                 <Link href={`/admin/pages/${page.id}/edit`}>

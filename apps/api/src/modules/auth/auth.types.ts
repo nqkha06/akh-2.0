@@ -1,4 +1,14 @@
-export type AuthMethod = "password" | "google";
+export type AuthMethod =
+  | "password"
+  | "google"
+  | "impersonation"
+  | "impersonation_return";
+
+export type ImpersonationContext = {
+  actorId: number;
+  actorName: string;
+  actorEmail: string;
+};
 
 export type AuthenticatedUser = {
   id: number;
@@ -12,6 +22,7 @@ export type AuthenticatedUser = {
   permissions: string[];
   tokenVersion: number;
   sessionId?: string;
+  impersonation?: ImpersonationContext | null;
 };
 
 export type AccessJwtPayload = {

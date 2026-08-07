@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { BarChart3, Copy, Pencil } from "lucide-react"
+import { Copy, Pencil } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,7 @@ import {
 } from "@/features/site-settings/components/site-brand-provider"
 import { LinkInBioActionsMenu } from "./link-in-bio-actions-menu"
 import { copyBioUrl, DeleteLinkInBioDialog, LinkInBioQrDialog, LinkInBioStatsDialog } from "./link-in-bio-dialogs"
-import { LinkInBioMetrics } from "./link-in-bio-metrics"
-import { LinkInBioThemeAccent, LinkInBioThemeIndicator } from "./link-in-bio-theme-indicator"
-import { getVisibleBioLinks } from "./types"
+import { LinkInBioThemeAccent } from "./link-in-bio-theme-indicator"
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "published") return <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">Đã xuất bản</Badge>
@@ -45,14 +43,13 @@ export function LinkInBioCard({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const brand = useSiteBrand()
   const siteHost = getSiteHost(brand)
-  const visibleLinks = getVisibleBioLinks(page)
 
   return (
     <>
-      <Card tabIndex={0} className="relative min-h-[232px] gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none transition-colors duration-150 hover:border-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none">
+      <Card className="relative gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
         <LinkInBioThemeAccent appearance={page.appearance} />
 
-        <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-5">
+        <div className="flex items-start justify-between gap-4 px-5 py-5">
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-semibold text-foreground">{page.name}</h2>
             <div className="mt-1 flex min-w-0 items-center gap-1.5">
@@ -77,19 +74,9 @@ export function LinkInBioCard({
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 px-5 pb-4">
-          <p className="text-sm text-foreground">{visibleLinks} liên kết · {page.socialLinks.length} mạng xã hội · {page.widgets.length} widget</p>
-          <LinkInBioThemeIndicator appearance={page.appearance} />
-          <LinkInBioMetrics page={page} />
-        </div>
-
         <div className="flex min-h-14 items-center justify-between gap-3 border-t border-border px-5 py-2.5">
           <p className="min-w-0 truncate text-xs text-muted-foreground">Cập nhật {formatUpdatedDate(page.updatedAt)}</p>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Button type="button" variant="ghost" size="sm" className="hidden h-9 text-muted-foreground sm:inline-flex" onClick={() => void copyBioUrl(page)}><Copy className="size-4" />Sao chép</Button>
-            <Button type="button" variant="ghost" size="sm" className="hidden h-9 text-muted-foreground sm:inline-flex" onClick={() => setStatsOpen(true)}><BarChart3 className="size-4" />Thống kê</Button>
-            <Button type="button" size="sm" className="h-10 rounded-lg px-3 shadow-none sm:h-9" onClick={() => onEdit(page)}><Pencil className="size-4" />Chỉnh sửa</Button>
-          </div>
+          <Button type="button" size="sm" className="h-10 shrink-0 rounded-lg px-3 shadow-none sm:h-9" onClick={() => onEdit(page)}><Pencil className="size-4" />Chỉnh sửa</Button>
         </div>
       </Card>
 

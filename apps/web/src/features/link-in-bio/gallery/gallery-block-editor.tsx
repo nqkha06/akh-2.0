@@ -3,8 +3,8 @@
 
 import {
   GripVertical,
-  Images,
   Pencil,
+  Plus,
   Replace,
   Trash2,
 } from "lucide-react";
@@ -46,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { generateId } from "@/lib/id";
+import { useBusinessConfig } from "@/features/business-settings/use-business-config";
 import {
   getFilePreviewUrl,
   type BioGalleryBlockDto,
@@ -54,7 +55,6 @@ import {
 } from "@/lib/api-client";
 import {
   GALLERY_ACCEPTED_MIME_TYPES,
-  GALLERY_IMAGE_MAX_SIZE,
   GALLERY_MAX_IMAGES,
   normalizeGalleryImages,
 } from "./gallery-types";
@@ -101,6 +101,7 @@ function ImageSettingsDialog({
   const [draft, setDraft] = useState(image);
   const [replacePickerOpen, setReplacePickerOpen] = useState(false);
   const [error, setError] = useState("");
+  const imageMaxSize = useBusinessConfig().uploads.coverImageMaxBytes;
 
   if (!draft) return null;
   const invalidLink = Boolean(draft.linkUrl?.trim()) && !isHttpUrl(draft.linkUrl!.trim());
@@ -110,8 +111,8 @@ function ImageSettingsDialog({
       setError("Định dạng ảnh không được hỗ trợ.");
       return;
     }
-    if (file.size > GALLERY_IMAGE_MAX_SIZE || file.size === 0) {
-      setError(`Ảnh phải nhỏ hơn hoặc bằng ${formatBytes(GALLERY_IMAGE_MAX_SIZE)}.`);
+    if (file.size > imageMaxSize || file.size === 0) {
+      setError(`Ảnh phải nhỏ hơn hoặc bằng ${formatBytes(imageMaxSize)}.`);
       return;
     }
     setError("");
@@ -189,7 +190,7 @@ function ImageSettingsDialog({
         selectedFileId={draft.fileId}
         onSelect={replaceImage}
         acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
-        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        maxSize={imageMaxSize}
         title="Thay ảnh từ Media Manager"
       />
     </Credenza>
@@ -213,6 +214,7 @@ export function GalleryBlockEditor({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const imageMaxSize = useBusinessConfig().uploads.coverImageMaxBytes;
 
   const selectedImage = gallery.images.find((image) => image.id === selectedImageId) || null;
   const patchGallery = <K extends keyof BioGalleryBlockDto>(key: K, value: BioGalleryBlockDto[K]) => {
@@ -226,7 +228,7 @@ export function GalleryBlockEditor({
       !existingFileIds.has(file.id) &&
       GALLERY_ACCEPTED_MIME_TYPES.includes(file.mimeType.toLowerCase() as (typeof GALLERY_ACCEPTED_MIME_TYPES)[number]) &&
       file.size > 0 &&
-      file.size <= GALLERY_IMAGE_MAX_SIZE,
+      file.size <= imageMaxSize,
     ).slice(0, availableSlots);
     if (!accepted.length) {
       toast.error("Ảnh đã có trong bộ sưu tập hoặc không hợp lệ.");
@@ -270,33 +272,52 @@ export function GalleryBlockEditor({
         </TabsList>
 
         <TabsContent value="images" className="mt-4 space-y-4">
-          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-muted/15 px-4 py-4 sm:flex-row sm:items-center">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-background text-muted-foreground"><Images className="size-5" /></span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Thêm ảnh qua Media Manager</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">Chọn ảnh đã có hoặc upload nhiều ảnh mới. JPG, PNG, WEBP, GIF, AVIF · tối đa {formatBytes(GALLERY_IMAGE_MAX_SIZE)}/ảnh.</p>
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Ảnh trong bộ sưu tập</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Kéo thả ảnh để thay đổi thứ tự.</p>
             </div>
-            <Button type="button" size="sm" disabled={disabled || gallery.images.length >= GALLERY_MAX_IMAGES} onClick={() => setMediaPickerOpen(true)}><Images />Mở Media Manager</Button>
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+              {gallery.images.length}/{GALLERY_MAX_IMAGES}
+            </span>
           </div>
 
-          {gallery.images.length ? (
-            <Sortable value={gallery.images} getItemValue={(image) => image.id} onValueChange={(images) => patchGallery("images", normalizeGalleryImages(images))} orientation="mixed">
-              <SortableContent className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {gallery.images.map((image) => (
-                  <SortableItem key={image.id} value={image.id} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/30">
-                    <img src={image.thumbnailUrl || image.url} alt={image.alt || ""} className="size-full object-cover" />
-                    <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/65 to-transparent p-1.5">
-                      <SortableItemHandle className="grid size-8 place-items-center rounded-md text-white hover:bg-white/15" aria-label="Kéo để sắp xếp ảnh"><GripVertical className="size-4" /></SortableItemHandle>
-                      <Button type="button" variant="ghost" size="icon-sm" className="text-white hover:bg-white/15 hover:text-white" aria-label="Chỉnh sửa ảnh" onClick={() => { setSelectedImageId(image.id); setSettingsOpen(true); }}><Pencil /></Button>
-                    </div>
-                    {image.caption ? <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-2 py-1.5 text-[11px] text-white">{image.caption}</span> : null}
-                  </SortableItem>
-                ))}
-              </SortableContent>
-            </Sortable>
-          ) : (
-            <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">Chưa có ảnh. Thêm ảnh để bắt đầu bộ sưu tập.</div>
-          )}
+          <Sortable value={gallery.images} getItemValue={(image) => image.id} onValueChange={(images) => patchGallery("images", normalizeGalleryImages(images))} orientation="mixed">
+            <SortableContent className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {gallery.images.map((image) => (
+                <SortableItem key={image.id} value={image.id} className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/30">
+                  <img src={image.thumbnailUrl || image.url} alt={image.alt || ""} className="size-full object-cover" />
+                  <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/65 to-transparent p-1.5">
+                    <SortableItemHandle className="grid size-8 place-items-center rounded-md text-white hover:bg-white/15" aria-label="Kéo để sắp xếp ảnh"><GripVertical className="size-4" /></SortableItemHandle>
+                    <Button type="button" variant="ghost" size="icon-sm" className="text-white hover:bg-white/15 hover:text-white" aria-label="Chỉnh sửa ảnh" onClick={() => { setSelectedImageId(image.id); setSettingsOpen(true); }}><Pencil /></Button>
+                  </div>
+                  {image.caption ? <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-2 py-1.5 text-[11px] text-white">{image.caption}</span> : null}
+                </SortableItem>
+              ))}
+
+              <button
+                type="button"
+                className="group flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/15 px-3 text-center transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                disabled={disabled || gallery.images.length >= GALLERY_MAX_IMAGES}
+                aria-label={gallery.images.length >= GALLERY_MAX_IMAGES ? "Đã đạt số ảnh tối đa" : "Thêm ảnh vào bộ sưu tập"}
+                onClick={() => setMediaPickerOpen(true)}
+              >
+                <span className="grid size-10 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors group-hover:border-primary/30 group-hover:text-primary">
+                  <Plus className="size-5" />
+                </span>
+                <span className="text-xs font-medium text-foreground">
+                  {gallery.images.length >= GALLERY_MAX_IMAGES ? "Đã đủ ảnh" : "Thêm ảnh"}
+                </span>
+                <span className="line-clamp-2 text-[10px] leading-4 text-muted-foreground">
+                  Chọn hoặc tải lên từ Media Manager
+                </span>
+              </button>
+            </SortableContent>
+          </Sortable>
+
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            JPG, PNG, WEBP, GIF, AVIF · tối đa {formatBytes(imageMaxSize)}/ảnh.
+          </p>
         </TabsContent>
 
         <TabsContent value="shape" className="mt-4 space-y-4">
@@ -332,7 +353,7 @@ export function GalleryBlockEditor({
         multiple
         maxFiles={GALLERY_MAX_IMAGES - gallery.images.length}
         acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
-        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        maxSize={imageMaxSize}
         title="Thêm ảnh vào bộ sưu tập"
       />
       <ImageSettingsDialog key={selectedImage?.id || "no-gallery-image"} image={selectedImage} open={settingsOpen} onOpenChange={setSettingsOpen} onChange={(nextImage) => patchGallery("images", gallery.images.map((image) => image.id === nextImage.id ? nextImage : image))} onDelete={() => {

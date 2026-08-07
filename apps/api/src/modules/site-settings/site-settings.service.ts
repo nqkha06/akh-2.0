@@ -11,8 +11,8 @@ import {
   type UpdateWebsiteSettingsDto,
   type WebsiteSocialLinkDto,
 } from "./dto/update-website-settings.dto";
+import { SiteSettingsRepository } from "./site-settings.repository";
 
-const SETTINGS_ID = 1;
 const mediaSelect = {
   id: true,
   fileName: true,
@@ -39,7 +39,10 @@ type SettingsWithMedia = WebsiteSettings & {
 
 @Injectable()
 export class SiteSettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly repository: SiteSettingsRepository,
+  ) {}
 
   async getAdminSettings() {
     return this.toAdminResponse(await this.findOrCreate());
@@ -85,29 +88,19 @@ export class SiteSettingsService {
       dto.defaultOgImageId,
     ]);
 
-    const settings = await this.prisma.websiteSettings.upsert({
-      where: { id: SETTINGS_ID },
-      create: {
-        id: SETTINGS_ID,
+    const settings = await this.repository.update(
+      {
+        id: 1,
         ...this.toPersistence(dto),
         updatedById: adminId,
       },
-      update: {
-        ...this.toPersistence(dto),
-        updatedById: adminId,
-      },
-      include: settingsInclude,
-    });
+      settingsInclude,
+    );
     return this.toAdminResponse(settings);
   }
 
   private async findOrCreate() {
-    return this.prisma.websiteSettings.upsert({
-      where: { id: SETTINGS_ID },
-      create: { id: SETTINGS_ID },
-      update: {},
-      include: settingsInclude,
-    });
+    return this.repository.findOrCreate(settingsInclude);
   }
 
   private toPersistence(dto: UpdateWebsiteSettingsDto) {

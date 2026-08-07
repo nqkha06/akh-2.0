@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Building2, Clock3, ShieldCheck } from "lucide-react";
+import { Building2, Clock3, Settings2, ShieldCheck } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -12,26 +11,22 @@ export function PayoutMethodPanel({ controller }: { controller: WithdrawalContro
   if (!data) return null;
 
   return (
-    <aside className="h-fit rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-5 py-4">
-        <h2 className="text-base font-semibold tracking-[-0.01em]">Phương thức nhận tiền</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Thông tin dùng cho yêu cầu hiện tại.</p>
+    <aside className="h-fit overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-black/[0.025]">
+      <div className="border-b border-border/80 px-5 py-5">
+        <h2 className="text-base font-semibold tracking-[-0.015em] sm:text-[17px]">Phương thức nhận tiền</h2>
       </div>
       <div className="space-y-5 p-5">
         {selectedMethod ? (
           <>
             <div className="flex items-start gap-3">
-              <div className="grid size-10 shrink-0 place-items-center rounded-md border border-border bg-muted/40 text-primary"><Building2 className="size-5" /></div>
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10"><Building2 className="size-5" /></div>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{selectedMethod.provider}</p><Badge variant="secondary">Đã cấu hình</Badge></div>
+                <p className="font-medium">{selectedMethod.provider}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{selectedMethod.accountHolder}</p>
                 <p className="mt-0.5 font-mono text-sm text-foreground">{selectedMethod.maskedAccount}</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {data.payoutMethods.length > 1 ? <Button variant="outline" size="sm">Thay đổi</Button> : null}
-              <Button variant="ghost" size="sm" asChild><Link href="/member/account#payment-method">Quản lý phương thức</Link></Button>
-            </div>
+            <Button variant="outline" size="sm" className="w-fit" asChild><Link href="/member/account#payment-method"><Settings2 />Quản lý phương thức</Link></Button>
           </>
         ) : (
           <div className="py-4 text-center"><Building2 className="mx-auto size-6 text-muted-foreground" /><p className="mt-3 text-sm font-medium">Chưa có phương thức nhận tiền</p><Button size="sm" className="mt-4" asChild><Link href="/member/account#payment-method">Thêm phương thức</Link></Button></div>

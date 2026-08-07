@@ -72,15 +72,17 @@ export class SupportTicketsService {
       throw new BadRequestException("Mỗi ticket chỉ được đính kèm tối đa 5 tệp.");
     }
 
-    const prepared = files.map((file) => {
-      const validated = this.storage.validate(file);
-      return {
-        file,
-        fileName: this.safeFileName(file.originalname),
-        mimeType: validated.mimeType,
-        storageKey: this.storage.buildStorageKey(userId, validated.extension),
-      };
-    });
+    const prepared = await Promise.all(
+      files.map(async (file) => {
+        const validated = await this.storage.validate(file);
+        return {
+          file,
+          fileName: this.safeFileName(file.originalname),
+          mimeType: validated.mimeType,
+          storageKey: this.storage.buildStorageKey(userId, validated.extension),
+        };
+      }),
+    );
 
     const written: string[] = [];
     try {

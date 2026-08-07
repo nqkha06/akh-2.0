@@ -69,6 +69,21 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
     }
 
     const authorization = resolveUserAuthorization(user);
+    const impersonator = session.impersonatorUserId
+      ? await this.prisma.user.findUnique({
+          where: { id: session.impersonatorUserId },
+          select: { id: true, name: true, email: true, status: true },
+        })
+      : null;
+    if (
+      session.impersonatorUserId &&
+      (!impersonator || impersonator.status !== "active")
+    ) {
+      throw unauthorizedAuthError(
+        AUTH_ERROR_CODES.SESSION_REVOKED,
+        "Phiên impersonation không còn hợp lệ.",
+      );
+    }
     return {
       id: user.id,
       name: user.name,
@@ -79,6 +94,13 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
       ...authorization,
       tokenVersion: user.tokenVersion,
       sessionId: session.id,
+      impersonation: impersonator
+        ? {
+            actorId: impersonator.id,
+            actorName: impersonator.name,
+            actorEmail: impersonator.email,
+          }
+        : null,
     };
   }
 }

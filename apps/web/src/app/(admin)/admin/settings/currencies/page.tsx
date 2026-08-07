@@ -15,7 +15,7 @@ export default async function AdminCurrenciesPage() {
       <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-6">
         <AdminPageHeader
           title="Tiền tệ & tỷ giá"
-          description="Quản lý tiền tệ hiển thị. Tỷ giá được nhập theo quy ước 1 USD bằng bao nhiêu đơn vị tiền tệ đích."
+          description={`Quản lý tiền hiển thị. Tỷ giá được nhập theo quy ước 1 ${currencies.baseCurrency} bằng bao nhiêu đơn vị tiền tệ đích.`}
         />
         <CurrencySettingsManager
           initialData={currencies}

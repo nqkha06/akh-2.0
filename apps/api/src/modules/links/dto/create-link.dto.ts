@@ -102,9 +102,9 @@ export class CreateLinkDto {
   @IsUrl({ protocols: ["http", "https"], require_protocol: true, require_valid_protocol: true })
   destinationUrl: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  title?: string;
 
   @IsIn(["url", "file", "snippet"])
   inputType: "url" | "file" | "snippet";

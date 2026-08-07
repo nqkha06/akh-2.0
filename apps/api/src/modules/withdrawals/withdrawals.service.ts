@@ -7,7 +7,7 @@ import {
 import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
-import { BASE_CURRENCY_CODE } from "../currencies/currency.constants";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { ReferralsService } from "../referrals/referrals.service";
 import type { CreateWithdrawalDto } from "./dto/create-withdrawal.dto";
 import type { EstimateWithdrawalDto } from "./dto/estimate-withdrawal.dto";
@@ -33,9 +33,11 @@ export class WithdrawalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly referralsService: ReferralsService,
+    private readonly businessSettings: BusinessSettingsService,
   ) {}
 
   async getMemberDashboard(userId: number) {
+    const settlement = await this.getWithdrawalCurrency();
     const [user, accounts, withdrawals, pending, paid] =
       await this.prisma.$transaction([
         this.prisma.user.findUnique({
@@ -70,19 +72,31 @@ export class WithdrawalsService {
     if (!user) throw new NotFoundException("Không tìm thấy người dùng.");
 
     return {
-      currency: BASE_CURRENCY_CODE,
-      availableBalance: user.balance.toString(),
-      pendingBalance: (pending._sum.amount ?? new Prisma.Decimal(0)).toString(),
-      totalReceived: (paid._sum.netAmount ?? new Prisma.Decimal(0)).toString(),
+      currency: settlement.code,
+      availableBalance: this.fromBase(user.balance, settlement).toString(),
+      pendingBalance: this.fromBase(
+        pending._sum.amount ?? new Prisma.Decimal(0),
+        settlement,
+      ).toString(),
+      totalReceived: this.fromBase(
+        paid._sum.netAmount ?? new Prisma.Decimal(0),
+        settlement,
+      ).toString(),
       accounts: accounts.map((account) => ({
         id: account.id,
         paymentMethodId: account.paymentMethodId,
         details: this.parseDetails(account.detailsJson),
         paymentMethod: {
           id: account.paymentMethod.id,
-          withdrawFee: account.paymentMethod.withdrawFee.toString(),
+          withdrawFee: this.fromBase(
+            account.paymentMethod.withdrawFee,
+            settlement,
+          ).toString(),
           minWithdrawAmount:
-            account.paymentMethod.minWithdrawAmount.toString(),
+            this.fromBase(
+              account.paymentMethod.minWithdrawAmount,
+              settlement,
+            ).toString(),
           status: account.paymentMethod.status,
           translations: account.paymentMethod.translations.map(
             (translation) => ({
@@ -99,20 +113,30 @@ export class WithdrawalsService {
   }
 
   async estimate(userId: number, dto: EstimateWithdrawalDto) {
-    const amount = this.parseAmount(dto.amount);
+    const settlement = await this.getWithdrawalCurrency();
+    const amount = this.toBase(this.parseAmount(dto.amount), settlement);
     const account = await this.findAvailableAccount(
       userId,
       dto.userPaymentMethodId,
     );
-    return this.calculateEstimate(
+    const estimate = this.calculateEstimate(
       amount,
       account.paymentMethod.withdrawFee,
       account.paymentMethod.minWithdrawAmount,
     );
+    return this.toSettlementEstimate(estimate, settlement);
   }
 
   async create(userId: number, dto: CreateWithdrawalDto) {
-    const amount = this.parseAmount(dto.amount);
+    const settlement = await this.getWithdrawalCurrency();
+    if (settlement.withdrawalsPaused || settlement.maintenanceMode) {
+      throw new ConflictException(
+        settlement.maintenanceMode
+          ? "Hệ thống đang bảo trì. Yêu cầu rút tiền tạm thời chưa khả dụng."
+          : "Quản trị viên đang tạm dừng tiếp nhận yêu cầu rút tiền.",
+      );
+    }
+    const amount = this.toBase(this.parseAmount(dto.amount), settlement);
     const existing = await this.prisma.userWithdrawal.findUnique({
       where: { idempotencyKey: dto.idempotencyKey },
       include: withdrawalInclude,
@@ -154,6 +178,8 @@ export class WithdrawalsService {
             amount,
             feeAmount: new Prisma.Decimal(estimate.feeAmount),
             netAmount: new Prisma.Decimal(estimate.netAmount),
+            currency: settlement.code,
+            exchangeRate: settlement.exchangeRate,
             status: "pending",
             paymentSnapshotJson: JSON.stringify(snapshot),
             idempotencyKey: dto.idempotencyKey,
@@ -247,6 +273,7 @@ export class WithdrawalsService {
   }
 
   async markPaid(id: number, adminId: number) {
+    const settings = await this.businessSettings.getRuntime();
     const record = await this.prisma.$transaction(async (tx) => {
       const current = await tx.userWithdrawal.findUnique({
         where: { id },
@@ -275,7 +302,11 @@ export class WithdrawalsService {
         );
       }
 
-      await this.referralsService.creditPaidWithdrawal(tx, current);
+      await this.referralsService.creditPaidWithdrawal(
+        tx,
+        current,
+        settings.referralCommissionRate,
+      );
       return tx.userWithdrawal.findUniqueOrThrow({
         where: { id },
         include: withdrawalInclude,
@@ -369,7 +400,7 @@ export class WithdrawalsService {
     }
     if (amount.lessThan(minimum)) {
       throw new BadRequestException(
-        `Số tiền rút tối thiểu là ${minimum.toString()} ${BASE_CURRENCY_CODE}.`,
+        `Số tiền rút chưa đạt mức tối thiểu ${minimum.toString()} theo tiền hạch toán.`,
       );
     }
     const fee = Prisma.Decimal.min(amount, rawFee);
@@ -427,12 +458,13 @@ export class WithdrawalsService {
 
   private toResponse(record: WithdrawalRecord, includeDetails: boolean) {
     const snapshot = this.parseSnapshot(record.paymentSnapshotJson);
+    const exchangeRate = record.exchangeRate ?? new Prisma.Decimal(1);
     return {
       id: record.id,
-      currency: BASE_CURRENCY_CODE,
-      amount: record.amount.toString(),
-      feeAmount: record.feeAmount.toString(),
-      netAmount: record.netAmount.toString(),
+      currency: record.currency,
+      amount: record.amount.mul(exchangeRate).toString(),
+      feeAmount: record.feeAmount.mul(exchangeRate).toString(),
+      netAmount: record.netAmount.mul(exchangeRate).toString(),
       status: record.status,
       statusReason: record.statusReason,
       userPaymentMethodId: record.userPaymentMethodId,
@@ -506,5 +538,67 @@ export class WithdrawalsService {
           : `${"•".repeat(Math.min(8, value.length - 4))} ${value.slice(-4)}`,
       ]),
     );
+  }
+
+  private async getWithdrawalCurrency() {
+    const settings = await this.businessSettings.getRuntime();
+    const currency = await this.prisma.currency.findUnique({
+      where: { code: settings.withdrawalCurrencyCode },
+      select: { code: true, exchangeRate: true, decimalDigits: true, isActive: true },
+    });
+    if (!currency?.isActive) {
+      throw new ConflictException(
+        "Tiền tệ dùng để rút đang bị tắt hoặc không tồn tại.",
+      );
+    }
+    return {
+      ...currency,
+      maintenanceMode: settings.maintenanceMode,
+      withdrawalsPaused: settings.withdrawalsPaused,
+    };
+  }
+
+  private toBase(
+    amount: Prisma.Decimal,
+    settlement: { exchangeRate: Prisma.Decimal },
+  ) {
+    return amount.div(settlement.exchangeRate).toDecimalPlaces(8);
+  }
+
+  private fromBase(
+    amount: Prisma.Decimal,
+    settlement: { exchangeRate: Prisma.Decimal; decimalDigits: number },
+  ) {
+    return amount
+      .mul(settlement.exchangeRate)
+      .toDecimalPlaces(settlement.decimalDigits);
+  }
+
+  private toSettlementEstimate(
+    estimate: {
+      requestedAmount: string;
+      feeAmount: string;
+      netAmount: string;
+    },
+    settlement: {
+      code: string;
+      exchangeRate: Prisma.Decimal;
+      decimalDigits: number;
+    },
+  ) {
+    return {
+      requestedAmount: this.fromBase(
+        new Prisma.Decimal(estimate.requestedAmount),
+        settlement,
+      ).toString(),
+      feeAmount: this.fromBase(
+        new Prisma.Decimal(estimate.feeAmount),
+        settlement,
+      ).toString(),
+      netAmount: this.fromBase(
+        new Prisma.Decimal(estimate.netAmount),
+        settlement,
+      ).toString(),
+    };
   }
 }

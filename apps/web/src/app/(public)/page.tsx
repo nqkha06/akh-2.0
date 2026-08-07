@@ -16,7 +16,7 @@ export default async function Home() {
       "footer-primary",
       "footer-legal",
     ]),
-    getOptionalServerUser("/"),
+    getOptionalServerUser(),
   ]);
   return (
     <LandingPage

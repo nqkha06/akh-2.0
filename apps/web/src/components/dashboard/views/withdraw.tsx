@@ -16,10 +16,10 @@ export function WithdrawView() {
 
   return (
     <PageContainer>
-      <PageHeader title="Rút tiền" description="Chuyển số dư khả dụng về phương thức thanh toán của bạn." />
+      <PageHeader title="Rút tiền" />
       <BalanceSummary data={controller.data} />
       <WithdrawalEligibilityAlert data={controller.data} />
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(290px,1fr)]">
         <WithdrawalForm controller={controller} />
         <PayoutMethodPanel controller={controller} />
       </div>

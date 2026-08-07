@@ -23,6 +23,8 @@ const authPathsWithoutAutomaticRefresh = new Set([
   "auth/login",
   "auth/register",
   "auth/google",
+  "auth/forgot-password",
+  "auth/reset-password",
   "auth/refresh",
   "auth/logout",
 ]);

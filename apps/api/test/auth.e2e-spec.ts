@@ -13,6 +13,7 @@ import type { PrismaService } from "../src/database/prisma/prisma.service";
 import { PermissionsGuard } from "../src/modules/auth/guards/permissions.guard";
 import { RolesGuard } from "../src/modules/auth/guards/roles.guard";
 import { LinkAccessAggregationWorker } from "../src/modules/links/link-access-aggregation.worker";
+import { LoyaltyRollupService } from "../src/modules/loyalty/loyalty-rollup.service";
 import { resolveMonetizationRoute } from "../src/modules/links/monetization-route-resolver";
 import type { MonetizationRouteDto } from "../src/modules/monetization-levels/dto/monetization-level-config.dto";
 
@@ -48,7 +49,6 @@ const memberFilesTestPath = join(
 process.env.DATABASE_URL = `file:./${testDatabaseName}`;
 process.env.ADMIN_MEDIA_UPLOAD_DIR = adminMediaTestPath;
 process.env.MEMBER_FILES_UPLOAD_DIR = memberFilesTestPath;
-process.env.MEMBER_STORAGE_LIMIT_BYTES = String(1024 * 1024);
 process.env.JWT_ACCESS_SECRET =
   "test-access-secret-that-is-longer-than-thirty-two-characters";
 process.env.JWT_REFRESH_SECRET =
@@ -56,6 +56,7 @@ process.env.JWT_REFRESH_SECRET =
 process.env.JWT_ACCESS_EXPIRES_IN = "15m";
 process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 process.env.FRONTEND_ORIGIN = "http://localhost:3000";
+process.env.PASSWORD_RESET_URL = "http://localhost:3000/reset-password";
 process.env.AUTH_COOKIE_SECURE = "false";
 process.env.AUTH_COOKIE_SAME_SITE = "lax";
 process.env.AUTH_GOOGLE_ID = "test-google-client.apps.googleusercontent.com";
@@ -84,6 +85,16 @@ let googleAuthService!: {
     }>;
   };
 };
+const passwordResetMails: Array<{
+  to: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+}> = [];
+const emailVerificationMails: Array<{
+  to: string;
+  verificationUrl: string;
+  expiresInHours: number;
+}> = [];
 
 function decodeJwt(token: string) {
   const body = token.split(".")[1];
@@ -151,10 +162,11 @@ before(async () => {
     { env: { ...process.env, RUST_LOG: "info" } },
   );
 
-  const [{ AppModule }, prismaModule, authModule] = await Promise.all([
+  const [{ AppModule }, prismaModule, authModule, passwordResetMailerModule] = await Promise.all([
     import("../src/app.module"),
     import("../src/database/prisma/prisma.service"),
     import("../src/modules/auth/auth.service"),
+    import("../src/modules/auth/password-reset-mailer.service"),
   ]);
   app = await NestFactory.create(AppModule, { logger: false });
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
@@ -170,8 +182,22 @@ before(async () => {
   const address = app.getHttpServer().address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${address.port}`;
   prisma = app.get(prismaModule.PrismaService);
+  await prisma.businessSettings.upsert({
+    where: { id: 1 },
+    create: { id: 1, memberStorageQuotaBytes: 1024 * 1024 },
+    update: { memberStorageQuotaBytes: 1024 * 1024 },
+  });
   jwtService = app.get(JwtService);
   googleAuthService = app.get(authModule.AuthService) as unknown as typeof googleAuthService;
+  const passwordResetMailer = app.get(
+    passwordResetMailerModule.PasswordResetMailer,
+  );
+  passwordResetMailer.sendPasswordReset = async (input) => {
+    passwordResetMails.push(input);
+  };
+  passwordResetMailer.sendEmailVerification = async (input) => {
+    emailVerificationMails.push(input);
+  };
 });
 
 after(async () => {
@@ -208,6 +234,136 @@ describe("Authentication E2E", () => {
       }),
     });
     assert.equal(response.status, 409);
+  });
+
+  it("requires a one-time email verification when the business policy is enabled", async () => {
+    await prisma.businessSettings.update({
+      where: { id: 1 },
+      data: { emailVerificationRequired: true },
+    });
+    const email = `verify-${process.pid}@example.com`;
+    try {
+      const registered = await request("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name: "Verify Email", email, password: "Secure123" }),
+      });
+      assert.equal(registered.status, 201);
+      assert.equal(
+        ((await registered.json()) as { requiresEmailVerification: boolean })
+          .requiresEmailVerification,
+        true,
+      );
+      assert.equal((await request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password: "Secure123" }),
+      })).status, 403);
+
+      const mail = emailVerificationMails[emailVerificationMails.length - 1];
+      assert.equal(mail?.to, email);
+      const token = new URL(mail!.verificationUrl).searchParams.get("token");
+      assert.ok(token);
+      const verified = await request("/api/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      });
+      assert.equal(verified.status, 200);
+      assert.equal((await request("/api/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      })).status, 400);
+      assert.equal((await request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password: "Secure123" }),
+      })).status, 200);
+    } finally {
+      await prisma.businessSettings.update({
+        where: { id: 1 },
+        data: { emailVerificationRequired: false },
+      });
+    }
+  });
+
+  it("resets a password with a hashed one-time token and revokes existing sessions", async () => {
+    const email = "password-reset@example.com";
+    const oldPassword = "OldSecure123";
+    const newPassword = "NewSecure456";
+    const registered = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name: "Password Reset", email, password: oldPassword }),
+    });
+    assert.equal(registered.status, 201);
+
+    const unknown = await request("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email: "missing-reset@example.com" }),
+    });
+    const requested = await request("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    assert.equal(unknown.status, 200);
+    assert.equal(requested.status, 200);
+    assert.deepEqual(await unknown.json(), await requested.json());
+    const firstMail = passwordResetMails[passwordResetMails.length - 1];
+    assert.ok(firstMail);
+    assert.equal(firstMail.to, email);
+    assert.equal(firstMail.expiresInMinutes, 30);
+
+    const firstToken = new URL(firstMail.resetUrl).searchParams.get(
+      "token",
+    );
+    assert.ok(firstToken);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    const storedToken = await prisma.passwordResetToken.findFirstOrThrow({
+      where: { userId: user.id, usedAt: null },
+    });
+    assert.notEqual(storedToken.tokenHash, firstToken);
+    assert.ok(storedToken.requestedIp);
+
+    await prisma.passwordResetToken.update({
+      where: { id: storedToken.id },
+      data: { expiresAt: new Date(Date.now() - 1_000) },
+    });
+    const expired = await request("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token: firstToken, password: newPassword }),
+    });
+    assert.equal(expired.status, 400);
+
+    passwordResetMails.length = 0;
+    await request("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    const latestMail = passwordResetMails[passwordResetMails.length - 1];
+    assert.ok(latestMail);
+    const token = new URL(latestMail.resetUrl).searchParams.get("token");
+    assert.ok(token);
+
+    const existingSession = await loginAs(email, oldPassword);
+    const reset = await request("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password: newPassword }),
+    });
+    assert.equal(reset.status, 200);
+
+    const reused = await request("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password: "AnotherSecure789" }),
+    });
+    assert.equal(reused.status, 400);
+
+    const revokedSession = await request("/api/auth/me", {
+      headers: { Authorization: `Bearer ${existingSession.body.accessToken}` },
+    });
+    assert.equal(revokedSession.status, 401);
+    const oldLogin = await request("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password: oldPassword }),
+    });
+    assert.equal(oldLogin.status, 401);
+    const newLogin = await loginAs(email, newPassword);
+    assert.equal(newLogin.response.status, 200);
   });
 
   it("logs in with the correct password and rejects a wrong password", async () => {
@@ -770,6 +926,97 @@ describe("Member loyalty E2E", () => {
       400,
     );
   });
+
+  it("rolls up valid access logs at midnight and persists the member tier idempotently", async () => {
+    const email = `loyalty-rollup-${process.pid}@example.com`;
+    const password = "Secure123";
+    assert.equal(
+      (
+        await request("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ name: "Rollup Member", email, password }),
+        })
+      ).status,
+      201,
+    );
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    const link = await prisma.link.create({
+      data: {
+        userId: user.id,
+        slug: `loyalty-rollup-${process.pid}`,
+        title: "Loyalty rollup source",
+        destinationUrl: "https://example.com/loyalty-rollup",
+      },
+    });
+    const agentHash = `loyalty-rollup-agent-${process.pid}`;
+    await prisma.userAgent.create({
+      data: {
+        hash: agentHash,
+        raw: "Loyalty Rollup E2E",
+        browser: "test",
+        os: "test",
+        deviceType: 1,
+      },
+    });
+
+    const firstRunAt = new Date("2035-06-10T00:00:00.000Z");
+    const completedAt = new Date("2035-06-09T12:00:00.000Z");
+    await prisma.linkAccessLog.createMany({
+      data: Array.from({ length: 5 }, (_, index) => ({
+        id: `loyalty-rollup-access-${process.pid}-${index}`,
+        linkId: link.id,
+        userId: user.id,
+        agentHash,
+        ipAddress: `198.51.100.${index + 1}`,
+        country: "VN",
+        device: 1,
+        payoutCpm: "1",
+        revenue: "0.001",
+        isEarn: true,
+        completedAt,
+        processedAt: completedAt,
+      })),
+    });
+
+    const rollup = app.get(LoyaltyRollupService);
+    const first = await rollup.run(firstRunAt);
+    assert.equal(first.skipped, false);
+    assert.equal(first.dayKey, "2035-06-10");
+    assert.equal(first.totalValidViews, 5);
+
+    const promoted = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { loyaltyTier: true },
+    });
+    assert.equal(promoted.loyaltyValidViews, 5);
+    assert.equal(promoted.loyaltyTier?.key, "gold");
+    assert.equal(
+      promoted.loyaltyWindowEndedAt?.toISOString(),
+      "2035-06-10T00:00:00.000Z",
+    );
+
+    const duplicate = await rollup.run(firstRunAt);
+    assert.equal(duplicate.skipped, true);
+    assert.equal(
+      await prisma.loyaltyRollupRun.count({
+        where: { dayKey: "2035-06-10" },
+      }),
+      1,
+    );
+
+    const expired = await rollup.run(new Date("2035-06-18T00:00:00.000Z"));
+    assert.equal(expired.skipped, false);
+    const downgraded = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { loyaltyTier: true },
+    });
+    assert.equal(downgraded.loyaltyValidViews, 0);
+    assert.equal(downgraded.loyaltyTier?.key, "started");
+
+    await prisma.link.delete({ where: { id: link.id } });
+    await prisma.user.delete({ where: { id: user.id } });
+    await prisma.userAgent.delete({ where: { hash: agentHash } });
+  });
 });
 
 describe("Member social links E2E", () => {
@@ -825,6 +1072,33 @@ describe("Member social links E2E", () => {
     assert.notEqual(first.slug, second.slug);
     assert.notEqual(first.slug, "tieu-de-khong-duoc-dung-lam-slug");
 
+    const untitledResponse = await request("/api/links", {
+      method: "POST",
+      headers: authorization,
+      body: JSON.stringify({
+        inputType: createPayload.inputType,
+        destinationUrl: createPayload.destinationUrl,
+        actions: createPayload.actions,
+      }),
+    });
+    assert.equal(untitledResponse.status, 201);
+    const untitled = (await untitledResponse.json()) as {
+      id: string;
+      title: string;
+    };
+    assert.equal(untitled.title, "");
+
+    const untitledUpdateResponse = await request(`/api/links/${untitled.id}`, {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({ ...createPayload, title: "   " }),
+    });
+    assert.equal(untitledUpdateResponse.status, 200);
+    assert.equal(
+      ((await untitledUpdateResponse.json()) as { title: string }).title,
+      "",
+    );
+
     const requestedAlias = `custom-alias-${process.pid}`;
     const customResponse = await request("/api/links", {
       method: "POST",
@@ -845,7 +1119,12 @@ describe("Member social links E2E", () => {
     await prisma.link.deleteMany({
       where: {
         id: {
-          in: [Number(first.id), Number(second.id), Number(custom.id)],
+          in: [
+            Number(first.id),
+            Number(second.id),
+            Number(untitled.id),
+            Number(custom.id),
+          ],
         },
       },
     });
@@ -1304,6 +1583,120 @@ describe("Admin users CRUD E2E", () => {
 
     const managedLogin = await loginAs("managed@example.com", "Managed123");
     const sessionPayload = decodeJwt(managedLogin.body.accessToken);
+
+    const impersonationAdmin = await login();
+    const impersonationStart = await request(
+      `/api/auth/impersonation/${created.id}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${impersonationAdmin.body.accessToken}`,
+          Origin: "http://localhost:3000",
+        },
+      },
+    );
+    assert.equal(
+      impersonationStart.status,
+      200,
+      await impersonationStart.clone().text(),
+    );
+    const impersonationBody = (await impersonationStart.json()) as AuthResponse & {
+      user: {
+        id: number;
+        permissions: string[];
+        impersonation: { actorId: number } | null;
+      };
+    };
+    assert.equal(impersonationBody.user.id, created.id);
+    assert.equal(impersonationBody.user.impersonation?.actorId, currentUser.id);
+    assert.equal(impersonationBody.user.permissions.includes("admin.access"), false);
+    accessCookie(impersonationStart);
+
+    const impersonatedMe = await request("/api/auth/me", {
+      headers: { Authorization: `Bearer ${impersonationBody.accessToken}` },
+    });
+    assert.equal(impersonatedMe.status, 200);
+    assert.equal(
+      ((await impersonatedMe.json()) as { id: number }).id,
+      created.id,
+    );
+    assert.equal(
+      (
+        await request("/api/admin/users", {
+          headers: { Authorization: `Bearer ${impersonationBody.accessToken}` },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request(`/api/auth/impersonation/${currentUser.id}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${impersonationBody.accessToken}`,
+            Origin: "http://localhost:3000",
+          },
+        })
+      ).status,
+      403,
+    );
+
+    const impersonationSession = await prisma.authSession.findFirstOrThrow({
+      where: { userId: created.id, authMethod: "impersonation" },
+    });
+    assert.equal(impersonationSession.impersonatorUserId, currentUser.id);
+    assert.equal(
+      impersonationSession.impersonatorSessionId,
+      decodeJwt(impersonationAdmin.body.accessToken).sid,
+    );
+
+    const impersonationStop = await request("/api/auth/impersonation/stop", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${impersonationBody.accessToken}`,
+        Origin: "http://localhost:3000",
+      },
+    });
+    assert.equal(impersonationStop.status, 200);
+    const restoredBody = (await impersonationStop.json()) as AuthResponse & {
+      user: { id: number; impersonation: null };
+    };
+    assert.equal(restoredBody.user.id, currentUser.id);
+    assert.equal(restoredBody.user.impersonation, null);
+    accessCookie(impersonationStop);
+    assert.equal(
+      (
+        await prisma.authSession.findUniqueOrThrow({
+          where: { id: impersonationSession.id },
+        })
+      ).revokedAt instanceof Date,
+      true,
+    );
+    assert.equal(
+      (
+        await request("/api/auth/impersonation/stop", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${current.body.accessToken}`,
+            Origin: "http://localhost:3000",
+          },
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await request(`/api/auth/impersonation/${created.id}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${managedLogin.body.accessToken}`,
+            Origin: "http://localhost:3000",
+          },
+        })
+      ).status,
+      403,
+    );
+
     const sessionsResponse = await request(
       `/api/admin/users/${created.id}/sessions`,
       { headers: authorization },
@@ -1981,6 +2374,16 @@ describe("Admin pages CRUD E2E", () => {
     assert.equal(created.contentHtml.includes("<script"), false);
     assert.equal(created.contentHtml.includes("onclick"), false);
     assert.equal(created.contentHtml.includes("javascript:"), false);
+    assert.equal(
+      (
+        await request(`/api/public/pages/${created.slug}`)
+      ).status,
+      404,
+    );
+    assert.equal(
+      (await request("/api/public/pages/slug%20khong%20hop%20le")).status,
+      404,
+    );
 
     const duplicateResponse = await request("/api/admin/pages", {
       method: "POST",
@@ -2108,6 +2511,23 @@ describe("Admin pages CRUD E2E", () => {
     assert.equal(published.status, "PUBLISHED");
     assert.ok(published.publishedAt);
 
+    const publicResponse = await request(
+      "/api/public/pages/quyen-rieng-tu",
+    );
+    assert.equal(publicResponse.status, 200);
+    const publicPage = (await publicResponse.json()) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(publicPage.title, "Chính sách quyền riêng tư");
+    assert.equal(publicPage.slug, "quyen-rieng-tu");
+    assert.equal(publicPage.contentHtml, "<p>Nội dung đã cập nhật.</p>");
+    assert.equal(publicPage.seoTitle, "SEO privacy");
+    assert.equal("id" in publicPage, false);
+    assert.equal("status" in publicPage, false);
+    assert.equal("contentJson" in publicPage, false);
+    assert.equal("deletedAt" in publicPage, false);
+
     const draftResponse = await request(
       `/api/admin/pages/${created.id}/status`,
       {
@@ -2125,6 +2545,10 @@ describe("Admin pages CRUD E2E", () => {
     assert.equal(drafted.status, "DRAFT");
     assert.equal(drafted.publishedAt, published.publishedAt);
     assert.equal(drafted.contentHtml, "<p>Nội dung đã cập nhật.</p>");
+    assert.equal(
+      (await request("/api/public/pages/quyen-rieng-tu")).status,
+      404,
+    );
 
     const adminRole = await prisma.role.findUniqueOrThrow({
       where: { key: "admin" },
@@ -2166,6 +2590,10 @@ describe("Admin pages CRUD E2E", () => {
     });
     assert.equal(bulkArchive.status, 200);
     assert.deepEqual(await bulkArchive.json(), { updated: 2 });
+    assert.equal(
+      (await request("/api/public/pages/quyen-rieng-tu")).status,
+      404,
+    );
 
     const restored = await request("/api/admin/pages/bulk/status", {
       method: "PATCH",
@@ -2210,6 +2638,10 @@ describe("Admin pages CRUD E2E", () => {
     assert.equal(deleteResponse.status, 200);
     assert.deepEqual(await deleteResponse.json(), { deleted: 2 });
     assert.equal(
+      (await request("/api/public/pages/quyen-rieng-tu")).status,
+      404,
+    );
+    assert.equal(
       (
         await request(`/api/admin/pages/${created.id}`, {
           headers: authorization,
@@ -2244,6 +2676,68 @@ describe("Admin pages CRUD E2E", () => {
 
     await prisma.page.deleteMany({
       where: { id: { in: [created.id, second.id] } },
+    });
+  });
+});
+
+describe("Public link reports E2E", () => {
+  it("accepts anonymous reports, validates input and deduplicates retries", async () => {
+    const invalid = await request("/api/public/link-reports", {
+      method: "POST",
+      body: JSON.stringify({
+        email: "invalid-email",
+        reportedUrl: "javascript:alert(1)",
+        reason: "unknown",
+        details: "too short",
+      }),
+    });
+    assert.equal(invalid.status, 400);
+
+    const payload = {
+      email: "REPORTER@EXAMPLE.COM",
+      reportedUrl: "https://example.com/l/suspicious#content",
+      reason: "malware",
+      details:
+        "Trang này yêu cầu nhập thông tin đăng nhập và có dấu hiệu giả mạo.",
+    };
+    const createdResponse = await request("/api/public/link-reports", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    assert.equal(createdResponse.status, 201);
+    const created = (await createdResponse.json()) as {
+      reference: string;
+      createdAt: string;
+    };
+    assert.match(created.reference, /^RPT-\d{4}-[A-F0-9]{8}$/);
+    assert.ok(created.createdAt);
+
+    const stored = await prisma.linkReport.findUniqueOrThrow({
+      where: { reference: created.reference },
+    });
+    assert.equal(stored.email, "reporter@example.com");
+    assert.equal(stored.reason, "malware");
+    assert.equal(stored.status, "pending");
+    assert.equal(stored.reportedUrl, payload.reportedUrl);
+
+    const duplicateResponse = await request("/api/public/link-reports", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    assert.equal(duplicateResponse.status, 201);
+    assert.equal(
+      ((await duplicateResponse.json()) as { reference: string }).reference,
+      created.reference,
+    );
+    assert.equal(
+      await prisma.linkReport.count({
+        where: { email: "reporter@example.com" },
+      }),
+      1,
+    );
+
+    await prisma.linkReport.deleteMany({
+      where: { email: "reporter@example.com" },
     });
   });
 });
@@ -3958,6 +4452,65 @@ describe("Languages E2E", () => {
     );
     const japanese = (await createdResponse.json()) as { id: number };
 
+    const uiTranslationsResponse = await request(
+      `/api/admin/languages/${japanese.id}/ui-translations`,
+      { headers: authorization },
+    );
+    assert.equal(uiTranslationsResponse.status, 200);
+    assert.equal(
+      ((await uiTranslationsResponse.json()) as { version: number }).version,
+      1,
+    );
+    const savedUiTranslations = await request(
+      `/api/admin/languages/${japanese.id}/ui-translations`,
+      {
+        method: "PATCH",
+        headers: authorization,
+        body: JSON.stringify({
+          version: 1,
+          catalogSize: 2,
+          entries: [{ key: "Common.language", value: "言語" }],
+        }),
+      },
+    );
+    assert.equal(
+      savedUiTranslations.status,
+      200,
+      await savedUiTranslations.clone().text(),
+    );
+    assert.equal(
+      (
+        (await savedUiTranslations.json()) as {
+          translatedKeys: number;
+          version: number;
+        }
+      ).translatedKeys,
+      1,
+    );
+    assert.equal(
+      (
+        await request(`/api/admin/languages/${japanese.id}/ui-translations`, {
+          method: "PATCH",
+          headers: authorization,
+          body: JSON.stringify({
+            version: 1,
+            catalogSize: 2,
+            entries: [],
+          }),
+        })
+      ).status,
+      409,
+    );
+    const publicUiMessages = await request(
+      "/api/languages/ja/ui-messages",
+    );
+    assert.equal(publicUiMessages.status, 200);
+    assert.deepEqual(
+      ((await publicUiMessages.json()) as { messages: Record<string, string> })
+        .messages,
+      { "Common.language": "言語" },
+    );
+
     assert.equal(
       (
         await request("/api/admin/languages", {
@@ -4356,6 +4909,19 @@ describe("Payment methods E2E", () => {
       details: Record<string, string>;
     };
     assert.equal(account.details.account_number, "123456789");
+
+    const duplicateAccount = await request("/api/member/payment-methods", {
+      method: "POST",
+      headers: ownerAuthorization,
+      body: JSON.stringify({
+        paymentMethodId: method.id,
+        details: {
+          account_name: "Another Owner",
+          account_number: "111111111",
+        },
+      }),
+    });
+    assert.equal(duplicateAccount.status, 409);
 
     const dashboard = await request("/api/member/payment-methods", {
       headers: ownerAuthorization,

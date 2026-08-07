@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,14 +16,15 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { LogOut, Moon, Settings, Sun, UserRound } from "lucide-react"
+import { ArrowUpRight, LogOut, Moon, Settings, Sun, UsersRound } from "lucide-react"
 import { useTheme } from "next-themes"
 
-type AdminHeaderProps = {
-  userName?: string
-}
+import { logoutAndRedirect } from "@/features/auth/api/auth.client"
+import { useAuthUser } from "@/features/auth/components/auth-user-provider"
 
-export function AdminHeader({ userName = "User" }: AdminHeaderProps) {
+export function AdminHeader() {
+  const currentUser = useAuthUser()
+  const userName = currentUser.name || "Administrator"
   const avatarFallback = userName
     .trim()
     .split(/\s+/)
@@ -67,14 +69,15 @@ export function AdminHeader({ userName = "User" }: AdminHeaderProps) {
               type="button"
               variant="ghost"
               size="icon"
-              className="size-8 rounded-sm p-0"
+              className="size-9 rounded-lg p-0"
+              aria-label="Menu tài khoản quản trị"
             >
-              <Avatar className="size-8 rounded-sm">
+              <Avatar className="size-8 rounded-lg">
                 <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="@shadcn"
+                  src={currentUser.avatar || undefined}
+                  alt={userName}
                 />
-                <AvatarFallback>{avatarFallback || "U"}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{avatarFallback || "AD"}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -87,32 +90,42 @@ export function AdminHeader({ userName = "User" }: AdminHeaderProps) {
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar className="size-9 rounded-lg">
                 <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="Ảnh đại diện"
+                  src={currentUser.avatar || undefined}
+                  alt={userName}
                 />
-                <AvatarFallback className="rounded-lg">QK</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{avatarFallback || "AD"}</AvatarFallback>
               </Avatar>
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
-                  Quốc Kha
+                  {userName}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  quockha@example.com
+                  {currentUser.email}
                 </p>
               </div>
             </div>
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg">
-              <UserRound className="size-4 text-muted-foreground" />
-              <span>Thông tin cá nhân</span>
+            <DropdownMenuItem
+              asChild
+              className="cursor-pointer gap-2 rounded-lg bg-primary/[0.06] text-primary focus:bg-primary/10 focus:text-primary"
+            >
+              <Link href="/member">
+                <UsersRound className="size-4" />
+                <span className="flex-1">Khu vực member</span>
+                <ArrowUpRight className="size-3.5 opacity-70" />
+              </Link>
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="cursor-pointer gap-2 rounded-lg">
-              <Settings className="size-4 text-muted-foreground" />
-              <span>Cài đặt tài khoản</span>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem asChild className="cursor-pointer gap-2 rounded-lg">
+              <Link href="/member/account">
+                <Settings className="size-4 text-muted-foreground" />
+                <span>Cài đặt tài khoản</span>
+              </Link>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -120,6 +133,7 @@ export function AdminHeader({ userName = "User" }: AdminHeaderProps) {
             <DropdownMenuItem
               variant="destructive"
               className="cursor-pointer gap-2 rounded-lg"
+              onSelect={() => void logoutAndRedirect("/login")}
             >
               <LogOut className="size-4" />
               <span>Đăng xuất</span>

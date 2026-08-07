@@ -56,6 +56,7 @@ export function UsersTable({
   const canDelete = permissions.includes("users.delete");
   const canManageStatus = permissions.includes("users.manage-status");
   const canRevokeSessions = permissions.includes("users.revoke-sessions");
+  const canImpersonate = permissions.includes("users.impersonate");
   const router = useRouter();
   const [rowAction, setRowAction] = React.useState<UserRowAction | null>(null);
   const [bulkDelete, setBulkDelete] = React.useState<AdminUserListItem[]>([]);
@@ -97,6 +98,7 @@ export function UsersTable({
         canUpdate,
         canManageStatus,
         canRevokeSessions,
+        canImpersonate,
         roleOptions: accessOptions.roles.map((role) => ({
           label: role.name,
           value: role.key,
@@ -112,6 +114,7 @@ export function UsersTable({
       canDelete,
       canManageStatus,
       canRevokeSessions,
+      canImpersonate,
       canUpdate,
       changeOneStatus,
       currentUserId,

@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import NextTopLoader from "nextjs-toploader";
 import { getPublicSiteSettings } from "@/features/site-settings/api/public-settings.server"
+import { getPublicLanguageDirection } from "@/features/languages/api/languages.server"
 
 import "./globals.css"
 
@@ -61,11 +62,15 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const locale = await getLocale()
-  const settings = await getPublicSiteSettings()
+  const [settings, direction] = await Promise.all([
+    getPublicSiteSettings(),
+    getPublicLanguageDirection(locale),
+  ])
 
   return (
     <html
       lang={locale}
+      dir={direction}
       className={cn("font-sans", geist.variable)}
       suppressHydrationWarning
     >

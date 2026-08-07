@@ -37,15 +37,31 @@ function optionalBoolean(config: Record<string, unknown>, key: string) {
   }
 }
 
+function optionalCron(config: Record<string, unknown>, key: string) {
+  const value = config[key];
+  if (value === undefined || value === "") return;
+  if (
+    typeof value !== "string" ||
+    ![5, 6].includes(value.trim().split(/\s+/).length)
+  ) {
+    throw new Error(`${key} phải là biểu thức cron gồm 5 hoặc 6 phần.`);
+  }
+}
+
 function validateQueueEnvironment(config: Record<string, unknown>) {
   optionalBoolean(config, "QUEUE_ENABLED");
   optionalBoolean(config, "REDIS_TLS");
   optionalBoolean(config, "VISIT_AGGREGATION_DISABLED");
+  optionalBoolean(config, "LOYALTY_ROLLUP_DISABLED");
+  optionalCron(config, "LOYALTY_ROLLUP_CRON");
   optionalInteger(config, "REDIS_PORT", 1, 65_535);
   optionalInteger(config, "REDIS_DB", 0, 15);
   optionalInteger(config, "VISIT_AGGREGATION_INTERVAL_MS", 10_000, 86_400_000);
   optionalInteger(config, "VISIT_AGGREGATION_BATCH_SIZE", 100, 10_000);
   optionalInteger(config, "VISIT_AGGREGATION_MAX_BATCHES_PER_JOB", 1, 100);
+  optionalInteger(config, "SMTP_PORT", 1, 65_535);
+  optionalInteger(config, "PASSWORD_RESET_TOKEN_TTL_MINUTES", 5, 1_440);
+  optionalBoolean(config, "SMTP_SECURE");
 
   const prefix = config.QUEUE_PREFIX;
   if (
@@ -89,6 +105,8 @@ export function validateEnvironment(config: Record<string, unknown>) {
     throw new Error("FRONTEND_ORIGIN là bắt buộc.");
   }
 
+  validatePasswordResetEnvironment(config);
+
   const sameSite = config.AUTH_COOKIE_SAME_SITE;
   if (sameSite && !["lax", "strict", "none"].includes(String(sameSite))) {
     throw new Error("AUTH_COOKIE_SAME_SITE chỉ nhận lax, strict hoặc none.");
@@ -104,6 +122,34 @@ export function validateEnvironment(config: Record<string, unknown>) {
   }
 
   return config;
+}
+
+function validatePasswordResetEnvironment(config: Record<string, unknown>) {
+  const resetUrl = String(config.PASSWORD_RESET_URL || "").trim();
+  if (resetUrl) {
+    let parsed: URL;
+    try {
+      parsed = new URL(resetUrl);
+    } catch {
+      throw new Error("PASSWORD_RESET_URL phải là URL HTTP(S) hợp lệ.");
+    }
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error("PASSWORD_RESET_URL phải là URL HTTP(S) hợp lệ.");
+    }
+    if (config.NODE_ENV === "production" && parsed.protocol !== "https:") {
+      throw new Error("PASSWORD_RESET_URL production bắt buộc dùng HTTPS.");
+    }
+  }
+
+  if (config.NODE_ENV !== "production") return;
+  for (const key of ["PASSWORD_RESET_URL", "SMTP_HOST", "MAIL_FROM"] as const) {
+    if (!String(config[key] || "").trim()) {
+      throw new Error(`${key} là bắt buộc trong production.`);
+    }
+  }
+  if (String(config.SMTP_USER || "").trim() && !String(config.SMTP_PASSWORD || "")) {
+    throw new Error("SMTP_PASSWORD là bắt buộc khi cấu hình SMTP_USER.");
+  }
 }
 
 export function validateWorkerEnvironment(config: Record<string, unknown>) {

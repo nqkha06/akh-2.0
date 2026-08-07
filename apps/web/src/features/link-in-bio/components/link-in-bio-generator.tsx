@@ -28,7 +28,7 @@ import {
 } from "@icons-pack/react-simple-icons"
 
 import { BioWidgetEmbed } from "@/components/bio-widget-embed"
-import ImagePicker, { getYouTubeEmbedUrl, type BackgroundMedia } from "@/components/image-picker"
+import { getYouTubeEmbedUrl, type BackgroundMedia } from "@/components/image-picker"
 import { ManagedImagePicker } from "@/components/media/managed-image-picker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,21 +53,27 @@ import {
 } from "@/features/site-settings/components/site-brand-provider"
 import {
   bioButtonStyles,
-  getBioAccentColor,
   normalizeBioButtonStyle,
 } from "./bio-appearance"
 import { BioLinkButton } from "./bio-link-button"
 import { ContentSection } from "../content-blocks/content-section"
-import { getBioBackgroundPresetById } from "../backgrounds/background-presets"
+import { BackgroundPresetPicker } from "../backgrounds/background-preset-picker"
+import {
+  DEFAULT_BIO_BACKGROUND_PRESET_ID,
+  getBioBackgroundPresetById,
+  getBioBackgroundPresetByImage,
+  getBioPresetTheme,
+  type BioBackgroundPreset,
+} from "../backgrounds/background-presets"
 import { BankDetailsRenderer, DividerRenderer } from "../content-blocks/simple-content-renderers"
 import { hasCompleteBankDetails } from "../content-blocks/simple-content-types"
 import { GalleryRenderer } from "../gallery/gallery-renderer"
 import {
   contentOrderKey,
   GALLERY_ACCEPTED_MIME_TYPES,
-  GALLERY_IMAGE_MAX_SIZE,
   normalizeContentOrder,
 } from "../gallery/gallery-types"
+import { useBusinessConfig } from "@/features/business-settings/use-business-config"
 
 interface SocialLink {
   id: string
@@ -165,6 +171,7 @@ export default function LinkInBioGenerator({
   onSavingChange?: (saving: boolean) => void
 }) {
   const brand = useSiteBrand()
+  const businessConfig = useBusinessConfig()
   const siteHost = getSiteHost(brand)
   const [expandedSections, setExpandedSections] = useState<Record<EditorSectionKey, boolean>>({
     details: true,
@@ -199,14 +206,18 @@ export default function LinkInBioGenerator({
       links: initialBio?.customLinks || [],
     },
   ))
+  const initialBackgroundPreset =
+    getBioBackgroundPresetById(initialBio?.appearance.selectedBackgroundId) ||
+    getBioBackgroundPresetByImage(initialBio?.appearance.backgroundImage) ||
+    (!initialBio ? getBioBackgroundPresetById(DEFAULT_BIO_BACKGROUND_PRESET_ID) : undefined)
   const [appearanceSettings, setAppearanceSettings] = useState<AppearanceSettings>({
     buttonStyle: normalizeBioButtonStyle(initialBio?.appearance.buttonStyle || "rounded"),
-    backgroundColor: initialBio?.appearance.backgroundColor || "#ffffff",
-    backgroundImage: initialBio?.appearance.backgroundImage || undefined,
+    backgroundColor: initialBackgroundPreset?.theme.accentColor || initialBio?.appearance.backgroundColor || "#ffffff",
+    backgroundImage: initialBackgroundPreset?.imageUrl || initialBio?.appearance.backgroundImage || undefined,
     backgroundMediaType: initialBio?.appearance.backgroundMediaType || undefined,
     backgroundMediaUrl: initialBio?.appearance.backgroundMediaUrl || undefined,
     backgroundFileId: initialBio?.appearance.backgroundFileId || undefined,
-    selectedBackgroundId: initialBio?.appearance.selectedBackgroundId || undefined,
+    selectedBackgroundId: initialBackgroundPreset?.id || initialBio?.appearance.selectedBackgroundId || undefined,
   })
   const [hiddenLinks, setHiddenLinks] = useState<string[]>(initialBio?.hiddenLinks || [])
   const [isSaving, setIsSaving] = useState(false)
@@ -334,29 +345,34 @@ export default function LinkInBioGenerator({
       ? { id: appearanceSettings.selectedBackgroundId || "legacy-image", type: "image", url: appearanceSettings.backgroundImage }
       : null
 
-  const selectBackgroundMedia = (media: BackgroundMedia | null) => {
-    const preset = media?.type === "image"
-      ? getBioBackgroundPresetById(media.id)
-      : undefined
-
+  const selectBackgroundPreset = (preset: BioBackgroundPreset) => {
     setAppearanceSettings((current) => ({
       ...current,
-      backgroundImage: media?.type === "image" ? media.url : undefined,
-      backgroundMediaType: preset ? undefined : media?.type,
-      backgroundMediaUrl: preset ? undefined : media?.url,
-      backgroundFileId: media?.type === "image" ? media.fileId : undefined,
-      selectedBackgroundId: media?.id,
+      backgroundColor: preset.theme.accentColor,
+      backgroundImage: preset.imageUrl,
+      backgroundMediaType: undefined,
+      backgroundMediaUrl: undefined,
+      backgroundFileId: undefined,
+      selectedBackgroundId: preset.id,
     }))
   }
 
   const backgroundStyle: React.CSSProperties = selectedBackgroundMedia?.type === "image"
     ? { backgroundImage: `url('${selectedBackgroundMedia.url}')`, backgroundPosition: "center", backgroundSize: "cover" }
     : { backgroundColor: appearanceSettings.backgroundColor || "#f4f7fb" }
-  const accentColor = getBioAccentColor(appearanceSettings.backgroundColor)
+  const activeTheme = getBioPresetTheme(
+    appearanceSettings.selectedBackgroundId,
+    appearanceSettings.backgroundImage,
+    appearanceSettings.backgroundColor,
+  )
   const selectedButtonStyle = normalizeBioButtonStyle(appearanceSettings.buttonStyle)
-  const validColorValue = /^#[0-9a-f]{6}$/i.test(appearanceSettings.backgroundColor)
-    ? appearanceSettings.backgroundColor
-    : "#ffffff"
+  const previewThemeVariables = {
+    "--bio-accent": activeTheme.accentColor,
+    "--bio-section-bg": activeTheme.sectionColor,
+    "--bio-section-border": activeTheme.sectionBorderColor,
+    "--bio-text": activeTheme.textColor,
+    "--bio-muted-text": activeTheme.mutedTextColor,
+  } as React.CSSProperties
   const normalizedOrder = normalizeContentOrder(contentOrder, { socials: socialLinks, widgets, galleries, dividers, bankDetails, links: customLinks })
 
   return (
@@ -440,32 +456,48 @@ export default function LinkInBioGenerator({
 
           <EditorSection title="Giao diện" icon={Palette} open={expandedSections.appearance} onOpenChange={(open) => setSectionOpen("appearance", open)}>
             <div>
-              <FieldLabel>Kiểu nút</FieldLabel>
-              <Select value={selectedButtonStyle} onValueChange={(value) => updateAppearanceSettings("buttonStyle", value)}>
-                <SelectTrigger className="h-10 w-full bg-background shadow-none" aria-label="Chọn kiểu nút">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {bioButtonStyles.map((style) => <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FieldLabel>Mẫu giao diện</FieldLabel>
+              <BackgroundPresetPicker
+                selectedPresetId={appearanceSettings.selectedBackgroundId}
+                onSelect={selectBackgroundPreset}
+              />
             </div>
 
             <div className="border-t border-border pt-4">
-              <FieldLabel>Màu chủ đạo</FieldLabel>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input type="color" value={validColorValue} onChange={(event) => updateAppearanceSettings("backgroundColor", event.target.value)} className="h-10 w-12 cursor-pointer rounded-lg bg-background p-1" aria-label="Chọn màu chủ đạo" />
-                <Input value={appearanceSettings.backgroundColor} onChange={(event) => updateAppearanceSettings("backgroundColor", event.target.value)} className="h-10 min-w-32 flex-1 bg-background font-mono text-xs uppercase shadow-none" aria-label="Mã màu chủ đạo" />
-                <div className="flex gap-1.5">
-                  {["#2563eb", "#7c3aed", "#db2777", "#059669", "#ea580c"].map((color) => <button key={color} type="button" onClick={() => updateAppearanceSettings("backgroundColor", color)} className="size-8 rounded-md border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" style={{ backgroundColor: color }} aria-label={`Dùng màu ${color}`} />)}
-                </div>
+              <FieldLabel>Hình dáng nút</FieldLabel>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Chọn hình dáng nút">
+                {bioButtonStyles.map((style) => {
+                  const selected = selectedButtonStyle === style.value
+                  const radiusClass = style.value === "rounded-border"
+                    ? "rounded-full border-2"
+                    : style.value === "mineral-square"
+                      ? "rounded-sm border-2"
+                      : "rounded-lg border"
+
+                  return (
+                    <button
+                      key={style.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => updateAppearanceSettings("buttonStyle", style.value)}
+                      className={`min-w-0 rounded-lg border px-2.5 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected ? "border-primary bg-primary/5" : "border-border hover:border-foreground/30 hover:bg-muted/30"}`}
+                    >
+                      <span
+                        className={`mx-auto block h-7 w-full max-w-20 ${radiusClass}`}
+                        style={{
+                          backgroundColor: activeTheme.buttonColor,
+                          borderColor: activeTheme.buttonBorderColor,
+                          boxShadow: style.value === "mineral-square" ? `2px 2px 0 ${activeTheme.buttonBorderColor}` : undefined,
+                        }}
+                        aria-hidden
+                      />
+                      <span className="mt-2 block truncate text-[11px] font-medium text-foreground">{style.label}</span>
+                    </button>
+                  )
+                })}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">Màu này điều khiển background mặc định và accent của các kiểu viền, glow, gradient hoặc neon.</p>
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <FieldLabel>Background media</FieldLabel>
-              <ImagePicker selectedMedia={selectedBackgroundMedia} onMediaSelect={selectBackgroundMedia} />
+              <p className="mt-2 text-xs text-muted-foreground">Màu nút và các bề mặt được phối sẵn theo mẫu đã chọn.</p>
             </div>
           </EditorSection>
 
@@ -488,25 +520,33 @@ export default function LinkInBioGenerator({
                 {selectedBackgroundMedia?.type === "video" ? <video src={selectedBackgroundMedia.url} autoPlay muted loop playsInline className="pointer-events-none absolute inset-0 size-full object-cover" /> : null}
                 {selectedBackgroundMedia?.type === "youtube" && getYouTubeEmbedUrl(selectedBackgroundMedia.url) ? <iframe src={getYouTubeEmbedUrl(selectedBackgroundMedia.url)} title="Xem trước background YouTube" allow="autoplay; encrypted-media; picture-in-picture" className="pointer-events-none absolute left-1/2 top-1/2 h-[150%] w-[266%] -translate-x-1/2 -translate-y-1/2" /> : null}
                 <div className="relative z-10 p-3 sm:p-5">
-                  <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-white/70 bg-white/78 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl">
+                  <div
+                    className="mx-auto max-w-md overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl"
+                    style={{
+                      ...previewThemeVariables,
+                      backgroundColor: activeTheme.surfaceColor,
+                      borderColor: activeTheme.surfaceBorderColor,
+                      color: activeTheme.textColor,
+                    }}
+                  >
                     <div className="space-y-4 px-4 py-6 sm:px-5">
                       <header className="text-center">
                         <div className="relative mx-auto grid size-20 place-items-center overflow-hidden rounded-2xl border-4 border-white bg-slate-950 text-2xl font-semibold text-white shadow-lg">
                           <span>{profileDetails.name.trim().slice(0, 1).toUpperCase() || "R"}</span>
                           {profileDetails.avatarUrl ? <img src={profileDetails.avatarUrl} alt="" className="absolute inset-0 size-full object-cover" onError={(event) => { event.currentTarget.hidden = true }} /> : null}
                         </div>
-                        <h4 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">{profileDetails.name || "Tên của bạn"}</h4>
-                        <p className="mt-1 truncate text-xs font-medium text-slate-500">
+                        <h4 className="mt-3 truncate text-xl font-semibold tracking-tight" style={{ color: activeTheme.textColor }}>{profileDetails.name || "Tên của bạn"}</h4>
+                        <p className="mt-1 truncate text-xs font-medium" style={{ color: activeTheme.mutedTextColor }}>
                           {siteHost ? `${siteHost}/b/` : "/b/"}{customSlug || "ten-cua-ban"}
                         </p>
-                        <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-600">{profileDetails.title || "Thêm một mô tả ngắn để mọi người biết bạn là ai và nội dung bạn chia sẻ."}</p>
+                        <p className="mx-auto mt-3 max-w-sm text-sm leading-6" style={{ color: activeTheme.mutedTextColor }}>{profileDetails.title || "Thêm một mô tả ngắn để mọi người biết bạn là ai và nội dung bạn chia sẻ."}</p>
                       </header>
 
                       <div className="space-y-3">
                         {normalizedOrder.map((item, contentIndex) => {
                           if (item.type === "social") {
                             const visibleSocials = socialLinks.filter((social) => social.enabled !== false).slice(0, 8)
-                            return visibleSocials.length ? <div key={contentOrderKey(item)} className="flex flex-wrap justify-center gap-2">{visibleSocials.map((social) => <button key={social.id} type="button" title={social.platform} className="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm">{getSocialIcon(social.platform)}</button>)}</div> : null
+                            return visibleSocials.length ? <div key={contentOrderKey(item)} className="flex flex-wrap justify-center gap-2">{visibleSocials.map((social) => <button key={social.id} type="button" title={social.platform} className="grid size-10 place-items-center rounded-full border shadow-sm" style={{ backgroundColor: activeTheme.sectionColor, borderColor: activeTheme.sectionBorderColor, color: activeTheme.textColor }}>{getSocialIcon(social.platform)}</button>)}</div> : null
                           }
                           if (item.type === "gallery") {
                             const gallery = galleries.find((entry) => entry.id === item.id)
@@ -522,15 +562,15 @@ export default function LinkInBioGenerator({
                           }
                           if (item.type === "widget") {
                             const widget = widgets.find((entry) => entry.id === item.id)
-                            return widget && widget.enabled !== false ? <div key={contentOrderKey(item)} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><BioWidgetEmbed widget={widget} /></div> : null
+                            return widget && widget.enabled !== false ? <div key={contentOrderKey(item)} className="overflow-hidden rounded-xl border shadow-sm" style={{ backgroundColor: activeTheme.sectionColor, borderColor: activeTheme.sectionBorderColor }}><BioWidgetEmbed widget={widget} /></div> : null
                           }
                           const link = customLinks.find((entry) => entry.id === item.id)
                           if (!link || hiddenLinks.includes(link.id)) return null
-                          return <BioLinkButton key={`${contentOrderKey(item)}:${link.animationEffect || "none"}`} link={link} buttonStyle={selectedButtonStyle} accentColor={accentColor} contentIndex={contentIndex} preview />
+                          return <BioLinkButton key={`${contentOrderKey(item)}:${link.animationEffect || "none"}`} link={link} buttonStyle={selectedButtonStyle} theme={activeTheme} contentIndex={contentIndex} preview />
                         })}
                       </div>
-                      {customLinks.every((link) => hiddenLinks.includes(link.id)) && socialLinks.every((social) => social.enabled === false) && widgets.every((widget) => widget.enabled === false) && galleries.every((gallery) => !gallery.enabled || gallery.images.length === 0) && dividers.every((block) => !block.enabled) && bankDetails.every((block) => !block.enabled || !hasCompleteBankDetails(block)) ? <div className="rounded-xl border border-dashed border-slate-300 bg-white/55 px-4 py-8 text-center text-sm text-slate-500">Thêm nội dung để xem trước tại đây.</div> : null}
-                      <div className="pt-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      {customLinks.every((link) => hiddenLinks.includes(link.id)) && socialLinks.every((social) => social.enabled === false) && widgets.every((widget) => widget.enabled === false) && galleries.every((gallery) => !gallery.enabled || gallery.images.length === 0) && dividers.every((block) => !block.enabled) && bankDetails.every((block) => !block.enabled || !hasCompleteBankDetails(block)) ? <div className="rounded-xl border border-dashed px-4 py-8 text-center text-sm" style={{ backgroundColor: activeTheme.sectionColor, borderColor: activeTheme.sectionBorderColor, color: activeTheme.mutedTextColor }}>Thêm nội dung để xem trước tại đây.</div> : null}
+                      <div className="pt-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: activeTheme.mutedTextColor }}>
                         Powered by {brand.siteName}
                       </div>
                     </div>
@@ -546,7 +586,7 @@ export default function LinkInBioGenerator({
         onOpenChange={setAvatarPickerOpen}
         selectedFileId={profileDetails.avatarFileId}
         acceptedMimeTypes={GALLERY_ACCEPTED_MIME_TYPES}
-        maxSize={GALLERY_IMAGE_MAX_SIZE}
+        maxSize={businessConfig.uploads.coverImageMaxBytes}
         title="Chọn ảnh đại diện từ Media Manager"
         onSelect={(file) => setProfileDetails((current) => ({
           ...current,

@@ -85,7 +85,18 @@ export function LanguageEditorPage({
         if (!active) return;
         setExistingLocales(languages.items.map(({ locale }) => locale));
         if (language) {
-          setForm({ ...language });
+          setForm({
+            name: language.name,
+            nativeName: language.nativeName,
+            locale: language.locale,
+            code: language.code,
+            regional: language.regional,
+            flag: language.flag,
+            isDefault: language.isDefault,
+            status: language.status,
+            sortOrder: language.sortOrder,
+            isRtl: language.isRtl,
+          });
         } else {
           setForm({
             ...emptyLanguage,

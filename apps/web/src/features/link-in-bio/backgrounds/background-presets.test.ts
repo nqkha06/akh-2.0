@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   bioBackgroundPresets,
   getBioBackgroundPresetById,
+  getBioPresetTheme,
 } from "./background-presets.ts";
 
 describe("Link Bio background presets", () => {
@@ -19,5 +20,14 @@ describe("Link Bio background presets", () => {
 
     assert.equal(preset?.name, "Tuyết xanh cobalt");
     assert.equal(preset?.imageUrl, "/assets/images/bios/25-cobalt-snowfall-9x16.jpg");
+    assert.equal(preset?.theme.buttonColor, "#dbeafe");
+    assert.ok(preset?.theme.sectionColor);
+  });
+
+  it("keeps a legacy custom accent when no preset was saved", () => {
+    const theme = getBioPresetTheme(undefined, "/legacy/background.jpg", "#7c3aed");
+
+    assert.equal(theme.accentColor, "#7c3aed");
+    assert.equal(theme.buttonColor, "#7c3aed");
   });
 });

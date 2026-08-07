@@ -1,7 +1,8 @@
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { ABSOLUTE_MEMBER_UPLOAD_MAX_BYTES } from "@stu/contracts";
 
-export const MAX_FILE_UPLOAD_SIZE = 100 * 1024 * 1024;
+// Absolute transport ceiling. The effective limit is managed in Business settings.
 
 export class InitiateMultipartUploadDto {
   @IsString()
@@ -15,7 +16,7 @@ export class InitiateMultipartUploadDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(MAX_FILE_UPLOAD_SIZE)
+  @Max(ABSOLUTE_MEMBER_UPLOAD_MAX_BYTES)
   size: number;
 
   @IsOptional()

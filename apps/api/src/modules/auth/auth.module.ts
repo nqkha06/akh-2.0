@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { AuthOriginGuard } from "./guards/auth-origin.guard";
 import { AuthRateLimitGuard } from "./guards/auth-rate-limit.guard";
+import { PasswordResetMailer } from "./password-reset-mailer.service";
 import { PermissionsGuard } from "./guards/permissions.guard";
 import { RolesGuard } from "./guards/roles.guard";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
@@ -18,6 +19,7 @@ import { LocalStrategy } from "./strategies/local.strategy";
   controllers: [AuthController],
   providers: [
     AuthService,
+    PasswordResetMailer,
     LocalStrategy,
     JwtAccessStrategy,
     JwtRefreshStrategy,

@@ -112,14 +112,11 @@ export class AdminLinksService {
       );
     }
     const title = dto.title?.trim();
-    if (dto.title !== undefined && !title) {
-      throw new BadRequestException("Tiêu đề không được để trống.");
-    }
 
     const updated = await this.prisma.link.update({
       where: { id },
       data: {
-        ...(title ? { title } : {}),
+        ...(dto.title !== undefined ? { title: title ?? "" } : {}),
         ...(dto.subtitle !== undefined
           ? { subtitle: this.emptyToNull(dto.subtitle) }
           : {}),

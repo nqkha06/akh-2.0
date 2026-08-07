@@ -35,10 +35,7 @@ export default async function LoginPage({
   const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
   const authError = Array.isArray(params.error) ? params.error[0] : params.error;
   const authCode = Array.isArray(params.code) ? params.code[0] : params.code;
-  const loginCallbackUrl = callbackCandidate
-    ? `/login?callbackUrl=${encodeURIComponent(callbackCandidate)}`
-    : "/login";
-  const currentUser = await getOptionalServerUser(loginCallbackUrl);
+  const currentUser = await getOptionalServerUser();
   if (currentUser) {
     redirect(getSignedInRedirect(currentUser, callbackCandidate));
   }
@@ -51,7 +48,9 @@ export default async function LoginPage({
       googleClientId={googleClientId}
       redirectTo={callbackUrl}
       initialMessage={
-        reason === "session-expired"
+        reason === "password-reset"
+          ? "Mật khẩu đã được cập nhật. Bạn có thể đăng nhập bằng mật khẩu mới."
+          : reason === "session-expired"
           ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
           : authError === "CredentialsSignin" || authCode === "credentials"
             ? "Email hoặc mật khẩu không chính xác."

@@ -26,6 +26,7 @@ import {
   updateAdminPagesStatus,
 } from "@/features/admin-pages/api/pages.client";
 import { PageDeleteDialog } from "@/features/admin-pages/components/page-delete-dialog";
+import { PageStatusDialog } from "@/features/admin-pages/components/page-status-dialog";
 import {
   getPagesTableColumns,
   type PageRowAction,
@@ -35,6 +36,7 @@ import type {
   AdminPagesTableData,
   PageStatus,
 } from "@/features/admin-pages/types";
+import { copyPublicPageUrl } from "@/features/pages/public-page-url";
 import { useDataTable } from "@/hooks/use-data-table";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 
@@ -49,7 +51,11 @@ export function PagesTable({
   const router = useRouter();
   const [rowAction, setRowAction] = React.useState<PageRowAction | null>(null);
   const [deletePages, setDeletePages] = React.useState<AdminPageListItem[]>([]);
-  const [mutatingId, setMutatingId] = React.useState<number | null>(null);
+  const [statusAction, setStatusAction] = React.useState<{
+    pages: AdminPageListItem[];
+    status: PageStatus;
+  } | null>(null);
+  const [statusBusy, setStatusBusy] = React.useState(false);
 
   const refresh = React.useCallback(
     (table?: Table<AdminPageListItem>) => {
@@ -59,25 +65,12 @@ export function PagesTable({
     [router],
   );
 
-  const changeOneStatus = React.useCallback(
-    async (page: AdminPageListItem, status: PageStatus) => {
-      setMutatingId(page.id);
-      try {
-        await updateAdminPageStatus(page.id, status);
-        toast.success("Đã cập nhật trạng thái trang.");
-        refresh();
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Không thể cập nhật trạng thái.",
-        );
-      } finally {
-        setMutatingId(null);
-      }
-    },
-    [refresh],
-  );
+  const copyPublicUrl = React.useCallback((page: AdminPageListItem) => {
+    void copyPublicPageUrl(page.slug).then(
+      () => toast.success("Đã sao chép URL public."),
+      () => toast.error("Không thể sao chép URL public."),
+    );
+  }, []);
 
   const columns = React.useMemo(
     () =>
@@ -85,8 +78,9 @@ export function PagesTable({
         canUpdate,
         canDelete,
         canPublish,
+        onCopyPublicUrl: copyPublicUrl,
         onStatusChange: (page, status) => {
-          if (mutatingId === null) void changeOneStatus(page, status);
+          setStatusAction({ pages: [page], status });
         },
         setRowAction,
       }),
@@ -94,8 +88,7 @@ export function PagesTable({
       canDelete,
       canPublish,
       canUpdate,
-      changeOneStatus,
-      mutatingId,
+      copyPublicUrl,
     ],
   );
 
@@ -114,6 +107,33 @@ export function PagesTable({
     clearOnDefault: true,
   });
 
+  async function confirmStatusChange() {
+    if (!statusAction) return;
+    setStatusBusy(true);
+    try {
+      const { pages, status } = statusAction;
+      if (pages.length === 1) {
+        await updateAdminPageStatus(pages[0]!.id, status);
+      } else {
+        await updateAdminPagesStatus(
+          pages.map((page) => page.id),
+          status,
+        );
+      }
+      toast.success(`Đã cập nhật ${pages.length} trang.`);
+      setStatusAction(null);
+      refresh(table);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật trạng thái.",
+      );
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
   return (
     <div className="flex min-w-0 w-full flex-col gap-6">
       <DataTable
@@ -126,7 +146,9 @@ export function PagesTable({
             canDelete={canDelete}
             canPublish={canPublish}
             onDelete={setDeletePages}
-            onSuccess={() => refresh(table)}
+            onStatusChange={(pages, status) =>
+              setStatusAction({ pages, status })
+            }
           />
         }
       >
@@ -154,6 +176,15 @@ export function PagesTable({
           setDeletePages([]);
         }}
         onSuccess={() => refresh(table)}
+      />
+      <PageStatusDialog
+        count={statusAction?.pages.length ?? 0}
+        status={statusAction?.status ?? null}
+        busy={statusBusy}
+        onConfirm={() => void confirmStatusChange()}
+        onOpenChange={(open) => {
+          if (!open) setStatusAction(null);
+        }}
       />
     </div>
   );
@@ -217,42 +248,21 @@ function PagesSelectionActionBar({
   canDelete,
   canPublish,
   onDelete,
-  onSuccess,
+  onStatusChange,
 }: {
   table: Table<AdminPageListItem>;
   canUpdate: boolean;
   canDelete: boolean;
   canPublish: boolean;
   onDelete: (pages: AdminPageListItem[]) => void;
-  onSuccess: () => void;
+  onStatusChange: (pages: AdminPageListItem[], status: PageStatus) => void;
 }) {
-  const [mutating, setMutating] = React.useState(false);
   const selected = table
     .getFilteredSelectedRowModel()
     .rows.map((row) => row.original);
   const allDraft = selected.every((page) => page.status === "DRAFT");
   const allPublished = selected.every((page) => page.status === "PUBLISHED");
   const allArchived = selected.every((page) => page.status === "ARCHIVED");
-
-  async function changeStatus(status: PageStatus) {
-    setMutating(true);
-    try {
-      const result = await updateAdminPagesStatus(
-        selected.map((page) => page.id),
-        status,
-      );
-      toast.success(`Đã cập nhật ${result.updated} trang.`);
-      onSuccess();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Không thể cập nhật trạng thái.",
-      );
-    } finally {
-      setMutating(false);
-    }
-  }
 
   return (
     <div
@@ -267,8 +277,7 @@ function PagesSelectionActionBar({
           <Button
             variant="ghost"
             size="sm"
-            disabled={mutating}
-            onClick={() => void changeStatus("PUBLISHED")}
+            onClick={() => onStatusChange(selected, "PUBLISHED")}
           >
             <Send /> Xuất bản
           </Button>
@@ -277,8 +286,7 @@ function PagesSelectionActionBar({
           <Button
             variant="ghost"
             size="sm"
-            disabled={mutating}
-            onClick={() => void changeStatus("DRAFT")}
+            onClick={() => onStatusChange(selected, "DRAFT")}
           >
             <RotateCcw /> Về nháp
           </Button>
@@ -287,8 +295,7 @@ function PagesSelectionActionBar({
           <Button
             variant="ghost"
             size="sm"
-            disabled={mutating}
-            onClick={() => void changeStatus("ARCHIVED")}
+            onClick={() => onStatusChange(selected, "ARCHIVED")}
           >
             <Archive /> Lưu trữ
           </Button>
@@ -297,8 +304,7 @@ function PagesSelectionActionBar({
           <Button
             variant="ghost"
             size="sm"
-            disabled={mutating}
-            onClick={() => void changeStatus("DRAFT")}
+            onClick={() => onStatusChange(selected, "DRAFT")}
           >
             <RotateCcw /> Khôi phục về nháp
           </Button>
@@ -308,7 +314,6 @@ function PagesSelectionActionBar({
             variant="ghost"
             size="sm"
             className="text-destructive hover:text-destructive"
-            disabled={mutating}
             onClick={() => onDelete(selected)}
           >
             <Trash2 /> Xóa
@@ -317,7 +322,6 @@ function PagesSelectionActionBar({
         <Button
           variant="ghost"
           size="sm"
-          disabled={mutating}
           onClick={() => table.toggleAllRowsSelected(false)}
         >
           <X /> Bỏ chọn

@@ -8,29 +8,22 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import Link from "next/link";
 import {
-  Bell,
   Camera,
   Check,
   CheckCircle2,
+  ChevronRight,
   CircleDollarSign,
   Copy,
   CreditCard,
-  ExternalLink,
   Eye,
   EyeOff,
   Globe2,
   KeyRound,
-  Link2,
   LoaderCircle,
   Mail,
-  MessageSquare,
   Save,
-  ShieldCheck,
-  Smartphone,
   User,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -51,14 +44,13 @@ import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
   InputGroupText,
+  InputGroupButton,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 import { useAuthUser } from "@/features/auth/components/auth-user-provider";
-import type { ReferralsDashboard } from "@/features/referrals/types";
 import {
   Select,
   SelectContent,
@@ -66,7 +58,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MemberPaymentMethodsManager } from "@/features/payment-methods/components/member-payment-methods-page";
 import {
@@ -87,15 +78,9 @@ type PasswordForm = {
   confirm: string;
 };
 
-type NotificationKey = "account" | "activity" | "revenue" | "product" | "push";
-
 const inputClassName = "h-11 rounded-lg border-border bg-background shadow-none sm:h-10";
 
-export function AccountView({
-  referrals,
-}: {
-  referrals: ReferralsDashboard;
-}) {
+export function AccountView() {
   const t = useTranslations("Account");
   const brand = useSiteBrand();
   const siteHost = getSiteHost(brand);
@@ -115,13 +100,6 @@ export function AccountView({
     currencyPreferences.currency,
   );
   const [savingCurrency, setSavingCurrency] = useState(false);
-  const [notifications, setNotifications] = useState<Record<NotificationKey, boolean>>({
-    account: true,
-    activity: true,
-    revenue: true,
-    product: false,
-    push: false,
-  });
   const [customDomain, setCustomDomain] = useState("");
   const [domainStatus, setDomainStatus] = useState<"idle" | "pending">("idle");
   const [password, setPassword] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
@@ -155,7 +133,6 @@ export function AccountView({
       (brand.siteShortName || brand.siteName).slice(0, 2).toUpperCase(),
     [brand.siteName, brand.siteShortName, displayName],
   );
-  const referralLink = referrals.referralUrl;
   const passwordIsLongEnough = password.next.length >= 8;
   const passwordHasNumber = /\d/.test(password.next);
   const passwordsMatch = Boolean(password.next) && password.next === password.confirm;
@@ -168,10 +145,8 @@ export function AccountView({
     { id: "personal-information", icon: User, label: t("navigation.personal") },
     { id: "payment-method", icon: CreditCard, label: t("navigation.payment") },
     { id: "currency", icon: CircleDollarSign, label: t("navigation.currency") },
-    { id: "notifications", icon: Bell, label: t("navigation.notifications") },
     { id: "custom-domain", icon: Globe2, label: t("navigation.domain") },
     { id: "change-password", icon: KeyRound, label: t("navigation.password") },
-    { id: "referral-link", icon: Link2, label: t("navigation.referral") },
   ];
 
   const notifySaved = (section: string) => toast.success(t("toast.sectionSaved", { section }));
@@ -223,43 +198,75 @@ export function AccountView({
 
   return (
     <PageContainer>
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-        action={
-          <Badge variant="secondary" className="h-8 gap-1.5 border border-border bg-muted/50 px-2.5 text-foreground">
-            <CheckCircle2 className="text-primary" />
-            {t("verified")}
-          </Badge>
-        }
-      />
+      <PageHeader title={t("title")} />
 
-      <div className="rounded-xl border border-border bg-card px-4 py-3 sm:px-5">
-        <p className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
-          <ShieldCheck className="mt-1 size-4 shrink-0 text-primary" />
-          {t("context")}
-        </p>
-      </div>
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-black/[0.025]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-primary/[0.08] via-primary/[0.03] to-transparent" />
+        <div className="relative flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-center sm:px-6 sm:py-6">
+          <div className="relative shrink-0">
+            <Avatar className="size-20 border-4 border-background shadow-sm sm:size-24">
+              <AvatarImage
+                src={avatarPreview || currentUser.avatar || undefined}
+                alt={displayName}
+              />
+              <AvatarFallback className="text-xl font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              aria-label={t("profile.changeAvatar")}
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute -right-1 -bottom-1 grid size-9 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Camera className="size-4" />
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => handleAvatarChange(event.target.files?.[0])}
+            />
+          </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2 className="truncate text-xl font-semibold tracking-[-0.025em] text-foreground sm:text-2xl">
+                {displayName}
+              </h2>
+              <Badge className="gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <CheckCircle2 className="size-3.5" />
+                {t("verified")}
+              </Badge>
+            </div>
+            <p className="mt-1.5 flex items-center gap-2 truncate text-sm text-muted-foreground">
+              <Mail className="size-4 shrink-0" />
+              {profile.email || currentUser.email}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <nav
           aria-label={t("navigation.label")}
-          className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-2 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:flex-col"
+          className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-2 shadow-sm shadow-black/[0.02] lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:flex-col lg:rounded-2xl lg:p-3"
         >
           {sections.map(({ id, icon: Icon, label }) => (
             <a
               key={id}
               href={`#${id}`}
-              className="flex min-h-10 shrink-0 items-center gap-2.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="group flex min-h-11 shrink-0 items-center gap-2.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <Icon className="size-4" />
-              {label}
+              <Icon className="size-4 transition-colors group-hover:text-primary" />
+              <span>{label}</span>
+              <ChevronRight className="ml-auto hidden size-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100 lg:block" />
             </a>
           ))}
         </nav>
 
-        <main className="min-w-0 space-y-5">
+        <main className="min-w-0 space-y-6">
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -270,32 +277,9 @@ export function AccountView({
               id="personal-information"
               icon={User}
               title={t("profile.title")}
-              description={t("profile.description")}
               footer={<CardActions><Button type="submit" className="h-10"><Save />{t("saveChanges")}</Button></CardActions>}
             >
-              <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                <Avatar className="size-16 border border-border sm:size-20">
-                  <AvatarImage src={avatarPreview || currentUser.avatar || undefined} alt={displayName} />
-                  <AvatarFallback className="text-base font-semibold sm:text-lg">{initials}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("profile.avatarHint")}</p>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => handleAvatarChange(event.target.files?.[0])}
-                  />
-                  <Button type="button" variant="outline" size="sm" className="mt-3 h-9" onClick={() => avatarInputRef.current?.click()}>
-                    <Camera />
-                    {t("profile.changeAvatar")}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid gap-4 pt-5 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <FieldBlock label={t("profile.lastName")} htmlFor="account-last-name">
                   <Input
                     id="account-last-name"
@@ -353,7 +337,6 @@ export function AccountView({
             id="currency"
             icon={CircleDollarSign}
             title={t("currency.title")}
-            description={t("currency.description")}
             footer={
               <CardActions>
                 <Button
@@ -389,57 +372,6 @@ export function AccountView({
               </div>
             </div>
             <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("currency.hint")}</p>
-          </SettingsCard>
-
-          <SettingsCard
-            id="notifications"
-            icon={Bell}
-            title={t("notifications.title")}
-            description={t("notifications.description")}
-            footer={<CardActions><Button type="button" className="h-10" onClick={() => notifySaved(t("notifications.title"))}><Save />{t("saveChanges")}</Button></CardActions>}
-          >
-            <div className="divide-y divide-border">
-              <NotificationRow
-                id="notification-account"
-                icon={ShieldCheck}
-                title={t("notifications.accountTitle")}
-                description={t("notifications.accountDescription")}
-                checked={notifications.account}
-                onCheckedChange={(checked) => setNotifications((current) => ({ ...current, account: checked }))}
-              />
-              <NotificationRow
-                id="notification-activity"
-                icon={Link2}
-                title={t("notifications.activityTitle")}
-                description={t("notifications.activityDescription")}
-                checked={notifications.activity}
-                onCheckedChange={(checked) => setNotifications((current) => ({ ...current, activity: checked }))}
-              />
-              <NotificationRow
-                id="notification-revenue"
-                icon={CircleDollarSign}
-                title={t("notifications.revenueTitle")}
-                description={t("notifications.revenueDescription")}
-                checked={notifications.revenue}
-                onCheckedChange={(checked) => setNotifications((current) => ({ ...current, revenue: checked }))}
-              />
-              <NotificationRow
-                id="notification-product"
-                icon={MessageSquare}
-                title={t("notifications.productTitle")}
-                description={t("notifications.productDescription")}
-                checked={notifications.product}
-                onCheckedChange={(checked) => setNotifications((current) => ({ ...current, product: checked }))}
-              />
-              <NotificationRow
-                id="notification-push"
-                icon={Smartphone}
-                title={t("notifications.pushTitle")}
-                description={t("notifications.pushDescription")}
-                checked={notifications.push}
-                onCheckedChange={(checked) => setNotifications((current) => ({ ...current, push: checked }))}
-              />
-            </div>
           </SettingsCard>
 
           <SettingsCard
@@ -505,7 +437,6 @@ export function AccountView({
               id="change-password"
               icon={KeyRound}
               title={t("security.passwordTitle")}
-              description={t("security.passwordDescription")}
               footer={<CardActions><Button type="submit" className="h-10" disabled={!canUpdatePassword}><KeyRound />{t("security.updatePassword")}</Button></CardActions>}
             >
               <div className="grid gap-4 sm:grid-cols-2">
@@ -544,44 +475,6 @@ export function AccountView({
             </SettingsCard>
           </form>
 
-          <SettingsCard
-            id="referral-link"
-            icon={Link2}
-            title={t("referral.title")}
-            description={t("referral.description", { brand: brand.siteName })}
-            footer={
-              <CardActions>
-                <p className="text-xs leading-5 text-muted-foreground">{t("referral.hint")}</p>
-                <Button asChild type="button" variant="outline" className="h-10">
-                  <Link href="/member/referrals">{t("referral.manage")}<ExternalLink /></Link>
-                </Button>
-              </CardActions>
-            }
-          >
-            <InputGroup className="h-11 rounded-lg bg-background shadow-none sm:h-10">
-              <InputGroupAddon><Link2 /></InputGroupAddon>
-              <InputGroupInput aria-label={t("referral.title")} readOnly value={referralLink} className="font-mono text-xs sm:text-sm" />
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton aria-label={t("referral.copy")} onClick={() => void copyText(referralLink, t("referral.copied"))}>
-                  <Copy />
-                  <span className="hidden sm:inline">{t("referral.copy")}</span>
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
-
-            <div className="mt-5 grid overflow-hidden rounded-lg border border-border sm:grid-cols-2">
-              <ReferralMetric
-                icon={UsersRound}
-                label={t("referral.people")}
-                value={referrals.summary.totalReferrals.toLocaleString()}
-              />
-              <ReferralMetric
-                icon={CircleDollarSign}
-                label={t("referral.commission")}
-                value={`${Number(referrals.commissionRate).toLocaleString()}%`}
-              />
-            </div>
-          </SettingsCard>
         </main>
       </div>
     </PageContainer>
@@ -600,27 +493,35 @@ function SettingsCard({
   id: string;
   icon: LucideIcon;
   title: string;
-  description: string;
+  description?: string;
   status?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <Card className="gap-0 overflow-hidden border-border bg-card py-0 shadow-none">
-        <CardHeader className="flex-row items-start gap-3 border-b border-border px-4 py-4 sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/30 text-muted-foreground">
+      <Card className="gap-0 overflow-hidden rounded-2xl border-border bg-card py-0 shadow-sm shadow-black/[0.025]">
+        <CardHeader className="flex-row items-start gap-3.5 border-b border-border/80 px-5 py-5 sm:px-6">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
             <Icon className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-base tracking-[-0.01em]">{title}</CardTitle>
+              <CardTitle className="text-base font-semibold tracking-[-0.015em] sm:text-[17px]">
+                {title}
+              </CardTitle>
               {status}
             </div>
-            <CardDescription className="mt-1 leading-5">{description}</CardDescription>
+            {description ? (
+              <CardDescription className="mt-1.5 max-w-2xl leading-5">
+                {description}
+              </CardDescription>
+            ) : null}
           </div>
         </CardHeader>
-        <CardContent className="px-4 py-5 sm:px-5">{children}</CardContent>
+        <CardContent className="px-5 py-5 sm:px-6 sm:py-6">
+          {children}
+        </CardContent>
         {footer}
       </Card>
     </section>
@@ -638,30 +539,8 @@ function FieldBlock({ label, htmlFor, className, children }: { label: string; ht
 
 function CardActions({ children }: { children: ReactNode }) {
   return (
-    <div data-slot="card-actions" className="flex flex-col gap-3 border-t border-border bg-muted/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-5 sm:[&>p]:mr-auto">
+    <div data-slot="card-actions" className="flex flex-col gap-3 border-t border-border/80 bg-muted/[0.12] px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6 sm:[&>p]:mr-auto">
       {children}
-    </div>
-  );
-}
-
-function NotificationRow({ id, icon: Icon, title, description, checked, onCheckedChange }: {
-  id: string;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="flex min-h-20 items-center gap-3 py-3.5">
-      <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-muted/30 text-muted-foreground">
-        <Icon className="size-4" />
-      </span>
-      <Label htmlFor={id} className="min-w-0 flex-1 cursor-pointer flex-col items-start gap-1">
-        <span className="text-sm font-medium text-foreground">{title}</span>
-        <span className="text-xs leading-5 font-normal text-muted-foreground">{description}</span>
-      </Label>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
 }
@@ -707,17 +586,5 @@ function PasswordRequirement({ met, children }: { met: boolean; children: ReactN
       </span>
       {children}
     </p>
-  );
-}
-
-function ReferralMetric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 border-b border-border px-4 py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0">
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted/50 text-muted-foreground"><Icon className="size-4" /></span>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">{value}</p>
-      </div>
-    </div>
   );
 }

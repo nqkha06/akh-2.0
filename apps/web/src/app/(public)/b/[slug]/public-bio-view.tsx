@@ -29,12 +29,10 @@ import { PublicCreatorLayout } from "@/components/public-creator-layout";
 import { BankDetailsRenderer, DividerRenderer } from "@/features/link-in-bio/content-blocks/simple-content-renderers";
 import { hasCompleteBankDetails } from "@/features/link-in-bio/content-blocks/simple-content-types";
 import { BioLinkButton } from "@/features/link-in-bio/components/bio-link-button";
+import { getBioPresetTheme } from "@/features/link-in-bio/backgrounds/background-presets";
 import { GalleryRenderer } from "@/features/link-in-bio/gallery/gallery-renderer";
 import { contentOrderKey, normalizeContentOrder } from "@/features/link-in-bio/gallery/gallery-types";
-import {
-  getSiteHost,
-  useSiteBrand,
-} from "@/features/site-settings/components/site-brand-provider";
+import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 import { trackBioClick, type BioPageDto } from "@/lib/api-client";
 
 function getSocialIcon(platform: string) {
@@ -100,20 +98,6 @@ function parseHexColor(value?: string | null) {
   };
 }
 
-function isTooLight(rgb: { r: number; g: number; b: number }) {
-  return rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114 > 235;
-}
-
-function getAccentColor(backgroundColor?: string | null) {
-  const parsed = parseHexColor(backgroundColor);
-
-  if (!parsed || isTooLight(parsed)) {
-    return "#2563eb";
-  }
-
-  return backgroundColor || "#2563eb";
-}
-
 function getYouTubeEmbedUrl(value?: string | null) {
   if (!value) return "";
 
@@ -146,9 +130,8 @@ function getBackgroundMedia(bioPage: BioPageDto) {
   return backgroundImage ? { type: "image" as const, url: backgroundImage } : null;
 }
 
-function getCoverStyle(bioPage: BioPageDto): React.CSSProperties {
-  const accent = getAccentColor(bioPage.appearance.backgroundColor);
-  const rgb = parseHexColor(accent) || { r: 37, g: 99, b: 235 };
+function getCoverStyle(bioPage: BioPageDto, accentColor: string): React.CSSProperties {
+  const rgb = parseHexColor(accentColor) || { r: 37, g: 99, b: 235 };
 
   const backgroundMedia = getBackgroundMedia(bioPage);
 
@@ -183,7 +166,6 @@ function getInitials(name: string) {
 
 export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
   const brand = useSiteBrand();
-  const siteHost = getSiteHost(brand);
   const visibleLinks = bioPage.customLinks.filter(
     (link) => !bioPage.hiddenLinks.includes(link.id),
   );
@@ -209,47 +191,80 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
   const youtubeEmbedUrl = backgroundMedia?.type === "youtube"
     ? getYouTubeEmbedUrl(backgroundMedia.url)
     : "";
-  const accent = getAccentColor(bioPage.appearance.backgroundColor);
-  const accentRgb = parseHexColor(accent) || { r: 37, g: 99, b: 235 };
+  const theme = getBioPresetTheme(
+    bioPage.appearance.selectedBackgroundId,
+    bioPage.appearance.backgroundImage,
+    bioPage.appearance.backgroundColor,
+  );
+  const accentRgb = parseHexColor(theme.accentColor) || { r: 37, g: 99, b: 235 };
   const pageVariables = {
-    "--bio-accent": accent,
+    "--bio-accent": theme.accentColor,
     "--bio-accent-rgb": `${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}`,
+    "--bio-section-bg": theme.sectionColor,
+    "--bio-section-border": theme.sectionBorderColor,
+    "--bio-text": theme.textColor,
+    "--bio-muted-text": theme.mutedTextColor,
   } as React.CSSProperties;
 
   return (
     <PublicCreatorLayout
+      className="items-start px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 sm:pb-[max(3rem,env(safe-area-inset-bottom))] sm:pt-8"
       background={<>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-800 to-blue-950" />
-        {backgroundMedia?.type === "image" ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${backgroundMedia.url})` }} /> : null}
+        {backgroundMedia?.type === "image" ? <div aria-hidden="true" className="pointer-events-none absolute -inset-3 scale-[1.03] bg-cover bg-center blur-[1px]" style={{ backgroundImage: `url(${backgroundMedia.url})` }} /> : null}
         {backgroundMedia?.type === "video" ? <video aria-hidden="true" src={backgroundMedia.url} autoPlay muted loop playsInline className="pointer-events-none absolute inset-0 size-full object-cover" /> : null}
         {youtubeEmbedUrl ? <iframe aria-hidden="true" src={youtubeEmbedUrl} title="YouTube background" allow="autoplay; encrypted-media; picture-in-picture" className="pointer-events-none absolute left-1/2 top-1/2 h-[150%] w-[266%] -translate-x-1/2 -translate-y-1/2" /> : null}
       </>}
     >
-      <div style={pageVariables} className="overflow-hidden rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl">
-        <div className="h-32 sm:h-36" style={getCoverStyle(bioPage)} />
-        <div className="space-y-5 px-4 pb-5 sm:px-6 sm:pb-6">
-          <header className="-mt-12 text-center">
-            <div className="relative mx-auto flex size-24 items-center justify-center overflow-hidden rounded-[1.5rem] border-4 border-white bg-slate-950 text-3xl font-bold text-white shadow-xl sm:size-28 sm:text-4xl">
+      <article
+        aria-labelledby="bio-profile-name"
+        style={{
+          ...pageVariables,
+          backgroundColor: theme.surfaceColor,
+          borderColor: theme.surfaceBorderColor,
+          color: theme.textColor,
+          boxShadow: "0 32px 90px rgba(2, 6, 23, 0.34), 0 8px 28px rgba(2, 6, 23, 0.18)",
+        }}
+        className="relative w-full max-w-[32rem] overflow-hidden rounded-[1.75rem] border backdrop-blur-2xl sm:rounded-[2rem]"
+      >
+        <div className="relative h-28 overflow-hidden sm:h-32">
+          <div className="absolute inset-0 scale-105" style={getCoverStyle(bioPage, theme.accentColor)} />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-slate-950/30" />
+          <div className="absolute inset-x-0 bottom-0 h-px" style={{ backgroundColor: theme.surfaceBorderColor }} />
+        </div>
+
+        <div className="relative px-4 pb-5 sm:px-6 sm:pb-6">
+          <header className="-mt-12 text-center sm:-mt-14">
+            <div className="relative mx-auto flex size-24 items-center justify-center overflow-hidden rounded-[1.65rem] border-[5px] bg-slate-950 text-3xl font-bold text-white shadow-[0_14px_34px_rgba(2,6,23,0.28)] sm:size-28 sm:text-4xl" style={{ borderColor: theme.surfaceColor }}>
               <span>{getInitials(bioPage.name)}</span>
               {bioPage.appearance.avatarUrl ? <img src={bioPage.appearance.avatarUrl} alt={`Ảnh đại diện của ${bioPage.name}`} className="absolute inset-0 size-full object-cover" onError={(event) => { event.currentTarget.hidden = true; }} /> : null}
             </div>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{bioPage.name}</h1>
-            <p className="mt-2 text-sm font-semibold text-slate-500">
-              {siteHost ? `${siteHost}/b/` : "/b/"}{bioPage.slug}
+            <h1 id="bio-profile-name" className="mt-4 text-[1.75rem] font-bold leading-tight tracking-[-0.035em] sm:text-[2rem]" style={{ color: theme.textColor }}>{bioPage.name}</h1>
+            <p
+              className="mx-auto mt-2 w-fit rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide"
+              style={{ backgroundColor: theme.sectionColor, borderColor: theme.sectionBorderColor, color: theme.mutedTextColor }}
+            >
+              @{bioPage.slug}
             </p>
-            {bioPage.title ? <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-slate-700">{bioPage.title}</p> : null}
+            {bioPage.title ? <p className="mx-auto mt-3 max-w-sm text-[15px] leading-6" style={{ color: theme.mutedTextColor }}>{bioPage.title}</p> : null}
           </header>
-          <div className="space-y-4">
+
+          <div className="mt-6 space-y-3.5">
           {orderedContent.map((item, contentIndex) => {
             if (item.type === "social") {
               return visibleSocials.length ? (
-                <div key={contentOrderKey(item)} className="flex flex-wrap justify-center gap-2">
+                <nav
+                  key={contentOrderKey(item)}
+                  aria-label="Mạng xã hội"
+                  className="mx-auto flex w-fit max-w-full flex-wrap justify-center gap-1 rounded-2xl border p-1.5 shadow-sm"
+                  style={{ backgroundColor: theme.sectionColor, borderColor: theme.sectionBorderColor }}
+                >
                   {visibleSocials.slice(0, 8).map(({ id, url, platform }) => (
-                    <a key={id} href={url} onClick={trackClick} target="_blank" rel="noopener noreferrer" aria-label={platform} className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-950 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bio-accent)]">
+                    <a key={id} href={url} onClick={trackClick} target="_blank" rel="noopener noreferrer" aria-label={platform} className="flex size-11 items-center justify-center rounded-xl transition-[background-color,transform] hover:-translate-y-0.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bio-accent)] motion-reduce:hover:translate-y-0" style={{ color: theme.textColor }}>
                       {getSocialIcon(platform)}
                     </a>
                   ))}
-                </div>
+                </nav>
               ) : null;
             }
             if (item.type === "gallery") {
@@ -270,25 +285,25 @@ export function PublicBioView({ bioPage }: { bioPage: BioPageDto }) {
             }
             const link = visibleLinks.find((entry) => entry.id === item.id);
             if (!link) return null;
-            return <BioLinkButton key={contentOrderKey(item)} link={link} buttonStyle={bioPage.appearance.buttonStyle} accentColor={accent} contentIndex={contentIndex} onClick={trackClick} />;
+            return <BioLinkButton key={contentOrderKey(item)} link={link} buttonStyle={bioPage.appearance.buttonStyle} theme={theme} contentIndex={contentIndex} onClick={trackClick} />;
           })}
 
           {totalContent === 0 ? (
-            <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white/70 px-5 py-10 text-center">
-              <p className="text-sm font-bold text-slate-600">
-                This bio does not have public links yet.
+            <div className="rounded-2xl border border-dashed px-5 py-10 text-center" style={{ backgroundColor: theme.sectionColor, borderColor: theme.sectionBorderColor }}>
+              <p className="text-sm font-bold" style={{ color: theme.mutedTextColor }}>
+                Trang này chưa có nội dung công khai.
               </p>
             </div>
           ) : null}
 
           </div>
-          <footer className="border-t pt-4">
-            <p className="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Powered by {brand.siteName}
+          <footer className="mt-6 border-t pt-4" style={{ borderColor: theme.sectionBorderColor }}>
+            <p className="text-center text-[10px] font-semibold tracking-[0.12em] opacity-70" style={{ color: theme.mutedTextColor }}>
+              ĐƯỢC TẠO VỚI {brand.siteName.toUpperCase()}
             </p>
           </footer>
         </div>
-      </div>
+      </article>
     </PublicCreatorLayout>
   );
 }

@@ -4,8 +4,6 @@ import type { FileTypeFilter } from "./types";
 
 export { FileTypeIcon } from "@/components/file-type-icon";
 
-export const FILE_SIZE_LIMIT = 100 * 1024 * 1024;
-
 export function formatBytes(size: number) {
   if (size === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];

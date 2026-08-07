@@ -6,6 +6,10 @@ import {
   pageFormSchema,
   slugifyPageTitle,
 } from "./page-schema.ts";
+import {
+  canViewPublicPage,
+  publicPagePath,
+} from "../../pages/public-page-url.ts";
 
 describe("Admin Pages form schema", () => {
   it("generates a normalized Vietnamese slug", () => {
@@ -45,5 +49,26 @@ describe("Admin Pages form schema", () => {
         new Set(["slug", "canonicalUrl"]),
       );
     }
+  });
+
+  it("builds public URLs only for valid published pages", () => {
+    assert.equal(publicPagePath("chinh-sach-bao-mat"), "/chinh-sach-bao-mat");
+    assert.equal(publicPagePath("  DIEU-KHOAN  "), "/dieu-khoan");
+    assert.equal(publicPagePath("slug không hợp lệ"), null);
+    assert.equal(
+      canViewPublicPage({
+        slug: "chinh-sach-bao-mat",
+        status: "PUBLISHED",
+      }),
+      true,
+    );
+    assert.equal(
+      canViewPublicPage({ slug: "chinh-sach-bao-mat", status: "DRAFT" }),
+      false,
+    );
+    assert.equal(
+      canViewPublicPage({ slug: "chinh-sach-bao-mat", status: "ARCHIVED" }),
+      false,
+    );
   });
 });

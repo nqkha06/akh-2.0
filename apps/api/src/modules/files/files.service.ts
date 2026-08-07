@@ -15,6 +15,7 @@ import { mkdir, unlink } from "node:fs/promises";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { ListFilesQueryDto } from "./dto/list-files-query.dto";
 import { UpdateFileDto } from "./dto/update-file.dto";
 
@@ -56,17 +57,16 @@ type FileWithUsage = MemberFile & { _count?: { destinationLinks: number } };
 @Injectable()
 export class FilesService {
   private readonly uploadRoot: string;
-  private readonly defaultStorageLimit: bigint;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly businessSettings: BusinessSettingsService,
   ) {
     this.uploadRoot = resolve(
       this.configService.get<string>("MEMBER_FILES_UPLOAD_DIR") ||
         join(process.cwd(), "uploads", "member-files"),
     );
-    this.defaultStorageLimit = this.readStorageLimit();
   }
 
   async ensureUploadRoot() {
@@ -80,6 +80,7 @@ export class FilesService {
     purpose: "file" | "cover" = uploadedFile.purpose || "file",
     reservationUploadId?: string,
   ) {
+    const settings = await this.businessSettings.getRuntime();
     const extension = extname(uploadedFile.originalname).replace(/^\./, "").toLowerCase();
     const name = this.cleanFileName(uploadedFile.originalname);
     const alias = await this.createUniqueAlias(userId, name);
@@ -98,7 +99,7 @@ export class FilesService {
           throw new BadRequestException("Phiên upload không hợp lệ hoặc đã hết hạn.");
         }
       } else {
-        this.assertWithinQuota(user.storageLimitBytes, user.storageUsedBytes, user.storageReservedBytes, size);
+        this.assertWithinQuota(user.storageLimitBytes, user.storageUsedBytes, user.storageReservedBytes, size, BigInt(settings.memberStorageQuotaBytes));
       }
 
       const created = await prisma.memberFile.create({
@@ -134,6 +135,7 @@ export class FilesService {
   }
 
   async findAll(userId: number, query: ListFilesQueryDto) {
+    const settings = await this.businessSettings.getRuntime();
     const page = query.page || 1;
     const limit = query.limit || 20;
     const constraints: Prisma.MemberFileWhereInput[] = [
@@ -171,7 +173,7 @@ export class FilesService {
       }),
     ]);
 
-    const summary = this.toStorageSummary(user);
+    const summary = this.toStorageSummary(user, BigInt(settings.memberStorageQuotaBytes));
     return {
       items: files.map((file) => this.toResponse(file)),
       pagination: {
@@ -317,8 +319,8 @@ export class FilesService {
     }
   }
 
-  private assertWithinQuota(limit: bigint | null, used: bigint, reserved: bigint, incoming: bigint) {
-    const effectiveLimit = limit ?? this.defaultStorageLimit;
+  private assertWithinQuota(limit: bigint | null, used: bigint, reserved: bigint, incoming: bigint, defaultLimit: bigint) {
+    const effectiveLimit = limit ?? defaultLimit;
     if (used + reserved + incoming > effectiveLimit) {
       throw new PayloadTooLargeException({
         statusCode: 413,
@@ -410,22 +412,12 @@ export class FilesService {
     return resolve(process.cwd(), storageKey);
   }
 
-  private toStorageSummary(user: { storageLimitBytes: bigint | null; storageUsedBytes: bigint; storageReservedBytes: bigint }) {
+  private toStorageSummary(user: { storageLimitBytes: bigint | null; storageUsedBytes: bigint; storageReservedBytes: bigint }, defaultLimit: bigint) {
     return {
       usedBytes: Number(user.storageUsedBytes),
       reservedBytes: Number(user.storageReservedBytes),
-      limitBytes: Number(user.storageLimitBytes ?? this.defaultStorageLimit),
+      limitBytes: Number(user.storageLimitBytes ?? defaultLimit),
     };
-  }
-
-  private readStorageLimit() {
-    const configured = this.configService.get<string>("MEMBER_STORAGE_LIMIT_BYTES");
-    try {
-      const value = BigInt(configured || 1024 * 1024 * 1024);
-      return value > 0n ? value : 1024n * 1024n * 1024n;
-    } catch {
-      return 1024n * 1024n * 1024n;
-    }
   }
 
   private toResponse(file: FileWithUsage) {

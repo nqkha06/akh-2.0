@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ForgotPasswordPage() {
-  const currentUser = await getOptionalServerUser("/forgot-password");
+  const currentUser = await getOptionalServerUser();
   if (currentUser) {
     redirect(getSignedInRedirect(currentUser));
   }

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { DEVICE_TYPE_NAMES } from "@stu/contracts";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { AdminDashboardRange } from "./dto/admin-dashboard-query.dto";
@@ -34,6 +35,7 @@ export class AdminDashboardService {
       uniqueIps,
       pendingWithdrawals,
       openTickets,
+      pendingReports,
       visitDates,
       countryGroups,
       deviceGroups,
@@ -68,6 +70,9 @@ export class AdminDashboardService {
             in: ["submitted", "in_progress", "waiting_user", "answered"],
           },
         },
+      }),
+      this.prisma.linkReport.count({
+        where: { deletedAt: null, status: { in: ["pending", "reviewing"] } },
       }),
       this.prisma.linkAccessLog.findMany({
         where: visitWhere,
@@ -161,6 +166,7 @@ export class AdminDashboardService {
       operations: {
         pendingWithdrawals,
         openTickets,
+        pendingReports,
       },
       series: this.buildSeries(from, days, visitDates),
       breakdowns: {
@@ -215,8 +221,7 @@ export class AdminDashboardService {
   }
 
   private deviceLabel(device: number) {
-    if (device === 1) return "mobile";
-    if (device === 3) return "tablet";
-    return "desktop";
+    const resolved = DEVICE_TYPE_NAMES[device];
+    return resolved === "unknown" || !resolved ? "desktop" : resolved;
   }
 }

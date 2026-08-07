@@ -29,9 +29,11 @@ import {
   loginAccount,
   loginWithGoogle,
   registerAccount,
+  requestPasswordReset,
 } from "@/features/auth/api/auth.client";
 import { useSiteBrand } from "@/features/site-settings/components/site-brand-provider";
 import { cn } from "@/lib/utils";
+import { useBusinessConfig } from "@/features/business-settings/use-business-config";
 
 type AuthMode = "login" | "register" | "forgot";
 type FieldName =
@@ -179,6 +181,9 @@ export function AuthScreen({
 }) {
   const router = useRouter();
   const brand = useSiteBrand();
+  const businessConfig = useBusinessConfig();
+  const googleEnabled = businessConfig.authentication.googleLoginEnabled;
+  const registrationEnabled = businessConfig.authentication.registrationEnabled;
   const fieldPrefix = useId();
   const copy = pageCopy[mode];
   const [showPassword, setShowPassword] = useState(false);
@@ -205,7 +210,7 @@ export function AuthScreen({
   useEffect(() => {
     const container = googleButtonRef.current;
     const google = (window as Window & { google?: GoogleIdentity }).google;
-    if (!googleClientId || !googleReady || !container || !google) return;
+    if (!googleEnabled || !googleClientId || !googleReady || !container || !google) return;
 
     google.accounts.id.initialize({
       client_id: googleClientId,
@@ -251,7 +256,7 @@ export function AuthScreen({
       width: Math.min(Math.max(container.clientWidth, 200), 400),
       locale: "vi",
     });
-  }, [googleClientId, googleReady, mode, redirectTo, referralCode, router]);
+  }, [googleClientId, googleEnabled, googleReady, mode, redirectTo, referralCode, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -264,8 +269,24 @@ export function AuthScreen({
     }
 
     if (mode === "forgot") {
-      setMessage("Yêu cầu hợp lệ — chức năng gửi email sẽ được triển khai ở bước tiếp theo.");
-      setMessageIsSuccess(true);
+      const formData = new FormData(event.currentTarget);
+      setIsSubmitting(true);
+      setMessage("");
+      try {
+        const result = await requestPasswordReset({
+          email: String(formData.get("email") || ""),
+        });
+        setMessage(result.message);
+        setMessageIsSuccess(true);
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Không thể gửi yêu cầu lúc này. Vui lòng thử lại.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -275,12 +296,17 @@ export function AuthScreen({
 
     try {
       if (mode === "register") {
-        await registerAccount({
+        const registration = await registerAccount({
           name: String(formData.get("name") || ""),
           email: String(formData.get("email") || ""),
           password: String(formData.get("password") || ""),
           referralCode,
         });
+        if (registration.requiresEmailVerification) {
+          setMessage("Tài khoản đã được tạo. Hãy kiểm tra email để xác minh trước khi đăng nhập.");
+          setMessageIsSuccess(true);
+          return;
+        }
       }
 
       await loginAccount({
@@ -307,7 +333,7 @@ export function AuthScreen({
 
   return (
     <main className="container grid min-h-svh max-w-none items-center justify-center bg-background">
-      {googleClientId ? (
+      {googleEnabled && googleClientId ? (
         <Script
           src="https://accounts.google.com/gsi/client?hl=vi"
           strategy="afterInteractive"
@@ -341,6 +367,11 @@ export function AuthScreen({
 
           <CardContent>
             <form className="grid gap-3" onSubmit={handleSubmit} noValidate>
+              {mode === "register" && !registrationEnabled ? (
+                <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+                  Hệ thống đang tạm dừng đăng ký tài khoản mới.
+                </p>
+              ) : null}
               {mode === "register" ? (
                 <Field id={fieldId("name")} label="Họ và tên" error={errors.name}>
                   <Input
@@ -482,12 +513,12 @@ export function AuthScreen({
                 </p>
               ) : null}
 
-              <Button className="mt-2" type="submit" disabled={isSubmitting}>
+              <Button className="mt-2" type="submit" disabled={isSubmitting || (mode === "register" && !registrationEnabled)}>
                 {submitIcon}
                 {isSubmitting ? "Đang xử lý..." : copy.submit}
               </Button>
 
-              {mode !== "forgot" && googleClientId ? (
+              {mode !== "forgot" && googleEnabled && googleClientId ? (
                 <>
                   <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
