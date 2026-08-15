@@ -1,0 +1,17 @@
+export const CATALOG_OPENAPI_ROUTE_SNAPSHOT = {
+  "/api/admin/languages": ["get", "post"],
+  "/api/admin/languages/{id}": ["delete", "get", "patch"],
+  "/api/admin/languages/{id}/default": ["patch"],
+  "/api/admin/languages/{id}/ui-translations": ["get", "patch"],
+  "/api/admin/languages/reorder": ["patch"],
+  "/api/admin/payment-methods": ["get", "post"],
+  "/api/admin/payment-methods/{id}": ["delete", "get", "patch"],
+  "/api/admin/settings/currencies": ["get", "post"],
+  "/api/admin/settings/currencies/{id}": ["delete", "patch"],
+  "/api/admin/settings/currencies/{id}/default": ["patch"],
+  "/api/languages": ["get"],
+  "/api/languages/{locale}/ui-messages": ["get"],
+  "/api/member/payment-methods": ["get", "post"],
+  "/api/member/payment-methods/{id}": ["delete", "patch"],
+  "/api/member/preferences/currency": ["get", "patch"],
+} as const;

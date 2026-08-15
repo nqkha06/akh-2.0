@@ -553,6 +553,28 @@ export function MenuEditor({ menuId }: { menuId: number }) {
 
                   {selected.type !== "GROUP" ? (
                     <div className="grid gap-2">
+                      <Label>Icon key</Label>
+                      <Input
+                        disabled={!canUpdate}
+                        maxLength={50}
+                        placeholder="Ví dụ: instagram, youtube, discord"
+                        value={selected.iconKey ?? ""}
+                        onChange={(event) =>
+                          updateSelected({
+                            iconKey: event.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, "") || null,
+                          })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Dùng cho menu social và các vị trí có hỗ trợ biểu tượng.
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {selected.type !== "GROUP" ? (
+                    <div className="grid gap-2">
                       <Label>Mở liên kết</Label>
                       <Select
                         disabled={!canUpdate}

@@ -426,6 +426,66 @@ export const permissionCatalog = [
     description: "Xóa role tùy chỉnh chưa được sử dụng.",
     group: "authorization",
   },
+  {
+    key: "emails.read",
+    name: "Xem vận hành email",
+    description: "Xem tổng quan, sender, template và trạng thái hệ thống email.",
+    group: "emails",
+  },
+  {
+    key: "emails.settings.update",
+    name: "Cập nhật cài đặt email",
+    description: "Cập nhật điều khiển gửi và tracking ở business level.",
+    group: "emails",
+  },
+  {
+    key: "emails.senders.manage",
+    name: "Quản lý email sender",
+    description: "Tạo, kiểm tra, đặt mặc định và vô hiệu hóa sender.",
+    group: "emails",
+  },
+  {
+    key: "emails.templates.read",
+    name: "Xem email template",
+    description: "Xem template, preview và lịch sử phiên bản.",
+    group: "emails",
+  },
+  {
+    key: "emails.templates.create",
+    name: "Tạo email template",
+    description: "Tạo template email mới.",
+    group: "emails",
+  },
+  {
+    key: "emails.templates.update",
+    name: "Sửa email template",
+    description: "Cập nhật, phát hành và khôi phục phiên bản template.",
+    group: "emails",
+  },
+  {
+    key: "emails.templates.delete",
+    name: "Lưu trữ email template",
+    description: "Archive template khỏi luồng gửi mới.",
+    group: "emails",
+  },
+  {
+    key: "emails.preferences.manage",
+    name: "Quản lý email preference",
+    description: "Quản lý topic và quy tắc đăng ký nhận email.",
+    group: "emails",
+  },
+  {
+    key: "emails.logs.read",
+    name: "Xem email activity",
+    description: "Xem lịch sử gửi và lifecycle event của email.",
+    group: "emails",
+  },
+  {
+    key: "emails.test.send",
+    name: "Gửi email kiểm thử",
+    description: "Gửi email test qua provider đã cấu hình.",
+    group: "emails",
+  },
 ] as const;
 
 export type PermissionDefinition = (typeof permissionCatalog)[number];

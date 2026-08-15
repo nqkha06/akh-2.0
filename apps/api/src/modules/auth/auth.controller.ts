@@ -30,6 +30,7 @@ import type {
 } from "./auth.types";
 import { AuthRateLimit } from "./decorators/auth-rate-limit.decorator";
 import { Permissions } from "./decorators/permissions.decorator";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { GoogleLoginDto } from "./dto/google-login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -135,6 +136,22 @@ export class AuthController {
     );
     this.clearAuthCookies(response);
     return result;
+  }
+
+  @Post("change-password")
+  @UseGuards(AuthOriginGuard, JwtAccessGuard)
+  @AuthRateLimit(10, 15 * 60_000)
+  @HttpCode(HttpStatus.OK)
+  changePassword(
+    @Body() body: ChangePasswordDto,
+    @Req() request: AccessRequest,
+  ) {
+    return this.authService.changePassword(
+      request.user,
+      body.currentPassword,
+      body.newPassword,
+      this.sessionContext(request),
+    );
   }
 
   @Post("verify-email")

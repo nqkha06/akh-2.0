@@ -5,14 +5,15 @@ import { cache } from "react";
 import { publicPagePath } from "@/features/pages/public-page-url";
 import type { PublicPage } from "@/features/pages/types";
 
-export const getPublicPage = cache(async (input: string) => {
+export const getPublicPage = cache(async (input: string, locale?: string) => {
   const path = publicPagePath(input);
   const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
   if (!path || !backendApiUrl) return null;
 
   const slug = path.slice(1);
+  const query = locale ? `?locale=${encodeURIComponent(locale)}` : "";
   const response = await fetch(
-    `${backendApiUrl}/public/pages/${encodeURIComponent(slug)}`,
+    `${backendApiUrl}/public/pages/${encodeURIComponent(slug)}${query}`,
     { cache: "no-store" },
   );
   if (response.status === 404) return null;

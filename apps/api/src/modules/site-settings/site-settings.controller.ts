@@ -3,19 +3,16 @@ import {
   Controller,
   Get,
   Patch,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { Permissions } from "../auth/decorators/permissions.decorator";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { PermissionsGuard } from "../auth/guards/permissions.guard";
 import { UpdateWebsiteSettingsDto } from "./dto/update-website-settings.dto";
 import { SiteSettingsService } from "./site-settings.service";
-
-type AdminRequest = Request & { user: AuthenticatedUser };
 
 @Controller()
 export class SiteSettingsController {
@@ -37,9 +34,9 @@ export class SiteSettingsController {
   @UseGuards(JwtAccessGuard, PermissionsGuard)
   @Permissions("settings.update", "admin-media.read")
   update(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateWebsiteSettingsDto,
   ) {
-    return this.settingsService.update(dto, request.user.id);
+    return this.settingsService.update(dto, user.id);
   }
 }

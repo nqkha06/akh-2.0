@@ -9,21 +9,28 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { LanguagesService } from "../languages/languages.service";
 import type { CreatePaymentMethodDto } from "./dto/create-payment-method.dto";
-import type { PaymentMethodFieldDto } from "./dto/payment-method-field.dto";
 import type {
   CreateUserPaymentMethodDto,
   UpdateUserPaymentMethodDto,
 } from "./dto/save-user-payment-method.dto";
 import type { UpdatePaymentMethodDto } from "./dto/update-payment-method.dto";
-
-const paymentMethodInclude = {
-  translations: { orderBy: { locale: "asc" } },
-  _count: { select: { userMethods: true } },
-} satisfies Prisma.PaymentMethodInclude;
-
-type PaymentMethodRecord = Prisma.PaymentMethodGetPayload<{
-  include: typeof paymentMethodInclude;
-}>;
+import {
+  mapAdminPaymentMethod,
+  mapPaymentMethodCatalog,
+  mapUserPaymentMethod,
+  normalizePaymentMethodFields,
+  parsePaymentMethodFields,
+} from "./payment-method.mapper";
+import {
+  assertPaymentFieldSchemaCanChange,
+  assertPaymentTranslationsCompatible,
+  validatePaymentMethodDetails,
+} from "./payment-method.policy";
+import {
+  PAYMENT_METHOD_INCLUDE,
+  PAYMENT_METHOD_TRANSLATIONS_INCLUDE,
+  USER_PAYMENT_METHOD_INCLUDE,
+} from "./payment-method.select";
 
 @Injectable()
 export class PaymentMethodsService {
@@ -35,16 +42,16 @@ export class PaymentMethodsService {
   async findAllForAdmin() {
     const records = await this.prisma.paymentMethod.findMany({
       orderBy: [{ status: "asc" }, { id: "asc" }],
-      include: paymentMethodInclude,
+      include: PAYMENT_METHOD_INCLUDE,
     });
     return {
-      items: records.map((record) => this.toAdminResponse(record)),
+      items: records.map(mapAdminPaymentMethod),
       total: records.length,
     };
   }
 
   async findOneForAdmin(id: number) {
-    return this.toAdminResponse(await this.findRecord(id));
+    return mapAdminPaymentMethod(await this.findRecord(id));
   }
 
   async create(dto: CreatePaymentMethodDto) {
@@ -59,29 +66,24 @@ export class PaymentMethodsService {
             locale: translation.locale,
             name: translation.name.trim(),
             fieldsJson: JSON.stringify(
-              this.normalizeFields(translation.fields),
+              normalizePaymentMethodFields(translation.fields),
             ),
           })),
         },
       },
-      include: paymentMethodInclude,
+      include: PAYMENT_METHOD_INCLUDE,
     });
-    return this.toAdminResponse(record);
+    return mapAdminPaymentMethod(record);
   }
 
   async update(id: number, dto: UpdatePaymentMethodDto) {
     const existing = await this.findRecord(id);
-    if (dto.translations) await this.validateTranslations(dto.translations);
-    if (
-      dto.translations &&
-      existing._count.userMethods > 0 &&
-      this.fieldSignature(dto.translations[0].fields) !==
-        this.fieldSignature(
-          this.parseFields(existing.translations[0]?.fieldsJson),
-        )
-    ) {
-      throw new ConflictException(
-        "Không thể đổi key, kiểu hoặc field bắt buộc khi phương thức đã được member sử dụng. Bạn vẫn có thể sửa tên và nội dung hiển thị.",
+    if (dto.translations) {
+      await this.validateTranslations(dto.translations);
+      assertPaymentFieldSchemaCanChange(
+        existing._count.userMethods,
+        parsePaymentMethodFields(existing.translations[0]?.fieldsJson),
+        dto.translations[0].fields,
       );
     }
 
@@ -103,16 +105,16 @@ export class PaymentMethodsService {
                   locale: translation.locale,
                   name: translation.name.trim(),
                   fieldsJson: JSON.stringify(
-                    this.normalizeFields(translation.fields),
+                    normalizePaymentMethodFields(translation.fields),
                   ),
                 })),
               },
             }
           : {}),
       },
-      include: paymentMethodInclude,
+      include: PAYMENT_METHOD_INCLUDE,
     });
-    return this.toAdminResponse(record);
+    return mapAdminPaymentMethod(record);
   }
 
   async remove(id: number) {
@@ -131,65 +133,55 @@ export class PaymentMethodsService {
       this.prisma.paymentMethod.findMany({
         where: { status: "published" },
         orderBy: { id: "asc" },
-        include: { translations: { orderBy: { locale: "asc" } } },
+        include: PAYMENT_METHOD_TRANSLATIONS_INCLUDE,
       }),
       this.prisma.userPaymentMethod.findMany({
         where: { userId },
         orderBy: { id: "desc" },
-        include: {
-          paymentMethod: {
-            include: { translations: { orderBy: { locale: "asc" } } },
-          },
-        },
+        include: USER_PAYMENT_METHOD_INCLUDE,
       }),
     ]);
     const defaultLocale = await this.languagesService.getDefaultLocale();
 
     return {
       defaultLocale,
-      catalog: catalog.map((record) => this.toCatalogResponse(record)),
-      accounts: accounts.map((account) => ({
-        id: account.id,
-        paymentMethodId: account.paymentMethodId,
-        details: this.parseDetails(account.detailsJson),
-        paymentMethod: this.toCatalogResponse(account.paymentMethod),
-        createdAt: account.createdAt.toISOString(),
-        updatedAt: account.updatedAt.toISOString(),
-      })),
+      catalog: catalog.map(mapPaymentMethodCatalog),
+      accounts: accounts.map(mapUserPaymentMethod),
     };
   }
 
   async createForMember(userId: number, dto: CreateUserPaymentMethodDto) {
-    const existingAccount = await this.prisma.userPaymentMethod.findFirst({
-      where: { userId },
-      select: { id: true },
-    });
-    if (existingAccount) {
-      throw new ConflictException(
-        "Mỗi tài khoản chỉ được sử dụng một phương thức thanh toán. Hãy chỉnh sửa phương thức hiện tại.",
-      );
-    }
+    return this.prisma.$transaction(async (transaction) => {
+      const existingAccount = await transaction.userPaymentMethod.findFirst({
+        where: { userId },
+        select: { id: true },
+      });
+      if (existingAccount) {
+        throw new ConflictException(
+          "Mỗi tài khoản chỉ được sử dụng một phương thức thanh toán. Hãy chỉnh sửa phương thức hiện tại.",
+        );
+      }
 
-    const method = await this.findPublishedMethod(dto.paymentMethodId);
-    const details = this.validateDetails(method, dto.details);
-    const account = await this.prisma.userPaymentMethod.create({
-      data: {
-        userId,
-        paymentMethodId: method.id,
-        detailsJson: JSON.stringify(details),
-      },
-      include: {
-        paymentMethod: { include: { translations: true } },
-      },
+      const method = await transaction.paymentMethod.findFirst({
+        where: { id: dto.paymentMethodId, status: "published" },
+        include: PAYMENT_METHOD_TRANSLATIONS_INCLUDE,
+      });
+      if (!method) {
+        throw new BadRequestException(
+          "Phương thức thanh toán không tồn tại hoặc chưa được xuất bản.",
+        );
+      }
+      const details = validatePaymentMethodDetails(method, dto.details);
+      const account = await transaction.userPaymentMethod.create({
+        data: {
+          userId,
+          paymentMethodId: method.id,
+          detailsJson: JSON.stringify(details),
+        },
+        include: USER_PAYMENT_METHOD_INCLUDE,
+      });
+      return mapUserPaymentMethod(account);
     });
-    return {
-      id: account.id,
-      paymentMethodId: account.paymentMethodId,
-      details,
-      paymentMethod: this.toCatalogResponse(account.paymentMethod),
-      createdAt: account.createdAt.toISOString(),
-      updatedAt: account.updatedAt.toISOString(),
-    };
   }
 
   async updateForMember(
@@ -199,9 +191,7 @@ export class PaymentMethodsService {
   ) {
     const account = await this.prisma.userPaymentMethod.findFirst({
       where: { id, userId },
-      include: {
-        paymentMethod: { include: { translations: true } },
-      },
+      include: USER_PAYMENT_METHOD_INCLUDE,
     });
     if (!account) {
       throw new NotFoundException("Không tìm thấy phương thức thanh toán.");
@@ -211,22 +201,16 @@ export class PaymentMethodsService {
         "Phương thức này chưa được xuất bản và không thể cập nhật.",
       );
     }
-    const details = this.validateDetails(account.paymentMethod, dto.details);
+    const details = validatePaymentMethodDetails(
+      account.paymentMethod,
+      dto.details,
+    );
     const updated = await this.prisma.userPaymentMethod.update({
       where: { id: account.id },
       data: { detailsJson: JSON.stringify(details) },
-      include: {
-        paymentMethod: { include: { translations: true } },
-      },
+      include: USER_PAYMENT_METHOD_INCLUDE,
     });
-    return {
-      id: updated.id,
-      paymentMethodId: updated.paymentMethodId,
-      details,
-      paymentMethod: this.toCatalogResponse(updated.paymentMethod),
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
-    };
+    return mapUserPaymentMethod(updated);
   }
 
   async removeForMember(userId: number, id: number) {
@@ -242,7 +226,7 @@ export class PaymentMethodsService {
   private async findRecord(id: number) {
     const record = await this.prisma.paymentMethod.findUnique({
       where: { id },
-      include: paymentMethodInclude,
+      include: PAYMENT_METHOD_INCLUDE,
     });
     if (!record) {
       throw new NotFoundException("Không tìm thấy phương thức thanh toán.");
@@ -250,181 +234,12 @@ export class PaymentMethodsService {
     return record;
   }
 
-  private async findPublishedMethod(id: number) {
-    const record = await this.prisma.paymentMethod.findFirst({
-      where: { id, status: "published" },
-      include: { translations: true },
-    });
-    if (!record) {
-      throw new BadRequestException(
-        "Phương thức thanh toán không tồn tại hoặc chưa được xuất bản.",
-      );
-    }
-    return record;
-  }
-
   private async validateTranslations(
     translations: CreatePaymentMethodDto["translations"],
   ) {
-    const locales = translations.map(({ locale }) => locale);
-    await this.languagesService.assertTranslationLocales(locales);
-
-    const signatures = translations.map((translation) => {
-      const keys = translation.fields.map(({ key }) => key);
-      if (new Set(keys).size !== keys.length) {
-        throw new BadRequestException(
-          `Field key trong bản dịch "${translation.locale}" không được trùng nhau.`,
-        );
-      }
-      return translation.fields
-        .map(({ key, type, required }) => `${key}:${type}:${required}`)
-        .sort()
-        .join("|");
-    });
-    if (new Set(signatures).size !== 1) {
-      throw new BadRequestException(
-        "Hai bản dịch phải có cùng field key, kiểu dữ liệu và trạng thái bắt buộc.",
-      );
-    }
-  }
-
-  private validateDetails(
-    method: {
-      translations: Array<{ locale: string; fieldsJson: string | null }>;
-    },
-    rawDetails: Record<string, unknown>,
-  ) {
-    const translation =
-      method.translations.find(({ locale }) => locale === "vi") ??
-      method.translations.find(({ locale }) => locale === "en") ??
-      method.translations[0];
-    const fields = this.parseFields(translation?.fieldsJson);
-    const allowedKeys = new Set(fields.map(({ key }) => key));
-
-    for (const key of Object.keys(rawDetails)) {
-      if (!allowedKeys.has(key)) {
-        throw new BadRequestException(`Field "${key}" không được hỗ trợ.`);
-      }
-    }
-
-    const details: Record<string, string> = {};
-    for (const field of fields) {
-      const rawValue = rawDetails[field.key];
-      if (rawValue !== undefined && typeof rawValue !== "string") {
-        throw new BadRequestException(
-          `Giá trị của "${field.label}" phải là chuỗi.`,
-        );
-      }
-      const value = typeof rawValue === "string" ? rawValue.trim() : "";
-      if (field.required && !value) {
-        throw new BadRequestException(
-          `"${field.label}" là thông tin bắt buộc.`,
-        );
-      }
-      if (value.length > 500) {
-        throw new BadRequestException(
-          `"${field.label}" không được vượt quá 500 ký tự.`,
-        );
-      }
-      if (
-        value &&
-        field.type === "email" &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-      ) {
-        throw new BadRequestException(`"${field.label}" không hợp lệ.`);
-      }
-      if (
-        value &&
-        field.type === "number" &&
-        !/^-?\d+(?:\.\d+)?$/.test(value)
-      ) {
-        throw new BadRequestException(`"${field.label}" phải là một số.`);
-      }
-      if (value) details[field.key] = value;
-    }
-    return details;
-  }
-
-  private normalizeFields(fields: PaymentMethodFieldDto[]) {
-    return fields.map((field) => ({
-      key: field.key,
-      label: field.label.trim(),
-      type: field.type,
-      required: field.required,
-      ...(field.placeholder?.trim()
-        ? { placeholder: field.placeholder.trim() }
-        : {}),
-    }));
-  }
-
-  private fieldSignature(fields: PaymentMethodFieldDto[]) {
-    return fields
-      .map(({ key, type, required }) => `${key}:${type}:${required}`)
-      .sort()
-      .join("|");
-  }
-
-  private toAdminResponse(record: PaymentMethodRecord) {
-    return {
-      ...this.toCatalogResponse(record),
-      userMethodCount: record._count.userMethods,
-    };
-  }
-
-  private toCatalogResponse(record: {
-    id: number;
-    withdrawFee: Prisma.Decimal;
-    minWithdrawAmount: Prisma.Decimal;
-    status: string;
-    createdAt: Date;
-    updatedAt: Date;
-    translations: Array<{
-      locale: string;
-      name: string | null;
-      fieldsJson: string | null;
-    }>;
-  }) {
-    return {
-      id: record.id,
-      withdrawFee: record.withdrawFee.toString(),
-      minWithdrawAmount: record.minWithdrawAmount.toString(),
-      status: record.status,
-      translations: record.translations.map((translation) => ({
-        locale: translation.locale,
-        name: translation.name ?? "",
-        fields: this.parseFields(translation.fieldsJson),
-      })),
-      createdAt: record.createdAt.toISOString(),
-      updatedAt: record.updatedAt.toISOString(),
-    };
-  }
-
-  private parseFields(value: string | null | undefined) {
-    if (!value) return [] as PaymentMethodFieldDto[];
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed)
-        ? (parsed.filter(
-            (field): field is PaymentMethodFieldDto =>
-              field !== null &&
-              typeof field === "object" &&
-              typeof field.key === "string" &&
-              typeof field.label === "string",
-          ) as PaymentMethodFieldDto[])
-        : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private parseDetails(value: string) {
-    try {
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? (parsed as Record<string, string>)
-        : {};
-    } catch {
-      return {};
-    }
+    await this.languagesService.assertTranslationLocales(
+      translations.map(({ locale }) => locale),
+    );
+    assertPaymentTranslationsCompatible(translations);
   }
 }

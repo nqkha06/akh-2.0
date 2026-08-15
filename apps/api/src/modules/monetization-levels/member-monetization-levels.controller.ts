@@ -1,12 +1,10 @@
-import { Body, Controller, Get, Patch, Req, UseGuards } from "@nestjs/common";
-import type { Request } from "express";
+import { Body, Controller, Get, Patch, UseGuards } from "@nestjs/common";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { SelectMonetizationLevelDto } from "./dto/select-monetization-level.dto";
 import { MonetizationLevelsService } from "./monetization-levels.service";
-
-type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 
 @Controller("member/monetization-levels")
 @UseGuards(JwtAccessGuard)
@@ -16,19 +14,19 @@ export class MemberMonetizationLevelsController {
   ) {}
 
   @Get()
-  findAvailable(@Req() request: AuthenticatedRequest) {
+  findAvailable(@CurrentUser() user: AuthenticatedUser) {
     return this.monetizationLevelsService.findAvailableForMember(
-      request.user.id,
+      user.id,
     );
   }
 
   @Patch("selection")
   select(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SelectMonetizationLevelDto,
   ) {
     return this.monetizationLevelsService.selectForMember(
-      request.user.id,
+      user.id,
       dto.monetizationLevelId,
     );
   }

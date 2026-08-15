@@ -7,11 +7,10 @@ import {
   ParseIntPipe,
   Patch,
   Query,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { Permissions } from "../auth/decorators/permissions.decorator";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
@@ -21,8 +20,6 @@ import {
   UpdateLinkReportDto,
 } from "./dto/admin-link-report.dto";
 import { LinkReportsService } from "./link-reports.service";
-
-type AdminRequest = Request & { user: AuthenticatedUser };
 
 @Controller("admin/link-reports")
 @UseGuards(JwtAccessGuard, PermissionsGuard)
@@ -44,19 +41,19 @@ export class AdminLinkReportsController {
   @Patch(":id")
   @Permissions("link-reports.manage")
   update(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateLinkReportDto,
   ) {
-    return this.reports.updateForAdmin(id, request.user.id, dto);
+    return this.reports.updateForAdmin(id, user.id, dto);
   }
 
   @Delete(":id")
   @Permissions("link-reports.delete")
   remove(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id", ParseIntPipe) id: number,
   ) {
-    return this.reports.deleteForAdmin(id, request.user.id);
+    return this.reports.deleteForAdmin(id, user.id);
   }
 }

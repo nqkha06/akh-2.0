@@ -1,10 +1,15 @@
+import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
+  ValidateNested,
 } from "class-validator";
 
 export const paymentMethodFieldTypes = [
@@ -13,7 +18,18 @@ export const paymentMethodFieldTypes = [
   "tel",
   "number",
   "textarea",
+  "select",
 ] as const;
+
+export class PaymentMethodFieldOptionDto {
+  @IsString()
+  @MaxLength(100)
+  value!: string;
+
+  @IsString()
+  @MaxLength(180)
+  label!: string;
+}
 
 export class PaymentMethodFieldDto {
   @IsString()
@@ -34,4 +50,12 @@ export class PaymentMethodFieldDto {
   @IsString()
   @MaxLength(160)
   placeholder?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => PaymentMethodFieldOptionDto)
+  options?: PaymentMethodFieldOptionDto[];
 }

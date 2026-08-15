@@ -2,7 +2,8 @@
   "extends": "@stu/typescript-config/nestjs.json",
   "compilerOptions": {
     "rootDir": ".",
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["prisma/**/*.ts"]
 }

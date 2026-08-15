@@ -8,9 +8,9 @@
     "build": "prisma generate && nest build",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
-    "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
-    "test": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/bio-gallery.dto-spec.ts test/access-fraud.rules-spec.ts test/auth.e2e-spec.ts",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/bio-gallery.dto-spec.ts test/access-fraud.rules-spec.ts test/pages-query.builder-spec.ts test/pages-policy-spec.ts test/pages-content.mapper-spec.ts test/languages.mapper-policy-spec.ts test/currency.mapper-policy-spec.ts test/payment-method.mapper-policy-spec.ts test/link-reports.query-policy-spec.ts test/snippets.query-mapper-policy-spec.ts test/site-settings.mapper-policy-spec.ts test/business-settings.mapper-policy-spec.ts test/monetization-levels.query-policy-spec.ts test/email-template-preferences-policy-spec.ts test/email-provider-sender-policy-spec.ts test/email-webhook-rbac-spec.ts test/auth.e2e-spec.ts",
     "test:e2e": "TS_NODE_PROJECT=tsconfig.test.json node --test -r ts-node/register test/auth.e2e-spec.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -18,6 +18,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.1106.0",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.24",
     "@nestjs/config": "^4.0.4",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.21",
+    "@stu/eslint-config": "workspace:*",
     "@stu/typescript-config": "workspace:*",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
@@ -53,6 +55,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/sanitize-html": "^2.16.1",
     "dotenv": "^17.2.3",
+    "eslint": "^9.39.5",
     "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

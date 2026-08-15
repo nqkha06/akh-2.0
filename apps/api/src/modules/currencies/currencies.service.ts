@@ -3,7 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  OnModuleInit,
+  type OnModuleInit,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
@@ -12,6 +12,16 @@ import {
   FALLBACK_BASE_CURRENCY_CODE,
   USER_CURRENCY_META_KEY,
 } from "./currency.constants";
+import {
+  mapCurrencyResponse,
+  parseUserCurrencyMeta,
+} from "./currency.mapper";
+import {
+  assertCurrencyCanBeRemoved,
+  assertCurrencyCreateInput,
+  assertCurrencyIsUnused,
+  assertCurrencyUpdateAllowed,
+} from "./currency.policy";
 import type { CreateCurrencyDto } from "./dto/create-currency.dto";
 import type { UpdateCurrencyDto } from "./dto/update-currency.dto";
 
@@ -58,7 +68,7 @@ export class CurrenciesService implements OnModuleInit {
       orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
     });
     return {
-      items: items.map((currency) => this.toResponse(currency)),
+      items: items.map(mapCurrencyResponse),
       total: items.length,
       baseCurrency:
         items.find((currency) => currency.isBase)?.code ??
@@ -96,7 +106,7 @@ export class CurrenciesService implements OnModuleInit {
         message: "Hệ thống chưa có tiền tệ đang hoạt động.",
       });
     }
-    const selectedCode = this.parseCurrencyMeta(meta?.valueJson);
+    const selectedCode = parseUserCurrencyMeta(meta?.valueJson);
     const selected =
       availableCurrencies.find((currency) => currency.code === selectedCode) ??
       defaultCurrency;
@@ -107,7 +117,7 @@ export class CurrenciesService implements OnModuleInit {
         currencies.find((currency) => currency.isBase)?.code ??
         FALLBACK_BASE_CURRENCY_CODE,
       defaultCurrency: defaultCurrency.code,
-      currencies: currencies.map((currency) => this.toResponse(currency)),
+      currencies: currencies.map(mapCurrencyResponse),
     };
   }
 
@@ -143,10 +153,7 @@ export class CurrenciesService implements OnModuleInit {
   }
 
   async create(dto: CreateCurrencyDto) {
-    this.assertPositiveRate(dto.exchangeRate);
-    if (!dto.name.trim() || !dto.symbol.trim()) {
-      throw new BadRequestException("Tên và ký hiệu tiền tệ không được rỗng.");
-    }
+    assertCurrencyCreateInput(dto);
     try {
       const currency = await this.prisma.$transaction(async (transaction) => {
         if (dto.isDefault) {
@@ -168,39 +175,15 @@ export class CurrenciesService implements OnModuleInit {
           },
         });
       });
-      return this.toResponse(currency);
+      return mapCurrencyResponse(currency);
     } catch (error) {
-      this.rethrowUnique(error);
-      throw error;
+      this.throwPersistenceError(error);
     }
   }
 
   async update(id: number, dto: UpdateCurrencyDto) {
     const existing = await this.findOne(id);
-    if (dto.exchangeRate !== undefined) {
-      this.assertPositiveRate(dto.exchangeRate);
-      if (existing.isBase && !new Prisma.Decimal(dto.exchangeRate).equals(1)) {
-        throw new BadRequestException(
-          `Tỷ giá của tiền tệ cơ sở ${existing.code} luôn phải bằng 1.`,
-        );
-      }
-    }
-    if (existing.isDefault && dto.isDefault === false) {
-      throw new BadRequestException(
-        "Hãy đặt một tiền tệ khác làm mặc định trước.",
-      );
-    }
-    if ((existing.isDefault || existing.isBase) && dto.isActive === false) {
-      throw new BadRequestException(
-        "Không thể tắt tiền tệ cơ sở hoặc tiền tệ mặc định.",
-      );
-    }
-    if (dto.name !== undefined && !dto.name.trim()) {
-      throw new BadRequestException("Tên tiền tệ không được rỗng.");
-    }
-    if (dto.symbol !== undefined && !dto.symbol.trim()) {
-      throw new BadRequestException("Ký hiệu tiền tệ không được rỗng.");
-    }
+    assertCurrencyUpdateAllowed(existing, dto);
 
     const currency = await this.prisma.$transaction(async (transaction) => {
       if (dto.isDefault === true) {
@@ -228,7 +211,7 @@ export class CurrenciesService implements OnModuleInit {
         },
       });
     });
-    return this.toResponse(currency);
+    return mapCurrencyResponse(currency);
   }
 
   async setDefault(id: number) {
@@ -243,36 +226,19 @@ export class CurrenciesService implements OnModuleInit {
         data: { isDefault: true, isActive: true },
       });
     });
-    return this.toResponse(currency);
+    return mapCurrencyResponse(currency);
   }
 
   async remove(id: number) {
     const currency = await this.findOne(id);
-    if (currency.isBase) {
-      throw new ConflictException({
-        code: "BASE_CURRENCY_DELETE_FORBIDDEN",
-        message: `Không thể xóa tiền tệ cơ sở ${currency.code}.`,
-      });
-    }
-    if (currency.isDefault) {
-      throw new ConflictException({
-        code: "DEFAULT_CURRENCY_DELETE_FORBIDDEN",
-        message: "Hãy đặt tiền tệ khác làm mặc định trước khi xóa.",
-      });
-    }
+    assertCurrencyCanBeRemoved(currency);
     const usageCount = await this.prisma.userMeta.count({
       where: {
         key: USER_CURRENCY_META_KEY,
         valueJson: JSON.stringify(currency.code),
       },
     });
-    if (usageCount > 0) {
-      throw new ConflictException({
-        code: "CURRENCY_IN_USE",
-        message: `Tiền tệ đang được ${usageCount} người dùng lựa chọn. Hãy tắt thay vì xóa.`,
-        usageCount,
-      });
-    }
+    assertCurrencyIsUnused(usageCount);
     await this.prisma.currency.delete({ where: { id } });
     return { success: true, id };
   }
@@ -283,43 +249,7 @@ export class CurrenciesService implements OnModuleInit {
     return currency;
   }
 
-  private assertPositiveRate(value: string) {
-    if (new Prisma.Decimal(value).lessThanOrEqualTo(0)) {
-      throw new BadRequestException("Tỷ giá phải lớn hơn 0.");
-    }
-  }
-
-  private parseCurrencyMeta(value: string | undefined) {
-    if (!value) return null;
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      return typeof parsed === "string" ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-
-  private toResponse(currency: {
-    id: number;
-    code: string;
-    name: string;
-    symbol: string;
-    exchangeRate: Prisma.Decimal;
-    decimalDigits: number;
-    isBase: boolean;
-    isDefault: boolean;
-    isActive: boolean;
-    sortOrder: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
-    return {
-      ...currency,
-      exchangeRate: currency.exchangeRate.toString(),
-    };
-  }
-
-  private rethrowUnique(error: unknown): never | void {
+  private throwPersistenceError(error: unknown): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
@@ -329,5 +259,6 @@ export class CurrenciesService implements OnModuleInit {
         message: "Mã tiền tệ đã tồn tại.",
       });
     }
+    throw error;
   }
 }

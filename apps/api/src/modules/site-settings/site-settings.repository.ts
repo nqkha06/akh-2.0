@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { WEBSITE_SETTINGS_INCLUDE } from "./site-settings.select";
 
 @Injectable()
 export class SiteSettingsRepository {
@@ -9,25 +10,24 @@ export class SiteSettingsRepository {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  findOrCreate(include: Prisma.WebsiteSettingsInclude) {
+  findOrCreate() {
     return this.prisma.websiteSettings.upsert({
       where: { id: this.singletonId },
       create: { id: this.singletonId },
       update: {},
-      include,
+      include: WEBSITE_SETTINGS_INCLUDE,
     });
   }
 
   update(
     data: Prisma.WebsiteSettingsUncheckedCreateInput,
-    include: Prisma.WebsiteSettingsInclude,
   ) {
     const { id: _id, ...values } = data;
     return this.prisma.websiteSettings.upsert({
       where: { id: this.singletonId },
       create: { id: this.singletonId, ...values },
       update: values,
-      include,
+      include: WEBSITE_SETTINGS_INCLUDE,
     });
   }
 }

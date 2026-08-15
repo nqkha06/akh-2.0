@@ -17,6 +17,189 @@
     "comingSoon": "No section yet, coming soon!",
     "home": "Home"
   },
+  "Landing": {
+    "meta": {
+      "tagline": "Manage every link with clarity.",
+      "description": "Create, share, manage, and analyze links to URLs, files, and text snippets from one Link4Sub workspace."
+    },
+    "nav": {
+      "homeAria": "{site} home",
+      "mainNavigation": "Main navigation",
+      "whyUs": "Why Link4Sub",
+      "features": "Features",
+      "faqs": "FAQs",
+      "getStarted": "Get started",
+      "dashboard": "Dashboard",
+      "signIn": "Sign in",
+      "startCreating": "Create a link",
+      "openNavigation": "Open navigation",
+      "closeNavigation": "Close navigation",
+      "themeToggle": "Toggle color theme"
+    },
+    "hero": {
+      "eyebrow": "Link management, sharing, and insights",
+      "titleLine1": "One link.",
+      "titleLine2": "Everything under control.",
+      "description": "Turn a URL, file, or text into an easy-to-share link. Customize the access flow, add action steps when needed, and track performance—all from one dashboard.",
+      "goToDashboard": "Go to dashboard",
+      "createPage": "Create a link now",
+      "seeHow": "See how it works",
+      "proof": {
+        "quickSetup": "Quick setup",
+        "editAnytime": "Edit anytime",
+        "clearTracking": "Clear tracking"
+      },
+      "preview": {
+        "ariaLabel": "Link4Sub link management preview",
+        "workspace": "Campaign resource",
+        "workspaceDescription": "A shareable link with a managed destination and optional action steps.",
+        "destination": "Destination",
+        "destinationValue": "File · project-files.zip",
+        "actionFlow": "Action flow",
+        "actionFlowValue": "YouTube · X · Discord",
+        "linkStatus": "Link status",
+        "active": "Active",
+        "madeWith": "Managed with Link4Sub",
+        "analytics": "Analytics",
+        "analyticsValue": "Country · Device"
+      }
+    },
+    "platforms": {
+      "ariaLabel": "Platforms available for link action steps"
+    },
+    "why": {
+      "eyebrow": "Why Link4Sub",
+      "titleLine1": "Everything you need to share,",
+      "titleLine2": "control, and improve a link.",
+      "description": "Build the destination, shape the visitor flow, manage access, and review performance without switching between separate tools.",
+      "coreKicker": "ONE WORKSPACE",
+      "coreTitleLine1": "Every link",
+      "coreTitleLine2": "under control.",
+      "coreMeta": "Create · Share · Analyze",
+      "reasons": {
+        "onePlace": {
+          "title": "Flexible destinations",
+          "body": "Send visitors to an external URL, a managed file, or a text snippet using the same creation flow."
+        },
+        "meaningfulAction": {
+          "title": "Optional action steps",
+          "body": "Add one or more supported social or page-visit steps before the destination becomes available."
+        },
+        "clarity": {
+          "title": "Practical link controls",
+          "body": "Choose an alias, set expiry by date or successful opens, and activate, pause, or deactivate a link."
+        },
+        "protected": {
+          "title": "Useful performance insight",
+          "body": "Review successful opens, top links, and breakdowns by country, device, and browser from the dashboard."
+        }
+      }
+    },
+    "unlock": {
+      "eyebrow": "Public link flow",
+      "titleLine1": "Guide visitors.",
+      "titleLine2": "Then open the destination.",
+      "description": "A Link4Sub link can combine a destination with configurable action steps. Visitors open each step, wait for completion, and then continue.",
+      "destinationTypesValue": "URL · FILE · TEXT",
+      "destinationTypes": "destination options",
+      "expiryControlsValue": "DATE · OPENS",
+      "expiryControls": "expiry controls",
+      "productTitle": "Project resource",
+      "productMeta": "Managed file destination",
+      "flowBadge": "LINK FLOW",
+      "actionsCompleted": "Lock progress",
+      "completed": "Action step completed",
+      "contentRevealed": "Destination unlocked",
+      "unlockContent": "Unlock destination",
+      "destinationReady": "Destination ready",
+      "secureNote": "The destination becomes available after every configured action step is completed.",
+      "actions": {
+        "youtube": {
+          "label": "Open YouTube channel",
+          "note": "Opens in a new tab"
+        },
+        "x": {
+          "label": "Open X profile",
+          "note": "Opens in a new tab"
+        },
+        "discord": {
+          "label": "Open Discord community",
+          "note": "Opens in a new tab"
+        }
+      }
+    },
+    "testimonials": {
+      "eyebrow": "STORIES FROM USERS",
+      "title": "What are people saying about Link4Sub?",
+      "description": "Thoughts from creators who use Link4Sub every day."
+    },
+    "faq": {
+      "eyebrow": "FAQs",
+      "title": "Know what happens before you share.",
+      "description": "Straight answers about creating, managing, and opening Link4Sub links.",
+      "readyPrompt": "Ready to manage your links?",
+      "createAccount": "Create an account",
+      "items": {
+        "create": {
+          "question": "What can a Link4Sub link open?",
+          "answer": "A link can lead to an external URL, a file from your Link4Sub library, or a saved text snippet. You choose one destination when creating the link."
+        },
+        "actions": {
+          "question": "How do action steps work?",
+          "answer": "You can add one or more supported actions before the destination. Visitors open each action in a new tab, wait for the step to complete, and continue after all configured steps are finished."
+        },
+        "visitorAccount": {
+          "question": "Do visitors need a Link4Sub account?",
+          "answer": "No. A visitor can open a public link and complete its configured flow without signing in to a Link4Sub member account."
+        },
+        "update": {
+          "question": "Can I edit or pause a link later?",
+          "answer": "Yes. The member link library lets you edit a link and change its status between active, paused, and inactive."
+        },
+        "analytics": {
+          "question": "What does the dashboard measure?",
+          "answer": "The dashboard reports successful opens over time, top-performing links, and available breakdowns by country, device, and browser."
+        },
+        "expiry": {
+          "question": "Can a link expire automatically?",
+          "answer": "Yes. You can set a date and time or a maximum number of successful opens. The public link becomes unavailable after the selected limit is reached."
+        }
+      }
+    },
+    "cta": {
+      "eyebrow": "GET STARTED WITH LINK4SUB",
+      "title": "Turn your content into one easy-to-share link.",
+      "description": "Create a link from a URL, file, or text, add action steps, and track opens whenever you need.",
+      "goToDashboard": "Go to dashboard",
+      "start": "Create a link for free"
+    },
+    "footer": {
+      "description": "Link4Sub helps you create, share, manage, and analyze public links to URLs, files, and text snippets.",
+      "product": "Product",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "createLink": "Create a link",
+      "company": "Company",
+      "contact": "Contact",
+      "community": "Community",
+      "features": "Features",
+      "linkFlow": "Public link flow",
+      "resources": "Resources",
+      "faqs": "FAQs",
+      "reportLink": "Report a link",
+      "account": "Account",
+      "signIn": "Sign in",
+      "createAccount": "Create account",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "cookies": "Cookies",
+      "viewMap": "View map",
+      "socialLinkAria": "Visit Link4Sub on {platform}",
+      "socialUnavailable": "Link4Sub on {platform} is coming soon",
+      "legal": "Legal",
+      "rights": "© {year} {site}. All rights reserved."
+    }
+  },
   "PayoutRates": {
     "eyebrow": "Transparent earnings",
     "title": "Payout rates",
@@ -487,6 +670,34 @@
     "editDescription": "Update destination, actions, appearance, and expiration without changing the public slug.",
     "qrNotReady": "QR code is not ready"
   },
+  "ChangePassword": {
+    "title": "Change password",
+    "description": "Confirm your current password and use a unique new password to protect your account.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "submit": "Update password",
+    "updating": "Updating...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "success": "Your password has been updated.",
+    "requirements": {
+      "length": "At least 8 characters",
+      "uppercase": "Contains an uppercase letter",
+      "lowercase": "Contains a lowercase letter",
+      "number": "Contains a number",
+      "match": "Both new passwords match",
+      "different": "Different from your current password"
+    },
+    "errors": {
+      "currentIncorrect": "Your current password is incorrect.",
+      "sameAsCurrent": "Your new password must be different from your current password.",
+      "notConfigured": "This account does not have a password yet. Use forgot password to set one.",
+      "impersonation": "You cannot change a password while impersonating a user.",
+      "concurrent": "The password was just changed. Reload the page and try again.",
+      "generic": "Could not update your password. Please try again."
+    }
+  },
   "Account": {
     "eyebrow": "Settings",
     "title": "Account",
@@ -568,7 +779,7 @@
       "newPassword": "New password",
       "confirmPassword": "Confirm new password",
       "updatePassword": "Update password",
-      "passwordUpdated": "Password updated in the interface.",
+      "passwordUpdated": "Your password has been updated.",
       "requirements": {
         "length": "At least 8 characters",
         "number": "Contains at least one number",
@@ -848,6 +1059,186 @@
       "eyebrow": "Payout",
       "title": "Withdraw",
       "description": "Track your balance, submit payout requests, and review transaction history."
+    }
+  },
+  "Withdraw": {
+    "title": "Withdraw",
+    "description": "Transfer your available balance to a payout method and track each request through processing.",
+    "loadingLabel": "Loading withdrawal information",
+    "summary": {
+      "ariaLabel": "Balance overview",
+      "available": "Available to withdraw",
+      "pending": "Processing",
+      "received": "Total received"
+    },
+    "eligibility": {
+      "missingMethodTitle": "You don't have a payout method yet",
+      "unavailableTitle": "Withdrawals aren't available yet",
+      "addMethod": "Add payout method",
+      "continue": "Complete requirements",
+      "reasons": {
+        "default": "Complete the account requirements before continuing.",
+        "identity": "Complete identity verification before withdrawing funds.",
+        "method": "Add at least one payout method before making a withdrawal.",
+        "minimum_balance": "Your available balance has not reached the minimum withdrawal amount.",
+        "review": "Your account is being reviewed before withdrawals can be enabled.",
+        "tax": "Complete your tax information before withdrawing funds."
+      }
+    },
+    "form": {
+      "title": "Create withdrawal request",
+      "amountLabel": "Amount to withdraw",
+      "quickAmountAria": "Choose a quick withdrawal amount",
+      "maximum": "Maximum",
+      "availableBalance": "Available balance",
+      "methodLabel": "Payout method",
+      "methodPlaceholder": "Choose a method",
+      "methodFee": "Fee {fee}",
+      "processingEstimate": "Estimated arrival in {time}"
+    },
+    "amounts": {
+      "requested": "Requested amount",
+      "fee": "Processing fee",
+      "feePending": "The fee will be confirmed before you submit the request.",
+      "net": "You will receive"
+    },
+    "validation": {
+      "invalidAmount": "Enter a valid amount.",
+      "minimum": "The minimum amount is {amount}.",
+      "maximum": "The amount exceeds your current limit of {amount}.",
+      "balance": "The amount exceeds your available balance."
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "paid": "Paid",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "filters": {
+      "allStatuses": "All statuses",
+      "statusAria": "Filter by status",
+      "dateAria": "Filter by date",
+      "sortAria": "Sort transactions",
+      "date": {
+        "all": "All time",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days"
+      },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest"
+      }
+    },
+    "history": {
+      "title": "Withdrawal history",
+      "actionsAria": "Actions for transaction {id}",
+      "viewTransactionAria": "View transaction {id}",
+      "emptyTitle": "No withdrawals yet",
+      "emptyDescription": "Your withdrawal requests will appear here.",
+      "filteredEmptyTitle": "No matching transactions",
+      "filteredEmptyDescription": "Try changing the history filters.",
+      "columns": {
+        "transaction": "Transaction",
+        "method": "Method",
+        "amount": "Amount",
+        "fee": "Fee",
+        "net": "Net amount",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "confirmation": {
+      "title": "Confirm withdrawal request",
+      "description": "Review the details carefully before submitting your request.",
+      "receiveVia": "Receive via",
+      "estimatedTime": "Estimated time"
+    },
+    "success": {
+      "title": "Withdrawal request created",
+      "description": "Your balance and transaction history have been updated."
+    },
+    "details": {
+      "title": "Transaction details",
+      "currentStatus": "Current status",
+      "processingDescription": "The request is being reviewed and sent to the payment provider.",
+      "processingReason": "Processing reason"
+    },
+    "fields": {
+      "transactionId": "Transaction ID",
+      "status": "Status",
+      "amount": "Amount",
+      "net": "Net amount",
+      "method": "Method",
+      "payoutMethod": "Payout method",
+      "createdAt": "Created at",
+      "createdDate": "Created date",
+      "completedDate": "Completed date"
+    },
+    "actions": {
+      "retry": "Try again",
+      "submitting": "Submitting request…",
+      "withdraw": "Withdraw",
+      "back": "Back",
+      "confirm": "Confirm withdrawal",
+      "close": "Close",
+      "viewHistory": "View transaction history",
+      "viewDetails": "View details",
+      "copyId": "Copy transaction ID",
+      "downloadReceipt": "Download receipt",
+      "cancelling": "Cancelling…",
+      "cancelAndRefund": "Cancel request and refund balance",
+      "changeMethod": "Change payout method",
+      "contactSupport": "Contact support"
+    },
+    "errors": {
+      "loadTitle": "Unable to load withdrawal information.",
+      "historyTitle": "Unable to load withdrawal history.",
+      "createTitle": "Unable to create request",
+      "submitTitle": "Unable to submit request",
+      "tryAgainMessage": "Please try again.",
+      "createMessage": "Unable to create the withdrawal request.",
+      "cancelMessage": "Unable to cancel the request."
+    },
+    "messages": {
+      "copiedId": "Transaction ID copied."
+    }
+  },
+  "Announcements": {
+    "title": "Announcements",
+    "loading": "Loading announcements…",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "status": {
+      "unread": "Unread"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "markAllRead": "Mark all as read",
+      "close": "Close announcement",
+      "acknowledge": "I understand",
+      "viewAll": "View all announcements"
+    },
+    "empty": {
+      "all": "No announcements yet.",
+      "unread": "No unread announcements.",
+      "read": "No read announcements yet."
+    },
+    "errors": {
+      "load": "Unable to load announcements.",
+      "markRead": "Unable to mark the announcement as read.",
+      "update": "Unable to update announcements.",
+      "trackAction": "Unable to record this action.",
+      "open": "Unable to open the announcement.",
+      "dismiss": "Unable to close the announcement.",
+      "acknowledge": "Unable to acknowledge the announcement."
+    },
+    "popover": {
+      "ariaLabel": "Announcements: {count} unread",
+      "unreadCount": "{count} unread"
     }
   },
   "PublicLink": {
@@ -1168,7 +1559,9 @@
       "label": "{days}-day metrics",
       "earnings": "Earnings",
       "views": "Successful opens",
+      "earnedViews": "Monetized opens",
       "averageCpm": "Average CPM",
+      "comparedWithPreviousPeriod": "Compared with the previous period of the same length",
       "today": "Today"
     },
     "performance": {

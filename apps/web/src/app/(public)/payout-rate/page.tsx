@@ -31,6 +31,7 @@ export default async function PayoutRatePage() {
       "mobile-primary",
       "footer-primary",
       "footer-legal",
+      "footer-social",
     ]),
     getPublicPayoutRates(MAXIMUM_MONETIZATION_LEVEL_ID),
     getTranslations({ locale, namespace: "PayoutRates" }),

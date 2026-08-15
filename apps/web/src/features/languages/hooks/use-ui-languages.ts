@@ -17,6 +17,7 @@ export type UiLanguage = {
 const fallbackLanguages: UiLanguage[] = [
   { locale: "vi", label: "Tiếng Việt" },
   { locale: "en", label: "English" },
+  { locale: "id", label: "Bahasa Indonesia" },
 ];
 
 export function useUiLanguages() {

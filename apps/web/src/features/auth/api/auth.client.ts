@@ -80,6 +80,39 @@ export async function resetPassword(payload: {
   return response.json() as Promise<{ message: string }>;
 }
 
+export class AuthClientError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "AuthClientError";
+  }
+}
+
+export async function changeAccountPassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const response = await fetch(`${authApiBase}/change-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      code?: string;
+      message?: string | string[];
+    } | null;
+    const message = Array.isArray(body?.message)
+      ? body.message.join(", ")
+      : body?.message || `Request failed with ${response.status}`;
+    throw new AuthClientError(message, body?.code);
+  }
+  return response.json() as Promise<{ message: string }>;
+}
+
 export async function logoutAccount() {
   const response = await fetch(`${authApiBase}/logout`, {
     method: "POST",

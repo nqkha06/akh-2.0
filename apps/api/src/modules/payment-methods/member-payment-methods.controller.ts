@@ -7,11 +7,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import {
@@ -20,34 +19,32 @@ import {
 } from "./dto/save-user-payment-method.dto";
 import { PaymentMethodsService } from "./payment-methods.service";
 
-type AuthenticatedRequest = Request & { user: AuthenticatedUser };
-
 @Controller("member/payment-methods")
 @UseGuards(JwtAccessGuard)
 export class MemberPaymentMethodsController {
   constructor(private readonly paymentMethodsService: PaymentMethodsService) {}
 
   @Get()
-  findDashboard(@Req() request: AuthenticatedRequest) {
-    return this.paymentMethodsService.findDashboardForMember(request.user.id);
+  findDashboard(@CurrentUser() user: AuthenticatedUser) {
+    return this.paymentMethodsService.findDashboardForMember(user.id);
   }
 
   @Post()
   create(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateUserPaymentMethodDto,
   ) {
-    return this.paymentMethodsService.createForMember(request.user.id, dto);
+    return this.paymentMethodsService.createForMember(user.id, dto);
   }
 
   @Patch(":id")
   update(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateUserPaymentMethodDto,
   ) {
     return this.paymentMethodsService.updateForMember(
-      request.user.id,
+      user.id,
       id,
       dto,
     );
@@ -55,9 +52,9 @@ export class MemberPaymentMethodsController {
 
   @Delete(":id")
   remove(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id", ParseIntPipe) id: number,
   ) {
-    return this.paymentMethodsService.removeForMember(request.user.id, id);
+    return this.paymentMethodsService.removeForMember(user.id, id);
   }
 }

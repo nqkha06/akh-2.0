@@ -43,6 +43,7 @@ export default async function ReportLinkRoute({
       "mobile-primary",
       "footer-primary",
       "footer-legal",
+      "footer-social",
     ]),
     getOptionalServerUser(),
     headers(),

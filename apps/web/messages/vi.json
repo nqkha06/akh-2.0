@@ -17,6 +17,189 @@
     "comingSoon": "Chưa có section, sắp ra mắt!",
     "home": "Trang chủ"
   },
+  "Landing": {
+    "meta": {
+      "tagline": "Quản lý mọi liên kết rõ ràng hơn.",
+      "description": "Tạo, chia sẻ, quản lý và phân tích liên kết đến URL, tệp hoặc đoạn văn bản trong một workspace Link4Sub."
+    },
+    "nav": {
+      "homeAria": "Trang chủ {site}",
+      "mainNavigation": "Điều hướng chính",
+      "whyUs": "Vì sao chọn Link4Sub",
+      "features": "Tính năng",
+      "faqs": "Câu hỏi thường gặp",
+      "getStarted": "Bắt đầu",
+      "dashboard": "Bảng điều khiển",
+      "signIn": "Đăng nhập",
+      "startCreating": "Tạo liên kết",
+      "openNavigation": "Mở menu điều hướng",
+      "closeNavigation": "Đóng menu điều hướng",
+      "themeToggle": "Chuyển giao diện sáng hoặc tối"
+    },
+    "hero": {
+      "eyebrow": "Quản lý, chia sẻ và phân tích liên kết",
+      "titleLine1": "Một liên kết.",
+      "titleLine2": "Mọi thứ trong tầm kiểm soát.",
+      "description": "Biến URL, tệp hoặc văn bản thành liên kết dễ chia sẻ. Tùy chỉnh luồng truy cập, thêm bước hành động khi cần và theo dõi hiệu quả — tất cả trong một bảng điều khiển.",
+      "goToDashboard": "Đến bảng điều khiển",
+      "createPage": "Tạo liên kết ngay",
+      "seeHow": "Xem cách hoạt động",
+      "proof": {
+        "quickSetup": "Thiết lập nhanh",
+        "editAnytime": "Chỉnh sửa bất cứ lúc nào",
+        "clearTracking": "Theo dõi rõ ràng"
+      },
+      "preview": {
+        "ariaLabel": "Bản xem trước quản lý liên kết Link4Sub",
+        "workspace": "Tài nguyên chiến dịch",
+        "workspaceDescription": "Liên kết chia sẻ với đích đến được quản lý và các bước hành động tùy chọn.",
+        "destination": "Đích đến",
+        "destinationValue": "Tệp · project-files.zip",
+        "actionFlow": "Luồng hành động",
+        "actionFlowValue": "YouTube · X · Discord",
+        "linkStatus": "Trạng thái liên kết",
+        "active": "Đang hoạt động",
+        "madeWith": "Quản lý bằng Link4Sub",
+        "analytics": "Dữ liệu phân tích",
+        "analyticsValue": "Quốc gia · Thiết bị"
+      }
+    },
+    "platforms": {
+      "ariaLabel": "Các nền tảng có thể dùng cho bước hành động của liên kết"
+    },
+    "why": {
+      "eyebrow": "Vì sao chọn Link4Sub",
+      "titleLine1": "Đủ công cụ để chia sẻ,",
+      "titleLine2": "kiểm soát và cải thiện liên kết.",
+      "description": "Xây dựng đích đến, thiết kế luồng truy cập, quản lý khả dụng và xem hiệu suất mà không phải chuyển qua nhiều công cụ rời rạc.",
+      "coreKicker": "MỘT WORKSPACE",
+      "coreTitleLine1": "Mọi liên kết",
+      "coreTitleLine2": "đều trong tầm kiểm soát.",
+      "coreMeta": "Tạo · Chia sẻ · Phân tích",
+      "reasons": {
+        "onePlace": {
+          "title": "Đích đến linh hoạt",
+          "body": "Dẫn khách truy cập đến URL bên ngoài, một tệp được quản lý hoặc đoạn văn bản bằng cùng một quy trình tạo link."
+        },
+        "meaningfulAction": {
+          "title": "Bước hành động tùy chọn",
+          "body": "Thêm một hoặc nhiều bước mạng xã hội hoặc truy cập trang được hỗ trợ trước khi mở đích đến."
+        },
+        "clarity": {
+          "title": "Kiểm soát liên kết thiết thực",
+          "body": "Chọn alias, đặt hạn theo thời gian hoặc lượt mở thành công, rồi bật, tạm dừng hoặc vô hiệu hóa liên kết."
+        },
+        "protected": {
+          "title": "Dữ liệu hiệu suất hữu ích",
+          "body": "Xem lượt mở thành công, liên kết nổi bật và phân tích theo quốc gia, thiết bị, trình duyệt ngay trên dashboard."
+        }
+      }
+    },
+    "unlock": {
+      "eyebrow": "Luồng liên kết công khai",
+      "titleLine1": "Hướng dẫn người truy cập.",
+      "titleLine2": "Sau đó mở đích đến.",
+      "description": "Một liên kết Link4Sub có thể kết hợp đích đến với các bước hành động tùy chỉnh. Người truy cập mở từng bước, chờ hoàn tất rồi tiếp tục.",
+      "destinationTypesValue": "URL · TỆP · TEXT",
+      "destinationTypes": "loại đích đến",
+      "expiryControlsValue": "NGÀY · LƯỢT MỞ",
+      "expiryControls": "cách đặt thời hạn",
+      "productTitle": "Tài nguyên dự án",
+      "productMeta": "Đích đến là tệp được quản lý",
+      "flowBadge": "LUỒNG LINK",
+      "actionsCompleted": "Tiến độ mở khoá",
+      "completed": "Bước hành động đã hoàn tất",
+      "contentRevealed": "Đã mở đích đến",
+      "unlockContent": "Mở đích đến",
+      "destinationReady": "Đích đến đã sẵn sàng",
+      "secureNote": "Đích đến khả dụng sau khi mọi bước hành động đã cấu hình được hoàn tất.",
+      "actions": {
+        "youtube": {
+          "label": "Mở kênh YouTube",
+          "note": "Mở trong tab mới"
+        },
+        "x": {
+          "label": "Mở hồ sơ X",
+          "note": "Mở trong tab mới"
+        },
+        "discord": {
+          "label": "Mở cộng đồng Discord",
+          "note": "Mở trong tab mới"
+        }
+      }
+    },
+    "testimonials": {
+      "eyebrow": "CÂU CHUYỆN TỪ NGƯỜI DÙNG",
+      "title": "Mọi người đang nói gì về Link4Sub?",
+      "description": "Những chia sẻ từ các nhà sáng tạo đang sử dụng Link4Sub mỗi ngày."
+    },
+    "faq": {
+      "eyebrow": "Câu hỏi thường gặp",
+      "title": "Hiểu rõ trước khi chia sẻ.",
+      "description": "Câu trả lời trực tiếp về cách tạo, quản lý và mở liên kết Link4Sub.",
+      "readyPrompt": "Sẵn sàng quản lý liên kết?",
+      "createAccount": "Tạo tài khoản",
+      "items": {
+        "create": {
+          "question": "Một liên kết Link4Sub có thể mở nội dung gì?",
+          "answer": "Liên kết có thể dẫn đến URL bên ngoài, một tệp trong thư viện Link4Sub hoặc đoạn văn bản đã lưu. Bạn chọn một đích đến khi tạo liên kết."
+        },
+        "actions": {
+          "question": "Các bước hành động hoạt động như thế nào?",
+          "answer": "Bạn có thể thêm một hoặc nhiều hành động trước đích đến. Người truy cập mở từng hành động trong tab mới, chờ bước đó hoàn tất và tiếp tục sau khi hoàn thành mọi bước đã cấu hình."
+        },
+        "visitorAccount": {
+          "question": "Người truy cập có cần tài khoản Link4Sub không?",
+          "answer": "Không. Người truy cập có thể mở liên kết công khai và hoàn thành luồng đã cấu hình mà không cần đăng nhập tài khoản thành viên Link4Sub."
+        },
+        "update": {
+          "question": "Tôi có thể sửa hoặc tạm dừng liên kết sau này không?",
+          "answer": "Có. Thư viện liên kết cho phép bạn chỉnh sửa và chuyển trạng thái giữa đang hoạt động, tạm dừng và không hoạt động."
+        },
+        "analytics": {
+          "question": "Dashboard theo dõi những dữ liệu nào?",
+          "answer": "Dashboard hiển thị lượt mở thành công theo thời gian, các liên kết nổi bật và dữ liệu phân bổ theo quốc gia, thiết bị, trình duyệt khi có."
+        },
+        "expiry": {
+          "question": "Liên kết có thể tự hết hạn không?",
+          "answer": "Có. Bạn có thể đặt ngày giờ hoặc số lượt mở thành công tối đa. Liên kết công khai sẽ ngừng khả dụng khi đạt giới hạn đã chọn."
+        }
+      }
+    },
+    "cta": {
+      "eyebrow": "BẮT ĐẦU VỚI LINK4SUB",
+      "title": "Biến nội dung thành một liên kết dễ chia sẻ.",
+      "description": "Tạo liên kết từ URL, tệp hoặc văn bản, thêm bước hành động và theo dõi lượt mở khi cần.",
+      "goToDashboard": "Đến bảng điều khiển",
+      "start": "Tạo liên kết miễn phí"
+    },
+    "footer": {
+      "description": "Link4Sub giúp bạn tạo, chia sẻ, quản lý và phân tích liên kết công khai đến URL, tệp hoặc đoạn văn bản.",
+      "product": "Sản phẩm",
+      "howItWorks": "Cách hoạt động",
+      "pricing": "Bảng giá",
+      "createLink": "Tạo liên kết",
+      "company": "Công ty",
+      "contact": "Liên hệ",
+      "community": "Cộng đồng",
+      "features": "Tính năng",
+      "linkFlow": "Luồng liên kết công khai",
+      "resources": "Tài nguyên",
+      "faqs": "Câu hỏi thường gặp",
+      "reportLink": "Báo cáo liên kết",
+      "account": "Tài khoản",
+      "signIn": "Đăng nhập",
+      "createAccount": "Tạo tài khoản",
+      "privacy": "Quyền riêng tư",
+      "terms": "Điều khoản",
+      "cookies": "Cookie",
+      "viewMap": "Xem bản đồ",
+      "socialLinkAria": "Ghé thăm Link4Sub trên {platform}",
+      "socialUnavailable": "Kênh {platform} của Link4Sub sắp được cập nhật",
+      "legal": "Pháp lý",
+      "rights": "© {year} {site}. Đã đăng ký bản quyền."
+    }
+  },
   "PayoutRates": {
     "eyebrow": "Doanh thu minh bạch",
     "title": "Tỷ lệ thanh toán",
@@ -487,6 +670,34 @@
     "editDescription": "Cập nhật destination, actions, giao diện và thời hạn mà không đổi public slug.",
     "qrNotReady": "QR code chưa sẵn sàng"
   },
+  "ChangePassword": {
+    "title": "Đổi mật khẩu",
+    "description": "Xác nhận mật khẩu hiện tại và dùng mật khẩu mới riêng biệt để bảo vệ tài khoản.",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "submit": "Cập nhật mật khẩu",
+    "updating": "Đang cập nhật...",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "success": "Mật khẩu đã được cập nhật.",
+    "requirements": {
+      "length": "Tối thiểu 8 ký tự",
+      "uppercase": "Có ít nhất một chữ hoa",
+      "lowercase": "Có ít nhất một chữ thường",
+      "number": "Có ít nhất một chữ số",
+      "match": "Hai mật khẩu mới trùng nhau",
+      "different": "Khác mật khẩu hiện tại"
+    },
+    "errors": {
+      "currentIncorrect": "Mật khẩu hiện tại không chính xác.",
+      "sameAsCurrent": "Mật khẩu mới phải khác mật khẩu hiện tại.",
+      "notConfigured": "Tài khoản chưa có mật khẩu. Hãy dùng chức năng quên mật khẩu để thiết lập.",
+      "impersonation": "Không thể đổi mật khẩu trong phiên đăng nhập thay người dùng.",
+      "concurrent": "Mật khẩu vừa được thay đổi. Vui lòng tải lại trang và thử lại.",
+      "generic": "Không thể cập nhật mật khẩu. Vui lòng thử lại."
+    }
+  },
   "Account": {
     "eyebrow": "Cài đặt",
     "title": "Tài khoản",
@@ -568,7 +779,7 @@
       "newPassword": "Mật khẩu mới",
       "confirmPassword": "Xác nhận mật khẩu mới",
       "updatePassword": "Cập nhật mật khẩu",
-      "passwordUpdated": "Mật khẩu đã được cập nhật trên giao diện.",
+      "passwordUpdated": "Mật khẩu đã được cập nhật.",
       "requirements": {
         "length": "Tối thiểu 8 ký tự",
         "number": "Có ít nhất một chữ số",
@@ -848,6 +1059,186 @@
       "eyebrow": "Payout",
       "title": "Rút tiền",
       "description": "Theo dõi số dư, gửi yêu cầu rút tiền và kiểm tra lịch sử giao dịch minh bạch."
+    }
+  },
+  "Withdraw": {
+    "title": "Rút tiền",
+    "description": "Chuyển số dư khả dụng về phương thức nhận tiền của bạn và theo dõi trạng thái xử lý.",
+    "loadingLabel": "Đang tải thông tin rút tiền",
+    "summary": {
+      "ariaLabel": "Tổng quan số dư",
+      "available": "Có thể rút",
+      "pending": "Đang xử lý",
+      "received": "Tổng đã nhận"
+    },
+    "eligibility": {
+      "missingMethodTitle": "Bạn chưa có phương thức nhận tiền",
+      "unavailableTitle": "Bạn chưa đủ điều kiện rút tiền",
+      "addMethod": "Thêm phương thức nhận tiền",
+      "continue": "Hoàn tất yêu cầu",
+      "reasons": {
+        "default": "Vui lòng hoàn tất các yêu cầu tài khoản trước khi tiếp tục.",
+        "identity": "Vui lòng hoàn tất xác minh danh tính trước khi rút tiền.",
+        "method": "Bạn cần thêm ít nhất một phương thức nhận tiền trước khi rút.",
+        "minimum_balance": "Số dư khả dụng chưa đạt mức rút tối thiểu.",
+        "review": "Tài khoản của bạn đang được kiểm tra trước khi có thể rút tiền.",
+        "tax": "Vui lòng hoàn tất thông tin thuế trước khi rút tiền."
+      }
+    },
+    "form": {
+      "title": "Tạo yêu cầu rút tiền",
+      "amountLabel": "Số tiền muốn rút",
+      "quickAmountAria": "Chọn nhanh số tiền rút",
+      "maximum": "Tối đa",
+      "availableBalance": "Số dư khả dụng",
+      "methodLabel": "Phương thức nhận tiền",
+      "methodPlaceholder": "Chọn phương thức",
+      "methodFee": "Phí {fee}",
+      "processingEstimate": "Dự kiến nhận tiền trong {time}"
+    },
+    "amounts": {
+      "requested": "Số tiền yêu cầu",
+      "fee": "Phí xử lý",
+      "feePending": "Phí sẽ được xác nhận trước khi gửi yêu cầu.",
+      "net": "Bạn sẽ nhận"
+    },
+    "validation": {
+      "invalidAmount": "Vui lòng nhập số tiền hợp lệ.",
+      "minimum": "Số tiền tối thiểu là {amount}.",
+      "maximum": "Số tiền vượt quá hạn mức hiện tại {amount}.",
+      "balance": "Số tiền vượt quá số dư khả dụng."
+    },
+    "status": {
+      "pending": "Chờ xử lý",
+      "processing": "Đang xử lý",
+      "paid": "Đã thanh toán",
+      "rejected": "Đã từ chối",
+      "cancelled": "Đã hủy"
+    },
+    "filters": {
+      "allStatuses": "Mọi trạng thái",
+      "statusAria": "Lọc theo trạng thái",
+      "dateAria": "Lọc theo thời gian",
+      "sortAria": "Sắp xếp giao dịch",
+      "date": {
+        "all": "Mọi thời gian",
+        "30d": "30 ngày qua",
+        "90d": "90 ngày qua"
+      },
+      "sort": {
+        "newest": "Mới nhất",
+        "oldest": "Cũ nhất"
+      }
+    },
+    "history": {
+      "title": "Lịch sử rút tiền",
+      "actionsAria": "Thao tác cho giao dịch {id}",
+      "viewTransactionAria": "Xem giao dịch {id}",
+      "emptyTitle": "Chưa có giao dịch rút tiền",
+      "emptyDescription": "Mọi yêu cầu rút tiền của bạn sẽ xuất hiện tại đây.",
+      "filteredEmptyTitle": "Không tìm thấy giao dịch phù hợp",
+      "filteredEmptyDescription": "Hãy thử thay đổi bộ lọc lịch sử.",
+      "columns": {
+        "transaction": "Giao dịch",
+        "method": "Phương thức",
+        "amount": "Số tiền",
+        "fee": "Phí",
+        "net": "Thực nhận",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      }
+    },
+    "confirmation": {
+      "title": "Xác nhận yêu cầu rút tiền",
+      "description": "Kiểm tra kỹ thông tin trước khi gửi yêu cầu.",
+      "receiveVia": "Nhận qua",
+      "estimatedTime": "Thời gian dự kiến"
+    },
+    "success": {
+      "title": "Yêu cầu rút tiền đã được tạo",
+      "description": "Số dư và lịch sử giao dịch đã được cập nhật."
+    },
+    "details": {
+      "title": "Chi tiết giao dịch",
+      "currentStatus": "Trạng thái hiện tại",
+      "processingDescription": "Yêu cầu đang được kiểm tra và chuyển đến đơn vị thanh toán.",
+      "processingReason": "Lý do xử lý"
+    },
+    "fields": {
+      "transactionId": "Mã giao dịch",
+      "status": "Trạng thái",
+      "amount": "Số tiền",
+      "net": "Thực nhận",
+      "method": "Phương thức",
+      "payoutMethod": "Phương thức nhận tiền",
+      "createdAt": "Thời gian tạo",
+      "createdDate": "Ngày tạo",
+      "completedDate": "Ngày hoàn tất"
+    },
+    "actions": {
+      "retry": "Thử lại",
+      "submitting": "Đang gửi yêu cầu…",
+      "withdraw": "Rút tiền",
+      "back": "Quay lại",
+      "confirm": "Xác nhận rút tiền",
+      "close": "Đóng",
+      "viewHistory": "Xem lịch sử giao dịch",
+      "viewDetails": "Xem chi tiết",
+      "copyId": "Sao chép mã giao dịch",
+      "downloadReceipt": "Tải biên nhận",
+      "cancelling": "Đang hủy…",
+      "cancelAndRefund": "Hủy yêu cầu và hoàn số dư",
+      "changeMethod": "Đổi phương thức nhận tiền",
+      "contactSupport": "Liên hệ hỗ trợ"
+    },
+    "errors": {
+      "loadTitle": "Không thể tải thông tin rút tiền.",
+      "historyTitle": "Không thể tải lịch sử rút tiền.",
+      "createTitle": "Không thể tạo yêu cầu",
+      "submitTitle": "Không thể gửi yêu cầu",
+      "tryAgainMessage": "Vui lòng thử lại.",
+      "createMessage": "Không thể tạo yêu cầu rút tiền.",
+      "cancelMessage": "Không thể hủy yêu cầu."
+    },
+    "messages": {
+      "copiedId": "Đã sao chép mã giao dịch."
+    }
+  },
+  "Announcements": {
+    "title": "Thông báo",
+    "loading": "Đang tải thông báo…",
+    "filters": {
+      "all": "Tất cả",
+      "unread": "Chưa đọc",
+      "read": "Đã đọc"
+    },
+    "status": {
+      "unread": "Chưa đọc"
+    },
+    "actions": {
+      "refresh": "Làm mới",
+      "markAllRead": "Đánh dấu tất cả đã đọc",
+      "close": "Đóng thông báo",
+      "acknowledge": "Tôi đã hiểu",
+      "viewAll": "Xem tất cả thông báo"
+    },
+    "empty": {
+      "all": "Chưa có thông báo.",
+      "unread": "Không có thông báo chưa đọc.",
+      "read": "Chưa có thông báo đã đọc."
+    },
+    "errors": {
+      "load": "Không thể tải thông báo.",
+      "markRead": "Không thể đánh dấu đã đọc.",
+      "update": "Không thể cập nhật thông báo.",
+      "trackAction": "Không thể ghi nhận thao tác.",
+      "open": "Không thể mở thông báo.",
+      "dismiss": "Không thể đóng thông báo.",
+      "acknowledge": "Không thể xác nhận thông báo."
+    },
+    "popover": {
+      "ariaLabel": "Thông báo: {count} chưa đọc",
+      "unreadCount": "{count} chưa đọc"
     }
   },
   "PublicLink": {
@@ -1168,7 +1559,9 @@
       "label": "Chỉ số {days} ngày",
       "earnings": "Doanh thu",
       "views": "Lượt vượt thành công",
+      "earnedViews": "Lượt được tính doanh thu",
       "averageCpm": "CPM trung bình",
+      "comparedWithPreviousPeriod": "So với kỳ trước có cùng độ dài",
       "today": "Hôm nay"
     },
     "performance": {

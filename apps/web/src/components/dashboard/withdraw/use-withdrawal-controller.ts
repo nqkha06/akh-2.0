@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 
@@ -19,13 +20,13 @@ function parseAmount(value: string) {
   return digits ? Number(digits) : 0;
 }
 
-export function formatAmountInput(value: number) {
-  return value > 0 ? new Intl.NumberFormat("vi-VN").format(value) : "";
+export function formatAmountInput(value: number, locale: string) {
+  return value > 0 ? new Intl.NumberFormat(locale).format(value) : "";
 }
 
-export function formatDateTime(value?: string) {
+export function formatDateTime(value: string | undefined, locale: string) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -35,6 +36,8 @@ export function formatDateTime(value?: string) {
 }
 
 export function useWithdrawalController() {
+  const locale = useLocale();
+  const t = useTranslations("Withdraw");
   const {
     baseCurrency,
     formatCurrency: formatMemberCurrency,
@@ -68,11 +71,11 @@ export function useWithdrawalController() {
       setSelectedMethodId(response.defaultMethodId ?? response.payoutMethods[0]?.id ?? "");
       setPageError("");
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Vui lòng thử lại.");
+      setPageError(error instanceof Error && error.message ? error.message : t("errors.tryAgainMessage"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void Promise.resolve().then(load);
@@ -90,14 +93,14 @@ export function useWithdrawalController() {
 
   const validationError = useMemo(() => {
     if (!data || !amountInput) return "";
-    if (!Number.isFinite(amount) || amount <= 0) return "Vui lòng nhập số tiền hợp lệ.";
+    if (!Number.isFinite(amount) || amount <= 0) return t("validation.invalidAmount");
     const minimum = selectedMethod?.minimumAmount ?? data.limits.minimum;
-    if (amount < minimum) return `Số tiền tối thiểu là ${formatCurrency(minimum)}.`;
+    if (amount < minimum) return t("validation.minimum", { amount: formatCurrency(minimum) });
     const transactionMaximum = Math.min(data.limits.maximum, data.limits.remaining ?? Number.POSITIVE_INFINITY);
-    if (amount > transactionMaximum) return `Số tiền vượt quá hạn mức hiện tại ${formatCurrency(transactionMaximum)}.`;
-    if (amount > data.availableBalance) return "Số tiền vượt quá số dư khả dụng.";
+    if (amount > transactionMaximum) return t("validation.maximum", { amount: formatCurrency(transactionMaximum) });
+    if (amount > data.availableBalance) return t("validation.balance");
     return "";
-  }, [amount, amountInput, data, formatCurrency, selectedMethod]);
+  }, [amount, amountInput, data, formatCurrency, selectedMethod, t]);
 
   useEffect(() => {
     const requestId = ++estimateRequestRef.current;
@@ -122,7 +125,7 @@ export function useWithdrawalController() {
   const setAmount = (value: string) => {
     if (submitting) return;
     const nextAmount = parseAmount(value);
-    setAmountInput(formatAmountInput(nextAmount));
+    setAmountInput(formatAmountInput(nextAmount, locale));
     setEstimate(undefined);
     setEstimateLoading(false);
     setSubmitError("");
@@ -135,7 +138,7 @@ export function useWithdrawalController() {
       data.limits.maximum,
       data.limits.remaining ?? Number.POSITIVE_INFINITY,
     );
-    setAmountInput(formatAmountInput(maximum));
+    setAmountInput(formatAmountInput(maximum, locale));
     setEstimate(undefined);
     setEstimateLoading(false);
     setSubmitError("");
@@ -181,7 +184,7 @@ export function useWithdrawalController() {
       setEstimate(undefined);
       idempotencyKeyRef.current = "";
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Không thể tạo yêu cầu rút tiền.");
+      setSubmitError(error instanceof Error && error.message ? error.message : t("errors.createMessage"));
     } finally {
       setSubmitting(false);
     }
@@ -211,7 +214,7 @@ export function useWithdrawalController() {
       setDetailTransaction(cancelled);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "Không thể hủy yêu cầu.",
+        error instanceof Error && error.message ? error.message : t("errors.cancelMessage"),
       );
     } finally {
       setCancelling(false);
@@ -253,6 +256,7 @@ export function useWithdrawalController() {
     statusFilter,
     dateFilter,
     sort,
+    locale,
     formatCurrency,
     retry: load,
     setAmount,

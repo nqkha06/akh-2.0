@@ -12,7 +12,11 @@ import type {
   PaginatedAnnouncements,
 } from "../types";
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  fallbackMessage = "Yêu cầu không thành công.",
+): Promise<T> {
   const response = await authenticatedApiFetch(path, {
     ...init,
     headers: {
@@ -22,7 +26,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { message?: string | string[]; error?: string } | null;
-    throw new Error(Array.isArray(payload?.message) ? payload.message.join(", ") : payload?.message || payload?.error || "Yêu cầu không thành công.");
+    throw new Error(Array.isArray(payload?.message) ? payload.message.join(", ") : payload?.message || payload?.error || fallbackMessage);
   }
   return (await response.json()) as T;
 }
@@ -75,25 +79,25 @@ export function deleteAdminAnnouncement(id: number) {
 export function listMemberAnnouncements(input?: { displayType?: AnnouncementDisplay; page?: number; perPage?: number }) {
   const params = new URLSearchParams({ page: String(input?.page || 1), perPage: String(input?.perPage || 20) });
   if (input?.displayType) params.set("displayType", input.displayType);
-  return request<PaginatedAnnouncements<MemberAnnouncement>>(`/member/announcements?${params}`, { cache: "no-store" });
+  return request<PaginatedAnnouncements<MemberAnnouncement>>(`/member/announcements?${params}`, { cache: "no-store" }, "");
 }
 
 export function getUnreadAnnouncementCount() {
-  return request<{ count: number }>("/member/announcements/unread-count", { cache: "no-store" });
+  return request<{ count: number }>("/member/announcements/unread-count", { cache: "no-store" }, "");
 }
 
 export function getActiveAnnouncementBanners() {
-  return request<MemberAnnouncement[]>("/member/announcements/active-banners", { cache: "no-store" });
+  return request<MemberAnnouncement[]>("/member/announcements/active-banners", { cache: "no-store" }, "");
 }
 
 export function getActiveAnnouncementModals() {
-  return request<MemberAnnouncement[]>("/member/announcements/active-modals", { cache: "no-store" });
+  return request<MemberAnnouncement[]>("/member/announcements/active-modals", { cache: "no-store" }, "");
 }
 
 export function interactWithAnnouncement(id: number, action: "seen" | "read" | "dismiss" | "acknowledge" | "click") {
-  return request<{ success: true }>(`/member/announcements/${id}/${action}`, { method: "POST" });
+  return request<{ success: true }>(`/member/announcements/${id}/${action}`, { method: "POST" }, "");
 }
 
 export function readAllAnnouncements() {
-  return request<{ updated: number }>("/member/announcements/read-all", { method: "POST" });
+  return request<{ updated: number }>("/member/announcements/read-all", { method: "POST" }, "");
 }

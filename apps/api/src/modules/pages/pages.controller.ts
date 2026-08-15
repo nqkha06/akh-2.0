@@ -8,11 +8,10 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { Permissions } from "../auth/decorators/permissions.decorator";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
@@ -26,8 +25,6 @@ import { QueryPagesDto } from "./dto/query-pages.dto";
 import { UpdatePageStatusDto } from "./dto/update-page-status.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
 import { PagesService } from "./pages.service";
-
-type AdminRequest = Request & { user: AuthenticatedUser };
 
 @Controller("admin/pages")
 @UseGuards(JwtAccessGuard, PermissionsGuard)
@@ -48,17 +45,17 @@ export class PagesController {
 
   @Post()
   @Permissions("pages.create", "admin-media.read")
-  create(@Req() request: AdminRequest, @Body() dto: CreatePageDto) {
-    return this.pagesService.create(dto, request.user);
+  create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreatePageDto) {
+    return this.pagesService.create(dto, user);
   }
 
   @Patch("bulk/status")
   @Permissions("pages.update")
   updateManyStatuses(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: BulkUpdatePagesStatusDto,
   ) {
-    return this.pagesService.updateManyStatuses(dto, request.user);
+    return this.pagesService.updateManyStatuses(dto, user);
   }
 
   @Delete("bulk")
@@ -79,11 +76,11 @@ export class PagesController {
   @Patch(":id/status")
   @Permissions("pages.update")
   updateStatus(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdatePageStatusDto,
   ) {
-    return this.pagesService.updateStatus(id, dto, request.user);
+    return this.pagesService.updateStatus(id, dto, user);
   }
 
   @Delete(":id")

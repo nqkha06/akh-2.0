@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import enMessages from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 import viMessages from "../../messages/vi.json";
 
 import {
@@ -17,7 +18,11 @@ export default getRequestConfig(async () => {
     : defaultLocale;
   const dynamic = await getDynamicMessages(candidate);
   const locale = dynamic?.locale ?? defaultLocale;
-  const bundled = locale === "vi" ? viMessages : enMessages;
+  const bundled = locale === "vi"
+    ? viMessages
+    : locale === "id"
+      ? { ...enMessages, ...idMessages }
+      : enMessages;
 
   return {
     locale,
@@ -29,7 +34,7 @@ type MessageTree = Record<string, unknown>;
 
 async function getDynamicMessages(locale: string) {
   const backendApiUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
-  if (!backendApiUrl) return locale === "vi" || locale === "en" ? { locale, messages: {} } : null;
+  if (!backendApiUrl) return ["vi", "en", "id"].includes(locale) ? { locale, messages: {} } : null;
   try {
     const response = await fetch(
       `${backendApiUrl}/languages/${encodeURIComponent(locale)}/ui-messages`,
@@ -41,7 +46,7 @@ async function getDynamicMessages(locale: string) {
       messages: Record<string, string>;
     };
   } catch {
-    return locale === "vi" || locale === "en" ? { locale, messages: {} } : null;
+    return ["vi", "en", "id"].includes(locale) ? { locale, messages: {} } : null;
   }
 }
 

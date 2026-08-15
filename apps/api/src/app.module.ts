@@ -4,6 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { validateEnvironment } from "./config/env.validation";
 
 import { PrismaModule } from "./database/prisma/prisma.module";
+import { AuditModule } from "./modules/audit/audit.module";
 import { AdminMediaModule } from "./modules/admin-media/admin-media.module";
 import { AnnouncementsModule } from "./modules/announcements/announcements.module";
 import { AdminDashboardModule } from "./modules/admin-dashboard/admin-dashboard.module";
@@ -12,6 +13,7 @@ import { AuthorizationModule } from "./modules/authorization/authorization.modul
 import { BioPagesModule } from "./modules/bio-pages/bio-pages.module";
 import { BusinessSettingsModule } from "./modules/business-settings/business-settings.module";
 import { CurrenciesModule } from "./modules/currencies/currencies.module";
+import { EmailsModule } from "./modules/emails/emails.module";
 import { FilesModule } from "./modules/files/files.module";
 import { LinksModule } from "./modules/links/links.module";
 import { LanguagesModule } from "./modules/languages/languages.module";
@@ -44,6 +46,7 @@ const visitAggregationScheduler =
       validate: validateEnvironment,
     }),
     PrismaModule,
+    AuditModule,
     AdminDashboardModule,
     AdminMediaModule,
     AnnouncementsModule,
@@ -52,6 +55,7 @@ const visitAggregationScheduler =
     BioPagesModule,
     BusinessSettingsModule,
     CurrenciesModule,
+    EmailsModule,
     FilesModule,
     LinksModule,
     LanguagesModule,

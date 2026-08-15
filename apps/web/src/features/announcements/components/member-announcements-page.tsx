@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CheckCheck,
   ChevronDown,
@@ -31,6 +32,7 @@ import { useAnnouncements } from "./announcements-provider";
 type AnnouncementFilter = "all" | "unread" | "read";
 
 export function MemberAnnouncementsPage() {
+  const t = useTranslations("Announcements");
   const { markRead, markAllRead, trackClick } = useAnnouncements();
   const [items, setItems] = React.useState<MemberAnnouncement[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -57,12 +59,12 @@ export function MemberAnnouncementsPage() {
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Không thể tải thông báo.",
+        error instanceof Error && error.message ? error.message : t("errors.load"),
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   React.useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);
@@ -103,8 +105,9 @@ export function MemberAnnouncementsPage() {
       } catch (error) {
         toast.error(
           error instanceof Error
+            && error.message
             ? error.message
-            : "Không thể đánh dấu đã đọc.",
+            : t("errors.markRead"),
         );
       }
     }
@@ -124,8 +127,9 @@ export function MemberAnnouncementsPage() {
     } catch (error) {
       toast.error(
         error instanceof Error
+          && error.message
           ? error.message
-          : "Không thể cập nhật thông báo.",
+          : t("errors.update"),
       );
     } finally {
       setMarkingAll(false);
@@ -136,13 +140,13 @@ export function MemberAnnouncementsPage() {
     <PageContainer className="max-w-5xl">
       <header className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-[-0.035em] text-foreground">
-          Thông báo
+          {t("title")}
         </h1>
         <Button
           variant="outline"
           size="icon-sm"
-          aria-label="Làm mới"
-          title="Làm mới"
+          aria-label={t("actions.refresh")}
+          title={t("actions.refresh")}
           disabled={loading}
           onClick={() => void load()}
         >
@@ -156,9 +160,9 @@ export function MemberAnnouncementsPage() {
           onValueChange={(value) => setFilter(value as AnnouncementFilter)}
         >
           <TabsList className="w-full sm:w-auto">
-            <FilterTab value="all" label="Tất cả" count={counts.all} />
-            <FilterTab value="unread" label="Chưa đọc" count={counts.unread} />
-            <FilterTab value="read" label="Đã đọc" count={counts.read} />
+            <FilterTab value="all" label={t("filters.all")} count={counts.all} />
+            <FilterTab value="unread" label={t("filters.unread")} count={counts.unread} />
+            <FilterTab value="read" label={t("filters.read")} count={counts.read} />
           </TabsList>
         </Tabs>
 
@@ -171,7 +175,7 @@ export function MemberAnnouncementsPage() {
               onClick={() => void handleMarkAllRead()}
             >
               <CheckCheck />
-              Đánh dấu đã đọc
+              {t("actions.markAllRead")}
             </Button>
           ) : null}
         </div>
@@ -191,8 +195,9 @@ export function MemberAnnouncementsPage() {
                 void trackClick(item.id).catch((error) =>
                   toast.error(
                     error instanceof Error
+                      && error.message
                       ? error.message
-                      : "Không thể ghi nhận thao tác.",
+                      : t("errors.trackAction"),
                   ),
                 )
               }
@@ -236,6 +241,8 @@ function AnnouncementRow({
   onToggle: () => void;
   onAction: () => void;
 }) {
+  const locale = useLocale();
+  const t = useTranslations("Announcements");
   const unread = !item.state.readAt;
   const externalAction = Boolean(
     item.actionUrl && !item.actionUrl.startsWith("/"),
@@ -276,7 +283,7 @@ function AnnouncementRow({
             {unread ? (
               <span
                 className="mt-1.5 size-2 shrink-0 rounded-full bg-primary"
-                aria-label="Chưa đọc"
+                aria-label={t("status.unread")}
               />
             ) : null}
           </span>
@@ -291,7 +298,7 @@ function AnnouncementRow({
             dateTime={item.publishedAt || item.createdAt}
             className="mt-2 block text-[11px] tabular-nums text-muted-foreground"
           >
-            {formatAnnouncementDate(item.publishedAt || item.createdAt)}
+            {formatAnnouncementDate(item.publishedAt || item.createdAt, locale)}
           </time>
         </span>
 
@@ -326,8 +333,9 @@ function AnnouncementRow({
 }
 
 function AnnouncementsSkeleton() {
+  const t = useTranslations("Announcements");
   return (
-    <div className="space-y-2.5" aria-label="Đang tải thông báo">
+    <div className="space-y-2.5" aria-label={t("loading")}>
       {[0, 1, 2].map((item) => (
         <div
           key={item}
@@ -346,12 +354,13 @@ function AnnouncementsSkeleton() {
 }
 
 function EmptyAnnouncements({ filter }: { filter: AnnouncementFilter }) {
+  const t = useTranslations("Announcements");
   const message =
     filter === "unread"
-      ? "Không có thông báo chưa đọc."
+      ? t("empty.unread")
       : filter === "read"
-        ? "Chưa có thông báo đã đọc."
-        : "Chưa có thông báo.";
+        ? t("empty.read")
+        : t("empty.all");
 
   return (
     <div className="flex min-h-56 flex-col items-center justify-center rounded-xl border border-dashed border-border text-center">
@@ -371,8 +380,8 @@ function announcementPreview(value: string, maxLength = 180) {
   return `${candidate.slice(0, lastSpace > 100 ? lastSpace : maxLength).trim()}…`;
 }
 
-function formatAnnouncementDate(value: string) {
-  return new Intl.DateTimeFormat("vi-VN", {
+function formatAnnouncementDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

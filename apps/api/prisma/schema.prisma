@@ -60,7 +60,7 @@ model User {
   assignedSupportTickets   SupportTicket[]           @relation("SupportTicketAssignee")
   supportMessages          SupportTicketMessage[]
   supportAttachments       SupportTicketAttachment[]
-  reviewedLinkReports      LinkReport[]               @relation("LinkReportReviewer")
+  reviewedLinkReports      LinkReport[]              @relation("LinkReportReviewer")
   meta                     UserMeta[]
   bioPages                 BioPage[]
   accessLogs               LinkAccessLog[]
@@ -68,6 +68,14 @@ model User {
   createdAnnouncements     Announcement[]            @relation("AnnouncementCreatedBy")
   updatedAnnouncements     Announcement[]            @relation("AnnouncementUpdatedBy")
   announcementStates       AnnouncementUser[]
+  updatedEmailSettings     EmailSettings[]           @relation("EmailSettingsUpdatedBy")
+  createdEmailSenders      EmailSender[]             @relation("EmailSenderCreatedBy")
+  updatedEmailSenders      EmailSender[]             @relation("EmailSenderUpdatedBy")
+  createdEmailTemplates    EmailTemplate[]           @relation("EmailTemplateCreatedBy")
+  updatedEmailTemplates    EmailTemplate[]           @relation("EmailTemplateUpdatedBy")
+  emailPreferences         UserEmailPreference[]
+  emailMessages            EmailMessage[]
+  emailAuditLogs           AuditLog[]                @relation("AuditLogActor")
 
   @@index([status])
   @@index([monetizationLevelId])
@@ -1050,4 +1058,243 @@ model BioPage {
   @@index([status, deletedAt])
   @@index([createdAt])
   @@map("bio_pages")
+}
+
+model EmailSettings {
+  id                   Int      @id @default(1)
+  provider             String   @default("amazon_ses")
+  providerStatus       String   @default("incomplete") @map("provider_status")
+  awsRegion            String?  @map("aws_region")
+  defaultLocale        String   @default("vi") @map("default_locale")
+  transactionalEnabled Boolean  @default(true) @map("transactional_enabled")
+  marketingEnabled     Boolean  @default(false) @map("marketing_enabled")
+  globalReplyToEmail   String?  @map("global_reply_to_email")
+  trackingEnabled      Boolean  @default(false) @map("tracking_enabled")
+  openTrackingEnabled  Boolean  @default(false) @map("open_tracking_enabled")
+  clickTrackingEnabled Boolean  @default(false) @map("click_tracking_enabled")
+  updatedById          Int?     @map("updated_by")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  updatedBy            User?    @relation("EmailSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("email_settings")
+}
+
+model EmailSender {
+  id                 Int             @id @default(autoincrement())
+  type               String
+  emailAddress       String?         @map("email_address")
+  domain             String
+  displayName        String          @map("display_name")
+  replyToEmail       String?         @map("reply_to_email")
+  provider           String          @default("amazon_ses")
+  providerIdentityId String?         @map("provider_identity_id")
+  status             String          @default("draft")
+  verificationError  String?         @map("verification_error")
+  dnsRecords         Json?           @map("dns_records")
+  isDefault          Boolean         @default(false) @map("is_default")
+  verifiedAt         DateTime?       @map("verified_at")
+  lastCheckedAt      DateTime?       @map("last_checked_at")
+  createdById        Int?            @map("created_by")
+  updatedById        Int?            @map("updated_by")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  deletedAt          DateTime?       @map("deleted_at")
+  createdBy          User?           @relation("EmailSenderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy          User?           @relation("EmailSenderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  templates          EmailTemplate[]
+  messages           EmailMessage[]
+
+  @@index([type, status, deletedAt])
+  @@index([domain])
+  @@index([isDefault, type])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("email_senders")
+}
+
+model EmailTemplate {
+  id              Int                    @id @default(autoincrement())
+  code            String                 @unique
+  name            String
+  description     String?
+  category        String
+  status          String                 @default("draft")
+  subject         String
+  preheader       String?
+  htmlContent     String                 @map("html_content")
+  textContent     String                 @map("text_content")
+  variables       Json                   @default("[]")
+  senderId        Int?                   @map("sender_id")
+  version         Int                    @default(1)
+  lastPublishedAt DateTime?              @map("last_published_at")
+  createdById     Int?                   @map("created_by")
+  updatedById     Int?                   @map("updated_by")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  deletedAt       DateTime?              @map("deleted_at")
+  sender          EmailSender?           @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  createdBy       User?                  @relation("EmailTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?                  @relation("EmailTemplateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  versions        EmailTemplateVersion[]
+  messages        EmailMessage[]
+
+  @@index([category, status, deletedAt])
+  @@index([senderId])
+  @@index([updatedAt])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("email_templates")
+}
+
+model EmailTemplateVersion {
+  id            String        @id @default(cuid())
+  templateId    Int           @map("template_id")
+  version       Int
+  name          String
+  description   String?
+  category      String
+  subject       String
+  preheader     String?
+  htmlContent   String        @map("html_content")
+  textContent   String        @map("text_content")
+  variables     Json
+  senderId      Int?          @map("sender_id")
+  publishedById Int?          @map("published_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  template      EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId, createdAt])
+  @@map("email_template_versions")
+}
+
+model EmailPreferenceTopic {
+  id           Int                   @id @default(autoincrement())
+  code         String                @unique
+  name         String
+  description  String
+  category     String
+  isRequired   Boolean               @default(false) @map("is_required")
+  isEnabled    Boolean               @default(true) @map("is_enabled")
+  displayOrder Int                   @default(0) @map("display_order")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+  preferences  UserEmailPreference[]
+
+  @@index([category, isEnabled, displayOrder])
+  @@map("email_preference_topics")
+}
+
+model UserEmailPreference {
+  id           Int                  @id @default(autoincrement())
+  userId       Int                  @map("user_id")
+  topicId      Int                  @map("topic_id")
+  isSubscribed Boolean              @default(true) @map("is_subscribed")
+  source       String               @default("default")
+  changedAt    DateTime             @default(now()) @map("changed_at")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic        EmailPreferenceTopic @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, topicId])
+  @@index([topicId, isSubscribed])
+  @@index([userId, topicId])
+  @@map("user_email_preferences")
+}
+
+model EmailMessage {
+  id                String              @id @default(uuid())
+  userId            Int?                @map("user_id")
+  campaignId        String?             @map("campaign_id")
+  templateId        Int?                @map("template_id")
+  templateVersion   Int?                @map("template_version")
+  senderId          Int?                @map("sender_id")
+  provider          String
+  providerMessageId String?             @unique @map("provider_message_id")
+  recipientEmail    String              @map("recipient_email")
+  fromEmail         String              @map("from_email")
+  replyToEmail      String?             @map("reply_to_email")
+  subject           String
+  emailType         String              @map("email_type")
+  category          String?
+  status            String              @default("queued")
+  failureCode       String?             @map("failure_code")
+  failureMessage    String?             @map("failure_message")
+  metadata          Json?
+  queuedAt          DateTime?           @map("queued_at")
+  sentAt            DateTime?           @map("sent_at")
+  deliveredAt       DateTime?           @map("delivered_at")
+  openedAt          DateTime?           @map("opened_at")
+  clickedAt         DateTime?           @map("clicked_at")
+  bouncedAt         DateTime?           @map("bounced_at")
+  complainedAt      DateTime?           @map("complained_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  template          EmailTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  sender            EmailSender?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  events            EmailMessageEvent[]
+
+  @@index([status, createdAt])
+  @@index([recipientEmail])
+  @@index([providerMessageId])
+  @@index([emailType, createdAt])
+  @@index([templateId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([userId])
+  @@index([campaignId])
+  @@map("email_messages")
+}
+
+model EmailMessageEvent {
+  id              String       @id @default(cuid())
+  emailMessageId  String       @map("email_message_id")
+  eventType       String       @map("event_type")
+  providerEventId String?      @map("provider_event_id")
+  payload         Json
+  occurredAt      DateTime     @map("occurred_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  emailMessage    EmailMessage @relation(fields: [emailMessageId], references: [id], onDelete: Cascade)
+
+  @@unique([providerEventId, eventType])
+  @@index([emailMessageId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@map("email_message_events")
+}
+
+model EmailSuppression {
+  id                 String   @id @default(cuid())
+  emailAddress       String   @unique @map("email_address")
+  reason             String
+  source             String
+  providerEventId    String?  @map("provider_event_id")
+  lastEmailMessageId String?  @map("last_email_message_id")
+  suppressedAt       DateTime @default(now()) @map("suppressed_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([reason, suppressedAt])
+  @@map("email_suppressions")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  Int?     @map("actor_user_id")
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  previousData Json?    @map("previous_data")
+  newData      Json?    @map("new_data")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+  actor        User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([resourceType, resourceId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
 }

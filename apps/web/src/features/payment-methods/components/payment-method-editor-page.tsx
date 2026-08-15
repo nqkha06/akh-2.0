@@ -52,6 +52,7 @@ type EditableField = {
   type: PaymentMethodFieldType;
   required: boolean;
   labels: Record<string, { label: string; placeholder: string }>;
+  options: Array<{ id: string; value: string; label: string }>;
 };
 
 type FormState = {
@@ -80,6 +81,7 @@ function newField(languages: Language[]): EditableField {
     key: "",
     type: "text",
     required: true,
+    options: [],
     labels: Object.fromEntries(
       languages.map(({ locale }) => [
         locale,
@@ -116,6 +118,11 @@ function methodToForm(
         key: field.key,
         type: field.type,
         required: field.required,
+        options: (field.options ?? []).map((option) => ({
+          id: crypto.randomUUID(),
+          value: option.value,
+          label: option.label,
+        })),
         labels: Object.fromEntries(
           languages.map(({ locale }) => {
             const localized = method.translations
@@ -162,6 +169,14 @@ function formToPayload(
           label: localized.label.trim(),
           ...(localized.placeholder.trim()
             ? { placeholder: localized.placeholder.trim() }
+            : {}),
+          ...(field.type === "select"
+            ? {
+                options: field.options.map(({ value, label }) => ({
+                  value: value.trim(),
+                  label: label.trim(),
+                })),
+              }
             : {}),
         };
       }),
@@ -255,6 +270,11 @@ export function PaymentMethodEditorPage({
       form.fields.some(
         (field) =>
           !field.key.trim() ||
+          (field.type === "select" &&
+            (field.options.length === 0 ||
+              field.options.some(
+                ({ value, label }) => !value.trim() || !label.trim(),
+              ))) ||
           translatedLanguages.some(
             ({ locale }) => !field.labels[locale]?.label.trim(),
           ),
@@ -356,7 +376,8 @@ export function PaymentMethodEditorPage({
           <AlertDescription>
             Phương thức này đang được {method?.userMethodCount} member sử dụng.
             Bạn vẫn có thể sửa tên, nhãn, gợi ý, phí và trạng thái; field key,
-            kiểu dữ liệu và yêu cầu bắt buộc sẽ được giữ nguyên.
+            kiểu dữ liệu, yêu cầu bắt buộc và value của lựa chọn sẽ được giữ
+            nguyên.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -499,7 +520,11 @@ export function PaymentMethodEditorPage({
                         value={field.type}
                         disabled={schemaLocked}
                         onValueChange={(type: PaymentMethodFieldType) =>
-                          updateField(field.id, { type })
+                          updateField(field.id, {
+                            type,
+                            options:
+                              type === "select" ? field.options : [],
+                          })
                         }
                       >
                         <SelectTrigger className="w-full">
@@ -511,10 +536,93 @@ export function PaymentMethodEditorPage({
                           <SelectItem value="tel">Phone</SelectItem>
                           <SelectItem value="number">Number</SelectItem>
                           <SelectItem value="textarea">Textarea</SelectItem>
+                          <SelectItem value="select">Select</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>
                   </div>
+
+                  {field.type === "select" ? (
+                    <div className="space-y-3 rounded-lg border bg-background p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium">Lựa chọn</p>
+                          <p className="text-xs text-muted-foreground">
+                            Value được lưu vào tài khoản; nhãn được hiển thị cho member.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={schemaLocked}
+                          onClick={() =>
+                            updateField(field.id, {
+                              options: [
+                                ...field.options,
+                                { id: crypto.randomUUID(), value: "", label: "" },
+                              ],
+                            })
+                          }
+                        >
+                          <Plus />
+                          Thêm lựa chọn
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {field.options.map((option) => (
+                          <div
+                            key={option.id}
+                            className="grid gap-2 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto]"
+                          >
+                            <Input
+                              value={option.value}
+                              placeholder="VCB"
+                              disabled={schemaLocked}
+                              onChange={(event) =>
+                                updateField(field.id, {
+                                  options: field.options.map((item) =>
+                                    item.id === option.id
+                                      ? { ...item, value: event.target.value }
+                                      : item,
+                                  ),
+                                })
+                              }
+                            />
+                            <Input
+                              value={option.label}
+                              placeholder="Vietcombank"
+                              onChange={(event) =>
+                                updateField(field.id, {
+                                  options: field.options.map((item) =>
+                                    item.id === option.id
+                                      ? { ...item, label: event.target.value }
+                                      : item,
+                                  ),
+                                })
+                              }
+                            />
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Xóa lựa chọn ${option.label || option.value}`}
+                              disabled={schemaLocked}
+                              onClick={() =>
+                                updateField(field.id, {
+                                  options: field.options.filter(
+                                    (item) => item.id !== option.id,
+                                  ),
+                                })
+                              }
+                            >
+                              <Trash2 />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="space-y-4 border-t pt-5">
                     {languages.map((language) => (

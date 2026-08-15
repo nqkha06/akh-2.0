@@ -5,7 +5,13 @@ export type PaymentMethodFieldType =
   | "email"
   | "tel"
   | "number"
-  | "textarea";
+  | "textarea"
+  | "select";
+
+export type PaymentMethodFieldOption = {
+  value: string;
+  label: string;
+};
 
 export type PaymentMethodField = {
   key: string;
@@ -13,6 +19,7 @@ export type PaymentMethodField = {
   type: PaymentMethodFieldType;
   required: boolean;
   placeholder?: string;
+  options?: PaymentMethodFieldOption[];
 };
 
 export type PaymentMethodTranslation = {

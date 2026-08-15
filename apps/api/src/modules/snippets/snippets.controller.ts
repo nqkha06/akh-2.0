@@ -7,19 +7,16 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { CreateSnippetDto } from "./dto/create-snippet.dto";
 import { ListSnippetsQueryDto } from "./dto/list-snippets-query.dto";
 import { UpdateSnippetDto } from "./dto/update-snippet.dto";
 import { SnippetsService } from "./snippets.service";
-
-type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 
 @Controller("member/snippets")
 @UseGuards(JwtAccessGuard)
@@ -28,36 +25,36 @@ export class SnippetsController {
 
   @Get()
   findAll(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListSnippetsQueryDto,
   ) {
-    return this.snippetsService.findAll(request.user.id, query);
+    return this.snippetsService.findAll(user.id, query);
   }
 
   @Get(":id")
-  findOne(@Req() request: AuthenticatedRequest, @Param("id") id: string) {
-    return this.snippetsService.findOne(request.user.id, id);
+  findOne(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.snippetsService.findOne(user.id, id);
   }
 
   @Post()
   create(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSnippetDto,
   ) {
-    return this.snippetsService.create(request.user.id, dto);
+    return this.snippetsService.create(user.id, dto);
   }
 
   @Patch(":id")
   update(
-    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id") id: string,
     @Body() dto: UpdateSnippetDto,
   ) {
-    return this.snippetsService.update(request.user.id, id, dto);
+    return this.snippetsService.update(user.id, id, dto);
   }
 
   @Delete(":id")
-  remove(@Req() request: AuthenticatedRequest, @Param("id") id: string) {
-    return this.snippetsService.remove(request.user.id, id);
+  remove(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.snippetsService.remove(user.id, id);
   }
 }

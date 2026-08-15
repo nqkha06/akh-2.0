@@ -19,7 +19,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const page = await getPublicPage(slug);
+  const locale = await getLocale();
+  const page = await getPublicPage(slug, locale);
   if (!page) return { robots: { index: false, follow: false } };
 
   const title = page.seoTitle || page.title;
@@ -33,7 +34,7 @@ export async function generateMetadata({
         ?.split(",")
         .map((keyword) => keyword.trim())
         .filter(Boolean) || undefined,
-    alternates: { canonical: page.canonicalUrl || `/${page.slug}` },
+    alternates: { canonical: page.canonicalUrl || `/${slug}` },
     robots: {
       index: page.robotsIndex,
       follow: page.robotsFollow,
@@ -42,7 +43,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      url: `/${page.slug}`,
+      url: `/${slug}`,
       images: image ? [{ url: image, alt: page.title }] : undefined,
     },
   };
@@ -56,7 +57,7 @@ export default async function PublicContentPage({
   const { slug } = await params;
   const locale = await getLocale();
   const [page, settings, menus, currentUser] = await Promise.all([
-    getPublicPage(slug),
+    getPublicPage(slug, locale),
     getPublicSiteSettings(),
     getPublicMenus(locale, [
       "header-primary",
@@ -64,6 +65,7 @@ export default async function PublicContentPage({
       "mobile-primary",
       "footer-primary",
       "footer-legal",
+      "footer-social",
     ]),
     getOptionalServerUser(),
   ]);

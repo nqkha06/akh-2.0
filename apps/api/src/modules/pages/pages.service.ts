@@ -1,88 +1,56 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import sanitizeHtml from "sanitize-html";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import type { AuthenticatedUser } from "../auth/auth.types";
-import type {
-  BulkUpdatePagesStatusDto,
-} from "./dto/bulk-pages.dto";
+import {
+  emptyPageValueToNull,
+  localizedPageSlugCandidates,
+  normalizePageSlug,
+  sanitizePageContent,
+  serializePageContent,
+} from "./pages-content";
+import type { BulkUpdatePagesStatusDto } from "./dto/bulk-pages.dto";
 import type { CreatePageDto } from "./dto/create-page.dto";
-import type { PageFilterDto, QueryPagesDto } from "./dto/query-pages.dto";
+import type { QueryPagesDto } from "./dto/query-pages.dto";
 import type { UpdatePageStatusDto } from "./dto/update-page-status.dto";
 import type { UpdatePageDto } from "./dto/update-page.dto";
-import type { PageStatus } from "./pages.constants";
-
-const featuredImageSelect = {
-  id: true,
-  fileName: true,
-  mimeType: true,
-  extension: true,
-  url: true,
-} satisfies Prisma.AdminMediaSelect;
-
-const pageInclude = {
-  featuredImage: { select: featuredImageSelect },
-} satisfies Prisma.PageInclude;
-
-type PageRecord = Prisma.PageGetPayload<{ include: typeof pageInclude }>;
-
-const publicPageSelect = {
-  title: true,
-  slug: true,
-  excerpt: true,
-  contentHtml: true,
-  featuredImage: { select: featuredImageSelect },
-  seoTitle: true,
-  seoDescription: true,
-  seoKeywords: true,
-  canonicalUrl: true,
-  robotsIndex: true,
-  robotsFollow: true,
-  publishedAt: true,
-} satisfies Prisma.PageSelect;
+import { PAGE_STATUSES, type PageStatus } from "./pages.constants";
+import {
+  mapPageDetail,
+  mapPageListItem,
+  mapPublicPage,
+} from "./pages.mapper";
+import {
+  assertPageCanPublish,
+  assertPageStatusTransition,
+} from "./pages.policy";
+import { buildPagesListQuery } from "./queries/pages-list-query.builder";
+import { PAGE_INCLUDE, PUBLIC_PAGE_SELECT } from "./pages.select";
 
 @Injectable()
 export class PagesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryPagesDto) {
-    const appliedSort = query.sort?.length
-      ? query.sort
-      : [{ id: "updatedAt" as const, desc: true }];
-    const orderBy = appliedSort.map(
-      (sort) =>
-        ({
-          [sort.id]: sort.desc ? "desc" : "asc",
-        }) as Prisma.PageOrderByWithRelationInput,
-    );
-    const standardWhere = this.buildStandardWhere(query);
-    const advancedWhere = this.buildAdvancedWhere(
-      query.filters ?? [],
-      query.joinOperator,
-    );
-    const where: Prisma.PageWhereInput = advancedWhere
-      ? { AND: [standardWhere, advancedWhere] }
-      : standardWhere;
-    const skip = (query.page - 1) * query.perPage;
-
+    const { where, orderBy, skip, take, appliedSort } =
+      buildPagesListQuery(query);
     const [records, total] = await this.prisma.$transaction([
       this.prisma.page.findMany({
         where,
         skip,
-        take: query.perPage,
+        take,
         orderBy,
-        include: pageInclude,
+        include: PAGE_INCLUDE,
       }),
       this.prisma.page.count({ where }),
     ]);
-    const items = records.map((page) => this.toListResponse(page));
+    const items = records.map(mapPageListItem);
     const pageCount = Math.max(1, Math.ceil(total / query.perPage));
 
     return {
@@ -104,63 +72,64 @@ export class PagesService {
   }
 
   async findOne(id: number) {
-    return this.toResponse(await this.findRecord(id));
+    return mapPageDetail(await this.findRecord(id));
   }
 
-  async findPublicBySlug(input: string) {
+  async findPublicBySlug(input: string, locale?: string) {
     const slug = input.trim().toLowerCase();
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       throw new NotFoundException("Không tìm thấy trang.");
     }
 
-    const page = await this.prisma.page.findFirst({
+    const candidates = localizedPageSlugCandidates(slug, locale);
+    const localizedSlug = candidates[0];
+    const pages = await this.prisma.page.findMany({
       where: {
-        slug,
+        slug: { in: candidates },
         status: "PUBLISHED",
         deletedAt: null,
       },
-      select: publicPageSelect,
+      select: PUBLIC_PAGE_SELECT,
     });
+    const page =
+      pages.find((candidate) => candidate.slug === localizedSlug) ??
+      pages.find((candidate) => candidate.slug === slug);
     if (!page) throw new NotFoundException("Không tìm thấy trang.");
 
-    return {
-      ...page,
-      contentHtml: this.sanitizeContent(page.contentHtml),
-    };
+    return mapPublicPage(page);
   }
 
   async create(dto: CreatePageDto, user: AuthenticatedUser) {
-    if (dto.status === "PUBLISHED") this.assertCanPublish(user);
-    const slug = this.normalizeSlug(dto.slug || dto.title);
+    if (dto.status === "PUBLISHED") assertPageCanPublish(user);
+    const slug = normalizePageSlug(dto.slug || dto.title);
     await this.assertSlugAvailable(slug);
     await this.assertFeaturedImage(dto.featuredImageId);
-    const contentJson = this.serializeContent(dto.contentJson);
+    const contentJson = serializePageContent(dto.contentJson);
 
     try {
       const page = await this.prisma.page.create({
         data: {
           title: dto.title.trim(),
           slug,
-          excerpt: this.emptyToNull(dto.excerpt),
+          excerpt: emptyPageValueToNull(dto.excerpt),
           contentJson,
-          contentHtml: this.sanitizeContent(dto.contentHtml ?? ""),
+          contentHtml: sanitizePageContent(dto.contentHtml ?? ""),
           status: dto.status,
           featuredImageId: dto.featuredImageId || null,
-          seoTitle: this.emptyToNull(dto.seoTitle),
-          seoDescription: this.emptyToNull(dto.seoDescription),
-          seoKeywords: this.emptyToNull(dto.seoKeywords),
-          canonicalUrl: this.emptyToNull(dto.canonicalUrl),
+          seoTitle: emptyPageValueToNull(dto.seoTitle),
+          seoDescription: emptyPageValueToNull(dto.seoDescription),
+          seoKeywords: emptyPageValueToNull(dto.seoKeywords),
+          canonicalUrl: emptyPageValueToNull(dto.canonicalUrl),
           robotsIndex: dto.robotsIndex,
           robotsFollow: dto.robotsFollow,
           sortOrder: dto.sortOrder,
           publishedAt: dto.status === "PUBLISHED" ? new Date() : null,
         },
-        include: pageInclude,
+        include: PAGE_INCLUDE,
       });
-      return this.toResponse(page);
+      return mapPageDetail(page);
     } catch (error) {
-      this.rethrowKnownError(error);
-      throw error;
+      this.throwPersistenceError(error);
     }
   }
 
@@ -172,7 +141,7 @@ export class PagesService {
       );
     }
     const slug =
-      dto.slug === undefined ? undefined : this.normalizeSlug(dto.slug);
+      dto.slug === undefined ? undefined : normalizePageSlug(dto.slug);
     if (slug && slug !== current.slug) {
       await this.assertSlugAvailable(slug, id);
     }
@@ -190,28 +159,28 @@ export class PagesService {
           ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
           ...(slug !== undefined ? { slug } : {}),
           ...(dto.excerpt !== undefined
-            ? { excerpt: this.emptyToNull(dto.excerpt) }
+            ? { excerpt: emptyPageValueToNull(dto.excerpt) }
             : {}),
           ...(dto.contentJson !== undefined
-            ? { contentJson: this.serializeContent(dto.contentJson) }
+            ? { contentJson: serializePageContent(dto.contentJson) }
             : {}),
           ...(dto.contentHtml !== undefined
-            ? { contentHtml: this.sanitizeContent(dto.contentHtml) }
+            ? { contentHtml: sanitizePageContent(dto.contentHtml) }
             : {}),
           ...(dto.featuredImageId !== undefined
             ? { featuredImageId: dto.featuredImageId || null }
             : {}),
           ...(dto.seoTitle !== undefined
-            ? { seoTitle: this.emptyToNull(dto.seoTitle) }
+            ? { seoTitle: emptyPageValueToNull(dto.seoTitle) }
             : {}),
           ...(dto.seoDescription !== undefined
-            ? { seoDescription: this.emptyToNull(dto.seoDescription) }
+            ? { seoDescription: emptyPageValueToNull(dto.seoDescription) }
             : {}),
           ...(dto.seoKeywords !== undefined
-            ? { seoKeywords: this.emptyToNull(dto.seoKeywords) }
+            ? { seoKeywords: emptyPageValueToNull(dto.seoKeywords) }
             : {}),
           ...(dto.canonicalUrl !== undefined
-            ? { canonicalUrl: this.emptyToNull(dto.canonicalUrl) }
+            ? { canonicalUrl: emptyPageValueToNull(dto.canonicalUrl) }
             : {}),
           ...(dto.robotsIndex !== undefined
             ? { robotsIndex: dto.robotsIndex }
@@ -223,12 +192,11 @@ export class PagesService {
             ? { sortOrder: dto.sortOrder }
             : {}),
         },
-        include: pageInclude,
+        include: PAGE_INCLUDE,
       });
-      return this.toResponse(page);
+      return mapPageDetail(page);
     } catch (error) {
-      this.rethrowKnownError(error);
-      throw error;
+      this.throwPersistenceError(error);
     }
   }
 
@@ -237,10 +205,16 @@ export class PagesService {
     dto: UpdatePageStatusDto,
     user: AuthenticatedUser,
   ) {
-    const current = await this.findRecord(id);
-    this.assertStatusTransition(current.status as PageStatus, dto.status);
-    if (dto.status === "PUBLISHED") this.assertCanPublish(user);
-    await this.applyStatus([id], dto.status);
+    await this.prisma.$transaction(async (prisma) => {
+      const current = await prisma.page.findFirst({
+        where: { id, deletedAt: null },
+        select: { status: true },
+      });
+      if (!current) throw new NotFoundException("Không tìm thấy trang.");
+      assertPageStatusTransition(this.toPageStatus(current.status), dto.status);
+      if (dto.status === "PUBLISHED") assertPageCanPublish(user);
+      await this.applyStatus(prisma, [id], dto.status);
+    });
     return this.findOne(id);
   }
 
@@ -249,18 +223,23 @@ export class PagesService {
     user: AuthenticatedUser,
   ) {
     const ids = this.uniqueIds(dto.ids);
-    if (dto.status === "PUBLISHED") this.assertCanPublish(user);
-    const records = await this.prisma.page.findMany({
-      where: { id: { in: ids }, deletedAt: null },
-      select: { id: true, status: true },
+    const updated = await this.prisma.$transaction(async (prisma) => {
+      if (dto.status === "PUBLISHED") assertPageCanPublish(user);
+      const records = await prisma.page.findMany({
+        where: { id: { in: ids }, deletedAt: null },
+        select: { id: true, status: true },
+      });
+      if (records.length !== ids.length) {
+        throw new NotFoundException("Một hoặc nhiều trang không tồn tại.");
+      }
+      for (const record of records) {
+        assertPageStatusTransition(
+          this.toPageStatus(record.status),
+          dto.status,
+        );
+      }
+      return this.applyStatus(prisma, ids, dto.status);
     });
-    if (records.length !== ids.length) {
-      throw new NotFoundException("Một hoặc nhiều trang không tồn tại.");
-    }
-    for (const record of records) {
-      this.assertStatusTransition(record.status as PageStatus, dto.status);
-    }
-    const updated = await this.applyStatus(ids, dto.status);
     return { updated };
   }
 
@@ -297,202 +276,32 @@ export class PagesService {
     return { deleted: result.count };
   }
 
-  private async applyStatus(ids: number[], status: PageStatus) {
-    return this.prisma.$transaction(async (prisma) => {
-      if (status === "PUBLISHED") {
-        await prisma.page.updateMany({
-          where: {
-            id: { in: ids },
-            deletedAt: null,
-            publishedAt: null,
-          },
-          data: { publishedAt: new Date() },
-        });
-      }
-      const result = await prisma.page.updateMany({
-        where: { id: { in: ids }, deletedAt: null },
-        data: { status },
+  private async applyStatus(
+    prisma: Prisma.TransactionClient,
+    ids: number[],
+    status: PageStatus,
+  ) {
+    if (status === "PUBLISHED") {
+      await prisma.page.updateMany({
+        where: {
+          id: { in: ids },
+          deletedAt: null,
+          publishedAt: null,
+        },
+        data: { publishedAt: new Date() },
       });
-      return result.count;
+    }
+    const result = await prisma.page.updateMany({
+      where: { id: { in: ids }, deletedAt: null },
+      data: { status },
     });
-  }
-
-  private buildStandardWhere(query: QueryPagesDto): Prisma.PageWhereInput {
-    const search = query.search?.trim();
-    return {
-      deletedAt: null,
-      ...(query.status?.length ? { status: { in: query.status } } : {}),
-      ...(search
-        ? {
-            OR: [
-              { title: { contains: search } },
-              { slug: { contains: search } },
-            ],
-          }
-        : {}),
-    };
-  }
-
-  private buildAdvancedWhere(
-    filters: PageFilterDto[],
-    joinOperator: "and" | "or",
-  ): Prisma.PageWhereInput | undefined {
-    const conditions = filters
-      .map((filter) => this.buildFilterCondition(filter))
-      .filter(
-        (condition): condition is Prisma.PageWhereInput => Boolean(condition),
-      );
-    if (!conditions.length) return undefined;
-    return joinOperator === "or" ? { OR: conditions } : { AND: conditions };
-  }
-
-  private buildFilterCondition(
-    filter: PageFilterDto,
-  ): Prisma.PageWhereInput | undefined {
-    if (
-      filter.id === "createdAt" ||
-      filter.id === "updatedAt" ||
-      filter.id === "publishedAt"
-    ) {
-      return this.buildDateFilter(filter);
-    }
-
-    const value =
-      typeof filter.value === "string" ? filter.value : undefined;
-    const values = Array.isArray(filter.value) ? filter.value : undefined;
-    const field = filter.id;
-
-    switch (filter.operator) {
-      case "iLike":
-        return value
-          ? ({ [field]: { contains: value } } as Prisma.PageWhereInput)
-          : undefined;
-      case "notILike":
-        return value
-          ? ({
-              NOT: { [field]: { contains: value } },
-            } as Prisma.PageWhereInput)
-          : undefined;
-      case "eq":
-        return value !== undefined
-          ? ({ [field]: { equals: value } } as Prisma.PageWhereInput)
-          : undefined;
-      case "ne":
-        return value !== undefined
-          ? ({
-              NOT: { [field]: { equals: value } },
-            } as Prisma.PageWhereInput)
-          : undefined;
-      case "inArray":
-        return values?.length
-          ? ({ [field]: { in: values } } as Prisma.PageWhereInput)
-          : undefined;
-      case "notInArray":
-        return values?.length
-          ? ({ [field]: { notIn: values } } as Prisma.PageWhereInput)
-          : undefined;
-      case "isEmpty":
-        return { [field]: { equals: "" } } as Prisma.PageWhereInput;
-      case "isNotEmpty":
-        return { [field]: { not: "" } } as Prisma.PageWhereInput;
-      default:
-        return undefined;
-    }
-  }
-
-  private buildDateFilter(
-    filter: PageFilterDto,
-  ): Prisma.PageWhereInput | undefined {
-    const field = filter.id;
-    const value =
-      typeof filter.value === "string" ? filter.value : undefined;
-    const values = Array.isArray(filter.value) ? filter.value : undefined;
-    const date = value ? this.parseDate(value) : null;
-
-    if (filter.operator === "isEmpty") {
-      return { [field]: null } as Prisma.PageWhereInput;
-    }
-    if (filter.operator === "isNotEmpty") {
-      return { [field]: { not: null } } as Prisma.PageWhereInput;
-    }
-
-    let condition: Record<string, Date> | undefined;
-    switch (filter.operator) {
-      case "eq":
-        condition = date
-          ? { gte: this.startOfDay(date), lte: this.endOfDay(date) }
-          : undefined;
-        break;
-      case "ne":
-        return date
-          ? ({
-              OR: [
-                { [field]: { lt: this.startOfDay(date) } },
-                { [field]: { gt: this.endOfDay(date) } },
-              ],
-            } as Prisma.PageWhereInput)
-          : undefined;
-      case "lt":
-        condition = date ? { lt: this.endOfDay(date) } : undefined;
-        break;
-      case "lte":
-        condition = date ? { lte: this.endOfDay(date) } : undefined;
-        break;
-      case "gt":
-        condition = date ? { gt: this.startOfDay(date) } : undefined;
-        break;
-      case "gte":
-        condition = date ? { gte: this.startOfDay(date) } : undefined;
-        break;
-      case "isBetween": {
-        if (!values || values.length !== 2) return undefined;
-        const start = values[0] ? this.parseDate(values[0]) : null;
-        const end = values[1] ? this.parseDate(values[1]) : null;
-        if (!start && !end) return undefined;
-        condition = {
-          ...(start ? { gte: this.startOfDay(start) } : {}),
-          ...(end ? { lte: this.endOfDay(end) } : {}),
-        };
-        break;
-      }
-      case "isRelativeToToday": {
-        if (!value) return undefined;
-        const [amountValue, unit] = value.split(" ");
-        const amount = Number.parseInt(amountValue || "", 10);
-        if (!Number.isFinite(amount)) return undefined;
-        const days =
-          unit === "weeks"
-            ? amount * 7
-            : unit === "months"
-              ? amount * 30
-              : unit === "days"
-                ? amount
-                : null;
-        if (days === null) return undefined;
-        const start = new Date();
-        start.setDate(start.getDate() + days);
-        const end = new Date(start);
-        end.setDate(
-          end.getDate() + (unit === "weeks" ? 6 : unit === "months" ? 29 : 0),
-        );
-        condition = {
-          gte: this.startOfDay(start),
-          lte: this.endOfDay(end),
-        };
-        break;
-      }
-      default:
-        return undefined;
-    }
-    return condition
-      ? ({ [field]: condition } as Prisma.PageWhereInput)
-      : undefined;
+    return result.count;
   }
 
   private async findRecord(id: number) {
     const page = await this.prisma.page.findFirst({
       where: { id, deletedAt: null },
-      include: pageInclude,
+      include: PAGE_INCLUDE,
     });
     if (!page) throw new NotFoundException("Không tìm thấy trang.");
     return page;
@@ -524,167 +333,25 @@ export class PagesService {
     }
   }
 
-  private assertCanPublish(user: AuthenticatedUser) {
-    if (!user.permissions.includes("pages.publish")) {
-      throw new ForbiddenException("Bạn không có quyền xuất bản trang.");
+  private toPageStatus(value: string): PageStatus {
+    const status = PAGE_STATUSES.find((candidate) => candidate === value);
+    if (!status) {
+      throw new BadRequestException("Trạng thái trang không hợp lệ.");
     }
-  }
-
-  private assertStatusTransition(current: PageStatus, target: PageStatus) {
-    if (current === target) return;
-    const allowed: Record<PageStatus, PageStatus[]> = {
-      DRAFT: ["PUBLISHED", "ARCHIVED"],
-      PUBLISHED: ["DRAFT", "ARCHIVED"],
-      ARCHIVED: ["DRAFT"],
-    };
-    if (!allowed[current].includes(target)) {
-      throw new BadRequestException(
-        `Không thể chuyển trạng thái từ ${current} sang ${target}.`,
-      );
-    }
-  }
-
-  private normalizeSlug(value: string) {
-    const slug = value
-      .trim()
-      .normalize("NFKD")
-      .replace(/\p{M}+/gu, "")
-      .replace(/[đĐ]/g, (character) => (character === "đ" ? "d" : "D"))
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 180);
-    if (!slug) {
-      throw new BadRequestException("Slug không hợp lệ.");
-    }
-    return slug;
-  }
-
-  private serializeContent(content: Record<string, unknown>) {
-    if (content.type !== "doc") {
-      throw new BadRequestException("contentJson phải là tài liệu Tiptap.");
-    }
-    const serialized = JSON.stringify(content);
-    if (Buffer.byteLength(serialized, "utf8") > 1_000_000) {
-      throw new BadRequestException("Nội dung trang vượt quá 1 MB.");
-    }
-    return serialized;
-  }
-
-  private sanitizeContent(value: string) {
-    return sanitizeHtml(value, {
-      allowedTags: [
-        "p",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "strong",
-        "em",
-        "u",
-        "s",
-        "code",
-        "pre",
-        "blockquote",
-        "ul",
-        "ol",
-        "li",
-        "div",
-        "span",
-        "label",
-        "input",
-        "a",
-        "img",
-        "hr",
-        "br",
-      ],
-      allowedAttributes: {
-        a: ["href", "target", "rel"],
-        img: ["src", "alt", "title", "width", "height"],
-        ul: ["data-type"],
-        li: ["data-type", "data-checked"],
-        input: ["type", "checked", "disabled"],
-        p: ["style"],
-        h1: ["style"],
-        h2: ["style"],
-        h3: ["style"],
-        h4: ["style"],
-      },
-      allowedStyles: {
-        "*": {
-          "text-align": [/^(left|center|right|justify)$/],
-        },
-      },
-      allowedSchemes: ["http", "https", "mailto"],
-      allowedSchemesByTag: {
-        img: ["http", "https"],
-      },
-      allowProtocolRelative: false,
-      transformTags: {
-        a: sanitizeHtml.simpleTransform("a", {
-          rel: "noopener noreferrer",
-        }),
-        input: (_tagName, attributes) => ({
-          tagName: "input",
-          attribs: {
-            type: "checkbox",
-            disabled: "disabled",
-            ...(attributes.checked ? { checked: "checked" } : {}),
-          },
-        }),
-      },
-    });
-  }
-
-  private parseDate(value: string) {
-    const numeric = Number(value);
-    const date = new Date(Number.isFinite(numeric) ? numeric : value);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  private startOfDay(value: Date) {
-    const date = new Date(value);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }
-
-  private endOfDay(value: Date) {
-    const date = new Date(value);
-    date.setHours(23, 59, 59, 999);
-    return date;
-  }
-
-  private emptyToNull(value?: string | null) {
-    if (!value) return null;
-    return value.trim() || null;
+    return status;
   }
 
   private uniqueIds(ids: number[]) {
     return [...new Set(ids)];
   }
 
-  private toListResponse(page: PageRecord) {
-    const { contentJson: _json, contentHtml: _html, ...rest } = page;
-    return rest;
-  }
-
-  private toResponse(page: PageRecord) {
-    let contentJson: Record<string, unknown>;
-    try {
-      contentJson = JSON.parse(page.contentJson) as Record<string, unknown>;
-    } catch {
-      contentJson = { type: "doc", content: [{ type: "paragraph" }] };
-    }
-    return { ...page, contentJson };
-  }
-
-  private rethrowKnownError(error: unknown) {
+  private throwPersistenceError(error: unknown): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
       throw new ConflictException("Slug đã được sử dụng.");
     }
+    throw error;
   }
 }

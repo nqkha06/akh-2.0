@@ -27,6 +27,10 @@ import {
 } from "../authorization/user-authorization";
 import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { PrismaService } from "../../database/prisma/prisma.service";
+import {
+  AuditService,
+  type AuditRequestContext,
+} from "../audit/audit.service";
 import type {
   AccessJwtPayload,
   AuthMethod,
@@ -58,6 +62,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly passwordResetMailer: PasswordResetMailer,
     private readonly businessSettings: BusinessSettingsService,
+    private readonly audit: AuditService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -316,6 +321,107 @@ export class AuthService {
     return {
       message: "Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.",
     };
+  }
+
+  async changePassword(
+    actor: AuthenticatedUser,
+    currentPassword: string,
+    newPassword: string,
+    context: AuditRequestContext,
+  ) {
+    if (actor.impersonation) {
+      throw new ForbiddenException({
+        code: "PASSWORD_CHANGE_IMPERSONATION_FORBIDDEN",
+        message: "Không thể đổi mật khẩu trong phiên đăng nhập thay người dùng.",
+      });
+    }
+    if (!actor.sessionId) {
+      throw new UnauthorizedException({
+        code: "SESSION_NOT_FOUND",
+        message: "Không tìm thấy phiên đăng nhập.",
+      });
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: actor.id },
+      select: { id: true, passwordHash: true, status: true },
+    });
+    const currentPasswordMatches = await compare(
+      currentPassword,
+      user?.passwordHash
+        ? this.normalizeLegacyHash(user.passwordHash)
+        : DUMMY_PASSWORD_HASH,
+    );
+
+    if (!user || user.status !== "active") {
+      throw new UnauthorizedException({
+        code: "USER_DISABLED",
+        message: "Tài khoản hiện không hoạt động.",
+      });
+    }
+    if (!user.passwordHash) {
+      throw new BadRequestException({
+        code: "PASSWORD_NOT_CONFIGURED",
+        message:
+          "Tài khoản chưa có mật khẩu. Vui lòng dùng chức năng quên mật khẩu để thiết lập.",
+      });
+    }
+    if (!currentPasswordMatches) {
+      throw new BadRequestException({
+        code: "CURRENT_PASSWORD_INCORRECT",
+        message: "Mật khẩu hiện tại không chính xác.",
+      });
+    }
+    if (
+      await compare(newPassword, this.normalizeLegacyHash(user.passwordHash))
+    ) {
+      throw new BadRequestException({
+        code: "NEW_PASSWORD_SAME_AS_CURRENT",
+        message: "Mật khẩu mới phải khác mật khẩu hiện tại.",
+      });
+    }
+
+    const passwordHash = await hash(newPassword, 12);
+    const now = new Date();
+    await this.prisma.$transaction(async (prisma) => {
+      const updated = await prisma.user.updateMany({
+        where: { id: user.id, passwordHash: user.passwordHash },
+        data: { passwordHash },
+      });
+      if (updated.count !== 1) {
+        throw new ConflictException({
+          code: "PASSWORD_CHANGED_CONCURRENTLY",
+          message:
+            "Mật khẩu vừa được thay đổi. Vui lòng tải lại trang và thử lại.",
+        });
+      }
+
+      const revoked = await prisma.authSession.updateMany({
+        where: {
+          userId: user.id,
+          id: { not: actor.sessionId },
+          revokedAt: null,
+        },
+        data: { revokedAt: now },
+      });
+      await prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: now },
+      });
+      await this.audit.record(
+        {
+          actorUserId: user.id,
+          action: "auth.password_changed",
+          resourceType: "user",
+          resourceId: user.id,
+          newData: { otherSessionsRevoked: revoked.count },
+          ...context,
+        },
+        prisma,
+      );
+    });
+
+    return { message: "Mật khẩu đã được cập nhật." };
   }
 
   async validateCredentials(emailInput: string, password: string) {

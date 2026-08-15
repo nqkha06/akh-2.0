@@ -52,6 +52,10 @@ import { Label } from "@/components/ui/label";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
 import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import {
+  AuthClientError,
+  changeAccountPassword,
+} from "@/features/auth/api/auth.client";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -82,6 +86,7 @@ const inputClassName = "h-11 rounded-lg border-border bg-background shadow-none 
 
 export function AccountView() {
   const t = useTranslations("Account");
+  const passwordT = useTranslations("ChangePassword");
   const brand = useSiteBrand();
   const siteHost = getSiteHost(brand);
   const currentUser = useAuthUser();
@@ -102,8 +107,14 @@ export function AccountView() {
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [customDomain, setCustomDomain] = useState("");
   const [domainStatus, setDomainStatus] = useState<"idle" | "pending">("idle");
-  const [password, setPassword] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
+  const [password, setPassword] = useState<PasswordForm>({
+    current: "",
+    next: "",
+    confirm: "",
+  });
   const [showPasswords, setShowPasswords] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     if (hydratedProfile.current) return;
@@ -135,8 +146,21 @@ export function AccountView() {
   );
   const passwordIsLongEnough = password.next.length >= 8;
   const passwordHasNumber = /\d/.test(password.next);
-  const passwordsMatch = Boolean(password.next) && password.next === password.confirm;
-  const canUpdatePassword = Boolean(password.current) && passwordIsLongEnough && passwordHasNumber && passwordsMatch;
+  const passwordHasUppercase = /[A-Z]/.test(password.next);
+  const passwordHasLowercase = /[a-z]/.test(password.next);
+  const passwordsMatch =
+    Boolean(password.next) && password.next === password.confirm;
+  const passwordIsDifferent =
+    Boolean(password.current && password.next) &&
+    password.current !== password.next;
+  const canUpdatePassword =
+    Boolean(password.current) &&
+    passwordIsLongEnough &&
+    passwordHasNumber &&
+    passwordHasUppercase &&
+    passwordHasLowercase &&
+    passwordsMatch &&
+    passwordIsDifferent;
   const currencyPreview = currencyPreferences.formatCurrency(48.1, {
     targetCurrency: currency,
   });
@@ -146,7 +170,7 @@ export function AccountView() {
     { id: "payment-method", icon: CreditCard, label: t("navigation.payment") },
     { id: "currency", icon: CircleDollarSign, label: t("navigation.currency") },
     { id: "custom-domain", icon: Globe2, label: t("navigation.domain") },
-    { id: "change-password", icon: KeyRound, label: t("navigation.password") },
+    { id: "change-password", icon: KeyRound, label: passwordT("title") },
   ];
 
   const notifySaved = (section: string) => toast.success(t("toast.sectionSaved", { section }));
@@ -189,11 +213,37 @@ export function AccountView() {
     reader.readAsDataURL(file);
   };
 
-  const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canUpdatePassword) return;
-    toast.success(t("security.passwordUpdated"));
-    setPassword({ current: "", next: "", confirm: "" });
+    if (!canUpdatePassword || updatingPassword) return;
+    setUpdatingPassword(true);
+    setPasswordError("");
+    try {
+      await changeAccountPassword({
+        currentPassword: password.current,
+        newPassword: password.next,
+      });
+      toast.success(passwordT("success"));
+      setPassword({ current: "", next: "", confirm: "" });
+      setShowPasswords(false);
+    } catch (error) {
+      const errorKey = error instanceof AuthClientError
+        ? ({
+            CURRENT_PASSWORD_INCORRECT: "errors.currentIncorrect",
+            NEW_PASSWORD_SAME_AS_CURRENT: "errors.sameAsCurrent",
+            PASSWORD_NOT_CONFIGURED: "errors.notConfigured",
+            PASSWORD_CHANGE_IMPERSONATION_FORBIDDEN: "errors.impersonation",
+            PASSWORD_CHANGED_CONCURRENTLY: "errors.concurrent",
+          } as const)[error.code || ""]
+        : undefined;
+      const message = errorKey
+        ? passwordT(errorKey)
+        : passwordT("errors.generic");
+      setPasswordError(message);
+      toast.error(message);
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   return (
@@ -436,42 +486,98 @@ export function AccountView() {
             <SettingsCard
               id="change-password"
               icon={KeyRound}
-              title={t("security.passwordTitle")}
-              footer={<CardActions><Button type="submit" className="h-10" disabled={!canUpdatePassword}><KeyRound />{t("security.updatePassword")}</Button></CardActions>}
+              title={passwordT("title")}
+              description={passwordT("description")}
+              footer={
+                <CardActions>
+                  <Button
+                    type="submit"
+                    className="h-10"
+                    disabled={!canUpdatePassword || updatingPassword}
+                  >
+                    {updatingPassword ? (
+                      <LoaderCircle className="animate-spin" />
+                    ) : (
+                      <KeyRound />
+                    )}
+                    {updatingPassword
+                      ? passwordT("updating")
+                      : passwordT("submit")}
+                  </Button>
+                </CardActions>
+              }
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <PasswordField
                   id="current-password"
-                  label={t("security.currentPassword")}
+                  label={passwordT("currentPassword")}
                   value={password.current}
                   show={showPasswords}
-                  onChange={(current) => setPassword((value) => ({ ...value, current }))}
+                  onChange={(current) => {
+                    setPassword((value) => ({ ...value, current }));
+                    setPasswordError("");
+                  }}
                   onToggle={() => setShowPasswords((current) => !current)}
+                  autoComplete="current-password"
+                  showLabel={passwordT("showPassword")}
+                  hideLabel={passwordT("hidePassword")}
                   className="sm:col-span-2"
                 />
                 <PasswordField
                   id="new-password"
-                  label={t("security.newPassword")}
+                  label={passwordT("newPassword")}
                   value={password.next}
                   show={showPasswords}
-                  onChange={(next) => setPassword((value) => ({ ...value, next }))}
+                  onChange={(next) => {
+                    setPassword((value) => ({ ...value, next }));
+                    setPasswordError("");
+                  }}
                   onToggle={() => setShowPasswords((current) => !current)}
+                  autoComplete="new-password"
+                  showLabel={passwordT("showPassword")}
+                  hideLabel={passwordT("hidePassword")}
                 />
                 <PasswordField
                   id="confirm-password"
-                  label={t("security.confirmPassword")}
+                  label={passwordT("confirmPassword")}
                   value={password.confirm}
                   show={showPasswords}
-                  onChange={(confirm) => setPassword((value) => ({ ...value, confirm }))}
+                  onChange={(confirm) => {
+                    setPassword((value) => ({ ...value, confirm }));
+                    setPasswordError("");
+                  }}
                   onToggle={() => setShowPasswords((current) => !current)}
+                  autoComplete="new-password"
+                  showLabel={passwordT("showPassword")}
+                  hideLabel={passwordT("hidePassword")}
                 />
               </div>
 
-              <div className="mt-5 grid gap-2 rounded-lg border border-border bg-muted/20 p-4 text-xs text-muted-foreground sm:grid-cols-3">
-                <PasswordRequirement met={passwordIsLongEnough}>{t("security.requirements.length")}</PasswordRequirement>
-                <PasswordRequirement met={passwordHasNumber}>{t("security.requirements.number")}</PasswordRequirement>
-                <PasswordRequirement met={passwordsMatch}>{t("security.requirements.match")}</PasswordRequirement>
+              <div className="mt-5 grid gap-2 rounded-lg border border-border bg-muted/20 p-4 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+                <PasswordRequirement met={passwordIsLongEnough}>
+                  {passwordT("requirements.length")}
+                </PasswordRequirement>
+                <PasswordRequirement met={passwordHasUppercase}>
+                  {passwordT("requirements.uppercase")}
+                </PasswordRequirement>
+                <PasswordRequirement met={passwordHasLowercase}>
+                  {passwordT("requirements.lowercase")}
+                </PasswordRequirement>
+                <PasswordRequirement met={passwordHasNumber}>
+                  {passwordT("requirements.number")}
+                </PasswordRequirement>
+                <PasswordRequirement met={passwordsMatch}>
+                  {passwordT("requirements.match")}
+                </PasswordRequirement>
+                <PasswordRequirement met={passwordIsDifferent}>
+                  {passwordT("requirements.different")}
+                </PasswordRequirement>
               </div>
+              {passwordError ? (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  {passwordError}
+                </p>
+              ) : null}
             </SettingsCard>
           </form>
 
@@ -557,21 +663,47 @@ function DnsValue({ label, value, onCopy }: { label: string; value: string; onCo
   );
 }
 
-function PasswordField({ id, label, value, show, onChange, onToggle, className = "" }: {
+function PasswordField({
+  id,
+  label,
+  value,
+  show,
+  onChange,
+  onToggle,
+  autoComplete,
+  showLabel,
+  hideLabel,
+  className = "",
+}: {
   id: string;
   label: string;
   value: string;
   show: boolean;
   onChange: (value: string) => void;
   onToggle: () => void;
+  autoComplete: "current-password" | "new-password";
+  showLabel: string;
+  hideLabel: string;
   className?: string;
 }) {
   return (
     <FieldBlock label={label} htmlFor={id} className={className}>
       <InputGroup className="h-11 rounded-lg bg-background shadow-none sm:h-10">
-        <InputGroupInput id={id} type={show ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete="off" />
+        <InputGroupInput
+          id={id}
+          type={show ? "text" : "password"}
+          value={value}
+          maxLength={128}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+        />
         <InputGroupAddon align="inline-end">
-          <InputGroupButton aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"} onClick={onToggle}>{show ? <EyeOff /> : <Eye />}</InputGroupButton>
+          <InputGroupButton
+            aria-label={show ? hideLabel : showLabel}
+            onClick={onToggle}
+          >
+            {show ? <EyeOff /> : <Eye />}
+          </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
     </FieldBlock>

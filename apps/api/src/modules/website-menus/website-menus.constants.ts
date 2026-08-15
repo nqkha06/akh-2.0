@@ -11,6 +11,7 @@ export const websiteMenuLocations = [
   "header-actions",
   "footer-primary",
   "footer-legal",
+  "footer-social",
   "mobile-primary",
 ] as const;
 

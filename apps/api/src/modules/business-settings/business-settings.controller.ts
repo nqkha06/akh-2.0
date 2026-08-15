@@ -1,14 +1,12 @@
-import { Body, Controller, Get, Patch, Req, UseGuards } from "@nestjs/common";
-import type { Request } from "express";
+import { Body, Controller, Get, Patch, UseGuards } from "@nestjs/common";
 
+import { CurrentUser } from "../../common/http/current-user.decorator";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { Permissions } from "../auth/decorators/permissions.decorator";
 import { JwtAccessGuard } from "../auth/guards/jwt-access.guard";
 import { PermissionsGuard } from "../auth/guards/permissions.guard";
 import { BusinessSettingsService } from "./business-settings.service";
 import { UpdateBusinessSettingsDto } from "./dto/update-business-settings.dto";
-
-type AdminRequest = Request & { user: AuthenticatedUser };
 
 @Controller()
 export class BusinessSettingsController {
@@ -30,9 +28,9 @@ export class BusinessSettingsController {
   @UseGuards(JwtAccessGuard, PermissionsGuard)
   @Permissions("settings.update")
   update(
-    @Req() request: AdminRequest,
+    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateBusinessSettingsDto,
   ) {
-    return this.settings.update(dto, request.user.id);
+    return this.settings.update(dto, user.id);
   }
 }

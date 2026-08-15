@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 
 import { PagesService } from "./pages.service";
 
@@ -7,7 +7,10 @@ export class PublicPagesController {
   constructor(private readonly pagesService: PagesService) {}
 
   @Get(":slug")
-  findPublished(@Param("slug") slug: string) {
-    return this.pagesService.findPublicBySlug(slug);
+  findPublished(
+    @Param("slug") slug: string,
+    @Query("locale") locale?: string,
+  ) {
+    return this.pagesService.findPublicBySlug(slug, locale);
   }
 }

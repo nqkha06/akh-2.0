@@ -5,26 +5,25 @@ import {
   ArrowRight,
   BarChart3,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleCheck,
-  Clock3,
   Download,
-  Eye,
   FileCheck2,
-  FileText,
   Globe2,
-  KeyRound,
   Link2,
+  Languages,
   LockKeyhole,
   Menu,
+  MessageCircle,
+  MousePointerClick,
   Moon,
   Play,
-  ShieldCheck,
+  Quote,
+  Settings2,
   Sparkles,
   Sun,
   TrendingUp,
-  UserCheck,
-  Users,
   X,
 } from "lucide-react";
 import {
@@ -34,9 +33,9 @@ import {
   SiBluesky,
   SiDiscord,
   SiDribbble,
-  SiDropbox,
   SiFacebook,
   SiGoogleplay,
+  SiGithub,
   SiInstagram,
   SiReddit,
   SiRoblox,
@@ -51,18 +50,73 @@ import {
   SiX,
   SiYoutube,
 } from "@icons-pack/react-simple-icons";
-import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useState, useTransition } from "react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "@/app/page.module.css";
 import { Button } from "@/components/ui/button";
-import type { PublicSiteSettings } from "@/features/site-settings/types";
+import {
+  landingTestimonials,
+  type LandingTestimonial,
+} from "@/components/landing/landing-testimonials";
+import { useUiLanguages } from "@/features/languages/hooks/use-ui-languages";
+import type {
+  PublicSiteSettings,
+  SocialPlatform,
+} from "@/features/site-settings/types";
 import type {
   PublicMenu,
   WebsiteMenuLocation,
 } from "@/features/admin-menus/types";
+import {
+  defaultLocale,
+  localeCookieName,
+  type AppLocale,
+} from "@/i18n/config";
 
 const easing = [0.22, 1, 0.36, 1] as const;
+
+const fallbackFooterSocials = [
+  "instagram",
+  "youtube",
+  "tiktok",
+  "x",
+  "discord",
+] as const satisfies readonly SocialPlatform[];
+
+const supportedFooterSocials = new Set<SocialPlatform>([
+  "facebook",
+  "youtube",
+  "instagram",
+  "tiktok",
+  "x",
+  "linkedin",
+  "github",
+  "discord",
+  "telegram",
+  "zalo",
+]);
+
+function resolveFooterSocialPlatform(value: string | null): SocialPlatform | null {
+  return value && supportedFooterSocials.has(value as SocialPlatform)
+    ? value as SocialPlatform
+    : null;
+}
+
+const socialPlatformLabels: Record<SocialPlatform, string> = {
+  facebook: "Facebook",
+  youtube: "YouTube",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  x: "X",
+  linkedin: "LinkedIn",
+  github: "GitHub",
+  discord: "Discord",
+  telegram: "Telegram",
+  zalo: "Zalo",
+};
 
 function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -70,6 +124,21 @@ function LinkedinIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.23 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
     </svg>
   );
+}
+
+function FooterSocialIcon({ platform }: { platform: SocialPlatform }) {
+  switch (platform) {
+    case "facebook": return <SiFacebook aria-hidden="true" size={18} />;
+    case "youtube": return <SiYoutube aria-hidden="true" size={18} />;
+    case "instagram": return <SiInstagram aria-hidden="true" size={18} />;
+    case "tiktok": return <SiTiktok aria-hidden="true" size={18} />;
+    case "x": return <SiX aria-hidden="true" size={17} />;
+    case "linkedin": return <LinkedinIcon aria-hidden="true" height={18} width={18} />;
+    case "github": return <SiGithub aria-hidden="true" size={18} />;
+    case "discord": return <SiDiscord aria-hidden="true" size={19} />;
+    case "telegram": return <SiTelegram aria-hidden="true" size={18} />;
+    case "zalo": return <MessageCircle aria-hidden="true" size={19} />;
+  }
 }
 
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -87,10 +156,11 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
 }
 
 function Logo({ settings }: { settings: PublicSiteSettings }) {
+  const t = useTranslations("Landing.nav");
   const lightLogo = settings.branding.logoLight;
   const darkLogo = settings.branding.logoDark;
   return (
-    <a className={styles.logo} href="#top" aria-label={`${settings.siteName} home`}>
+    <a className={styles.logo} href="#top" aria-label={t("homeAria", { site: settings.siteName })}>
       {lightLogo ? (
         <span className="relative block h-9 w-32">
           <Image
@@ -140,6 +210,36 @@ function PublicThemeToggle({ label }: { label: string }) {
   );
 }
 
+function LandingLanguageSwitcher() {
+  const locale = useLocale() as AppLocale;
+  const t = useTranslations("Common");
+  const uiLanguages = useUiLanguages();
+  const [isPending, startTransition] = useTransition();
+
+  function changeLocale(nextLocale: AppLocale) {
+    if (nextLocale === locale) return;
+    document.cookie = `${localeCookieName}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
+    startTransition(() => window.location.reload());
+  }
+
+  return (
+    <label className={styles.landingLanguage}>
+      <Languages aria-hidden="true" size={16} />
+      <span className="sr-only">{t("language")}</span>
+      <select
+        aria-label={t("language")}
+        disabled={isPending}
+        onChange={(event) => changeLocale(event.target.value as AppLocale)}
+        value={locale || defaultLocale}
+      >
+        {uiLanguages.items.map((option) => (
+          <option key={option.locale} value={option.locale}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function resolvePublicHref(href: string, anchorPrefix: string) {
   return anchorPrefix && href.startsWith("#") ? `${anchorPrefix}${href}` : href;
 }
@@ -150,6 +250,7 @@ export function Navbar({
   dashboardHref = null,
   semantic = false,
   showThemeToggle = false,
+  preferFallbackNavigation = false,
   themeToggleLabel = "Toggle color theme",
   fallbackAnchorPrefix = "",
 }: {
@@ -158,48 +259,51 @@ export function Navbar({
   dashboardHref?: string | null;
   semantic?: boolean;
   showThemeToggle?: boolean;
+  preferFallbackNavigation?: boolean;
   themeToggleLabel?: string;
   fallbackAnchorPrefix?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("Landing.nav");
+  const resolvedThemeToggleLabel = themeToggleLabel === "Toggle color theme" ? t("themeToggle") : themeToggleLabel;
   const fallbackLinks = [
-    { id: -1, label: "How it works", href: `${fallbackAnchorPrefix}#how-it-works`, target: "_self" as const, rel: null },
-    { id: -2, label: "Features", href: `${fallbackAnchorPrefix}#features`, target: "_self" as const, rel: null },
-    { id: -3, label: "Creators", href: `${fallbackAnchorPrefix}#creators`, target: "_self" as const, rel: null },
-    { id: -4, label: "Pricing", href: `${fallbackAnchorPrefix}#pricing`, target: "_self" as const, rel: null },
+    { id: -1, label: t("whyUs"), href: `${fallbackAnchorPrefix}#why-us`, target: "_self" as const, rel: null },
+    { id: -2, label: t("features"), href: `${fallbackAnchorPrefix}#features`, target: "_self" as const, rel: null },
+    { id: -3, label: t("faqs"), href: `${fallbackAnchorPrefix}#faqs`, target: "_self" as const, rel: null },
+    { id: -4, label: t("getStarted"), href: `${fallbackAnchorPrefix}#get-started`, target: "_self" as const, rel: null },
   ];
-  const links = menus?.["header-primary"]?.items.length
+  const links = !preferFallbackNavigation && menus?.["header-primary"]?.items.length
     ? menus["header-primary"].items
     : fallbackLinks;
-  const mobileLinks = menus?.["mobile-primary"]?.items.length
+  const mobileLinks = !preferFallbackNavigation && menus?.["mobile-primary"]?.items.length
     ? menus["mobile-primary"].items
     : links;
   const actions = dashboardHref
     ? [
         {
           id: -7,
-          label: "Dashboard",
+          label: t("dashboard"),
           href: dashboardHref,
           target: "_self" as const,
           rel: null,
         },
       ]
-    : menus?.["header-actions"]?.items.length
+    : !preferFallbackNavigation && menus?.["header-actions"]?.items.length
       ? menus["header-actions"].items
       : [
-          { id: -5, label: "Sign in", href: "/login", target: "_self" as const, rel: null },
-          { id: -6, label: "Start creating", href: "/register", target: "_self" as const, rel: null },
+          { id: -5, label: t("signIn"), href: "/login", target: "_self" as const, rel: null },
+          { id: -6, label: t("startCreating"), href: "/register", target: "_self" as const, rel: null },
         ];
 
   return (
     <header className={`${styles.navbar} ${semantic ? styles.semanticNavbar : ""}`}>
-      <nav className={styles.navInner} aria-label="Main navigation">
+      <nav className={styles.navInner} aria-label={t("mainNavigation")}>
         <Logo settings={settings} />
         <div className={styles.navLinks}>
           {links.map((item) => item.href ? <a key={item.id} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} target={item.target} rel={item.rel ?? undefined}>{item.label}</a> : null)}
         </div>
         <div className={styles.navActions}>
-          {showThemeToggle ? <PublicThemeToggle label={themeToggleLabel} /> : null}
+          {showThemeToggle ? <PublicThemeToggle label={resolvedThemeToggleLabel} /> : null}
           {actions.map((item, index) => item.href ? (
             <a
               className={index === actions.length - 1 ? styles.smallPrimary : styles.textButton}
@@ -213,7 +317,7 @@ export function Navbar({
             </a>
           ) : null)}
         </div>
-        <button className={styles.menuButton} onClick={() => setOpen(!open)} aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open}>
+        <button className={styles.menuButton} onClick={() => setOpen(!open)} aria-label={open ? t("closeNavigation") : t("openNavigation")} aria-expanded={open}>
           {open ? <X size={21} /> : <Menu size={21} />}
         </button>
       </nav>
@@ -222,7 +326,7 @@ export function Navbar({
           <motion.div className={styles.mobileMenu} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             {mobileLinks.map((item) => item.href ? <a key={item.id} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}</a> : null)}
             {actions.map((item, index) => item.href ? <a className={index === actions.length - 1 ? styles.smallPrimary : undefined} href={resolvePublicHref(item.href, fallbackAnchorPrefix)} key={item.id} target={item.target} rel={item.rel ?? undefined} onClick={() => setOpen(false)}>{item.label}{index === actions.length - 1 ? <ArrowRight size={15} /> : null}</a> : null)}
-            {showThemeToggle ? <PublicThemeToggle label={themeToggleLabel} /> : null}
+            {showThemeToggle ? <PublicThemeToggle label={resolvedThemeToggleLabel} /> : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -231,8 +335,9 @@ export function Navbar({
 }
 
 function HeroPhone() {
+  const t = useTranslations("Landing.hero.preview");
   return (
-    <div className={styles.heroVisual} aria-label="Linkicom creator page preview">
+    <div className={styles.heroVisual} aria-label={t("ariaLabel")}>
       <div className={`${styles.platformFloat} ${styles.floatYoutube}`}><SiYoutube size={19} /></div>
       <div className={`${styles.platformFloat} ${styles.floatInstagram}`}><SiInstagram size={19} /></div>
       <div className={`${styles.platformFloat} ${styles.floatDiscord}`}><SiDiscord size={19} /></div>
@@ -240,40 +345,47 @@ function HeroPhone() {
         <div className={styles.phoneFrame}>
           <div className={styles.phoneIsland} />
           <div className={styles.phoneTopbar}><span>9:41</span><span>● ●</span></div>
-          <div className={styles.creatorAvatar}>AM</div>
-          <strong>@alexmakes</strong>
-          <p>Design systems, resources &amp; weekly notes.</p>
+          <div className={styles.creatorAvatar}><Link2 aria-hidden="true" size={20} /></div>
+          <strong>{t("workspace")}</strong>
+          <p>{t("workspaceDescription")}</p>
           <div className={styles.phoneSocials}><SiYoutube size={15} /><SiInstagram size={15} /><SiTiktok size={14} /><SiDiscord size={15} /></div>
-          <div className={styles.phoneLink}><span><Link2 size={15} /></span><div><b>My design toolkit</b><small>42 curated resources</small></div><ChevronRight size={15} /></div>
+          <div className={styles.phoneLink}><span><Globe2 size={15} /></span><div><b>{t("destination")}</b><small>{t("destinationValue")}</small></div><ChevronRight size={15} /></div>
           <div className={styles.lockedPhoneLink}>
-            <div className={styles.lockedTitle}><span><Download size={15} /></span><div><b>Creator launch pack</b><small>PSD · FIG · PDF</small></div><LockKeyhole size={15} /></div>
+            <div className={styles.lockedTitle}><span><MousePointerClick size={15} /></span><div><b>{t("actionFlow")}</b><small>{t("actionFlowValue")}</small></div><Settings2 size={15} /></div>
             <div className={styles.phoneProgress}><span /></div>
-            <div className={styles.phoneProgressLabel}><span>1 of 2 actions completed</span><b>50%</b></div>
+            <div className={styles.phoneProgressLabel}><span>{t("linkStatus")}</span><b>{t("active")}</b></div>
           </div>
-          <div className={styles.phoneBrand}><span className={styles.miniLogoMark} /> Made with Linkicom</div>
+          <div className={styles.phoneBrand}><span className={styles.miniLogoMark} /> {t("madeWith")}</div>
         </div>
       </motion.div>
       <motion.div className={styles.clickBadge} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: .55, delay: .65 }}>
-        <span><TrendingUp size={16} /></span><div><small>Clicks this week</small><b>+1,284</b></div>
+        <span><TrendingUp size={16} /></span><div><small>{t("analytics")}</small><b>{t("analyticsValue")}</b></div>
       </motion.div>
     </div>
   );
 }
 
 export function HeroSection({ dashboardHref }: { dashboardHref: string | null }) {
+  const t = useTranslations("Landing.hero");
   return (
     <section className={styles.hero} id="top">
       <div className={styles.container}>
         <div className={styles.heroGrid}>
           <motion.div className={styles.heroCopy} initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, ease: easing }}>
-            <span className={styles.eyebrow}>All-in-one creator link platform</span>
-            <h1>One link.<br /><span>More momentum.</span></h1>
-            <p>Turn every click into a follow, subscriber, fan, or customer with link-in-bio pages and verified unlock actions.</p>
+            <span className={styles.eyebrow}>{t("eyebrow")}</span>
+            <h1>{t("titleLine1")}<br /><span>{t("titleLine2")}</span></h1>
+            <p>{t("description")}</p>
             <div className={styles.heroButtons}>
-              <a className={styles.primaryButton} href={dashboardHref || "/register"}>{dashboardHref ? "Go to dashboard" : "Create your free page"} <ArrowRight size={17} /></a>
-              <a className={styles.secondaryButton} href="#unlock-demo"><Play size={15} fill="currentColor" /> See how it works</a>
+              <a className={styles.primaryButton} href={dashboardHref || "/register"}>{dashboardHref ? t("goToDashboard") : t("createPage")} <ArrowRight size={17} /></a>
+              <a className={styles.secondaryButton} href="#link-flow"><Play size={15} fill="currentColor" /> {t("seeHow")}</a>
             </div>
-            <div className={styles.microProof}><CircleCheck size={15} /> No credit card required <i /> Launch in minutes</div>
+            <div className={styles.microProof}>
+              <span><CircleCheck size={15} /> {t("proof.quickSetup")}</span>
+              <i aria-hidden="true" />
+              <span>{t("proof.editAnytime")}</span>
+              <i aria-hidden="true" />
+              <span>{t("proof.clearTracking")}</span>
+            </div>
           </motion.div>
           <HeroPhone />
         </div>
@@ -300,7 +412,6 @@ const integrations = [
   { name: "Reddit", Icon: SiReddit, color: "#ff4500" },
   { name: "Roblox", Icon: SiRoblox, color: "#e2231a" },
   { name: "Apple Music", Icon: SiApplemusic, color: "#fa243c" },
-  { name: "Dropbox", Icon: SiDropbox, color: "#0061ff" },
   { name: "Snapchat", Icon: SiSnapchat, color: "#fffc00" },
   { name: "Threads", Icon: SiThreads, color: "#18181b" },
   { name: "Bluesky", Icon: SiBluesky, color: "#0285ff" },
@@ -331,11 +442,12 @@ function PlatformLogoGroup({ duplicate = false }: { duplicate?: boolean }) {
 }
 
 export function PlatformMarquee() {
+  const t = useTranslations("Landing.platforms");
   return (
     <div
       className={styles.platformMarquee}
       role="region"
-      aria-label="Supported social, creator, music, and app platforms"
+      aria-label={t("ariaLabel")}
     >
       <div className={styles.platformMarqueeTrack}>
         <PlatformLogoGroup />
@@ -347,47 +459,78 @@ export function PlatformMarquee() {
 
 export function IntegrationStrip() {
   return (
+
     <section className={styles.integrationStrip} aria-labelledby="platform-proof-title">
       <div className={styles.container}>
-        <h2 id="platform-proof-title">
+        {/* <h2 id="platform-proof-title">
           Trusted by 92K+ <span>content creators</span> who gained <span>633M+</span> followers
-        </h2>
+        </h2> */}
         <PlatformMarquee />
       </div>
     </section>
   );
 }
 
-const processSteps = [
-  { number: "01", icon: Link2, title: "Add your destination", body: "Paste the content, download, invite, or offer you want to share.", visual: "linkicom.io/alex/launch-pack" },
-  { number: "02", icon: UserCheck, title: "Choose required actions", body: "Ask visitors to subscribe, follow, join, or complete another action.", visual: "actions" },
-  { number: "03", icon: TrendingUp, title: "Publish and grow", body: "Share one link and monitor visits, actions, unlocks, and conversion.", visual: "growth" },
-];
+const reasons = [
+  {
+    key: "onePlace",
+    icon: Link2,
+  },
+  {
+    key: "meaningfulAction",
+    icon: MousePointerClick,
+  },
+  {
+    key: "clarity",
+    icon: Settings2,
+  },
+  {
+    key: "protected",
+    icon: BarChart3,
+  },
+] as const;
 
-function StepVisual({ type }: { type: string }) {
-  if (type === "actions") return <div className={styles.stepActions}><span><SiYoutube size={17} /></span><i /><span><SiDiscord size={17} /></span><i /><span><Check size={16} /></span></div>;
-  if (type === "growth") return <div className={styles.stepGrowth}><BarChart3 size={18} /><span><i style={{ height: "38%" }} /><i style={{ height: "56%" }} /><i style={{ height: "74%" }} /><i style={{ height: "100%" }} /></span><b>+38%</b></div>;
-  return <div className={styles.stepLink}><Globe2 size={16} /><span>{type}</span><Check size={15} /></div>;
-}
-
-export function ProcessTimeline() {
+export function WhyChooseUsSection() {
+  const t = useTranslations("Landing.why");
   return (
-    <section className={styles.section} id="how-it-works">
+    <section className={`${styles.section} ${styles.whySection}`} id="why-us">
       <div className={styles.container}>
-        <Reveal className={styles.centerHeading}>
-          <span className={styles.eyebrow}>Simple by design</span>
-          <h2>From idea to shared in three easy steps.</h2>
-          <p>No code. No clutter. Just a better path from your content to your community.</p>
+        <Reveal className={`${styles.centerHeading} ${styles.whyHeading}`}>
+          <span className={styles.eyebrow}>{t("eyebrow")}</span>
+          <h2>{t("titleLine1")}<br />{t("titleLine2")}</h2>
+          <p>{t("description")}</p>
         </Reveal>
-        <div className={styles.timeline}>
-          {processSteps.map((step) => (
-            <article className={styles.timelineStep} key={step.number}>
-              <div className={styles.timelineMarker}><span>{step.number}</span></div>
-              <StepVisual type={step.visual} />
-              <div className={styles.timelineTitle}><step.icon size={18} /><h3>{step.title}</h3></div>
-              <p>{step.body}</p>
-            </article>
+        <div className={styles.whyShowcase}>
+          {[reasons.slice(0, 2), reasons.slice(2)].map((group, groupIndex) => (
+            <div className={`${styles.whySide} ${groupIndex === 0 ? styles.whySideLeft : styles.whySideRight}`} key={groupIndex}>
+              {group.map((reason, index) => {
+                const number = (groupIndex * 2) + index + 1;
+
+                return (
+                  <Reveal className={styles.whyPoint} key={reason.key}>
+                    <div className={styles.whyPointTop}>
+                      <span><reason.icon aria-hidden="true" size={20} /></span>
+                      <small>0{number}</small>
+                    </div>
+                    <h3>{t(`reasons.${reason.key}.title`)}</h3>
+                    <p>{t(`reasons.${reason.key}.body`)}</p>
+                  </Reveal>
+                );
+              })}
+            </div>
           ))}
+          <Reveal className={styles.whyCore}>
+            <span className={`${styles.whyOrbitChip} ${styles.whyOrbitOne}`}><Link2 size={18} /></span>
+            <span className={`${styles.whyOrbitChip} ${styles.whyOrbitTwo}`}><MousePointerClick size={18} /></span>
+            <span className={`${styles.whyOrbitChip} ${styles.whyOrbitThree}`}><Settings2 size={18} /></span>
+            <span className={`${styles.whyOrbitChip} ${styles.whyOrbitFour}`}><BarChart3 size={18} /></span>
+            <div className={styles.whyCorePanel}>
+              <span><Sparkles aria-hidden="true" size={22} /></span>
+              <small>{t("coreKicker")}</small>
+              <strong>{t("coreTitleLine1")}<br />{t("coreTitleLine2")}</strong>
+              <i>{t("coreMeta")}</i>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -395,12 +538,13 @@ export function ProcessTimeline() {
 }
 
 const unlockActions = [
-  { label: "Subscribe on YouTube", note: "Verify subscription", icon: SiYoutube },
-  { label: "Follow on X", note: "Verify follow", icon: SiX },
-  { label: "Join Discord", note: "Verify membership", icon: SiDiscord },
-];
+  { key: "youtube", icon: SiYoutube },
+  { key: "x", icon: SiX },
+  { key: "discord", icon: SiDiscord },
+] as const;
 
 export function UnlockDemoSection() {
+  const t = useTranslations("Landing.unlock");
   const [completed, setCompleted] = useState([true, false, false]);
   const [revealed, setRevealed] = useState(false);
   const count = completed.filter(Boolean).length;
@@ -412,49 +556,51 @@ export function UnlockDemoSection() {
   }
 
   return (
-    <section className={styles.unlockSection} id="unlock-demo">
+    <section className={styles.unlockSection} id="link-flow">
       <div className={`${styles.container} ${styles.unlockGrid}`}>
         <Reveal className={styles.darkCopy}>
-          <span className={styles.eyebrow}>Verified engagement</span>
-          <h2>One tiny action.<br />One rewarding reveal.</h2>
-          <p>Turn passive visitors into real subscribers and community members before revealing your content.</p>
+          <span className={styles.eyebrow}>{t("eyebrow")}</span>
+          <h2>{t("titleLine1")}<br />{t("titleLine2")}</h2>
+          <p>{t("description")}</p>
           <div className={styles.metrics}>
-            <div><strong>36%</strong><span>average unlock conversion</span></div>
-            <div><strong>2.4×</strong><span>more qualified engagement</span></div>
+            <div><strong>{t("destinationTypesValue")}</strong><span>{t("destinationTypes")}</span></div>
+            <div><strong>{t("expiryControlsValue")}</strong><span>{t("expiryControls")}</span></div>
           </div>
         </Reveal>
         <Reveal>
           <div className={styles.unlockProduct} aria-live="polite">
             <div className={styles.unlockHeader}>
-              <span><FileText size={21} /></span>
-              <div><strong>Creator launch checklist</strong><small>PDF guide · 2.8 MB</small></div>
-              <em>FREE</em>
+              <div><strong>{t("productTitle")}</strong><small>{t("productMeta")}</small></div>
             </div>
-            <div className={styles.unlockProgress}><motion.span animate={{ width: `${(count / 3) * 100}%` }} /></div>
-            <div className={styles.unlockProgressText}><span>{count} of 3 actions completed</span><b>{Math.round((count / 3) * 100)}%</b></div>
+
             <div className={styles.actionList}>
               {unlockActions.map((action, index) => {
                 const Icon = action.icon;
                 return (
-                  <button key={action.label} onClick={() => toggleAction(index)} aria-pressed={completed[index]}>
+                  <button key={action.key} onClick={() => toggleAction(index)} aria-pressed={completed[index]}>
                     <span className={styles.actionPlatform}><Icon size={18} /></span>
-                    <span><b>{action.label}</b><small>{completed[index] ? "Completed and verified" : action.note}</small></span>
+                    <span><b>{t(`actions.${action.key}.label`)}</b><small>{completed[index] ? t("completed") : t(`actions.${action.key}.note`)}</small></span>
                     <span className={completed[index] ? styles.actionComplete : styles.actionPending}>{completed[index] ? <Check size={15} /> : <ArrowRight size={15} />}</span>
                   </button>
                 );
               })}
             </div>
+            <div className={styles.unlockProgress}><motion.span animate={{ width: `${(count / 3) * 100}%` }} /></div>
+            <div className={styles.unlockProgressText}>
+              <span>{t("actionsCompleted", { count })}</span>
+                          <span>{ count }/3</span>
+
+            </div>
             <button className={styles.unlockCta} disabled={!ready} onClick={() => setRevealed(true)}>
-              {revealed ? <><Check size={17} /> Content revealed</> : <><LockKeyhole size={16} /> Unlock content</>}
+              {revealed ? <><Check size={17} /> {t("contentRevealed")}</> : <><LockKeyhole size={16} /> {t("unlockContent")}</>}
             </button>
             <AnimatePresence>
               {revealed && (
                 <motion.div className={styles.revealResult} initial={{ opacity: 0, height: 0, y: 8 }} animate={{ opacity: 1, height: "auto", y: 0 }} exit={{ opacity: 0, height: 0 }}>
-                  <span><FileCheck2 size={18} /></span><div><b>Your download is ready</b><small>creator-launch-checklist.pdf</small></div><Download size={17} />
+                  <span><FileCheck2 size={18} /></span><div><b>{t("destinationReady")}</b><small>project-files.zip</small></div><Download size={17} />
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className={styles.secureNote}><ShieldCheck size={14} /> Actions are checked before content is revealed</div>
           </div>
         </Reveal>
       </div>
@@ -462,144 +608,143 @@ export function UnlockDemoSection() {
   );
 }
 
-type FeatureKey = "bio" | "unlock" | "analytics" | "themes" | "protected";
-const features: Array<{ key: FeatureKey; label: string; title: string; body: string }> = [
-  { key: "bio", label: "Link-in-bio", title: "One home for everything you create", body: "Bring your links, social profiles, newest release and gated resources into a focused creator page." },
-  { key: "unlock", label: "Unlock actions", title: "Ask for meaningful action, not empty attention", body: "Stack social requirements, confirm completion and reveal content in one clean visitor flow." },
-  { key: "analytics", label: "Analytics", title: "Know exactly what turns visits into growth", body: "Understand clicks, completed actions, unlock rate and your highest-performing links." },
-  { key: "themes", label: "Custom themes", title: "Make every page feel unmistakably yours", body: "Adjust colors, typography, cover media and layout with a fast live preview." },
-  { key: "protected", label: "Protected content", title: "Share valuable content with sensible controls", body: "Set access rules, expiration and content reveal behavior without exposing the destination early." },
+const testimonialRows = [
+  landingTestimonials.slice(0, 5),
+  landingTestimonials.slice(5),
 ];
 
-function BrowserShell({ title, children }: { title: string; children: React.ReactNode }) {
+function TestimonialCard({ testimonial }: { testimonial: LandingTestimonial }) {
+  const locale = useLocale() as AppLocale;
+  const copy = testimonial.copy[locale] ?? testimonial.copy.vi;
+
   return (
-    <div className={styles.browserShell}>
-      <div className={styles.browserBar}><span><i /><i /><i /></span><div><LockKeyhole size={11} /> app.linkicom.io/{title}</div><span /></div>
-      <div className={styles.browserBody}>{children}</div>
-    </div>
+    <article className={styles.testimonialCard}>
+      <div className={styles.testimonialCardTop}>
+        <span className={styles.quoteIcon}><Quote aria-hidden="true" size={19} /></span>
+        <span className={styles.testimonialPlatform}>{testimonial.platform}</span>
+      </div>
+      <blockquote>“{copy.quote}”</blockquote>
+      <div className={styles.testimonialPerson}>
+        <span aria-hidden="true">{testimonial.initials}</span>
+        <div><b>{testimonial.name}</b><small>{copy.role}</small></div>
+      </div>
+    </article>
   );
 }
 
-function BioPreview() {
-  return <BrowserShell title="page-editor"><div className={styles.editorLayout}><aside><span className={styles.logo}>Linkicom</span><span className={styles.editorActive}>Page</span><span>Links</span><span>Appearance</span><span>Settings</span></aside><main><div className={styles.editorHeader}><div><small>PAGE EDITOR</small><b>Creator page</b></div><button>Publish changes</button></div><div className={styles.editorForm}><label>Profile title<span>Alex Makes</span></label><label>Bio<span>Design systems, resources &amp; weekly notes.</span></label><div className={styles.editorLinkRow}><span><Link2 size={16} /></span><div><b>My design toolkit</b><small>linkicom.io/alex/toolkit</small></div><Eye size={16} /></div><div className={styles.editorLinkRow}><span><LockKeyhole size={16} /></span><div><b>Creator launch pack</b><small>2 unlock actions</small></div><Eye size={16} /></div></div></main><div className={styles.editorPhone}><div className={styles.previewAvatar}>AM</div><b>@alexmakes</b><p>Design systems &amp; weekly notes</p><span>My design toolkit</span><span>Creator launch pack <LockKeyhole size={12} /></span></div></div></BrowserShell>;
-}
-
-function UnlockPreview() {
-  return <BrowserShell title="unlock-builder"><div className={styles.builderPreview}><div className={styles.builderHead}><div><small>UNLOCK FLOW</small><b>Creator launch pack</b></div><button>Save flow</button></div><div className={styles.builderColumns}><div><strong>Required actions</strong><div className={styles.builderAction}><SiYoutube size={18} /><span><b>Subscribe</b><small>youtube.com/@alexmakes</small></span><CircleCheck size={16} /></div><div className={styles.builderAction}><SiDiscord size={18} /><span><b>Join server</b><small>discord.gg/creators</small></span><CircleCheck size={16} /></div><button className={styles.addAction}>+ Add action</button></div><div className={styles.verificationPane}><span><ShieldCheck size={22} /></span><b>Verification enabled</b><p>Each requirement is checked before the destination is revealed.</p><div><Check size={14} /> Destination protected</div><div><Check size={14} /> Duplicate checks on</div></div></div></div></BrowserShell>;
-}
-
-function AnalyticsPreview() {
-  return <BrowserShell title="analytics"><div className={styles.analyticsPreview}><div className={styles.analyticsHead}><div><small>ANALYTICS</small><b>Performance overview</b></div><span>Last 30 days⌄</span></div><div className={styles.analyticsKpis}><div><small>Page views</small><b>28,410</b><em>+18.2%</em></div><div><small>Verified actions</small><b>10,824</b><em>+12.7%</em></div><div><small>Conversion</small><b>38.1%</b><em>+4.2%</em></div></div><div className={styles.lineChart}><span>12k</span><svg viewBox="0 0 600 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 138 C55 130 66 95 119 108 S185 126 230 82 S299 100 345 62 S410 74 458 42 S535 53 600 18" /><path className={styles.chartArea} d="M0 138 C55 130 66 95 119 108 S185 126 230 82 S299 100 345 62 S410 74 458 42 S535 53 600 18 L600 160 L0 160 Z" /></svg><span>0</span></div><div className={styles.chartLegend}><i /> Views <i /> Verified actions</div></div></BrowserShell>;
-}
-
-function ThemesPreview() {
-  return <BrowserShell title="appearance"><div className={styles.themePreview}><div className={styles.themeControls}><small>APPEARANCE</small><h4>Build your theme</h4><label>Brand color</label><div className={styles.swatches}><i /><i /><i /><i /><i /></div><label>Typography</label><button>Geist <span>⌄</span></button><label>Button style</label><div className={styles.buttonStyles}><i /><i /><i /></div></div><div className={styles.themeCanvas}><div><span className={styles.previewAvatar}>AM</span><b>Alex Makes</b><p>Design systems &amp; weekly notes</p><em>My design toolkit <ArrowRight size={13} /></em><em>Creator launch pack <LockKeyhole size={12} /></em></div></div></div></BrowserShell>;
-}
-
-function ProtectedPreview() {
-  return <BrowserShell title="content-rules"><div className={styles.protectedPreview}><div className={styles.protectedHead}><span><ShieldCheck size={26} /></span><div><small>CONTENT STATUS</small><b>Protected and ready</b></div><em>ACTIVE</em></div><div className={styles.ruleRows}><div><span><KeyRound size={17} /></span><div><b>Access rules</b><small>All 3 actions must be verified</small></div><ChevronRight size={17} /></div><div><span><Clock3 size={17} /></span><div><b>Expiration</b><small>Link expires in 14 days</small></div><ChevronRight size={17} /></div><div><span><ShieldCheck size={17} /></span><div><b>Duplicate protection</b><small>Limit one unlock per visitor</small></div><ChevronRight size={17} /></div></div><div className={styles.securitySummary}><Check size={16} /> Destination URL is hidden until verification completes</div></div></BrowserShell>;
-}
-
-function FeaturePreview({ feature }: { feature: FeatureKey }) {
-  return <AnimatePresence mode="wait"><motion.div key={feature} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: .28 }}>{feature === "bio" ? <BioPreview /> : feature === "unlock" ? <UnlockPreview /> : feature === "analytics" ? <AnalyticsPreview /> : feature === "themes" ? <ThemesPreview /> : <ProtectedPreview />}</motion.div></AnimatePresence>;
-}
-
-export function FeatureShowcase() {
-  const [active, setActive] = useState<FeatureKey>("bio");
+export function TestimonialsSection() {
+  const t = useTranslations("Landing.testimonials");
   return (
-    <section className={`${styles.section} ${styles.featureSection}`} id="features">
+    <section className={`${styles.section} ${styles.testimonialSection}`} id="features">
       <div className={styles.container}>
-        <Reveal className={styles.leftHeading}><span className={styles.eyebrow}>Built for real workflows</span><h2>Small toolkit.<br />Big creator energy.</h2></Reveal>
-        <div className={styles.featureLayout}>
-          <div className={styles.featureNav} role="tablist" aria-label="Product features">
-            {features.map((feature) => (
-              <button key={feature.key} role="tab" id={`feature-${feature.key}`} aria-selected={active === feature.key} aria-controls="feature-preview" onClick={() => setActive(feature.key)} className={active === feature.key ? styles.activeFeature : ""}>
-                <span>{feature.label}</span>
-                {active === feature.key && <motion.div layoutId="feature-copy"><h3>{feature.title}</h3><p>{feature.body}</p></motion.div>}
-              </button>
-            ))}
-          </div>
-          <div className={styles.featurePreview} id="feature-preview" role="tabpanel" aria-labelledby={`feature-${active}`}><FeaturePreview feature={active} /></div>
+        <Reveal className={`${styles.centerHeading} ${styles.testimonialHeading}`}>
+          <span className={styles.eyebrow}>{t("eyebrow")}</span>
+          <h2>{t("title")}</h2>
+          <p>{t("description")}</p>
+        </Reveal>
+        <div className={styles.testimonialMarquee}>
+          {testimonialRows.map((row, rowIndex) => (
+            <div className={styles.testimonialRow} key={rowIndex}>
+              <div className={`${styles.testimonialTrack} ${rowIndex === 1 ? styles.testimonialTrackReverse : ""}`}>
+                {[0, 1].map((copy) => (
+                  <div aria-hidden={copy === 1 ? true : undefined} className={styles.testimonialGroup} key={copy}>
+                    {row.map((testimonial) => (
+                      <TestimonialCard
+                        testimonial={testimonial}
+                        key={`${copy}-${testimonial.id}`}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-export function SocialProofSection() {
+const faqItems = [
+  "create",
+  "actions",
+  "visitorAccount",
+  "update",
+  "analytics",
+  "expiry",
+] as const;
+
+export function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const t = useTranslations("Landing.faq");
+
   return (
-    <section className={styles.proofSection}>
-      <div className={`${styles.container} ${styles.proofGrid}`}>
-        <Reveal className={styles.quoteBlock}>
-          <span className={styles.eyebrow}>Creator proof</span>
-          <blockquote>“Linkicom helped us turn free downloads into an audience we can actually reach.”</blockquote>
-          <div className={styles.quotePerson}><span>NP</span><div><b>Nina Park</b><small>Video creator · Prototype testimonial</small></div></div>
+    <section className={`${styles.section} ${styles.faqSection}`} id="faqs">
+      <div className={`${styles.container} ${styles.faqLayout}`}>
+        <Reveal className={styles.faqIntro}>
+          <span className={styles.eyebrow}>{t("eyebrow")}</span>
+          <h2>{t("title")}</h2>
+          <p>{t("description")}</p>
+          <Link href="/register">{t("readyPrompt")} <span>{t("createAccount")}</span> <ArrowRight size={15} /></Link>
         </Reveal>
-        <Reveal>
-          <div className={styles.proofAnalytics}>
-            <div className={styles.proofAnalyticsHead}><div><small>PROTOTYPE SNAPSHOT</small><b>Audience growth</b></div><span>Last 30 days</span></div>
-            <div className={styles.proofNumbers}><div><small>Page views</small><b>28.4K</b></div><div><small>Verified actions</small><b>10.8K</b></div><div><small>Conversion</small><b>38.1%</b></div></div>
-            <div className={styles.proofChart}><svg viewBox="0 0 520 130" preserveAspectRatio="none" aria-label="Prototype audience growth line chart"><path d="M0 112 C40 104 69 114 102 91 S160 99 194 70 S250 88 292 52 S357 66 400 36 S468 49 520 15" /></svg></div>
-            <div className={styles.funnel}><span style={{ width: "100%" }}>28.4K visits</span><span style={{ width: "68%" }}>19.2K action starts</span><span style={{ width: "38.1%" }}>10.8K verified</span></div>
-            <p>Placeholder metrics for prototype presentation only. Connect real analytics before production use.</p>
-          </div>
+        <Reveal className={styles.faqList}>
+          {faqItems.map((item, index) => {
+            const isOpen = openIndex === index;
+            const answerId = `faq-answer-${index}`;
+            const question = t(`items.${item}.question`);
+
+            return (
+              <div className={`${styles.faqItem} ${isOpen ? styles.faqItemOpen : ""}`} key={item}>
+                <h3>
+                  <button
+                    aria-controls={answerId}
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                    type="button"
+                  >
+                    <span>{question}</span>
+                    <ChevronDown aria-hidden="true" size={20} />
+                  </button>
+                </h3>
+                <AnimatePresence initial={false}>
+                  {isOpen ? (
+                    <motion.div
+                      animate={{ height: "auto", opacity: 1 }}
+                      className={styles.faqAnswer}
+                      exit={{ height: 0, opacity: 0 }}
+                      id={answerId}
+                      initial={{ height: 0, opacity: 0 }}
+                      role="region"
+                      transition={{ duration: 0.24, ease: easing }}
+                    >
+                      <p>{t(`items.${item}.answer`)}</p>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </Reveal>
-      </div>
-    </section>
-  );
-}
-
-const useCases = [
-  { key: "video", label: "Video creators", title: "Turn every download into a subscriber.", body: "Offer presets, project files and bonus content in exchange for a verified YouTube action.", steps: ["YouTube subscribe", "Verify action", "Reveal download"] },
-  { key: "community", label: "Community builders", title: "Grow Discord and private communities from one page.", body: "Move fans from social feeds into an owned community with a simple verified membership flow.", steps: ["Join Discord", "Verify membership", "Reveal invite or bonus"] },
-  { key: "seller", label: "Digital sellers", title: "Deliver protected files and exclusive offers.", body: "Add a lightweight action layer before valuable resources, launch assets and exclusive offers.", steps: ["Complete action", "Verify", "Reveal product or resource"] },
-];
-
-function UseCasePreview({ active }: { active: string }) {
-  const isCommunity = active === "community";
-  const isSeller = active === "seller";
-  return (
-    <AnimatePresence mode="wait"><motion.div key={active} className={styles.useCasePreview} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-      <div className={styles.useCasePreviewHead}><span>{isCommunity ? <Users size={20} /> : isSeller ? <FileText size={20} /> : <Play size={20} />}</span><div><small>LIVE WORKFLOW</small><b>{isCommunity ? "Community starter pack" : isSeller ? "Exclusive resource bundle" : "Cinematic preset pack"}</b></div><em>ACTIVE</em></div>
-      <div className={styles.workflowPreview}>
-        <div className={styles.workflowCreator}><span>{isCommunity ? <SiDiscord size={21} /> : isSeller ? <FileText size={21} /> : <SiYoutube size={21} />}</span><div><b>{isCommunity ? "Join the creator server" : isSeller ? "Access the resource" : "Subscribe to Alex Makes"}</b><small>{isCommunity ? "discord.gg/alexmakes" : isSeller ? "Protected content" : "youtube.com/@alexmakes"}</small></div><CircleCheck size={18} /></div>
-        <div className={styles.verifyRow}><span /><ShieldCheck size={18} /><span /></div>
-        <div className={styles.revealBox}><LockKeyhole size={19} /><div><b>{isCommunity ? "Private invite + bonus" : isSeller ? "Product files + license" : "12 cinematic presets"}</b><small>Reveal after verification</small></div><Download size={17} /></div>
-      </div>
-    </motion.div></AnimatePresence>
-  );
-}
-
-export function UseCaseTabs({ dashboardHref }: { dashboardHref: string | null }) {
-  const [active, setActive] = useState("video");
-  const current = useCases.find((item) => item.key === active)!;
-  return (
-    <section className={styles.section} id="creators">
-      <div className={styles.container}>
-        <Reveal className={styles.centerHeading}><span className={styles.eyebrow}>Creator-first by default</span><h2>Built for the way creators grow.</h2></Reveal>
-        <div className={styles.useCaseTabs} role="tablist" aria-label="Creator use cases">
-          {useCases.map((item) => <button key={item.key} role="tab" aria-selected={active === item.key} aria-controls="use-case-panel" onClick={() => setActive(item.key)} className={active === item.key ? styles.activeUseCase : ""}>{item.label}</button>)}
-        </div>
-        <div className={styles.useCaseLayout} id="use-case-panel" role="tabpanel">
-          <div className={styles.useCaseCopy}><h3>{current.title}</h3><p>{current.body}</p><div className={styles.workflowLine}>{current.steps.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b>{index < current.steps.length - 1 && <ArrowRight size={16} />}</div>)}</div><a href={dashboardHref || "/register"}>{dashboardHref ? "Open dashboard" : "Build this workflow"} <ArrowRight size={16} /></a></div>
-          <UseCasePreview active={active} />
-        </div>
       </div>
     </section>
   );
 }
 
 export function FinalCTA({ dashboardHref }: { dashboardHref: string | null }) {
+  const t = useTranslations("Landing.cta");
   return (
-    <section className={styles.finalSection} id="pricing">
+    <section className={styles.finalSection} id="get-started">
       <Reveal className={styles.finalCta}>
-        <div className={`${styles.ctaIcon} ${styles.ctaIconOne}`}><SiYoutube size={18} /></div>
-        <div className={`${styles.ctaIcon} ${styles.ctaIconTwo}`}><SiDiscord size={18} /></div>
-        <div className={`${styles.ctaIcon} ${styles.ctaIconThree}`}><Sparkles size={18} /></div>
-        <h2>Your next big click<br />starts right here.</h2>
-        <p>Build a page your audience remembers and a growth loop that keeps working.</p>
-        <a className={styles.primaryButton} href={dashboardHref || "/register"}>{dashboardHref ? "Go to dashboard" : "Start creating for free"} <ArrowRight size={17} /></a>
-        <small>No credit card required <i /> Free plan available</small>
+        <div className={styles.finalCtaCopy}>
+          <span className={styles.eyebrow}>{t("eyebrow")}</span>
+          <h2>{t("title")}</h2>
+          <p>{t("description")}</p>
+          <div className={styles.ctaActions}>
+            <a className={styles.primaryButton} href={dashboardHref || "/register"}>
+              {dashboardHref ? t("goToDashboard") : t("start")} <ArrowRight size={17} />
+            </a>
+          </div>
+        </div>
       </Reveal>
     </section>
   );
@@ -609,42 +754,117 @@ export function Footer({
   settings,
   menus,
   semantic = false,
+  preferFallbackNavigation = false,
   fallbackAnchorPrefix = "",
 }: {
   settings: PublicSiteSettings;
   menus?: Partial<Record<WebsiteMenuLocation, PublicMenu>>;
   semantic?: boolean;
+  preferFallbackNavigation?: boolean;
   fallbackAnchorPrefix?: string;
 }) {
+  const t = useTranslations("Landing.footer");
   const managedColumns = menus?.["footer-primary"]?.items;
-  const columns = managedColumns?.length
+  const columns = !preferFallbackNavigation && managedColumns?.length
     ? managedColumns
     : [
-        { id: -20, label: "Product", children: [{ id: -21, label: "Features", href: `${fallbackAnchorPrefix}#features`, target: "_self" as const, rel: null }] },
-        { id: -22, label: "Resources", children: [{ id: -23, label: "Help center", href: "/", target: "_self" as const, rel: null }] },
-        { id: -24, label: "Company", children: [{ id: -25, label: "Contact", href: "/", target: "_self" as const, rel: null }] },
+        { id: -20, label: t("product"), children: [
+          { id: -21, label: t("howItWorks"), href: `${fallbackAnchorPrefix}#link-flow`, target: "_self" as const, rel: null },
+          { id: -22, label: t("pricing"), href: "/payout-rates", target: "_self" as const, rel: null },
+          { id: -23, label: t("createLink"), href: "/member/create", target: "_self" as const, rel: null },
+        ] },
+        { id: -24, label: t("company"), children: [
+          { id: -25, label: t("contact"), href: "/member/support", target: "_self" as const, rel: null },
+          { id: -26, label: t("community"), href: "/register", target: "_self" as const, rel: null },
+        ] },
       ];
-  const legalItems = menus?.["footer-legal"]?.items ?? [];
+  const managedLegalItems = menus?.["footer-legal"]?.items;
+  const legalItems = !preferFallbackNavigation && managedLegalItems?.length
+    ? managedLegalItems
+    : [
+        { id: -29, label: t("terms"), href: "/terms", target: "_self" as const, rel: null },
+        { id: -30, label: t("privacy"), href: "/privacy", target: "_self" as const, rel: null },
+        { id: -31, label: t("cookies"), href: "/cookies", target: "_self" as const, rel: null },
+      ];
+  const managedSocials = !preferFallbackNavigation
+    ? (menus?.["footer-social"]?.items ?? []).flatMap((item) => {
+        const platform = resolveFooterSocialPlatform(item.iconKey);
+        return platform && item.href
+          ? [{
+              key: `menu-${item.id}`,
+              platform,
+              url: item.href,
+              label: item.label,
+              ariaLabel: item.ariaLabel,
+              target: item.target,
+              rel: item.rel,
+            }]
+          : [];
+      })
+    : [];
+  const activeSocialLinks = settings.socialLinks.filter((link) => link.isActive);
+  const footerSocials = managedSocials.length
+    ? managedSocials
+    : activeSocialLinks.length
+      ? activeSocialLinks.map((link) => ({
+          key: `settings-${link.platform}`,
+          platform: link.platform,
+          url: link.url,
+          label: socialPlatformLabels[link.platform],
+          ariaLabel: null,
+          target: "_blank" as const,
+          rel: "noreferrer",
+        }))
+      : fallbackFooterSocials.map((platform) => ({
+          key: `fallback-${platform}`,
+          platform,
+          url: null,
+          label: socialPlatformLabels[platform],
+          ariaLabel: null,
+          target: "_blank" as const,
+          rel: "noreferrer",
+        }));
+  const footerDescription = t("description");
   return (
     <footer className={`${styles.footer} ${semantic ? styles.semanticFooter : ""}`}>
       <div className={`${styles.container} ${styles.footerGrid}`}>
         <div className={styles.footerBrand}>
           <Logo settings={settings} />
-          <p>{settings.siteDescription || settings.siteTagline}</p>
+          <p>{footerDescription}</p>
           {settings.contact.email ? <a href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a> : null}
           {settings.contact.phone ? <a href={`tel:${settings.contact.phone}`}>{settings.contact.phone}</a> : null}
           {settings.contact.address ? <p>{settings.contact.address}</p> : null}
           {settings.contact.workingHours ? <p>{settings.contact.workingHours}</p> : null}
-          {settings.contact.mapUrl ? <a href={settings.contact.mapUrl} target="_blank" rel="noreferrer">View map</a> : null}
-          {settings.socialLinks.length ? (
-            <div className="mt-3 flex flex-wrap gap-3">
-              {settings.socialLinks.map((link) => (
-                <a key={link.platform} href={link.url} target="_blank" rel="noreferrer">
-                  {link.platform}
-                </a>
-              ))}
+          {settings.contact.mapUrl ? <a href={settings.contact.mapUrl} target="_blank" rel="noreferrer">{t("viewMap")}</a> : null}
+          <div className={styles.footerSocials}>
+            <div className={styles.footerSocialList}>
+              {footerSocials.map((link) => {
+                return link.url ? (
+                  <a
+                    aria-label={link.ariaLabel || t("socialLinkAria", { platform: link.label })}
+                    className={styles.footerSocialButton}
+                    href={link.url}
+                    key={link.key}
+                    rel={link.rel ?? undefined}
+                    target={link.target}
+                    title={link.label}
+                  >
+                    <FooterSocialIcon platform={link.platform} />
+                  </a>
+                ) : (
+                  <span
+                    aria-label={t("socialUnavailable", { platform: link.label })}
+                    className={`${styles.footerSocialButton} ${styles.footerSocialButtonMuted}`}
+                    key={link.key}
+                    role="img"
+                    title={t("socialUnavailable", { platform: link.label })}
+                  >
+                    <FooterSocialIcon platform={link.platform} />
+                  </span>
+                );
+              })}
             </div>
-          ) : null}
+          </div>
         </div>
         {columns.map((column) => (
           <div className={styles.footerColumn} key={column.id}>
@@ -660,7 +880,7 @@ export function Footer({
         ))}
         {legalItems.length ? (
           <div className={styles.footerColumn}>
-            <strong>{menus?.["footer-legal"]?.title || "Legal"}</strong>
+            <strong>{(!preferFallbackNavigation && menus?.["footer-legal"]?.title) || t("legal")}</strong>
             {legalItems.map((item) =>
               item.href ? (
                 <a href={resolvePublicHref(item.href, fallbackAnchorPrefix)} key={item.id} target={item.target} rel={item.rel ?? undefined}>
@@ -671,7 +891,10 @@ export function Footer({
           </div>
         ) : null}
       </div>
-      <div className={`${styles.container} ${styles.footerBottom}`}><span>© 2026 {settings.siteName}. All rights reserved.</span><span>{settings.siteTagline || "Built for creators, from first click to real connection."}</span></div>
+      <div className={`${styles.container} ${styles.footerBottom}`}>
+        <span>{t("rights", { year: 2026, site: settings.siteName })}</span>
+        <LandingLanguageSwitcher />
+      </div>
     </footer>
   );
 }
@@ -687,14 +910,13 @@ export function LandingPage({
 }) {
   return (
     <main className={styles.page}>
-      <Navbar dashboardHref={dashboardHref} menus={menus} semantic settings={settings} showThemeToggle />
+      <Navbar dashboardHref={dashboardHref} menus={menus} preferFallbackNavigation semantic settings={settings} showThemeToggle />
       <HeroSection dashboardHref={dashboardHref} />
       <IntegrationStrip />
-      <ProcessTimeline />
+      <WhyChooseUsSection />
       <UnlockDemoSection />
-      <FeatureShowcase />
-      <SocialProofSection />
-      <UseCaseTabs dashboardHref={dashboardHref} />
+      <TestimonialsSection />
+      <FAQSection />
       <FinalCTA dashboardHref={dashboardHref} />
       <Footer menus={menus} semantic settings={settings} />
     </main>

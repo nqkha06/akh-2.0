@@ -1,0 +1,424 @@
+{
+  "Common": {
+    "language": "Bahasa",
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "search": "Cari",
+    "filter": "Filter",
+    "apply": "Terapkan",
+    "reset": "Atur ulang",
+    "close": "Tutup",
+    "copy": "Salin",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "active": "Aktif",
+    "inactive": "Tidak aktif",
+    "paused": "Dijeda",
+    "comingSoon": "Bagian ini belum tersedia, segera hadir!",
+    "home": "Beranda"
+  },
+  "Landing": {
+    "meta": {
+      "tagline": "Kelola setiap tautan dengan jelas.",
+      "description": "Buat, bagikan, kelola, dan analisis tautan ke URL, file, atau cuplikan teks dari satu ruang kerja Link4Sub."
+    },
+    "nav": {
+      "homeAria": "Beranda {site}",
+      "mainNavigation": "Navigasi utama",
+      "whyUs": "Mengapa Link4Sub",
+      "features": "Fitur",
+      "faqs": "Tanya jawab",
+      "getStarted": "Mulai",
+      "dashboard": "Dasbor",
+      "signIn": "Masuk",
+      "startCreating": "Buat tautan",
+      "openNavigation": "Buka navigasi",
+      "closeNavigation": "Tutup navigasi",
+      "themeToggle": "Ganti tema warna"
+    },
+    "hero": {
+      "eyebrow": "Pengelolaan, berbagi, dan analitik tautan",
+      "titleLine1": "Satu tautan.",
+      "titleLine2": "Semuanya dalam kendali.",
+      "description": "Ubah URL, file, atau teks menjadi tautan yang mudah dibagikan. Sesuaikan alur akses, tambahkan langkah tindakan saat diperlukan, dan pantau performa—semuanya dari satu dasbor.",
+      "goToDashboard": "Buka dasbor",
+      "createPage": "Buat tautan sekarang",
+      "seeHow": "Lihat cara kerjanya",
+      "proof": {
+        "quickSetup": "Penyiapan cepat",
+        "editAnytime": "Edit kapan saja",
+        "clearTracking": "Pemantauan yang jelas"
+      },
+      "preview": {
+        "ariaLabel": "Pratinjau pengelolaan tautan Link4Sub",
+        "workspace": "Materi kampanye",
+        "workspaceDescription": "Tautan publik dengan tujuan terkelola dan langkah tindakan opsional.",
+        "destination": "Tujuan",
+        "destinationValue": "File · project-files.zip",
+        "actionFlow": "Alur tindakan",
+        "actionFlowValue": "YouTube · X · Discord",
+        "linkStatus": "Status tautan",
+        "active": "Aktif",
+        "madeWith": "Dikelola dengan Link4Sub",
+        "analytics": "Analitik",
+        "analyticsValue": "Negara · Perangkat"
+      }
+    },
+    "platforms": {
+      "ariaLabel": "Platform yang tersedia untuk langkah tindakan tautan"
+    },
+    "why": {
+      "eyebrow": "Mengapa Link4Sub",
+      "titleLine1": "Semua yang dibutuhkan untuk berbagi,",
+      "titleLine2": "mengontrol, dan meningkatkan tautan.",
+      "description": "Susun tujuan, bentuk alur pengunjung, atur akses, dan tinjau performa tanpa berpindah-pindah alat.",
+      "coreKicker": "SATU RUANG KERJA",
+      "coreTitleLine1": "Setiap tautan",
+      "coreTitleLine2": "dalam kendali.",
+      "coreMeta": "Buat · Bagikan · Analisis",
+      "reasons": {
+        "onePlace": {
+          "title": "Tujuan yang fleksibel",
+          "body": "Arahkan pengunjung ke URL eksternal, file terkelola, atau cuplikan teks melalui alur pembuatan yang sama."
+        },
+        "meaningfulAction": {
+          "title": "Langkah tindakan opsional",
+          "body": "Tambahkan satu atau beberapa langkah media sosial atau kunjungan halaman sebelum tujuan tersedia."
+        },
+        "clarity": {
+          "title": "Kontrol tautan yang praktis",
+          "body": "Pilih alias, atur kedaluwarsa berdasarkan waktu atau pembukaan berhasil, lalu aktifkan, jeda, atau nonaktifkan tautan."
+        },
+        "protected": {
+          "title": "Insight performa yang berguna",
+          "body": "Tinjau pembukaan berhasil, tautan teratas, serta rincian negara, perangkat, dan browser dari dasbor."
+        }
+      }
+    },
+    "unlock": {
+      "eyebrow": "Alur tautan publik",
+      "titleLine1": "Pandu pengunjung.",
+      "titleLine2": "Lalu buka tujuannya.",
+      "description": "Tautan Link4Sub dapat menggabungkan tujuan dengan langkah tindakan yang dapat dikonfigurasi. Pengunjung membuka setiap langkah, menunggu hingga selesai, lalu melanjutkan.",
+      "destinationTypesValue": "URL · FILE · TEKS",
+      "destinationTypes": "pilihan tujuan",
+      "expiryControlsValue": "TANGGAL · BUKA",
+      "expiryControls": "kontrol kedaluwarsa",
+      "productTitle": "Materi proyek",
+      "productMeta": "Tujuan berupa file terkelola",
+      "flowBadge": "ALUR TAUTAN",
+      "actionsCompleted": "{count} dari 3 langkah tindakan selesai",
+      "completed": "Langkah tindakan selesai",
+      "contentRevealed": "Tujuan telah dibuka",
+      "unlockContent": "Buka tujuan",
+      "destinationReady": "Tujuan siap dibuka",
+      "secureNote": "Tujuan tersedia setelah semua langkah tindakan yang dikonfigurasi selesai.",
+      "actions": {
+        "youtube": {
+          "label": "Buka kanal YouTube",
+          "note": "Dibuka di tab baru"
+        },
+        "x": {
+          "label": "Buka profil X",
+          "note": "Dibuka di tab baru"
+        },
+        "discord": {
+          "label": "Buka komunitas Discord",
+          "note": "Dibuka di tab baru"
+        }
+      }
+    },
+    "testimonials": {
+      "eyebrow": "CERITA DARI PENGGUNA",
+      "title": "Apa kata orang tentang Link4Sub?",
+      "description": "Cerita dari para kreator yang menggunakan Link4Sub setiap hari."
+    },
+    "faq": {
+      "eyebrow": "Tanya jawab",
+      "title": "Pahami alurnya sebelum berbagi.",
+      "description": "Jawaban langsung tentang cara membuat, mengelola, dan membuka tautan Link4Sub.",
+      "readyPrompt": "Siap mengelola tautan Anda?",
+      "createAccount": "Buat akun",
+      "items": {
+        "create": {
+          "question": "Apa yang dapat dibuka oleh tautan Link4Sub?",
+          "answer": "Tautan dapat menuju URL eksternal, file di pustaka Link4Sub, atau cuplikan teks tersimpan. Anda memilih satu tujuan saat membuat tautan."
+        },
+        "actions": {
+          "question": "Bagaimana langkah tindakan bekerja?",
+          "answer": "Anda dapat menambahkan satu atau beberapa tindakan sebelum tujuan. Pengunjung membuka setiap tindakan di tab baru, menunggu langkah selesai, lalu melanjutkan setelah semua langkah yang dikonfigurasi selesai."
+        },
+        "visitorAccount": {
+          "question": "Apakah pengunjung memerlukan akun Link4Sub?",
+          "answer": "Tidak. Pengunjung dapat membuka tautan publik dan menyelesaikan alur yang dikonfigurasi tanpa masuk ke akun anggota Link4Sub."
+        },
+        "update": {
+          "question": "Bisakah saya mengedit atau menjeda tautan nanti?",
+          "answer": "Ya. Pustaka tautan anggota memungkinkan Anda mengedit tautan serta mengubah statusnya menjadi aktif, dijeda, atau tidak aktif."
+        },
+        "analytics": {
+          "question": "Apa yang diukur oleh dasbor?",
+          "answer": "Dasbor menampilkan pembukaan berhasil dari waktu ke waktu, tautan teratas, dan rincian yang tersedia berdasarkan negara, perangkat, serta browser."
+        },
+        "expiry": {
+          "question": "Bisakah tautan kedaluwarsa secara otomatis?",
+          "answer": "Ya. Anda dapat menetapkan tanggal dan waktu atau jumlah maksimum pembukaan berhasil. Tautan publik tidak lagi tersedia setelah batas tersebut tercapai."
+        }
+      }
+    },
+    "cta": {
+      "eyebrow": "MULAI DENGAN LINK4SUB",
+      "title": "Ubah konten menjadi satu tautan yang mudah dibagikan.",
+      "description": "Buat tautan dari URL, file, atau teks, tambahkan langkah tindakan, dan pantau pembukaan saat diperlukan.",
+      "goToDashboard": "Buka dasbor",
+      "start": "Buat tautan gratis"
+    },
+    "footer": {
+      "description": "Link4Sub membantu Anda membuat, membagikan, mengelola, dan menganalisis tautan publik ke URL, file, atau cuplikan teks.",
+      "product": "Produk",
+      "howItWorks": "Cara kerja",
+      "pricing": "Harga",
+      "createLink": "Buat tautan",
+      "company": "Perusahaan",
+      "contact": "Kontak",
+      "community": "Komunitas",
+      "features": "Fitur",
+      "linkFlow": "Alur tautan publik",
+      "resources": "Sumber daya",
+      "faqs": "Tanya jawab",
+      "reportLink": "Laporkan tautan",
+      "account": "Akun",
+      "signIn": "Masuk",
+      "createAccount": "Buat akun",
+      "privacy": "Privasi",
+      "terms": "Ketentuan",
+      "cookies": "Cookie",
+      "viewMap": "Lihat peta",
+      "socialLinkAria": "Kunjungi Link4Sub di {platform}",
+      "socialUnavailable": "Kanal Link4Sub di {platform} segera hadir",
+      "legal": "Legal",
+      "rights": "© {year} {site}. Hak cipta dilindungi."
+    }
+  },
+  "Withdraw": {
+    "title": "Penarikan dana",
+    "description": "Transfer saldo yang tersedia ke metode pembayaran Anda dan pantau setiap permintaan selama diproses.",
+    "loadingLabel": "Memuat informasi penarikan dana",
+    "summary": {
+      "ariaLabel": "Ringkasan saldo",
+      "available": "Tersedia untuk ditarik",
+      "pending": "Sedang diproses",
+      "received": "Total diterima"
+    },
+    "eligibility": {
+      "missingMethodTitle": "Anda belum memiliki metode pembayaran",
+      "unavailableTitle": "Penarikan dana belum tersedia",
+      "addMethod": "Tambahkan metode pembayaran",
+      "continue": "Lengkapi persyaratan",
+      "reasons": {
+        "default": "Lengkapi persyaratan akun sebelum melanjutkan.",
+        "identity": "Selesaikan verifikasi identitas sebelum menarik dana.",
+        "method": "Tambahkan setidaknya satu metode pembayaran sebelum melakukan penarikan.",
+        "minimum_balance": "Saldo yang tersedia belum mencapai jumlah minimum penarikan.",
+        "review": "Akun Anda sedang ditinjau sebelum penarikan dana dapat diaktifkan.",
+        "tax": "Lengkapi informasi pajak sebelum menarik dana."
+      }
+    },
+    "form": {
+      "title": "Buat permintaan penarikan",
+      "amountLabel": "Jumlah yang ingin ditarik",
+      "quickAmountAria": "Pilih jumlah penarikan cepat",
+      "maximum": "Maksimum",
+      "availableBalance": "Saldo tersedia",
+      "methodLabel": "Metode pembayaran",
+      "methodPlaceholder": "Pilih metode",
+      "methodFee": "Biaya {fee}",
+      "processingEstimate": "Perkiraan diterima dalam {time}"
+    },
+    "amounts": {
+      "requested": "Jumlah yang diminta",
+      "fee": "Biaya pemrosesan",
+      "feePending": "Biaya akan dikonfirmasi sebelum permintaan dikirim.",
+      "net": "Jumlah yang diterima"
+    },
+    "validation": {
+      "invalidAmount": "Masukkan jumlah yang valid.",
+      "minimum": "Jumlah minimum adalah {amount}.",
+      "maximum": "Jumlah melebihi batas saat ini sebesar {amount}.",
+      "balance": "Jumlah melebihi saldo yang tersedia."
+    },
+    "status": {
+      "pending": "Menunggu",
+      "processing": "Sedang diproses",
+      "paid": "Dibayar",
+      "rejected": "Ditolak",
+      "cancelled": "Dibatalkan"
+    },
+    "filters": {
+      "allStatuses": "Semua status",
+      "statusAria": "Filter berdasarkan status",
+      "dateAria": "Filter berdasarkan waktu",
+      "sortAria": "Urutkan transaksi",
+      "date": {
+        "all": "Sepanjang waktu",
+        "30d": "30 hari terakhir",
+        "90d": "90 hari terakhir"
+      },
+      "sort": {
+        "newest": "Terbaru",
+        "oldest": "Terlama"
+      }
+    },
+    "history": {
+      "title": "Riwayat penarikan",
+      "actionsAria": "Tindakan untuk transaksi {id}",
+      "viewTransactionAria": "Lihat transaksi {id}",
+      "emptyTitle": "Belum ada penarikan",
+      "emptyDescription": "Permintaan penarikan Anda akan muncul di sini.",
+      "filteredEmptyTitle": "Tidak ada transaksi yang cocok",
+      "filteredEmptyDescription": "Coba ubah filter riwayat.",
+      "columns": {
+        "transaction": "Transaksi",
+        "method": "Metode",
+        "amount": "Jumlah",
+        "fee": "Biaya",
+        "net": "Jumlah bersih",
+        "status": "Status",
+        "actions": "Tindakan"
+      }
+    },
+    "confirmation": {
+      "title": "Konfirmasi permintaan penarikan",
+      "description": "Periksa kembali detail sebelum mengirim permintaan.",
+      "receiveVia": "Terima melalui",
+      "estimatedTime": "Perkiraan waktu"
+    },
+    "success": {
+      "title": "Permintaan penarikan berhasil dibuat",
+      "description": "Saldo dan riwayat transaksi Anda telah diperbarui."
+    },
+    "details": {
+      "title": "Detail transaksi",
+      "currentStatus": "Status saat ini",
+      "processingDescription": "Permintaan sedang ditinjau dan diteruskan ke penyedia pembayaran.",
+      "processingReason": "Alasan pemrosesan"
+    },
+    "fields": {
+      "transactionId": "ID transaksi",
+      "status": "Status",
+      "amount": "Jumlah",
+      "net": "Jumlah bersih",
+      "method": "Metode",
+      "payoutMethod": "Metode pembayaran",
+      "createdAt": "Waktu dibuat",
+      "createdDate": "Tanggal dibuat",
+      "completedDate": "Tanggal selesai"
+    },
+    "actions": {
+      "retry": "Coba lagi",
+      "submitting": "Mengirim permintaan…",
+      "withdraw": "Tarik dana",
+      "back": "Kembali",
+      "confirm": "Konfirmasi penarikan",
+      "close": "Tutup",
+      "viewHistory": "Lihat riwayat transaksi",
+      "viewDetails": "Lihat detail",
+      "copyId": "Salin ID transaksi",
+      "downloadReceipt": "Unduh tanda terima",
+      "cancelling": "Membatalkan…",
+      "cancelAndRefund": "Batalkan permintaan dan kembalikan saldo",
+      "changeMethod": "Ubah metode pembayaran",
+      "contactSupport": "Hubungi dukungan"
+    },
+    "errors": {
+      "loadTitle": "Tidak dapat memuat informasi penarikan.",
+      "historyTitle": "Tidak dapat memuat riwayat penarikan.",
+      "createTitle": "Tidak dapat membuat permintaan",
+      "submitTitle": "Tidak dapat mengirim permintaan",
+      "tryAgainMessage": "Silakan coba lagi.",
+      "createMessage": "Tidak dapat membuat permintaan penarikan.",
+      "cancelMessage": "Tidak dapat membatalkan permintaan."
+    },
+    "messages": {
+      "copiedId": "ID transaksi berhasil disalin."
+    }
+  },
+  "ChangePassword": {
+    "title": "Ubah kata sandi",
+    "description": "Konfirmasikan kata sandi saat ini dan gunakan kata sandi baru yang unik untuk melindungi akun Anda.",
+    "currentPassword": "Kata sandi saat ini",
+    "newPassword": "Kata sandi baru",
+    "confirmPassword": "Konfirmasi kata sandi baru",
+    "submit": "Perbarui kata sandi",
+    "updating": "Memperbarui...",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi",
+    "success": "Kata sandi Anda telah diperbarui.",
+    "requirements": {
+      "length": "Minimal 8 karakter",
+      "uppercase": "Memuat huruf besar",
+      "lowercase": "Memuat huruf kecil",
+      "number": "Memuat angka",
+      "match": "Kedua kata sandi baru sama",
+      "different": "Berbeda dari kata sandi saat ini"
+    },
+    "errors": {
+      "currentIncorrect": "Kata sandi saat ini salah.",
+      "sameAsCurrent": "Kata sandi baru harus berbeda dari kata sandi saat ini.",
+      "notConfigured": "Akun ini belum memiliki kata sandi. Gunakan fitur lupa kata sandi untuk membuatnya.",
+      "impersonation": "Kata sandi tidak dapat diubah saat menyamar sebagai pengguna lain.",
+      "concurrent": "Kata sandi baru saja diubah. Muat ulang halaman lalu coba lagi.",
+      "generic": "Kata sandi tidak dapat diperbarui. Silakan coba lagi."
+    }
+  },
+  "Announcements": {
+    "title": "Pengumuman",
+    "loading": "Memuat pengumuman…",
+    "filters": {
+      "all": "Semua",
+      "unread": "Belum dibaca",
+      "read": "Sudah dibaca"
+    },
+    "status": {
+      "unread": "Belum dibaca"
+    },
+    "actions": {
+      "refresh": "Muat ulang",
+      "markAllRead": "Tandai semua sudah dibaca",
+      "close": "Tutup pengumuman",
+      "acknowledge": "Saya mengerti",
+      "viewAll": "Lihat semua pengumuman"
+    },
+    "empty": {
+      "all": "Belum ada pengumuman.",
+      "unread": "Tidak ada pengumuman yang belum dibaca.",
+      "read": "Belum ada pengumuman yang sudah dibaca."
+    },
+    "errors": {
+      "load": "Tidak dapat memuat pengumuman.",
+      "markRead": "Tidak dapat menandai pengumuman sebagai sudah dibaca.",
+      "update": "Tidak dapat memperbarui pengumuman.",
+      "trackAction": "Tidak dapat mencatat tindakan ini.",
+      "open": "Tidak dapat membuka pengumuman.",
+      "dismiss": "Tidak dapat menutup pengumuman.",
+      "acknowledge": "Tidak dapat mengonfirmasi pengumuman."
+    },
+    "popover": {
+      "ariaLabel": "Pengumuman: {count} belum dibaca",
+      "unreadCount": "{count} belum dibaca"
+    }
+  },
+  "Pagination": {
+    "rowsPerPage": "Baris per halaman",
+    "showing": "Menampilkan",
+    "to": "hingga",
+    "of": "dari",
+    "items": "item",
+    "firstPage": "Ke halaman pertama",
+    "previousPage": "Ke halaman sebelumnya",
+    "nextPage": "Ke halaman berikutnya",
+    "lastPage": "Ke halaman terakhir",
+    "goToPage": "Ke halaman {page}",
+    "morePages": "{count} halaman lainnya"
+  }
+}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -19,10 +20,11 @@ import { cn } from "@/lib/utils";
 import type { WithdrawalDashboardData } from "./types";
 
 export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
+  const t = useTranslations("Withdraw");
   const { formatCurrency } = useMemberCurrency();
   const metrics = [
     {
-      label: "Có thể rút",
+      label: t("summary.available"),
       value: data.availableBalance,
       icon: WalletCards,
       accentClassName: "bg-emerald-500",
@@ -30,7 +32,7 @@ export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
       valueClassName: "text-emerald-700 dark:text-emerald-400",
     },
     {
-      label: "Đang xử lý",
+      label: t("summary.pending"),
       value: data.pendingBalance,
       icon: Clock3,
       accentClassName: "bg-amber-500",
@@ -38,7 +40,7 @@ export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
       valueClassName: "text-amber-700 dark:text-amber-400",
     },
     {
-      label: "Tổng đã nhận",
+      label: t("summary.received"),
       value: data.totalReceived,
       icon: CircleDollarSign,
       accentClassName: "bg-sky-500",
@@ -48,7 +50,7 @@ export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
   ];
 
   return (
-    <section aria-label="Tổng quan số dư" className="grid gap-3 sm:grid-cols-3">
+    <section aria-label={t("summary.ariaLabel")} className="grid gap-3 sm:grid-cols-3">
       {metrics.map((metric) => {
         const Icon = metric.icon;
         const formattedValue = formatCurrency(metric.value, {
@@ -97,17 +99,24 @@ export function BalanceSummary({ data }: { data: WithdrawalDashboardData }) {
 }
 
 export function WithdrawalEligibilityAlert({ data }: { data: WithdrawalDashboardData }) {
+  const t = useTranslations("Withdraw");
   if (data.eligibility.eligible) return null;
+  const missingPaymentMethod = data.eligibility.reason === "method";
+  const reason = data.eligibility.reason ?? "default";
   return (
     <Alert>
       <AlertTriangle />
-      <AlertTitle>Bạn chưa đủ điều kiện rút tiền</AlertTitle>
+      <AlertTitle>
+        {missingPaymentMethod
+          ? t("eligibility.missingMethodTitle")
+          : t("eligibility.unavailableTitle")}
+      </AlertTitle>
       <AlertDescription className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span>{data.eligibility.message ?? "Vui lòng hoàn tất các yêu cầu tài khoản trước khi tiếp tục."}</span>
-        {data.eligibility.actionHref && data.eligibility.actionLabel ? (
+        <span>{data.eligibility.message ?? t(`eligibility.reasons.${reason}`)}</span>
+        {data.eligibility.actionHref ? (
           <Button variant="outline" size="sm" asChild>
             <Link href={data.eligibility.actionHref}>
-              {data.eligibility.actionLabel}<ArrowUpRight />
+              {data.eligibility.actionLabel ?? (missingPaymentMethod ? t("eligibility.addMethod") : t("eligibility.continue"))}<ArrowUpRight />
             </Link>
           </Button>
         ) : null}
@@ -117,8 +126,9 @@ export function WithdrawalEligibilityAlert({ data }: { data: WithdrawalDashboard
 }
 
 export function WithdrawalSkeleton() {
+  const t = useTranslations("Withdraw");
   return (
-    <PageContainer aria-busy="true" aria-label="Đang tải thông tin rút tiền">
+    <PageContainer aria-busy="true" aria-label={t("loadingLabel")}>
       <div><Skeleton className="h-8 w-36" /><Skeleton className="mt-2 h-4 w-[min(28rem,80%)]" /></div>
       <div className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
@@ -127,25 +137,24 @@ export function WithdrawalSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)]">
-        <Skeleton className="h-[420px] rounded-xl" /><Skeleton className="h-[420px] rounded-xl" />
-      </div>
+      <Skeleton className="h-[420px] rounded-xl" />
       <div><Skeleton className="h-6 w-40" /><div className="mt-4 border-t border-border">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="flex h-16 items-center gap-4 border-b border-border"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-24" /></div>)}</div></div>
     </PageContainer>
   );
 }
 
 export function WithdrawalErrorState({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  const t = useTranslations("Withdraw");
   return (
     <PageContainer>
-      <PageHeader title="Rút tiền" description="Chuyển số dư khả dụng về phương thức thanh toán của bạn." />
+      <PageHeader title={t("title")} description={t("description")} />
       <Alert variant="destructive">
         <CircleAlert />
-        <AlertTitle>Không thể tải thông tin rút tiền.</AlertTitle>
+        <AlertTitle>{t("errors.loadTitle")}</AlertTitle>
         <AlertDescription>
-          <span>{message || "Vui lòng thử lại."}</span>
+          <span>{message || t("errors.tryAgainMessage")}</span>
           <Button variant="outline" size="sm" className="mt-3 border-destructive/30 bg-background text-destructive" onClick={onRetry}>
-            <RefreshCcw />Thử lại
+            <RefreshCcw />{t("actions.retry")}
           </Button>
         </AlertDescription>
       </Alert>

@@ -62,6 +62,7 @@ function validateQueueEnvironment(config: Record<string, unknown>) {
   optionalInteger(config, "SMTP_PORT", 1, 65_535);
   optionalInteger(config, "PASSWORD_RESET_TOKEN_TTL_MINUTES", 5, 1_440);
   optionalBoolean(config, "SMTP_SECURE");
+  optionalBoolean(config, "EMAIL_DEBUG_MODE");
 
   const prefix = config.QUEUE_PREFIX;
   if (
@@ -82,8 +83,37 @@ function validateQueueEnvironment(config: Record<string, unknown>) {
   }
 }
 
+function validateEmailProviderEnvironment(config: Record<string, unknown>) {
+  const region = String(config.AWS_REGION || "").trim();
+  if (region && !/^[a-z]{2}(?:-gov)?-[a-z]+-\d$/.test(region)) {
+    throw new Error("AWS_REGION không đúng định dạng region AWS.");
+  }
+  const accessKey = String(config.AWS_ACCESS_KEY_ID || "").trim();
+  const secretKey = String(config.AWS_SECRET_ACCESS_KEY || "").trim();
+  if (Boolean(accessKey) !== Boolean(secretKey)) {
+    throw new Error(
+      "AWS_ACCESS_KEY_ID và AWS_SECRET_ACCESS_KEY phải được cấu hình cùng nhau.",
+    );
+  }
+  const topics = String(config.AWS_SES_SNS_TOPIC_ARNS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (
+    topics.some(
+      (value) =>
+        !/^arn:aws(?:-cn|-us-gov)?:sns:[^:]+:\d{12}:[A-Za-z0-9_-]+$/.test(
+          value,
+        ),
+    )
+  ) {
+    throw new Error("AWS_SES_SNS_TOPIC_ARNS chứa ARN không hợp lệ.");
+  }
+}
+
 export function validateEnvironment(config: Record<string, unknown>) {
   validateQueueEnvironment(config);
+  validateEmailProviderEnvironment(config);
   const accessSecret = requireSecret(config, "JWT_ACCESS_SECRET");
   const refreshSecret = requireSecret(config, "JWT_REFRESH_SECRET");
 

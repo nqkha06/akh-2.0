@@ -255,7 +255,28 @@ function MemberPaymentMethodEditor({
                 {field.label}
                 {field.required ? " *" : ""}
               </Label>
-              {field.type === "textarea" ? (
+              {field.type === "select" ? (
+                <Select
+                  value={details[field.key] ?? ""}
+                  onValueChange={(value) =>
+                    setDetails((current) => ({
+                      ...current,
+                      [field.key]: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger id={id} className={`${inputClassName} w-full`}>
+                    <SelectValue placeholder={field.placeholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(field.options ?? []).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : field.type === "textarea" ? (
                 <Textarea
                   id={id}
                   value={details[field.key] ?? ""}

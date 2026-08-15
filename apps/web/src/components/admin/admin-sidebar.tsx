@@ -19,6 +19,7 @@ import {
   IconLink,
   IconLockAccess,
   IconLogs,
+  IconMail,
   IconMenu2,
   IconMoneybag,
   IconPhoto,
@@ -187,6 +188,20 @@ const data: { navMain: NavItem[] } = {
           url: "/admin/languages",
           icon: IconLanguage,
           permission: "languages.read",
+        },
+        {
+          title: "Email",
+          url: "/admin/emails",
+          icon: IconMail,
+          permission: "emails.read",
+          permissions: [
+            "emails.read",
+            "emails.templates.read",
+            "emails.logs.read",
+            "emails.settings.update",
+            "emails.senders.manage",
+            "emails.preferences.manage",
+          ],
         },
         {
           title: "Cài đặt",

@@ -32,6 +32,10 @@ export class MemberDashboardService {
       range,
       now,
     );
+    const comparisonEnd = new Date(periodStart.getTime() - 1);
+    const comparisonStart = new Date(
+      comparisonEnd.getTime() - (periodEnd.getTime() - periodStart.getTime()),
+    );
     const todayStart = new Date(now);
     todayStart.setUTCHours(0, 0, 0, 0);
 
@@ -39,15 +43,38 @@ export class MemberDashboardService {
       link: { userId, deletedAt: null },
       completedAt: { not: null, gte: periodStart, lte: periodEnd },
     };
+    const comparisonVisitWhere: Prisma.LinkAccessLogWhereInput = {
+      link: { userId, deletedAt: null },
+      completedAt: {
+        not: null,
+        gte: comparisonStart,
+        lte: comparisonEnd,
+      },
+    };
 
-    const [user, periodVisits, countryGroups, deviceGroups, browserGroups] =
-      await this.prisma.$transaction([
+    const [
+      user,
+      periodVisits,
+      comparisonVisits,
+      countryGroups,
+      deviceGroups,
+      browserGroups,
+    ] = await this.prisma.$transaction([
         this.prisma.user.findUnique({
           where: { id: userId },
           select: { name: true, balance: true },
         }),
         this.prisma.linkAccessLog.findMany({
           where: periodVisitWhere,
+          select: {
+            completedAt: true,
+            isEarn: true,
+            revenue: true,
+            linkId: true,
+          },
+        }),
+        this.prisma.linkAccessLog.findMany({
+          where: comparisonVisitWhere,
           select: {
             completedAt: true,
             isEarn: true,
@@ -140,6 +167,22 @@ export class MemberDashboardService {
       (total, item) => total + item.earnedViews,
       0,
     );
+    const periodAverageCpm = this.averageCpm(
+      periodRevenue,
+      periodEarnedViews,
+    );
+    const comparisonRevenue = comparisonVisits.reduce(
+      (total, visit) => total + visit.revenue.toNumber(),
+      0,
+    );
+    const comparisonSuccessfulOpens = comparisonVisits.length;
+    const comparisonEarnedViews = comparisonVisits.filter(
+      (visit) => visit.isEarn,
+    ).length;
+    const comparisonAverageCpm = this.averageCpm(
+      comparisonRevenue,
+      comparisonEarnedViews,
+    );
     const today =
       this.buildSeries(todayStart, 1, todayVisits)[0] ??
       this.emptySeriesPoint(todayStart);
@@ -156,7 +199,22 @@ export class MemberDashboardService {
           revenue: periodRevenue,
           successfulOpens: periodSuccessfulOpens,
           earnedViews: periodEarnedViews,
-          averageCpm: this.averageCpm(periodRevenue, periodEarnedViews),
+          averageCpm: periodAverageCpm,
+        },
+        changes: {
+          revenue: this.percentageChange(periodRevenue, comparisonRevenue),
+          successfulOpens: this.percentageChange(
+            periodSuccessfulOpens,
+            comparisonSuccessfulOpens,
+          ),
+          earnedViews: this.percentageChange(
+            periodEarnedViews,
+            comparisonEarnedViews,
+          ),
+          averageCpm: this.percentageChange(
+            periodAverageCpm,
+            comparisonAverageCpm,
+          ),
         },
         today: {
           revenue: today.revenue,
@@ -291,6 +349,11 @@ export class MemberDashboardService {
 
   private averageCpm(revenue: number, earnedViews: number) {
     return earnedViews > 0 ? (revenue / earnedViews) * 1_000 : 0;
+  }
+
+  private percentageChange(current: number, previous: number) {
+    if (previous === 0) return current === 0 ? 0 : null;
+    return ((current - previous) / Math.abs(previous)) * 100;
   }
 
   private deviceLabel(device: number) {

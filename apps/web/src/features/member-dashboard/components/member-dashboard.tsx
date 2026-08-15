@@ -8,12 +8,16 @@ import {
   BarChart3,
   CalendarDays,
   CircleDollarSign,
+  Eye,
   Globe2,
   Link2,
   Monitor,
   MousePointerClick,
   Smartphone,
   Tablet,
+  TrendingDown,
+  TrendingUp,
+  Minus,
   type LucideIcon,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
@@ -82,21 +86,45 @@ export function MemberDashboard({
   const [isRangePending, startRangeTransition] = useTransition()
   const { formatCurrency } = useMemberCurrency()
   const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale])
+  const percentageFormatter = useMemo(
+    () => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
+    [locale],
+  )
+  const metricChange = (value: number | null) => ({
+    label: value === null
+      ? "—"
+      : `${value > 0 ? "+" : ""}${percentageFormatter.format(value)}%`,
+    direction: value === null || value === 0
+      ? "neutral" as const
+      : value > 0
+        ? "up" as const
+        : "down" as const,
+    description: t("metrics.comparedWithPreviousPeriod"),
+  })
   const metrics = [
     {
       label: t("metrics.earnings"),
       value: formatCurrency(data.analytics.metrics.revenue),
       icon: CircleDollarSign,
+      change: metricChange(data.analytics.changes?.revenue ?? null),
     },
     {
       label: t("metrics.views"),
       value: numberFormatter.format(data.analytics.metrics.successfulOpens),
       icon: MousePointerClick,
+      change: metricChange(data.analytics.changes?.successfulOpens ?? null),
+    },
+    {
+      label: t("metrics.earnedViews"),
+      value: numberFormatter.format(data.analytics.metrics.earnedViews),
+      icon: Eye,
+      change: metricChange(data.analytics.changes?.earnedViews ?? null),
     },
     {
       label: t("metrics.averageCpm"),
       value: formatCurrency(data.analytics.metrics.averageCpm),
       icon: BarChart3,
+      change: metricChange(data.analytics.changes?.averageCpm ?? null),
     },
   ] as const
   function handleRangeChange(value: string) {
@@ -142,7 +170,7 @@ export function MemberDashboard({
       />
 
       <section
-        className="grid gap-4 sm:grid-cols-3"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
         aria-label={t("metrics.label", { days: data.analytics.periodDays })}
       >
         {metrics.map((metric) => (
@@ -200,18 +228,17 @@ export function MemberDashboardSkeleton() {
           <Skeleton className="h-10 w-44" />
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }, (_, index) => (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
-            className="relative min-h-36 overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6"
+            className="flex min-h-28 items-center justify-between gap-5 rounded-xl border border-border bg-card p-5"
           >
-            <div className="absolute -right-7 -top-8 size-24 rounded-full bg-primary/[0.04]" />
-            <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <Skeleton className="h-4 w-28" />
-              <Skeleton className="size-9 rounded-lg" />
+              <Skeleton className="mt-3 h-8 w-24" />
             </div>
-            <Skeleton className="mt-6 h-9 w-24" />
+            <Skeleton className="size-11 shrink-0 rounded-xl" />
           </div>
         ))}
       </div>
@@ -234,26 +261,47 @@ function MetricCard({
   label,
   value,
   icon: Icon,
+  change,
 }: {
   label: string
   value: string
   icon: LucideIcon
+  change?: {
+    label: string
+    direction: "up" | "down" | "neutral"
+    description: string
+  }
 }) {
   return (
-    <article className="relative min-h-36 min-w-0 overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6">
-      <span
-        className="absolute -right-7 -top-8 size-24 rounded-full bg-primary/[0.04]"
-        aria-hidden="true"
-      />
-      <div className="relative flex items-center justify-between gap-4">
-        <p className="text-[13px] font-medium leading-5 text-muted-foreground">{label}</p>
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
-          <Icon className="size-4" strokeWidth={1.8} aria-hidden="true" />
-        </span>
+    <article className="flex min-h-28 min-w-0 items-center justify-between gap-5 rounded-xl border border-border bg-card p-5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium leading-5 text-muted-foreground">{label}</p>
+        <div className="mt-2 flex min-w-0 items-baseline gap-2">
+          <p className="min-w-0 truncate text-[24px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-foreground 2xl:text-[26px]">
+            {value}
+          </p>
+          {change ? (
+            <span
+              aria-label={`${change.description}: ${change.label}`}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1 text-xs font-medium tabular-nums",
+                change.direction === "up" && "text-emerald-600 dark:text-emerald-400",
+                change.direction === "down" && "text-destructive",
+                change.direction === "neutral" && "text-muted-foreground",
+              )}
+              title={change.description}
+            >
+              {change.direction === "up" ? <TrendingUp className="size-3.5" aria-hidden="true" /> : null}
+              {change.direction === "down" ? <TrendingDown className="size-3.5" aria-hidden="true" /> : null}
+              {change.direction === "neutral" ? <Minus className="size-3.5" aria-hidden="true" /> : null}
+              {change.label}
+            </span>
+          ) : null}
+        </div>
       </div>
-      <p className="relative mt-6 truncate text-[32px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-foreground">
-        {value}
-      </p>
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-muted/35 text-primary">
+        <Icon className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
+      </span>
     </article>
   )
 }

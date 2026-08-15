@@ -1,10 +1,8 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { LanguagesService } from "../languages/languages.service";
@@ -15,19 +13,20 @@ import type {
   MonetizationRouteDto,
 } from "./dto/monetization-level-config.dto";
 import type { UpdateMonetizationLevelDto } from "./dto/update-monetization-level.dto";
-
-const levelInclude = {
-  translations: {
-    orderBy: { locale: "asc" },
-  },
-  _count: {
-    select: { users: true },
-  },
-} satisfies Prisma.MonetizationLevelInclude;
-
-type LevelRecord = Prisma.MonetizationLevelGetPayload<{
-  include: typeof levelInclude;
-}>;
+import {
+  assertMonetizationDefaultCanBeUnset,
+  assertMonetizationDefaultPublished,
+  assertMonetizationLevelCanDelete,
+  assertUniqueMonetizationRates,
+  assertUniqueMonetizationRoutes,
+  rethrowMonetizationPersistenceError,
+} from "./monetization-levels.policy";
+import { buildMonetizationLevelsListQuery } from "./queries/monetization-levels-list-query.builder";
+import {
+  MONETIZATION_LEVEL_INCLUDE,
+  MONETIZATION_LEVEL_SUMMARY_SELECT,
+  type MonetizationLevelRecord,
+} from "./monetization-levels.select";
 
 @Injectable()
 export class MonetizationLevelsService {
@@ -41,7 +40,7 @@ export class MonetizationLevelsService {
       this.prisma.monetizationLevel.findMany({
         where: { status: "published" },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-        include: levelInclude,
+        include: MONETIZATION_LEVEL_INCLUDE,
       }),
       this.prisma.user.findUnique({
         where: { id: userId },
@@ -76,7 +75,7 @@ export class MonetizationLevelsService {
   async findPublishedPayoutRates(id: number) {
     const record = await this.prisma.monetizationLevel.findFirst({
       where: { id, status: "published" },
-      include: levelInclude,
+      include: MONETIZATION_LEVEL_INCLUDE,
     });
     if (!record) {
       throw new NotFoundException(
@@ -116,45 +115,20 @@ export class MonetizationLevelsService {
   }
 
   async findAll(query: ListMonetizationLevelsQueryDto) {
-    const search = (query.name || query.search)?.trim();
-    const where: Prisma.MonetizationLevelWhereInput = {
-      ...(query.status?.length ? { status: { in: query.status } } : {}),
-      ...(search
-        ? {
-            OR: [
-              { key: { contains: search } },
-              { translations: { some: { name: { contains: search } } } },
-            ],
-          }
-        : {}),
-    };
-    const appliedSort = query.sort?.length
-      ? query.sort
-      : [{ id: query.sortBy, desc: query.sortOrder === "desc" }];
-    const orderBy = appliedSort.map(
-      (sort) =>
-        ({
-          [sort.id]: sort.desc ? "desc" : "asc",
-        }) satisfies Prisma.MonetizationLevelOrderByWithRelationInput,
-    );
-    const skip = (query.page - 1) * query.perPage;
+    const { where, orderBy, skip, take, appliedSort, search } =
+      buildMonetizationLevelsListQuery(query);
     const [records, total, summaryRecords] = await this.prisma.$transaction([
       this.prisma.monetizationLevel.findMany({
         where,
         orderBy,
         skip,
-        take: query.perPage,
-        include: levelInclude,
+        take,
+        include: MONETIZATION_LEVEL_INCLUDE,
       }),
       this.prisma.monetizationLevel.count({ where }),
       this.prisma.monetizationLevel.findMany({
         where,
-        select: {
-          status: true,
-          routesJson: true,
-          ratesJson: true,
-          _count: { select: { users: true } },
-        },
+        select: MONETIZATION_LEVEL_SUMMARY_SELECT,
       }),
     ]);
     const defaultLocale = await this.languagesService.getDefaultLocale();
@@ -209,7 +183,7 @@ export class MonetizationLevelsService {
 
   async create(dto: CreateMonetizationLevelDto) {
     await this.validateConfiguration(dto);
-    this.assertDefaultIsPublished(dto.isDefault, dto.status);
+    assertMonetizationDefaultPublished(dto.isDefault, dto.status);
 
     try {
       const record = await this.prisma.$transaction(async (transaction) => {
@@ -236,7 +210,7 @@ export class MonetizationLevelsService {
               })),
             },
           },
-          include: levelInclude,
+          include: MONETIZATION_LEVEL_INCLUDE,
         });
       });
       return this.toResponse(
@@ -244,7 +218,7 @@ export class MonetizationLevelsService {
         await this.languagesService.getDefaultLocale(),
       );
     } catch (error) {
-      this.rethrowKnownError(error);
+      rethrowMonetizationPersistenceError(error);
       throw error;
     }
   }
@@ -255,12 +229,8 @@ export class MonetizationLevelsService {
 
     const nextStatus = dto.status ?? existing.status;
     const nextIsDefault = dto.isDefault ?? existing.isDefault;
-    this.assertDefaultIsPublished(nextIsDefault, nextStatus);
-    if (existing.isDefault && dto.isDefault === false) {
-      throw new BadRequestException(
-        "Hãy đặt một cấp độ khác làm mặc định trước khi bỏ cấp độ hiện tại.",
-      );
-    }
+    assertMonetizationDefaultPublished(nextIsDefault, nextStatus);
+    assertMonetizationDefaultCanBeUnset(existing.isDefault, dto.isDefault);
 
     try {
       const record = await this.prisma.$transaction(async (transaction) => {
@@ -303,7 +273,7 @@ export class MonetizationLevelsService {
                 }
               : {}),
           },
-          include: levelInclude,
+          include: MONETIZATION_LEVEL_INCLUDE,
         });
       });
       return this.toResponse(
@@ -311,23 +281,17 @@ export class MonetizationLevelsService {
         await this.languagesService.getDefaultLocale(),
       );
     } catch (error) {
-      this.rethrowKnownError(error);
+      rethrowMonetizationPersistenceError(error);
       throw error;
     }
   }
 
   async remove(id: number) {
     const existing = await this.findRecord(id);
-    if (existing.isDefault) {
-      throw new BadRequestException(
-        "Không thể xóa cấp độ mặc định. Hãy chọn cấp độ mặc định khác trước.",
-      );
-    }
-    if (existing._count.users > 0) {
-      throw new ConflictException(
-        "Cấp độ đang được người dùng lựa chọn. Hãy lưu trữ thay vì xóa.",
-      );
-    }
+    assertMonetizationLevelCanDelete({
+      isDefault: existing.isDefault,
+      usersCount: existing._count.users,
+    });
     await this.prisma.monetizationLevel.delete({ where: { id } });
     return { success: true, id };
   }
@@ -335,7 +299,7 @@ export class MonetizationLevelsService {
   private async findRecord(id: number) {
     const record = await this.prisma.monetizationLevel.findUnique({
       where: { id },
-      include: levelInclude,
+      include: MONETIZATION_LEVEL_INCLUDE,
     });
     if (!record) {
       throw new NotFoundException("Không tìm thấy cấp độ kiếm tiền.");
@@ -350,76 +314,13 @@ export class MonetizationLevelsService {
       const locales = dto.translations.map(({ locale }) => locale);
       await this.languagesService.assertTranslationLocales(locales);
     }
-    if (dto.routes) this.assertUniqueRoutes(dto.routes);
+    if (dto.routes) assertUniqueMonetizationRoutes(dto.routes);
     if (dto.rates) {
-      this.assertUniqueRates(dto.rates);
-      for (const rate of dto.rates) {
-        if (rate.enabled && Number(rate.baseCpm) <= 0) {
-          throw new BadRequestException(
-            "Base CPM của rate đang bật phải lớn hơn 0.",
-          );
-        }
-      }
+      assertUniqueMonetizationRates(dto.rates);
     }
   }
 
-  private assertUniqueRoutes(routes: MonetizationRouteDto[]) {
-    const ids = routes.map(({ id }) => id);
-    if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException("Route id không được trùng nhau.");
-    }
-    if (
-      routes.some(
-        (route) =>
-          route.countryMode === "exclude" && route.countryCode === "ALL",
-      )
-    ) {
-      throw new BadRequestException(
-        'Route không thể dùng chế độ "exclude" với tất cả quốc gia.',
-      );
-    }
-    if (
-      routes.some(
-        (route) =>
-          route.deviceMode === "exclude" && route.deviceType === "any",
-      )
-    ) {
-      throw new BadRequestException(
-        'Route không thể dùng chế độ "exclude" với mọi thiết bị.',
-      );
-    }
-    if (
-      routes.some(
-        (route) =>
-          route.browserMode === "exclude" && route.browserFamily === "any",
-      )
-    ) {
-      throw new BadRequestException(
-        'Route không thể dùng chế độ "exclude" với mọi trình duyệt.',
-      );
-    }
-  }
-
-  private assertUniqueRates(rates: MonetizationRateDto[]) {
-    const keys = rates.map(
-      ({ countryCode, deviceType }) => `${countryCode}:${deviceType}`,
-    );
-    if (new Set(keys).size !== keys.length) {
-      throw new BadRequestException(
-        "Mỗi tổ hợp quốc gia và thiết bị chỉ được có một rate.",
-      );
-    }
-  }
-
-  private assertDefaultIsPublished(isDefault: boolean, status: string) {
-    if (isDefault && status !== "published") {
-      throw new BadRequestException(
-        "Cấp độ mặc định phải ở trạng thái xuất bản.",
-      );
-    }
-  }
-
-  private toResponse(record: LevelRecord, defaultLocale: string) {
+  private toResponse(record: MonetizationLevelRecord, defaultLocale: string) {
     const translations = record.translations.map((translation) => ({
       locale: translation.locale,
       name: translation.name,
@@ -458,7 +359,7 @@ export class MonetizationLevelsService {
     };
   }
 
-  private toMemberResponse(record: LevelRecord) {
+  private toMemberResponse(record: MonetizationLevelRecord) {
     const translations = record.translations.map((translation) => ({
       locale: translation.locale,
       name: translation.name,
@@ -521,14 +422,5 @@ export class MonetizationLevelsService {
         browserMode: route.browserMode === "exclude" ? "exclude" : "include",
       })),
     );
-  }
-
-  private rethrowKnownError(error: unknown): never | void {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictException("Key hoặc locale của cấp độ đã tồn tại.");
-    }
   }
 }

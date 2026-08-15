@@ -45,6 +45,12 @@ export type MemberDashboardData = {
       earnedViews: number
       averageCpm: number
     }
+    changes?: {
+      revenue: number | null
+      successfulOpens: number | null
+      earnedViews: number | null
+      averageCpm: number | null
+    }
     today: {
       revenue: number
       successfulOpens: number

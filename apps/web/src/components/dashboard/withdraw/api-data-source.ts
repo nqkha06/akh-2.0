@@ -53,9 +53,9 @@ async function getError(response: Response) {
     };
     return Array.isArray(payload.message)
       ? payload.message.join(", ")
-      : payload.message || payload.error || "Yêu cầu không thành công.";
+      : payload.message || payload.error || "";
   } catch {
-    return "Yêu cầu không thành công.";
+    return "";
   }
 }
 
@@ -84,7 +84,7 @@ function firstDetail(
 }
 
 function mask(value: string) {
-  if (!value) return "Chưa có thông tin";
+  if (!value) return "—";
   if (value.includes("•")) return value;
   if (value.length <= 4) return "••••";
   return `${"•".repeat(Math.min(8, value.length - 4))} ${value.slice(-4)}`;
@@ -96,16 +96,27 @@ function methodType(provider: string): PayoutMethod["type"] {
   return "bank";
 }
 
-function toPayoutMethod(account: RawAccount, locale: string): PayoutMethod {
-  const provider =
-    account.paymentMethod.translations.find(
+function translatedMethodName(
+  paymentMethod: RawAccount["paymentMethod"],
+  locale: string,
+) {
+  return (
+    paymentMethod.translations.find(
       (translation) => translation.locale === locale,
     )?.name ||
-    account.paymentMethod.translations.find(
+    paymentMethod.translations.find(
+      (translation) => translation.locale === locale.split("-")[0],
+    )?.name ||
+    paymentMethod.translations.find(
       (translation) => translation.locale === "vi",
     )?.name ||
-    account.paymentMethod.translations[0]?.name ||
-    `Phương thức #${account.paymentMethod.id}`;
+    paymentMethod.translations[0]?.name ||
+    `#${paymentMethod.id}`
+  );
+}
+
+function toPayoutMethod(account: RawAccount, locale: string): PayoutMethod {
+  const provider = translatedMethodName(account.paymentMethod, locale);
   const values = Object.values(account.details).filter(Boolean);
   const accountHolder = firstDetail(
     account.details,
@@ -128,7 +139,11 @@ function toPayoutMethod(account: RawAccount, locale: string): PayoutMethod {
   };
 }
 
-function toTransaction(raw: RawWithdrawal): WithdrawalTransaction {
+function toTransaction(
+  raw: RawWithdrawal,
+  accounts: RawAccount[],
+  locale: string,
+): WithdrawalTransaction {
   const values = Object.values(raw.paymentMethod.details).filter(Boolean);
   const accountHolder = firstDetail(
     raw.paymentMethod.details,
@@ -140,14 +155,20 @@ function toTransaction(raw: RawWithdrawal): WithdrawalTransaction {
     /(account_number|number|email|phone|wallet|identifier|address)/i,
     values.find((value) => value !== accountHolder) ?? values[0] ?? "",
   );
+  const configuredMethod = accounts.find(
+    (account) => account.paymentMethod.id === raw.paymentMethod.id,
+  )?.paymentMethod;
+  const provider = configuredMethod
+    ? translatedMethodName(configuredMethod, locale)
+    : raw.paymentMethod.name;
   return {
     id: String(raw.id),
     createdAt: raw.createdAt,
     completedAt: raw.processedAt ?? undefined,
     method: {
       id: String(raw.paymentMethod.id),
-      type: methodType(raw.paymentMethod.name),
-      provider: raw.paymentMethod.name,
+      type: methodType(provider),
+      provider,
       accountHolder,
       maskedAccount: mask(identifier),
       withdrawFee: Number(raw.feeAmount),
@@ -163,6 +184,8 @@ function toTransaction(raw: RawWithdrawal): WithdrawalTransaction {
 }
 
 let loadedMethods: PayoutMethod[] = [];
+let loadedAccounts: RawAccount[] = [];
+let loadedLocale = "vi";
 
 export const withdrawalDataSource: WithdrawalDataSource = {
   async getDashboard() {
@@ -174,6 +197,8 @@ export const withdrawalDataSource: WithdrawalDataSource = {
         .split("; ")
         .find((item) => item.startsWith("NEXT_LOCALE="))
         ?.split("=")[1] ?? "vi";
+    loadedAccounts = dashboard.accounts;
+    loadedLocale = locale;
     loadedMethods = dashboard.accounts.map((account) =>
       toPayoutMethod(account, locale),
     );
@@ -191,9 +216,6 @@ export const withdrawalDataSource: WithdrawalDataSource = {
         : {
             eligible: false,
             reason: "method",
-            message:
-              "Bạn cần thêm ít nhất một phương thức nhận tiền trước khi rút.",
-            actionLabel: "Thiết lập trong tài khoản",
             actionHref: "/member/account#payment-method",
           },
       limits: {
@@ -201,7 +223,9 @@ export const withdrawalDataSource: WithdrawalDataSource = {
         maximum: availableBalance,
         remaining: null,
       },
-      transactions: dashboard.withdrawals.map(toTransaction),
+      transactions: dashboard.withdrawals.map((withdrawal) =>
+        toTransaction(withdrawal, dashboard.accounts, locale),
+      ),
     };
   },
 
@@ -233,7 +257,7 @@ export const withdrawalDataSource: WithdrawalDataSource = {
         idempotencyKey,
       }),
     });
-    return toTransaction(response);
+    return toTransaction(response, loadedAccounts, loadedLocale);
   },
 
   async cancel(id) {
@@ -241,6 +265,8 @@ export const withdrawalDataSource: WithdrawalDataSource = {
       await request<RawWithdrawal>(`/member/withdrawals/${id}/cancel`, {
         method: "PATCH",
       }),
+      loadedAccounts,
+      loadedLocale,
     );
   },
 };

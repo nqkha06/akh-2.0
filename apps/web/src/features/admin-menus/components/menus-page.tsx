@@ -77,6 +77,7 @@ const locationLabels: Record<WebsiteMenuLocation, string> = {
   "header-actions": "Hành động header",
   "footer-primary": "Footer chính",
   "footer-legal": "Footer pháp lý",
+  "footer-social": "Mạng xã hội footer",
   "mobile-primary": "Điều hướng mobile",
 };
 
@@ -213,7 +214,7 @@ export function MenusPage() {
             sử dụng ở nhiều vị trí.
           </p>
         </CardHeader>
-        <CardContent className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CardContent className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
           {websiteMenuLocations.map((location) => (
             <div className="space-y-2" key={location}>
               <Label>{locationLabels[location]}</Label>
