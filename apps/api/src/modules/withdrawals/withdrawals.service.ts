@@ -73,6 +73,7 @@ export class WithdrawalsService {
 
     return {
       currency: settlement.code,
+      requireTrafficSource: settlement.requireWithdrawalTrafficSource,
       availableBalance: this.fromBase(user.balance, settlement).toString(),
       pendingBalance: this.fromBase(
         pending._sum.amount ?? new Prisma.Decimal(0),
@@ -136,12 +137,18 @@ export class WithdrawalsService {
           : "Quản trị viên đang tạm dừng tiếp nhận yêu cầu rút tiền.",
       );
     }
+    const trafficSource = this.resolveTrafficSource(
+      dto.trafficSource,
+      settlement.requireWithdrawalTrafficSource,
+    );
     const amount = this.toBase(this.parseAmount(dto.amount), settlement);
     const existing = await this.prisma.userWithdrawal.findUnique({
       where: { idempotencyKey: dto.idempotencyKey },
       include: withdrawalInclude,
     });
-    if (existing) return this.resolveIdempotent(existing, userId, dto, amount);
+    if (existing) {
+      return this.resolveIdempotent(existing, userId, dto, amount, trafficSource);
+    }
 
     const account = await this.findAvailableAccount(
       userId,
@@ -182,6 +189,7 @@ export class WithdrawalsService {
             exchangeRate: settlement.exchangeRate,
             status: "pending",
             paymentSnapshotJson: JSON.stringify(snapshot),
+            trafficSource,
             idempotencyKey: dto.idempotencyKey,
           },
           include: withdrawalInclude,
@@ -198,7 +206,13 @@ export class WithdrawalsService {
           include: withdrawalInclude,
         });
         if (duplicate) {
-          return this.resolveIdempotent(duplicate, userId, dto, amount);
+          return this.resolveIdempotent(
+            duplicate,
+            userId,
+            dto,
+            amount,
+            trafficSource,
+          );
         }
       }
       throw error;
@@ -443,11 +457,13 @@ export class WithdrawalsService {
     userId: number,
     dto: CreateWithdrawalDto,
     amount: Prisma.Decimal,
+    trafficSource: string | null,
   ) {
     if (
       record.userId !== userId ||
       record.userPaymentMethodId !== dto.userPaymentMethodId ||
-      !record.amount.equals(amount)
+      !record.amount.equals(amount) ||
+      record.trafficSource !== trafficSource
     ) {
       throw new ConflictException(
         "Idempotency key đã được dùng cho một yêu cầu khác.",
@@ -467,6 +483,7 @@ export class WithdrawalsService {
       netAmount: record.netAmount.mul(exchangeRate).toString(),
       status: record.status,
       statusReason: record.statusReason,
+      trafficSource: record.trafficSource,
       userPaymentMethodId: record.userPaymentMethodId,
       paymentMethod: {
         id: snapshot.paymentMethodId,
@@ -555,7 +572,18 @@ export class WithdrawalsService {
       ...currency,
       maintenanceMode: settings.maintenanceMode,
       withdrawalsPaused: settings.withdrawalsPaused,
+      requireWithdrawalTrafficSource: settings.requireWithdrawalTrafficSource,
     };
+  }
+
+  private resolveTrafficSource(value: string | undefined, required: boolean) {
+    const trafficSource = value?.trim() ?? "";
+    if (required && !trafficSource) {
+      throw new BadRequestException(
+        "Vui lòng ghi rõ nguồn traffic trước khi gửi yêu cầu rút tiền.",
+      );
+    }
+    return trafficSource || null;
   }
 
   private toBase(

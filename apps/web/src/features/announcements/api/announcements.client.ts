@@ -76,9 +76,10 @@ export function deleteAdminAnnouncement(id: number) {
   return request<{ id: number; deleted: true }>(`/admin/announcements/${id}`, { method: "DELETE" });
 }
 
-export function listMemberAnnouncements(input?: { displayType?: AnnouncementDisplay; page?: number; perPage?: number }) {
+export function listMemberAnnouncements(input?: { displayType?: AnnouncementDisplay; page?: number; perPage?: number; locale?: string }) {
   const params = new URLSearchParams({ page: String(input?.page || 1), perPage: String(input?.perPage || 20) });
   if (input?.displayType) params.set("displayType", input.displayType);
+  if (input?.locale) params.set("locale", input.locale);
   return request<PaginatedAnnouncements<MemberAnnouncement>>(`/member/announcements?${params}`, { cache: "no-store" }, "");
 }
 
@@ -86,12 +87,12 @@ export function getUnreadAnnouncementCount() {
   return request<{ count: number }>("/member/announcements/unread-count", { cache: "no-store" }, "");
 }
 
-export function getActiveAnnouncementBanners() {
-  return request<MemberAnnouncement[]>("/member/announcements/active-banners", { cache: "no-store" }, "");
+export function getActiveAnnouncementBanners(locale?: string) {
+  return request<MemberAnnouncement[]>(`/member/announcements/active-banners${locale ? `?locale=${encodeURIComponent(locale)}` : ""}`, { cache: "no-store" }, "");
 }
 
-export function getActiveAnnouncementModals() {
-  return request<MemberAnnouncement[]>("/member/announcements/active-modals", { cache: "no-store" }, "");
+export function getActiveAnnouncementModals(locale?: string) {
+  return request<MemberAnnouncement[]>(`/member/announcements/active-modals${locale ? `?locale=${encodeURIComponent(locale)}` : ""}`, { cache: "no-store" }, "");
 }
 
 export function interactWithAnnouncement(id: number, action: "seen" | "read" | "dismiss" | "acknowledge" | "click") {

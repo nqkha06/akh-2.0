@@ -12,6 +12,7 @@ export type PublicBusinessConfig = {
   operations: {
     maintenanceMode: boolean;
     withdrawalsPaused: boolean;
+    requireWithdrawalTrafficSource: boolean;
   };
   uploads: {
     memberFileMaxBytes: number;
@@ -44,6 +45,7 @@ export type AdminBusinessSettings = {
   backgroundVideos: BackgroundVideoPreset[];
   maintenanceMode: boolean;
   withdrawalsPaused: boolean;
+  requireWithdrawalTrafficSource: boolean;
   updatedAt: string;
   currencies: Array<{
     code: string;

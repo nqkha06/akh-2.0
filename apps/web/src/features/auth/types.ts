@@ -5,6 +5,8 @@ export type AuthUser = {
   emailVerifiedAt: string | null;
   avatar: string | null;
   status: string;
+  createdAt: string;
+  updatedAt: string;
   role: string;
   roles: string[];
   permissions: string[];

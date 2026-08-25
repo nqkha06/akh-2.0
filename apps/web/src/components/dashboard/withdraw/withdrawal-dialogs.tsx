@@ -14,8 +14,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 
 import type { WithdrawalController } from "./use-withdrawal-controller";
 import { formatDateTime } from "./use-withdrawal-controller";
@@ -35,7 +37,7 @@ function TransactionAmounts({ requested, fee, net, formatCurrency }: { requested
 
 export function WithdrawalConfirmationDialog({ controller }: { controller: WithdrawalController }) {
   const t = useTranslations("Withdraw");
-  const { confirmationOpen, submitting, submitError, amount, estimate, selectedMethod, data, setConfirmationOpen, confirmWithdrawal, formatCurrency } = controller;
+  const { confirmationOpen, submitting, submitError, amount, estimate, selectedMethod, data, trafficSource, setConfirmationOpen, setTrafficSource, confirmWithdrawal, formatCurrency } = controller;
   if (!estimate || !selectedMethod) return null;
   return (
     <AlertDialog open={confirmationOpen} onOpenChange={(open) => { if (!submitting) setConfirmationOpen(open); }}>
@@ -47,12 +49,13 @@ export function WithdrawalConfirmationDialog({ controller }: { controller: Withd
         <div className="space-y-5">
           <div className="rounded-md border border-border bg-muted/20 p-4"><TransactionAmounts requested={amount} fee={estimate.feeAmount ?? 0} net={estimate.netAmount ?? 0} formatCurrency={formatCurrency} /></div>
           <div><p className="text-xs font-medium text-muted-foreground">{t("confirmation.receiveVia")}</p><p className="mt-1 text-sm font-medium">{selectedMethod.provider} {selectedMethod.maskedAccount}</p><p className="mt-0.5 text-sm text-muted-foreground">{selectedMethod.accountHolder}</p></div>
+          {data?.requireTrafficSource ? <div className="grid gap-2"><Label htmlFor="withdrawal-traffic-source">{t("confirmation.trafficSourceLabel")}</Label><Textarea id="withdrawal-traffic-source" value={trafficSource} disabled={submitting} maxLength={500} placeholder={t("confirmation.trafficSourcePlaceholder")} onChange={(event) => setTrafficSource(event.target.value)} /><p className="text-xs text-muted-foreground">{t("confirmation.trafficSourceHelp")}</p></div> : null}
           {data?.processingEstimate ? <div><p className="text-xs font-medium text-muted-foreground">{t("confirmation.estimatedTime")}</p><p className="mt-1 flex items-center gap-2 text-sm"><Clock3 className="size-4 text-muted-foreground" />{data.processingEstimate}</p></div> : null}
           {submitError ? <Alert variant="destructive"><CircleAlert /><AlertTitle>{t("errors.submitTitle")}</AlertTitle><AlertDescription>{submitError}</AlertDescription></Alert> : null}
         </div>
         <AlertDialogFooter>
           <Button variant="outline" disabled={submitting} onClick={() => setConfirmationOpen(false)}>{t("actions.back")}</Button>
-          <Button disabled={submitting} onClick={() => void confirmWithdrawal()}>{submitting ? <><LoaderCircle className="animate-spin" />{t("actions.submitting")}</> : t("actions.confirm")}</Button>
+          <Button disabled={submitting || Boolean(data?.requireTrafficSource && !trafficSource.trim())} onClick={() => void confirmWithdrawal()}>{submitting ? <><LoaderCircle className="animate-spin" />{t("actions.submitting")}</> : t("actions.confirm")}</Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

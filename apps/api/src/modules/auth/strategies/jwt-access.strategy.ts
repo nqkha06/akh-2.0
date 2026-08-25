@@ -91,6 +91,8 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt-access") 
       emailVerifiedAt: user.emailVerifiedAt,
       avatar: user.avatar,
       status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       ...authorization,
       tokenVersion: user.tokenVersion,
       sessionId: session.id,

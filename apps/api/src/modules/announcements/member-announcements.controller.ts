@@ -24,8 +24,11 @@ export class MemberAnnouncementsController {
   constructor(private readonly announcements: AnnouncementsService) {}
 
   @Get()
-  list(@Req() request: MemberRequest, @Query() query: ListMemberAnnouncementsQueryDto) {
-    return this.announcements.listForMember(request.user.id, query);
+  list(
+    @Req() request: MemberRequest,
+    @Query() query: ListMemberAnnouncementsQueryDto,
+  ) {
+    return this.announcements.listForMember(request.user.id, query, query.locale);
   }
 
   @Get("unread-count")
@@ -34,13 +37,13 @@ export class MemberAnnouncementsController {
   }
 
   @Get("active-banners")
-  banners(@Req() request: MemberRequest) {
-    return this.announcements.activeBanners(request.user.id);
+  banners(@Req() request: MemberRequest, @Query("locale") locale?: string) {
+    return this.announcements.activeBanners(request.user.id, locale);
   }
 
   @Get("active-modals")
-  modals(@Req() request: MemberRequest) {
-    return this.announcements.activeModals(request.user.id);
+  modals(@Req() request: MemberRequest, @Query("locale") locale?: string) {
+    return this.announcements.activeModals(request.user.id, locale);
   }
 
   @Post("read-all")
@@ -50,8 +53,12 @@ export class MemberAnnouncementsController {
   }
 
   @Get(":id")
-  find(@Req() request: MemberRequest, @Param("id", ParseIntPipe) id: number) {
-    return this.announcements.findForMember(request.user.id, id);
+  find(
+    @Req() request: MemberRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Query("locale") locale?: string,
+  ) {
+    return this.announcements.findForMember(request.user.id, id, locale);
   }
 
   @Post(":id/seen")
@@ -84,4 +91,3 @@ export class MemberAnnouncementsController {
     return this.announcements.trackClick(request.user.id, id);
   }
 }
-

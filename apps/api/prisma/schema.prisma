@@ -491,6 +491,7 @@ model UserWithdrawal {
   exchangeRate        Decimal            @default(1) @map("exchange_rate")
   status              String             @default("pending")
   paymentSnapshotJson String             @map("payment_snapshot")
+  trafficSource       String?            @map("traffic_source")
   idempotencyKey      String             @unique @map("idempotency_key")
   statusReason        String?            @map("status_reason")
   processedById       Int?               @map("processed_by_id")
@@ -905,6 +906,7 @@ model Announcement {
   deletedAt               DateTime?          @map("deleted_at")
   createdBy               User?              @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy               User?              @relation("AnnouncementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  translations            AnnouncementTranslation[]
   users                   AnnouncementUser[]
 
   @@index([status, startsAt, endsAt])
@@ -913,6 +915,23 @@ model Announcement {
   @@index([targetType])
   @@index([deletedAt])
   @@map("announcements")
+}
+
+model AnnouncementTranslation {
+  id             Int          @id @default(autoincrement())
+  announcementId Int          @map("announcement_id")
+  locale         String
+  title          String
+  summary        String?
+  content        String
+  actionLabel    String?      @map("action_label")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, locale])
+  @@index([locale])
+  @@map("announcement_translations")
 }
 
 model AnnouncementUser {
@@ -995,6 +1014,7 @@ model BusinessSettings {
   backgroundVideosJson       String   @default("[]") @map("background_videos")
   maintenanceMode            Boolean  @default(false) @map("maintenance_mode")
   withdrawalsPaused          Boolean  @default(false) @map("withdrawals_paused")
+  requireWithdrawalTrafficSource Boolean @default(false) @map("require_withdrawal_traffic_source")
   updatedById                Int?     @map("updated_by_id")
   createdAt                  DateTime @default(now()) @map("created_at")
   updatedAt                  DateTime @updatedAt @map("updated_at")

@@ -43,7 +43,9 @@ import {
   unauthorizedAuthError,
 } from "./auth-errors";
 import type { RegisterDto } from "./dto/register.dto";
+import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import { PasswordResetMailer } from "./password-reset-mailer.service";
+import { ProfileAvatarStorageService } from "./profile-avatar-storage.service";
 
 const INVALID_CREDENTIALS_MESSAGE = "Email hoặc mật khẩu không chính xác.";
 const DUMMY_PASSWORD_HASH =
@@ -63,6 +65,7 @@ export class AuthService {
     private readonly passwordResetMailer: PasswordResetMailer,
     private readonly businessSettings: BusinessSettingsService,
     private readonly audit: AuditService,
+    private readonly profileAvatars: ProfileAvatarStorageService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -651,11 +654,81 @@ export class AuthService {
       emailVerifiedAt: user.emailVerifiedAt,
       avatar: user.avatar,
       status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       role: user.role,
       roles: user.roles,
       permissions: user.permissions,
       impersonation: user.impersonation ?? null,
     };
+  }
+
+  async updateProfile(
+    currentUser: AuthenticatedUser,
+    dto: UpdateProfileDto,
+    avatarFile?: Express.Multer.File,
+  ) {
+    if (currentUser.impersonation) {
+      throw new ForbiddenException(
+        "Không thể chỉnh sửa hồ sơ trong phiên đăng nhập thay người dùng.",
+      );
+    }
+    if (avatarFile && dto.removeAvatar) {
+      throw new BadRequestException(
+        "Không thể đồng thời tải lên và xóa ảnh đại diện.",
+      );
+    }
+    if (dto.name === undefined && !avatarFile && !dto.removeAvatar) {
+      throw new BadRequestException("Không có thay đổi hồ sơ để lưu.");
+    }
+
+    const existing = await this.prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { avatar: true },
+    });
+    if (!existing) {
+      throw new NotFoundException("Không tìm thấy tài khoản.");
+    }
+
+    let newAvatarUrl: string | undefined;
+    let newAvatarStorageKey: string | undefined;
+    if (avatarFile) {
+      const validated = await this.profileAvatars.validate(avatarFile);
+      newAvatarStorageKey = this.profileAvatars.buildStorageKey(
+        currentUser.id,
+        validated.extension,
+      );
+      await this.profileAvatars.write(newAvatarStorageKey, avatarFile.buffer);
+      newAvatarUrl = this.profileAvatars.publicUrl(newAvatarStorageKey);
+    }
+
+    const updated = await (async () => {
+      try {
+        return await this.prisma.user.update({
+          where: { id: currentUser.id },
+          data: {
+            ...(dto.name !== undefined ? { name: dto.name } : {}),
+            ...(newAvatarUrl !== undefined
+              ? { avatar: newAvatarUrl }
+              : dto.removeAvatar
+                ? { avatar: null }
+                : {}),
+          },
+        });
+      } catch (error) {
+        if (newAvatarStorageKey) {
+          await this.profileAvatars.removeByPublicUrl(
+            this.profileAvatars.publicUrl(newAvatarStorageKey),
+          );
+        }
+        throw error;
+      }
+    })();
+
+    if (newAvatarUrl !== undefined || dto.removeAvatar) {
+      await this.profileAvatars.removeByPublicUrl(existing.avatar);
+    }
+    return this.toPublicUser(await this.toAuthenticatedUser(updated));
   }
 
   async startImpersonation(
@@ -955,6 +1028,8 @@ export class AuthService {
     avatar: string | null;
     status: string;
     tokenVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
   }): Promise<AuthenticatedUser> {
     const authorizationRecord = await this.prisma.user.findUnique({
       where: { id: user.id },
@@ -971,6 +1046,8 @@ export class AuthService {
       emailVerifiedAt: user.emailVerifiedAt,
       avatar: user.avatar,
       status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       ...authorization,
       tokenVersion: user.tokenVersion,
     };

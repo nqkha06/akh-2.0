@@ -38,6 +38,7 @@ type RawWithdrawal = {
 
 type RawDashboard = {
   currency: string;
+  requireTrafficSource: boolean;
   availableBalance: string;
   pendingBalance: string;
   totalReceived: string;
@@ -206,6 +207,7 @@ export const withdrawalDataSource: WithdrawalDataSource = {
     const firstMethod = loadedMethods[0];
     return {
       currency: dashboard.currency,
+      requireTrafficSource: dashboard.requireTrafficSource,
       availableBalance,
       pendingBalance: Number(dashboard.pendingBalance),
       totalReceived: Number(dashboard.totalReceived),
@@ -248,13 +250,14 @@ export const withdrawalDataSource: WithdrawalDataSource = {
     };
   },
 
-  async create({ amount, payoutMethodId, idempotencyKey }) {
+  async create({ amount, payoutMethodId, idempotencyKey, trafficSource }) {
     const response = await request<RawWithdrawal>("/member/withdrawals", {
       method: "POST",
       body: JSON.stringify({
         amount: String(amount),
         userPaymentMethodId: Number(payoutMethodId),
         idempotencyKey,
+        trafficSource,
       }),
     });
     return toTransaction(response, loadedAccounts, loadedLocale);

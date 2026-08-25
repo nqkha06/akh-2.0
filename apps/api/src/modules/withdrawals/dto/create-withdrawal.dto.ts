@@ -1,4 +1,10 @@
-import { IsString, Matches, MaxLength, MinLength } from "class-validator";
+import {
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
 import { EstimateWithdrawalDto } from "./estimate-withdrawal.dto";
 
@@ -10,4 +16,9 @@ export class CreateWithdrawalDto extends EstimateWithdrawalDto {
     message: "Idempotency key không hợp lệ.",
   })
   idempotencyKey!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  trafficSource?: string;
 }

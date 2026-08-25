@@ -75,17 +75,9 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("description", { brand: brand.siteName })}
-        action={
-          <Badge className="h-9 gap-1.5 bg-emerald-600 px-3 text-sm hover:bg-emerald-600">
-            <BadgeDollarSign className="size-4" />
-            {t("commissionRateValue", {
-              rate: Number(data.commissionRate),
-            })}
-          </Badge>
-        }
+       
       />
 
       <Card className="gap-0 border-emerald-200 bg-emerald-50/70 px-4 py-3 shadow-none dark:border-emerald-900 dark:bg-emerald-950/20 sm:px-5">
@@ -217,7 +209,6 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
               <thead className="border-b bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-5 py-3 sm:px-6">{t("table.details")}</th>
-                  <th className="px-5 py-3">{t("table.status")}</th>
                   <th className="px-5 py-3">{t("table.date")}</th>
                   <th className="px-5 py-3 text-right">
                     {t("table.lastEarning")}
@@ -252,23 +243,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
-                        <Badge
-                          variant={
-                            referral.successfulWithdrawals > 0
-                              ? "default"
-                              : "outline"
-                          }
-                          className={cn(
-                            referral.successfulWithdrawals > 0 &&
-                              "bg-emerald-600 hover:bg-emerald-600",
-                          )}
-                        >
-                          {referral.successfulWithdrawals > 0
-                            ? t("earningStatus")
-                            : t("waitingStatus")}
-                        </Badge>
-                      </td>
+                     
                       <td className="px-5 py-4 text-muted-foreground">
                         {date(referral.joinedAt)}
                       </td>
@@ -311,59 +286,7 @@ export function ReferralsView({ data }: { data: ReferralsDashboard }) {
         </CardContent>
       </Card>
 
-      <Card className="gap-0 overflow-hidden py-0">
-        <CardHeader className="border-b px-5 py-5 sm:px-6">
-          <CardTitle>{t("recentTitle")}</CardTitle>
-          <CardDescription>{t("recentDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent className="divide-y p-0">
-          {data.recentCommissions.length ? (
-            data.recentCommissions.map((commission) => (
-              <div
-                key={commission.id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar size="sm">
-                    <AvatarImage
-                      src={commission.fromUser.avatar || undefined}
-                      alt={commission.fromUser.name}
-                    />
-                    <AvatarFallback>
-                      {initials(commission.fromUser.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {commission.fromUser.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("withdrawalReference", {
-                        id: commission.withdrawalId,
-                      })}{" "}
-                      · {date(commission.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-left sm:text-right">
-                  <p className="font-semibold tabular-nums text-emerald-600">
-                    +{money(commission.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("rateApplied", {
-                      rate: Number(commission.rate),
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground sm:px-6">
-              {t("recentEmpty")}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+     
     </PageContainer>
   );
 }

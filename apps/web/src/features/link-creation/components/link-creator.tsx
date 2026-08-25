@@ -61,8 +61,10 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Settings,
-  Clock,
+  MousePointerClick,
+  PanelsTopLeft,
+  SlidersHorizontal,
+  CalendarClock,
   History,
   X,
   Check,
@@ -628,6 +630,30 @@ function getLocalDateInputValue(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
   return `${year}-${month}-${day}`
+}
+
+function SectionTriggerLabel({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon
+  title: string
+  description: string
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-3 text-left">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-foreground">{title}</span>
+        <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
+          {description}
+        </span>
+      </span>
+    </span>
+  )
 }
 
 type BackgroundMediaType = "image" | "video" | "youtube"
@@ -1721,13 +1747,14 @@ export default function SocialLinksGenerator({
         />
         {/* Actions Section */}
         <Card className="gap-0 overflow-hidden rounded-xl border-border bg-card py-0 shadow-none">
-          <CardHeader className="border-b border-border px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-2 text-foreground">
-              <Settings className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">{t("actions")}</h3>
-            </div>
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <SectionTriggerLabel
+              icon={MousePointerClick}
+              title={t("actions")}
+              description={t("actionsDescription")}
+            />
           </CardHeader>
-          <CardContent className="space-y-3 px-4 py-4 sm:px-5">
+          <CardContent className="space-y-3 px-4 pt-0 pb-4 sm:px-5">
             {mostUsedActions.length > 0 ? (
               <div className="flex flex-col rounded-xl border border-border bg-muted/20 p-4">
                 <div className="mb-3 flex items-center gap-2 text-muted-foreground">
@@ -1851,7 +1878,7 @@ export default function SocialLinksGenerator({
                         {popularExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                       </button>
                           {popularExpanded ? (
-                            <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                            <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/15 p-3">
                               {filteredPopularActions.map(({ platform, action }) => {
                                 const PopularPlatformIcon = socialPlatforms[platform].icon
                                 return (
@@ -1859,7 +1886,7 @@ export default function SocialLinksGenerator({
                                     key={`${platform}-${action.id}`}
                                     type="button"
                                     onClick={() => handleChangeActionType(platform, action.id)}
-                                    className={`${socialPlatforms[platform].color} text-sm text-white hover:opacity-80`}
+                                    className={`${socialPlatforms[platform].color} max-w-full shrink-0 text-sm text-white hover:opacity-80`}
                                     size="sm"
                                   >
                                     <PopularPlatformIcon className="mr-1 size-4" />
@@ -1887,12 +1914,12 @@ export default function SocialLinksGenerator({
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                         {isExpanded && (
-                          <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                          <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/15 p-3">
                             {platform.actions.map((action) => (
                               <Button
                                 key={action.id}
                                 onClick={() => handleChangeActionType(key as keyof typeof socialPlatforms, action.id)}
-                                className={`${platform.color} hover:opacity-80 text-white text-sm`}
+                                className={`${platform.color} max-w-full shrink-0 text-sm text-white hover:opacity-80`}
                                 size="sm"
                               >
                                 <Icon className="w-4 h-4 mr-1" />
@@ -1920,7 +1947,7 @@ export default function SocialLinksGenerator({
                 onClick={() => setIsActionModalOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add action
+                {t("addAction")}
               </Button>
               <CredenzaContent>
                 <CredenzaHeader>
@@ -1980,7 +2007,7 @@ export default function SocialLinksGenerator({
                         {popularExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                       </button>
                           {popularExpanded ? (
-                            <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                            <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/15 p-3">
                               {filteredPopularActions.map(({ platform, action }) => {
                                 const PopularPlatformIcon = socialPlatforms[platform].icon
                                 return (
@@ -1988,7 +2015,7 @@ export default function SocialLinksGenerator({
                                     key={`${platform}-${action.id}`}
                                     type="button"
                                     onClick={() => addAction(platform, action.id)}
-                                    className={`${socialPlatforms[platform].color} text-sm text-white hover:opacity-80`}
+                                    className={`${socialPlatforms[platform].color} max-w-full shrink-0 text-sm text-white hover:opacity-80`}
                                     size="sm"
                                   >
                                     <PopularPlatformIcon className="mr-1 size-4" />
@@ -2016,12 +2043,12 @@ export default function SocialLinksGenerator({
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                         {isExpanded && (
-                          <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/15 p-3">
+                          <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/15 p-3">
                             {platform.actions.map((action) => (
                               <Button
                                 key={action.id}
                                 onClick={() => addAction(key as keyof typeof socialPlatforms, action.id)}
-                                className={`${platform.color} hover:opacity-80 text-white text-sm`}
+                                className={`${platform.color} max-w-full shrink-0 text-sm text-white hover:opacity-80`}
                                 size="sm"
                               >
                                 <PlatformIcon className="w-4 h-4 mr-1" />
@@ -2049,11 +2076,12 @@ export default function SocialLinksGenerator({
 
         <div className="space-y-2">
           <Collapsible open={layoutOpen} onOpenChange={setLayoutOpen}>
-            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Settings className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t("layout")}</span>
-              </div>
+            <CollapsibleTrigger className="flex min-h-14 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 transition-colors hover:border-primary/20 hover:bg-muted/20">
+              <SectionTriggerLabel
+                icon={PanelsTopLeft}
+                title={t("layout")}
+                description={t("layoutDescription")}
+              />
               {layoutOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-1 space-y-6 rounded-lg border border-border bg-card p-4">
@@ -2401,11 +2429,12 @@ export default function SocialLinksGenerator({
           </Collapsible>
 
           <Collapsible open={extraOptionsOpen} onOpenChange={setExtraOptionsOpen}>
-            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Settings className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t("extraOptions")}</span>
-              </div>
+            <CollapsibleTrigger className="flex min-h-14 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 transition-colors hover:border-primary/20 hover:bg-muted/20">
+              <SectionTriggerLabel
+                icon={SlidersHorizontal}
+                title={t("extraOptions")}
+                description={t("extraOptionsDescription")}
+              />
               {extraOptionsOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-1 space-y-4 rounded-lg border border-border bg-card p-4">
@@ -2559,11 +2588,12 @@ export default function SocialLinksGenerator({
             </Collapsible> */}
 
           <Collapsible open={expiresOpen} onOpenChange={setExpiresOpen}>
-            <CollapsibleTrigger className="flex h-12 w-full items-center justify-between rounded-lg border border-border bg-card px-4 transition-colors hover:bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Clock className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t("expires")}</span>
-              </div>
+            <CollapsibleTrigger className="flex min-h-14 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 transition-colors hover:border-primary/20 hover:bg-muted/20">
+              <SectionTriggerLabel
+                icon={CalendarClock}
+                title={t("expires")}
+                description={t("expiresDescription")}
+              />
               {expiresOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-1 space-y-4 rounded-lg border border-border bg-card p-4">

@@ -110,6 +110,7 @@ export function BusinessSettingsForm({
       backgroundVideos: settings.backgroundVideos,
       maintenanceMode: settings.maintenanceMode,
       withdrawalsPaused: settings.withdrawalsPaused,
+      requireWithdrawalTrafficSource: settings.requireWithdrawalTrafficSource,
     };
     try {
       setSaving(true);
@@ -219,6 +220,7 @@ export function BusinessSettingsForm({
           <SettingsCard title="Kiểm soát vận hành" description="Dùng khi bảo trì hoặc cần dừng riêng luồng thanh toán.">
             <SettingSwitch tone="danger" label="Maintenance mode" description="Chặn đăng ký và các thao tác ghi của thành viên; admin vẫn quản trị được." checked={settings.maintenanceMode} onCheckedChange={(value) => patch({ maintenanceMode: value })} />
             <SettingSwitch tone="danger" label="Tạm dừng rút tiền" description="Chặn yêu cầu rút mới nhưng vẫn cho phép xem lịch sử." checked={settings.withdrawalsPaused} onCheckedChange={(value) => patch({ withdrawalsPaused: value })} />
+            <SettingSwitch label="Yêu cầu nguồn traffic khi rút tiền" description="Khi bật, member phải mô tả nguồn traffic trong hộp xác nhận trước khi gửi yêu cầu rút tiền." checked={settings.requireWithdrawalTrafficSource} onCheckedChange={(value) => patch({ requireWithdrawalTrafficSource: value })} />
           </SettingsCard>
         </TabsContent>
 

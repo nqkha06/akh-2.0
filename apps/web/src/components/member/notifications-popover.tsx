@@ -11,8 +11,18 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { AnnouncementIcon, announcementPlainText } from "@/features/announcements/components/announcement-ui"
+import { AnnouncementIcon, announcementPlainText, announcementTone } from "@/features/announcements/components/announcement-ui"
 import { useAnnouncements } from "@/features/announcements/components/announcements-provider"
+import { cn } from "@/lib/utils"
+
+const MAX_POPOVER_NOTIFICATIONS = 5
+const MAX_PREVIEW_LENGTH = 150
+
+function announcementPreview(value: string) {
+  const plainText = announcementPlainText(value)
+  if (plainText.length <= MAX_PREVIEW_LENGTH) return plainText
+  return `${plainText.slice(0, MAX_PREVIEW_LENGTH).trimEnd()}…`
+}
 
 function formatRelativeTime(value: string | null, locale: string) {
   const date = value ? new Date(value) : new Date()
@@ -32,6 +42,7 @@ export function NotificationsPopover() {
   const router = useRouter()
   const { notifications, unreadCount, loading, markRead, markAllRead } = useAnnouncements()
   const [open, setOpen] = React.useState(false)
+  const visibleNotifications = notifications.slice(0, MAX_POPOVER_NOTIFICATIONS)
 
   async function openNotification(id: number, actionUrl: string | null) {
     await markRead(id)
@@ -61,21 +72,30 @@ export function NotificationsPopover() {
         <TooltipContent side="bottom" sideOffset={7}>{t("title")}</TooltipContent>
       </Tooltip>
 
-      <PopoverContent align="end" sideOffset={8} className="w-[min(390px,calc(100vw-24px))] rounded-xl p-0 shadow-lg">
-        <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
-          <div><h2 className="text-sm font-semibold">{t("title")}</h2><p className="text-[11px] text-muted-foreground">{t("popover.unreadCount", { count: unreadCount })}</p></div>
+      <PopoverContent align="end" sideOffset={8} className="w-[min(370px,calc(100vw-24px))] overflow-hidden rounded-xl p-0 shadow-lg">
+        <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-2.5">
+          <div className="min-w-0"><h2 className="text-sm font-semibold">{t("title")}</h2><p className="mt-0.5 text-[11px] text-muted-foreground">{t("popover.unreadCount", { count: unreadCount })}</p></div>
           {unreadCount > 0 ? <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => void markAllRead().catch((error) => toast.error(error instanceof Error && error.message ? error.message : t("errors.update")))}>{t("actions.markAllRead")}</Button> : null}
         </div>
         <Separator />
-        <div className="max-h-[min(430px,65dvh)] overflow-y-auto">
-          {loading ? <div className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" />{t("loading")}</div> : notifications.length ? notifications.map((item) => {
+        <div className="max-h-[min(350px,60dvh)] overflow-y-auto">
+          {loading ? <div className="flex items-center justify-center gap-2 px-6 py-10 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" />{t("loading")}</div> : visibleNotifications.length ? visibleNotifications.map((item) => {
             const unread = !item.state.readAt
-            return <button key={item.id} type="button" onClick={() => void openNotification(item.id, item.actionUrl).catch((error) => toast.error(error instanceof Error && error.message ? error.message : t("errors.open")))} className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-accent/60 last:border-b-0">
-              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border bg-muted/40 text-muted-foreground"><AnnouncementIcon type={item.type} /></span>
-              <span className="min-w-0 flex-1"><span className="flex items-start justify-between gap-3"><span className="truncate text-sm font-medium">{item.title}</span><span className="shrink-0 text-[10px] text-muted-foreground">{formatRelativeTime(item.publishedAt || item.createdAt, locale)}</span></span><span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">{announcementPlainText(item.summary || item.content)}</span></span>
-              {unread ? <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" aria-label={t("status.unread")} /> : null}
+            const preview = announcementPreview(item.summary || item.content)
+            return <button key={item.id} type="button" onClick={() => void openNotification(item.id, item.actionUrl).catch((error) => toast.error(error instanceof Error && error.message ? error.message : t("errors.open")))} className={cn("flex min-h-14 w-full items-center gap-3 border-b border-border/70 px-3.5 py-2.5 text-left transition-colors hover:bg-accent/60 last:border-b-0", unread && "bg-primary/[0.035]")}>
+              <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", announcementTone(item.type))}><AnnouncementIcon type={item.type} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className={cn("truncate text-[13px]", unread ? "font-semibold text-foreground" : "font-medium")}>{item.title}</span>
+                    {unread ? <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label={t("status.unread")} /> : null}
+                  </span>
+                  <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">{formatRelativeTime(item.publishedAt || item.createdAt, locale)}</span>
+                </span>
+                {preview ? <span className="mt-0.5 line-clamp-3 block text-xs leading-5 text-muted-foreground">{preview}</span> : null}
+              </span>
             </button>
-          }) : <div className="px-6 py-12 text-center text-sm text-muted-foreground">{t("empty.all")}</div>}
+          }) : <div className="px-6 py-10 text-center text-sm text-muted-foreground">{t("empty.all")}</div>}
         </div>
         <Separator />
         <Button asChild variant="ghost" className="h-11 w-full rounded-none rounded-b-xl text-xs"><Link href="/member/announcements" onClick={() => setOpen(false)}>{t("actions.viewAll")}<ChevronRight /></Link></Button>

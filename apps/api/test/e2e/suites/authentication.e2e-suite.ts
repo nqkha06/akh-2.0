@@ -422,6 +422,10 @@ describe("Authentication E2E", () => {
     assert.equal(me.status, 200);
     const user = (await me.json()) as Record<string, unknown>;
     assert.equal("passwordHash" in user, false);
+    assert.equal(typeof user.createdAt, "string");
+    assert.equal(typeof user.updatedAt, "string");
+    assert.equal(Number.isNaN(Date.parse(String(user.createdAt))), false);
+    assert.equal(Number.isNaN(Date.parse(String(user.updatedAt))), false);
     assert.equal(
       (
         await request("/api/auth/me", {
@@ -447,6 +451,78 @@ describe("Authentication E2E", () => {
       ((await expiredResponse.json()) as { code: string }).code,
       "ACCESS_TOKEN_EXPIRED",
     );
+  });
+
+  it("updates only the editable member profile fields and persists avatars", async () => {
+    const current = await login();
+    const authorization = {
+      Authorization: `Bearer ${current.body.accessToken}`,
+    };
+    const onePixelPng = Uint8Array.from(
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    );
+    const form = new FormData();
+    form.append("name", "Updated Auth User");
+    form.append(
+      "avatar",
+      new Blob([onePixelPng], { type: "image/png" }),
+      "avatar.png",
+    );
+
+    const updatedResponse = await request("/api/auth/me", {
+      method: "PATCH",
+      headers: authorization,
+      body: form,
+    });
+    assert.equal(
+      updatedResponse.status,
+      200,
+      await updatedResponse.clone().text(),
+    );
+    const updated = (await updatedResponse.json()) as {
+      name: string;
+      email: string;
+      avatar: string;
+    };
+    assert.equal(updated.name, "Updated Auth User");
+    assert.equal(updated.email, "auth@example.com");
+    assert.match(updated.avatar, /^\/api\/backend\/auth\/profile-avatars\//);
+
+    const avatarResponse = await request(
+      updated.avatar.replace("/api/backend", "/api"),
+    );
+    assert.equal(avatarResponse.status, 200);
+    assert.equal(avatarResponse.headers.get("content-type"), "image/png");
+    assert.equal((await avatarResponse.arrayBuffer()).byteLength, onePixelPng.length);
+
+    const removeForm = new FormData();
+    removeForm.append("name", "Auth Test");
+    removeForm.append("removeAvatar", "true");
+    const removedResponse = await request("/api/auth/me", {
+      method: "PATCH",
+      headers: authorization,
+      body: removeForm,
+    });
+    assert.equal(removedResponse.status, 200);
+    const removed = (await removedResponse.json()) as {
+      name: string;
+      avatar: string | null;
+    };
+    assert.equal(removed.name, "Auth Test");
+    assert.equal(removed.avatar, null);
+
+    const forbiddenFieldResponse = await request("/api/auth/me", {
+      method: "PATCH",
+      headers: authorization,
+      body: JSON.stringify({
+        name: "Auth Test",
+        email: "changed@example.com",
+      }),
+    });
+    assert.equal(forbiddenFieldResponse.status, 400);
   });
 
   it("rotates a refresh token exactly once", async () => {

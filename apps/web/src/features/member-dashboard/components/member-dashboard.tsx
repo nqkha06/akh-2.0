@@ -405,14 +405,7 @@ function PerformanceCard({ data }: { data: MemberDashboardData }) {
               <BarChart3 className="size-5" aria-hidden="true" />
             </span>
             <p className="mt-4 text-sm font-medium">{t("performance.empty")}</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button asChild size="sm" className="h-10 rounded-lg">
-                <Link href="/member/create">{t("actions.createLink")}</Link>
-              </Button>
-              <Button asChild size="sm" variant="outline" className="h-10 rounded-lg">
-                <Link href="/member/links">{t("actions.myLinks")}</Link>
-              </Button>
-            </div>
+            
           </div>
         )}
       </CardContent>

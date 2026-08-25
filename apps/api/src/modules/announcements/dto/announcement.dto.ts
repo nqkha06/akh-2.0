@@ -2,6 +2,7 @@ import { PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -44,17 +45,15 @@ export class AnnouncementTargetRulesDto {
   roles?: string[];
 }
 
-export class CreateAnnouncementDto {
+export class AnnouncementTranslationDto {
+  @IsString()
+  @Matches(/^[a-z]{2,3}(?:-[A-Z]{2})?$/)
+  locale!: string;
+
   @IsString()
   @MinLength(3)
   @MaxLength(160)
   title!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(180)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  slug?: string;
 
   @IsOptional()
   @IsString()
@@ -65,6 +64,27 @@ export class CreateAnnouncementDto {
   @MinLength(3)
   @MaxLength(20_000)
   content!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  actionLabel?: string;
+}
+
+export class CreateAnnouncementDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ArrayUnique((translation: AnnouncementTranslationDto) => translation.locale)
+  @ValidateNested({ each: true })
+  @Type(() => AnnouncementTranslationDto)
+  translations!: AnnouncementTranslationDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  slug?: string;
 
   @IsIn(ANNOUNCEMENT_TYPES)
   type!: (typeof ANNOUNCEMENT_TYPES)[number];
@@ -84,11 +104,6 @@ export class CreateAnnouncementDto {
   @ValidateNested()
   @Type(() => AnnouncementTargetRulesDto)
   targetRules!: AnnouncementTargetRulesDto;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  actionLabel?: string;
 
   @IsOptional()
   @IsString()
@@ -157,6 +172,11 @@ export class ListAnnouncementsQueryDto {
 }
 
 export class ListMemberAnnouncementsQueryDto {
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]{2,3}(?:-[A-Z]{2})?$/)
+  locale?: string;
+
   @IsOptional()
   @IsIn(ANNOUNCEMENT_DISPLAYS)
   displayType?: (typeof ANNOUNCEMENT_DISPLAYS)[number];

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsInt, IsObject, Min } from "class-validator";
+import { IsInt, IsObject, IsOptional, Min } from "class-validator";
 
 export class CreateUserPaymentMethodDto {
   @Type(() => Number)
@@ -12,6 +12,12 @@ export class CreateUserPaymentMethodDto {
 }
 
 export class UpdateUserPaymentMethodDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  paymentMethodId?: number;
+
   @IsObject()
   details!: Record<string, unknown>;
 }

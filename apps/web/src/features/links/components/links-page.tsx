@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { PageContainer, PageHeader } from "@/components/dashboard/ui";
 import { TablePagination } from "@/components/table-pagination";
@@ -101,7 +102,11 @@ export function LinksView({
 }) {
   const t = useTranslations("Links");
   const locale = useLocale();
-  const [activeTab, setActiveTab] = useState<LinksTab>("overview");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab = isLinksTab(requestedTab) ? requestedTab : "overview";
   const [links, setLinks] = useState<LinkDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -168,6 +173,17 @@ export function LinksView({
     setFilters(defaultLinkFilters);
   };
 
+  const changeTab = (tab: LinksTab) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (tab === "overview") {
+      nextParams.delete("tab");
+    } else {
+      nextParams.set("tab", tab);
+    }
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -176,7 +192,10 @@ export function LinksView({
 
       />
 
-      <LinksTabs activeTab={activeTab} onChange={setActiveTab} />
+      <LinksTabs
+        activeTab={activeTab}
+        onChange={changeTab}
+      />
 
       {activeTab === "overview" ? <div className="space-y-6">
 
@@ -303,7 +322,7 @@ export function LinksView({
 
           {links.length === 0 ? (
             <LinksEmptyState icon={Link2} title={t("emptyTitle")} description={t("emptyDescription")}>
-              <Button type="button" className="h-10" onClick={() => setActiveTab("create")}><Plus />{t("createNew")}</Button>
+              <Button type="button" className="h-10" onClick={() => changeTab("create")}><Plus />{t("createNew")}</Button>
             </LinksEmptyState>
           ) : filteredLinks.length === 0 ? (
             <LinksEmptyState icon={Search} title={t("notFound")} description={t("notFoundDescription")}>
@@ -339,6 +358,10 @@ export function LinksView({
       {activeTab === "monetization" ? <MonetizationPanel {...monetizationLevels} /> : null}
     </PageContainer>
   );
+}
+
+function isLinksTab(value: string | null): value is LinksTab {
+  return value === "overview" || value === "create" || value === "monetization";
 }
 
 function LinksTabs({ activeTab, onChange }: { activeTab: LinksTab; onChange: (tab: LinksTab) => void }) {

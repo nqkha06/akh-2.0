@@ -2,19 +2,9 @@
 
 import * as React from "react";
 import { useLocale } from "next-intl";
-import { LoaderCircle, RefreshCw, Save, Trash2 } from "lucide-react";
+import { LoaderCircle, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,10 +38,6 @@ export function MemberPaymentMethodsManager() {
     React.useState<MemberPaymentMethodsDashboard | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
-  const [deleting, setDeleting] = React.useState<UserPaymentMethod | null>(
-    null,
-  );
-
   const load = React.useCallback(async () => {
     setLoading(true);
     setError("");
@@ -112,11 +98,6 @@ export function MemberPaymentMethodsManager() {
           catalog={data.catalog}
           defaultLocale={data.defaultLocale}
           account={data.accounts[0] ?? null}
-          onDelete={
-            data.accounts[0]
-              ? () => setDeleting(data.accounts[0] ?? null)
-              : undefined
-          }
           onSaved={() => void load()}
         />
       ) : (
@@ -124,14 +105,6 @@ export function MemberPaymentMethodsManager() {
           Hiện chưa có phương thức thanh toán khả dụng.
         </p>
       )}
-
-      <DeleteMemberPaymentMethodDialog
-        account={deleting}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-        onDeleted={() => void load()}
-      />
     </>
   );
 }
@@ -140,13 +113,11 @@ function MemberPaymentMethodEditor({
   catalog,
   defaultLocale,
   account,
-  onDelete,
   onSaved,
 }: {
   catalog: PaymentMethod[];
   defaultLocale: string;
   account: UserPaymentMethod | null;
-  onDelete?: () => void;
   onSaved: () => void;
 }) {
   const [methodId, setMethodId] = React.useState(
@@ -161,10 +132,17 @@ function MemberPaymentMethodEditor({
   );
   const [saving, setSaving] = React.useState(false);
   const locale = useLocale();
+  const availableMethods = React.useMemo(() => {
+    if (
+      account &&
+      !catalog.some((method) => method.id === account.paymentMethodId)
+    ) {
+      return [account.paymentMethod, ...catalog];
+    }
+    return catalog;
+  }, [account, catalog]);
   const selectedMethod =
-    account?.paymentMethod ??
-    catalog.find((method) => String(method.id) === methodId) ??
-    null;
+    availableMethods.find((method) => String(method.id) === methodId) ?? null;
   const translation = selectedMethod
     ? getPaymentMethodTranslation(selectedMethod, locale, defaultLocale)
     : null;
@@ -185,7 +163,7 @@ function MemberPaymentMethodEditor({
     setSaving(true);
     try {
       if (account) {
-        await updateMemberPaymentMethod(account.id, details);
+        await updateMemberPaymentMethod(account.id, selectedMethod.id, details);
       } else {
         await createMemberPaymentMethod(selectedMethod.id, details);
       }
@@ -211,40 +189,31 @@ function MemberPaymentMethodEditor({
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="payment-method-type">Loại phương thức</Label>
-          {account ? (
-            <Input
+          <Select
+            value={methodId}
+            onValueChange={(value) => {
+              setMethodId(value);
+              setDetails({});
+            }}
+          >
+            <SelectTrigger
               id="payment-method-type"
-              value={translation?.name ?? ""}
-              className={inputClassName}
-              disabled
-            />
-          ) : (
-            <Select
-              value={methodId}
-              onValueChange={(value) => {
-                setMethodId(value);
-                setDetails({});
-              }}
+              className={`${inputClassName} w-full`}
             >
-              <SelectTrigger
-                id="payment-method-type"
-                className={`${inputClassName} w-full`}
-              >
-                <SelectValue placeholder="Chọn phương thức" />
-              </SelectTrigger>
-              <SelectContent>
-                {catalog.map((method) => (
-                  <SelectItem key={method.id} value={String(method.id)}>
-                    {getPaymentMethodTranslation(
-                      method,
-                      locale,
-                      defaultLocale,
-                    )?.name || `#${method.id}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+              <SelectValue placeholder="Chọn phương thức" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableMethods.map((method) => (
+                <SelectItem key={method.id} value={String(method.id)}>
+                  {getPaymentMethodTranslation(
+                    method,
+                    locale,
+                    defaultLocale,
+                  )?.name || `#${method.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {translation?.fields.map((field) => {
@@ -324,26 +293,10 @@ function MemberPaymentMethodEditor({
         })}
       </div>
       <div className="-mx-5 -mb-5 mt-6 flex flex-col gap-3 border-t border-border/80 bg-muted/[0.12] px-5 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:items-center sm:justify-end sm:px-6">
-        {account && onDelete ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 sm:mr-auto"
-            disabled={saving}
-            onClick={onDelete}
-          >
-            <Trash2 />
-            Xóa phương thức
-          </Button>
-        ) : null}
         <Button
           type="submit"
           className="h-10"
-          disabled={
-            saving ||
-            !selectedMethod ||
-            Boolean(account && account.paymentMethod.status !== "published")
-          }
+          disabled={saving || !selectedMethod}
         >
           {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
           {saving
@@ -354,66 +307,5 @@ function MemberPaymentMethodEditor({
         </Button>
       </div>
     </form>
-  );
-}
-
-function DeleteMemberPaymentMethodDialog({
-  account,
-  onOpenChange,
-  onDeleted,
-}: {
-  account: UserPaymentMethod | null;
-  onOpenChange: (open: boolean) => void;
-  onDeleted: () => void;
-}) {
-  const [busy, setBusy] = React.useState(false);
-  const name = account
-    ? getPaymentMethodTranslation(account.paymentMethod)?.name
-    : "";
-
-  async function remove() {
-    if (!account) return;
-    setBusy(true);
-    try {
-      await deleteMemberPaymentMethod(account.id);
-      toast.success("Đã xóa phương thức thanh toán.");
-      onOpenChange(false);
-      onDeleted();
-    } catch (deleteError) {
-      toast.error(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Không thể xóa phương thức.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <AlertDialog open={Boolean(account)} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Xóa tài khoản nhận tiền?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Thông tin “{name}” sẽ bị xóa khỏi tài khoản của bạn. Thao tác này
-            không thể hoàn tác.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Hủy</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={busy}
-            onClick={(event) => {
-              event.preventDefault();
-              void remove();
-            }}
-          >
-            {busy ? "Đang xóa..." : "Xóa phương thức"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

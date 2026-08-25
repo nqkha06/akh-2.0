@@ -45,8 +45,18 @@ export function FilesView() {
         }
       />
       {initialLoading ? <FilesSkeleton /> : <>
+        {infoVisible ? <Alert className="grid-cols-[1rem_1fr_auto] items-center bg-muted/20">
+        <Info />
+        <AlertTitle className="col-start-2 line-clamp-none leading-5">
+  Cần chia sẻ file trực tiếp?
+          </AlertTitle>
+          <AlertDescription className="col-start-2">
+      Nếu bạn cần tải file lên và chia sẻ trực tiếp bằng đường dẫn công khai, hãy sử dụng ZuFile.com để quản lý và chia sẻ file hiệu quả hơn.
+            </AlertDescription>
+          <Button variant="ghost" size="icon-sm" className="col-start-3 row-start-1 row-span-2" onClick={() => setInfoVisible(false)} aria-label="Đóng thông báo"><X /></Button>
+          </Alert> : null}
+
         <StorageUsage used={controller.totalSize} reserved={controller.reservedSize} limit={controller.storageLimit} />
-        {infoVisible ? <Alert className="grid-cols-[1rem_1fr_auto] items-center bg-muted/20"><Info /><AlertTitle className="col-start-2 line-clamp-none leading-5">File chỉ được phát hành qua Social Link sau khi người xem hoàn tất action.</AlertTitle><AlertDescription className="col-start-2">Member Files không cung cấp URL tải trực tiếp hoặc chế độ công khai.</AlertDescription><Button variant="ghost" size="icon-sm" className="col-start-3 row-start-1 row-span-2" onClick={() => setInfoVisible(false)} aria-label="Đóng thông báo"><X /></Button></Alert> : null}
         <div className="relative">
           <FilesToolbar query={controller.query} filters={controller.filters} sort={controller.sort} loading={controller.loading} onQueryChange={controller.setQuery} onTypeChange={controller.setType} onStatusChange={controller.setStatus} onSortChange={controller.setSort} onClear={controller.clearCriteria} onRefresh={controller.refresh} />
           <FilesBulkActions count={controller.selectedFiles.length} busy={controller.busy} onDelete={() => controller.setBulkDeleteOpen(true)} onClear={controller.clearSelection} />

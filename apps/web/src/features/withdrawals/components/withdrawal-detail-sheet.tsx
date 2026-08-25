@@ -166,6 +166,15 @@ export function WithdrawalDetailSheet({
               </dl>
             </section>
 
+            {detail.trafficSource ? (
+              <section>
+                <h3 className="text-sm font-medium">Nguồn traffic</h3>
+                <p className="mt-3 whitespace-pre-wrap rounded-xl border bg-muted/20 p-4 text-sm leading-6">
+                  {detail.trafficSource}
+                </p>
+              </section>
+            ) : null}
+
             {detail.statusReason ? (
               <Alert variant="destructive">
                 <XCircle />

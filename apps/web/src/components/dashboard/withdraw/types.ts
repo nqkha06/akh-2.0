@@ -49,6 +49,7 @@ export type WithdrawalDashboardData = {
   availableBalance: number;
   pendingBalance: number;
   totalReceived: number;
+  requireTrafficSource: boolean;
   payoutMethods: PayoutMethod[];
   defaultMethodId: string | null;
   eligibility: WithdrawalEligibility;
@@ -68,6 +69,7 @@ export type CreateWithdrawalPayload = {
   amount: number;
   payoutMethodId: string;
   idempotencyKey: string;
+  trafficSource?: string;
 };
 
 export interface WithdrawalDataSource {

@@ -154,4 +154,7 @@ export class UpdateBusinessSettingsDto {
 
   @IsBoolean()
   withdrawalsPaused!: boolean;
+
+  @IsBoolean()
+  requireWithdrawalTrafficSource!: boolean;
 }

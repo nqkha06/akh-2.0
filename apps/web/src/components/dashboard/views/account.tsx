@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -9,24 +8,30 @@ import {
   type ReactNode,
 } from "react";
 import {
+  CalendarDays,
   Camera,
   Check,
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
+  Clock3,
   Copy,
   CreditCard,
   Eye,
   EyeOff,
+  Fingerprint,
   Globe2,
   KeyRound,
   LoaderCircle,
   Mail,
+  RotateCcw,
   Save,
+  Trash2,
   User,
   type LucideIcon,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { PageContainer, PageHeader } from "@/components/dashboard/ui";
@@ -54,6 +59,7 @@ import { useAuthUser } from "@/features/auth/components/auth-user-provider";
 import {
   AuthClientError,
   changeAccountPassword,
+  updateAccountProfile,
 } from "@/features/auth/api/auth.client";
 import {
   Select,
@@ -62,19 +68,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { MemberPaymentMethodsManager } from "@/features/payment-methods/components/member-payment-methods-page";
 import {
   getSiteHost,
   useSiteBrand,
 } from "@/features/site-settings/components/site-brand-provider";
-
-type ProfileForm = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  bio: string;
-};
 
 type PasswordForm = {
   current: string;
@@ -87,19 +85,20 @@ const inputClassName = "h-11 rounded-lg border-border bg-background shadow-none 
 export function AccountView() {
   const t = useTranslations("Account");
   const passwordT = useTranslations("ChangePassword");
+  const locale = useLocale();
+  const router = useRouter();
   const brand = useSiteBrand();
   const siteHost = getSiteHost(brand);
   const currentUser = useAuthUser();
   const currencyPreferences = useMemberCurrency();
-  const hydratedProfile = useRef(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [profileName, setProfileName] = useState(currentUser.name);
+  const [savedProfileName, setSavedProfileName] = useState(currentUser.name);
+  const [savedAvatar, setSavedAvatar] = useState(currentUser.avatar);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
-  const [profile, setProfile] = useState<ProfileForm>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    bio: t("profile.bioValue"),
-  });
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [currency, setCurrency] = useState(currencyPreferences.currency);
   const [savedCurrency, setSavedCurrency] = useState(
     currencyPreferences.currency,
@@ -116,23 +115,12 @@ export function AccountView() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  useEffect(() => {
-    if (hydratedProfile.current) return;
-
-    const nameParts = (currentUser.name || "").trim().split(/\s+/).filter(Boolean);
-    const firstName = nameParts.pop() || "";
-    hydratedProfile.current = true;
-    setProfile((current) => ({
-      ...current,
-      firstName,
-      lastName: nameParts.join(" "),
-      email: currentUser.email,
-    }));
-  }, [currentUser.email, currentUser.name]);
-
   const displayName =
-    [profile.lastName, profile.firstName].filter(Boolean).join(" ") ||
+    profileName.trim() ||
     t("profile.fallbackName", { brand: brand.siteName });
+  const displayedAvatar = removeAvatar
+    ? undefined
+    : avatarPreview || savedAvatar || undefined;
   const initials = useMemo(
     () =>
       displayName
@@ -164,6 +152,18 @@ export function AccountView() {
   const currencyPreview = currencyPreferences.formatCurrency(48.1, {
     targetCurrency: currency,
   });
+  const accountStatus = ({
+    active: t("profile.status.active"),
+    inactive: t("profile.status.inactive"),
+    locked: t("profile.status.locked"),
+    suspended: t("profile.status.suspended"),
+    disabled: t("profile.status.disabled"),
+  } as Record<string, string>)[currentUser.status] ?? currentUser.status;
+  const normalizedProfileName = profileName.trim();
+  const profileNameIsValid =
+    normalizedProfileName.length >= 2 && normalizedProfileName.length <= 100;
+  const profileHasChanges =
+    normalizedProfileName !== savedProfileName || Boolean(avatarFile) || removeAvatar;
 
   const sections: Array<{ id: string; icon: LucideIcon; label: string }> = [
     { id: "personal-information", icon: User, label: t("navigation.personal") },
@@ -172,8 +172,6 @@ export function AccountView() {
     { id: "custom-domain", icon: Globe2, label: t("navigation.domain") },
     { id: "change-password", icon: KeyRound, label: passwordT("title") },
   ];
-
-  const notifySaved = (section: string) => toast.success(t("toast.sectionSaved", { section }));
 
   const saveCurrency = async () => {
     setSavingCurrency(true);
@@ -203,14 +201,60 @@ export function AccountView() {
 
   const handleAvatarChange = (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
       toast.error(t("profile.avatarInvalid"));
       return;
     }
 
+    setAvatarFile(file);
+    setRemoveAvatar(false);
     const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(typeof reader.result === "string" ? reader.result : "");
+    reader.onload = () =>
+      setAvatarPreview(typeof reader.result === "string" ? reader.result : "");
     reader.readAsDataURL(file);
+  };
+
+  const clearAvatar = () => {
+    if (removeAvatar) {
+      setRemoveAvatar(false);
+    } else if (avatarFile) {
+      setAvatarFile(null);
+      setAvatarPreview("");
+      setRemoveAvatar(false);
+    } else if (savedAvatar) {
+      setRemoveAvatar(true);
+      setAvatarPreview("");
+    }
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
+  };
+
+  const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!profileNameIsValid || !profileHasChanges || savingProfile) return;
+
+    setSavingProfile(true);
+    try {
+      const updated = await updateAccountProfile({
+        name: normalizedProfileName,
+        ...(avatarFile ? { avatar: avatarFile } : {}),
+        ...(removeAvatar ? { removeAvatar: true } : {}),
+      });
+      setProfileName(updated.name);
+      setSavedProfileName(updated.name);
+      setSavedAvatar(updated.avatar);
+      setAvatarFile(null);
+      setAvatarPreview("");
+      setRemoveAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+      toast.success(t("toast.sectionSaved", { section: t("profile.title") }));
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("profile.saveFailed"),
+      );
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -250,54 +294,6 @@ export function AccountView() {
     <PageContainer>
       <PageHeader title={t("title")} />
 
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm shadow-black/[0.025]">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-primary/[0.08] via-primary/[0.03] to-transparent" />
-        <div className="relative flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-center sm:px-6 sm:py-6">
-          <div className="relative shrink-0">
-            <Avatar className="size-20 border-4 border-background shadow-sm sm:size-24">
-              <AvatarImage
-                src={avatarPreview || currentUser.avatar || undefined}
-                alt={displayName}
-              />
-              <AvatarFallback className="text-xl font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              type="button"
-              aria-label={t("profile.changeAvatar")}
-              onClick={() => avatarInputRef.current?.click()}
-              className="absolute -right-1 -bottom-1 grid size-9 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Camera className="size-4" />
-            </button>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(event) => handleAvatarChange(event.target.files?.[0])}
-            />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="truncate text-xl font-semibold tracking-[-0.025em] text-foreground sm:text-2xl">
-                {displayName}
-              </h2>
-              <Badge className="gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                <CheckCircle2 className="size-3.5" />
-                {t("verified")}
-              </Badge>
-            </div>
-            <p className="mt-1.5 flex items-center gap-2 truncate text-sm text-muted-foreground">
-              <Mail className="size-4 shrink-0" />
-              {profile.email || currentUser.email}
-            </p>
-          </div>
-        </div>
-      </section>
-
       <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <nav
           aria-label={t("navigation.label")}
@@ -317,60 +313,143 @@ export function AccountView() {
         </nav>
 
         <main className="min-w-0 space-y-6">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              notifySaved(t("profile.title"));
-            }}
-          >
+          <form onSubmit={handleProfileSubmit}>
             <SettingsCard
               id="personal-information"
               icon={User}
               title={t("profile.title")}
-              footer={<CardActions><Button type="submit" className="h-10"><Save />{t("saveChanges")}</Button></CardActions>}
+              description={t("profile.description")}
+              footer={
+                <CardActions>
+                  <Button
+                    type="submit"
+                    className="h-10"
+                    disabled={!profileNameIsValid || !profileHasChanges || savingProfile}
+                  >
+                    {savingProfile ? <LoaderCircle className="animate-spin" /> : <Save />}
+                    {savingProfile ? t("profile.saving") : t("saveChanges")}
+                  </Button>
+                </CardActions>
+              }
             >
               <div className="grid gap-5 sm:grid-cols-2">
-                <FieldBlock label={t("profile.lastName")} htmlFor="account-last-name">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="account-avatar">{t("profile.avatar")}</Label>
+                  <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/[0.14] p-4 sm:flex-row sm:items-center">
+                    <Avatar className="size-20 shrink-0 border-2 border-background shadow-sm ring-1 ring-border">
+                      <AvatarImage src={displayedAvatar} alt={displayName} />
+                      <AvatarFallback className="text-lg font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {avatarFile
+                            ? avatarFile.name
+                            : removeAvatar
+                              ? t("profile.avatarMarkedForRemoval")
+                              : savedAvatar
+                                ? t("profile.currentAvatar")
+                                : t("profile.noAvatar")}
+                        </p>
+                        {avatarFile || removeAvatar ? (
+                          <Badge variant="secondary">{t("profile.pendingSave")}</Badge>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {t("profile.avatarHint")}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => avatarInputRef.current?.click()}
+                      >
+                        <Camera />
+                        {t("profile.changeAvatar")}
+                      </Button>
+                      {avatarFile || removeAvatar || savedAvatar ? (
+                        <Button type="button" variant="ghost" onClick={clearAvatar}>
+                          {avatarFile || removeAvatar ? <RotateCcw /> : <Trash2 />}
+                          {avatarFile || removeAvatar
+                            ? t("profile.cancelAvatarChange")
+                            : t("profile.removeAvatar")}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    id="account-avatar"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    onChange={(event) => handleAvatarChange(event.target.files?.[0])}
+                  />
+                </div>
+
+                <FieldBlock label={t("profile.fullName")} htmlFor="account-name">
                   <Input
-                    id="account-last-name"
-                    value={profile.lastName}
-                    onChange={(event) => setProfile((current) => ({ ...current, lastName: event.target.value }))}
+                    id="account-name"
+                    value={profileName}
+                    maxLength={100}
+                    onChange={(event) => setProfileName(event.target.value)}
                     className={inputClassName}
                   />
+                  {!profileNameIsValid && profileName.length > 0 ? (
+                    <p className="text-xs text-destructive">{t("profile.nameInvalid")}</p>
+                  ) : null}
                 </FieldBlock>
-                <FieldBlock label={t("profile.firstName")} htmlFor="account-first-name">
-                  <Input
-                    id="account-first-name"
-                    value={profile.firstName}
-                    onChange={(event) => setProfile((current) => ({ ...current, firstName: event.target.value }))}
-                    className={inputClassName}
-                  />
-                </FieldBlock>
-                <FieldBlock label={t("profile.email")} htmlFor="account-email" className="sm:col-span-2">
+                <FieldBlock label={t("profile.email")} htmlFor="account-email">
                   <div className="relative">
                     <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      readOnly
                       id="account-email"
                       type="email"
-                      value={profile.email}
-                      onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
-                      className={`${inputClassName} pl-9 pr-24`}
+                      value={currentUser.email}
+                      className={`${inputClassName} cursor-default bg-muted/20 pl-9`}
                     />
-                    <Badge variant="secondary" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 border border-border bg-muted/60">
-                      {t("verified")}
-                    </Badge>
                   </div>
                 </FieldBlock>
-                <FieldBlock label={t("profile.bio")} htmlFor="account-bio" className="sm:col-span-2">
-                  <Textarea
-                    id="account-bio"
-                    value={profile.bio}
-                    onChange={(event) => setProfile((current) => ({ ...current, bio: event.target.value.slice(0, 180) }))}
-                    className="min-h-24 resize-y rounded-lg border-border bg-background shadow-none"
-                  />
-                  <p className="text-right text-xs tabular-nums text-muted-foreground">{profile.bio.length}/180</p>
-                </FieldBlock>
+
               </div>
+
+              <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+                <AccountDetail
+                  icon={Fingerprint}
+                  label={t("profile.accountId")}
+                  value={`#${currentUser.id}`}
+                />
+                <AccountDetail
+                  icon={CheckCircle2}
+                  label={t("profile.accountStatus")}
+                  value={accountStatus}
+                  badge
+                />
+                <AccountDetail
+                  icon={Mail}
+                  label={t("profile.emailVerification")}
+                  value={currentUser.emailVerifiedAt
+                    ? formatAccountDate(currentUser.emailVerifiedAt, locale)
+                    : t("profile.notVerified")}
+                />
+                <AccountDetail
+                  icon={CalendarDays}
+                  label={t("profile.createdAt")}
+                  value={formatAccountDate(currentUser.createdAt, locale)}
+                />
+                <AccountDetail
+                  icon={Clock3}
+                  label={t("profile.updatedAt")}
+                  value={formatAccountDate(currentUser.updatedAt, locale)}
+                  className="sm:col-span-2"
+                />
+              </dl>
             </SettingsCard>
           </form>
 
@@ -606,16 +685,14 @@ function SettingsCard({
 }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <Card className="gap-0 overflow-hidden rounded-2xl border-border bg-card py-0 shadow-sm shadow-black/[0.025]">
-        <CardHeader className="flex-row items-start gap-3.5 border-b border-border/80 px-5 py-5 sm:px-6">
+      <Card>
+        <CardHeader className="flex-row items-start gap-3.5">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
             <Icon className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-base font-semibold tracking-[-0.015em] sm:text-[17px]">
-                {title}
-              </CardTitle>
+              <CardTitle>{title}</CardTitle>
               {status}
             </div>
             {description ? (
@@ -625,13 +702,50 @@ function SettingsCard({
             ) : null}
           </div>
         </CardHeader>
-        <CardContent className="px-5 py-5 sm:px-6 sm:py-6">
+        <CardContent>
           {children}
         </CardContent>
         {footer}
       </Card>
     </section>
   );
+}
+
+function AccountDetail({
+  icon: Icon,
+  label,
+  value,
+  badge = false,
+  className = "",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  badge?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`flex min-w-0 items-start gap-3 rounded-xl border border-border bg-muted/[0.18] p-4 ${className}`}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-background text-muted-foreground ring-1 ring-border">
+        <Icon className="size-4" />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <dd className="mt-1 truncate text-sm font-medium text-foreground">
+          {badge ? <Badge variant="secondary">{value}</Badge> : value}
+        </dd>
+      </div>
+    </div>
+  );
+}
+
+function formatAccountDate(value: string, locale: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function FieldBlock({ label, htmlFor, className, children }: { label: string; htmlFor: string; className?: string; children: ReactNode }) {

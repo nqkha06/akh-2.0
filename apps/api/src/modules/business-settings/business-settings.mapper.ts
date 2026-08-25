@@ -39,6 +39,7 @@ export function mapRuntimeBusinessSettings(settings: BusinessSettings) {
     backgroundVideos: parseBackgroundVideos(settings.backgroundVideosJson),
     maintenanceMode: settings.maintenanceMode,
     withdrawalsPaused: settings.withdrawalsPaused,
+    requireWithdrawalTrafficSource: settings.requireWithdrawalTrafficSource,
   };
 }
 
@@ -78,6 +79,7 @@ export function mapPublicBusinessSettings(settings: RuntimeBusinessSettings) {
     operations: {
       maintenanceMode: settings.maintenanceMode,
       withdrawalsPaused: settings.withdrawalsPaused,
+      requireWithdrawalTrafficSource: settings.requireWithdrawalTrafficSource,
     },
     uploads: {
       memberFileMaxBytes: settings.memberFileMaxBytes,
@@ -117,6 +119,7 @@ export function buildBusinessSettingsUpdate(
     backgroundVideosJson: JSON.stringify(dto.backgroundVideos),
     maintenanceMode: dto.maintenanceMode,
     withdrawalsPaused: dto.withdrawalsPaused,
+    requireWithdrawalTrafficSource: dto.requireWithdrawalTrafficSource,
     updatedById: adminId,
   } satisfies Prisma.BusinessSettingsUncheckedUpdateInput;
 }

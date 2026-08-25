@@ -19,6 +19,7 @@ export type AdminWithdrawal = {
   netAmount: string;
   status: WithdrawalStatus;
   statusReason: string | null;
+  trafficSource: string | null;
   userPaymentMethodId: number | null;
   paymentMethod: {
     id: number;

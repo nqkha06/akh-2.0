@@ -2,17 +2,26 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Req,
   Res,
+  StreamableFile,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBody, ApiConsumes } from "@nestjs/swagger";
+import { ABSOLUTE_HTTP_UPLOAD_MAX_BYTES } from "@stu/contracts";
 import type { Request, Response } from "express";
+import { memoryStorage } from "multer";
 
 import { parseDurationMs } from "../../config/env.validation";
 import {
@@ -36,12 +45,14 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { AuthOriginGuard } from "./guards/auth-origin.guard";
 import { JwtAccessGuard } from "./guards/jwt-access.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { PermissionsGuard } from "./guards/permissions.guard";
+import { ProfileAvatarStorageService } from "./profile-avatar-storage.service";
 
 type AccessRequest = Request & { user: AuthenticatedUser };
 type RefreshRequest = Request & { user: RefreshAuthenticatedRequestUser };
@@ -51,6 +62,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly profileAvatars: ProfileAvatarStorageService,
   ) {}
 
   @Post("register")
@@ -257,6 +269,49 @@ export class AuthController {
   @UseGuards(JwtAccessGuard)
   me(@Req() request: AccessRequest) {
     return this.authService.toPublicUser(request.user);
+  }
+
+  @Patch("me")
+  @UseGuards(AuthOriginGuard, JwtAccessGuard)
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", minLength: 2, maxLength: 100 },
+        removeAvatar: { type: "boolean" },
+        avatar: { type: "string", format: "binary" },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor("avatar", {
+      storage: memoryStorage(),
+      limits: { fileSize: ABSOLUTE_HTTP_UPLOAD_MAX_BYTES, files: 1 },
+    }),
+  )
+  updateMe(
+    @Req() request: AccessRequest,
+    @Body() body: UpdateProfileDto,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
+    return this.authService.updateProfile(request.user, body, avatar);
+  }
+
+  @Get("profile-avatars/:userId/:fileName")
+  @Header("Cache-Control", "public, max-age=86400, immutable")
+  async profileAvatar(
+    @Param("userId", ParseIntPipe) userId: number,
+    @Param("fileName") fileName: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const avatar = await this.profileAvatars.read(userId, fileName);
+    response.set({
+      "Content-Type": avatar.mimeType,
+      "Content-Length": String(avatar.buffer.length),
+      "X-Content-Type-Options": "nosniff",
+    });
+    return new StreamableFile(avatar.buffer);
   }
 
   private setAuthCookies(

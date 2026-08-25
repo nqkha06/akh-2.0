@@ -39,9 +39,15 @@ const memberFilesTestPath = join(
   "uploads",
   `member-files-test-${process.pid}`,
 );
+const profileAvatarsTestPath = join(
+  process.cwd(),
+  "uploads",
+  `profile-avatars-test-${process.pid}`,
+);
 process.env.DATABASE_URL = `file:./${testDatabaseName}`;
 process.env.ADMIN_MEDIA_UPLOAD_DIR = adminMediaTestPath;
 process.env.MEMBER_FILES_UPLOAD_DIR = memberFilesTestPath;
+process.env.PROFILE_AVATAR_UPLOAD_DIR = profileAvatarsTestPath;
 process.env.JWT_ACCESS_SECRET =
   "test-access-secret-that-is-longer-than-thirty-two-characters";
 process.env.JWT_REFRESH_SECRET =
@@ -198,6 +204,7 @@ after(async () => {
   rmSync(testDatabasePath, { force: true });
   rmSync(adminMediaTestPath, { force: true, recursive: true });
   rmSync(memberFilesTestPath, { force: true, recursive: true });
+  rmSync(profileAvatarsTestPath, { force: true, recursive: true });
 });
 
 

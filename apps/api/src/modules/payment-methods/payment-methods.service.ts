@@ -196,18 +196,23 @@ export class PaymentMethodsService {
     if (!account) {
       throw new NotFoundException("Không tìm thấy phương thức thanh toán.");
     }
-    if (account.paymentMethod.status !== "published") {
+    const paymentMethodId = dto.paymentMethodId ?? account.paymentMethodId;
+    const method = await this.prisma.paymentMethod.findFirst({
+      where: { id: paymentMethodId, status: "published" },
+      include: PAYMENT_METHOD_TRANSLATIONS_INCLUDE,
+    });
+    if (!method) {
       throw new BadRequestException(
-        "Phương thức này chưa được xuất bản và không thể cập nhật.",
+        "Phương thức thanh toán không tồn tại hoặc chưa được xuất bản.",
       );
     }
-    const details = validatePaymentMethodDetails(
-      account.paymentMethod,
-      dto.details,
-    );
+    const details = validatePaymentMethodDetails(method, dto.details);
     const updated = await this.prisma.userPaymentMethod.update({
       where: { id: account.id },
-      data: { detailsJson: JSON.stringify(details) },
+      data: {
+        paymentMethodId: method.id,
+        detailsJson: JSON.stringify(details),
+      },
       include: USER_PAYMENT_METHOD_INCLUDE,
     });
     return mapUserPaymentMethod(updated);

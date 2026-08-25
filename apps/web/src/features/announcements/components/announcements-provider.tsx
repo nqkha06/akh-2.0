@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLocale } from "next-intl";
 
 import {
   getActiveAnnouncementBanners,
@@ -29,6 +30,7 @@ type AnnouncementsContextValue = {
 const AnnouncementsContext = React.createContext<AnnouncementsContextValue | null>(null);
 
 export function AnnouncementsProvider({ children }: { children: React.ReactNode }) {
+  const locale = useLocale();
   const [notifications, setNotifications] = React.useState<MemberAnnouncement[]>([]);
   const [banners, setBanners] = React.useState<MemberAnnouncement[]>([]);
   const [modals, setModals] = React.useState<MemberAnnouncement[]>([]);
@@ -38,9 +40,9 @@ export function AnnouncementsProvider({ children }: { children: React.ReactNode 
 
   const refresh = React.useCallback(async () => {
     const [notificationResult, bannerResult, modalResult, countResult] = await Promise.all([
-      listMemberAnnouncements({ displayType: "notification", perPage: 8 }),
-      getActiveAnnouncementBanners(),
-      getActiveAnnouncementModals(),
+      listMemberAnnouncements({ displayType: "notification", perPage: 8, locale }),
+      getActiveAnnouncementBanners(locale),
+      getActiveAnnouncementModals(locale),
       getUnreadAnnouncementCount(),
     ]);
     setNotifications(notificationResult.items);
@@ -53,7 +55,7 @@ export function AnnouncementsProvider({ children }: { children: React.ReactNode 
         void interactWithAnnouncement(item.id, "seen");
       }
     }
-  }, []);
+  }, [locale]);
 
   React.useEffect(() => {
     let active = true;

@@ -1,11 +1,10 @@
 import { AlertCircle, Clock3, LoaderCircle } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemberCurrency } from "@/features/currencies/components/member-currency-provider";
@@ -21,6 +20,7 @@ const QUICK_WITHDRAWAL_VND_AMOUNTS = [
 ] as const;
 
 export function AmountInput({ controller }: { controller: WithdrawalController }) {
+  const locale = useLocale();
   const t = useTranslations("Withdraw");
   const { convertCurrency } = useMemberCurrency();
   const {
@@ -52,6 +52,14 @@ export function AmountInput({ controller }: { controller: WithdrawalController }
     ),
     vndAmount,
   }));
+  const currencySymbol =
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: data.currency,
+      currencyDisplay: "narrowSymbol",
+    })
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value ?? data.currency;
 
   return (
     <div className="grid gap-2">
@@ -70,7 +78,7 @@ export function AmountInput({ controller }: { controller: WithdrawalController }
           onChange={(event) => setAmount(event.target.value)}
           className="h-12 pr-12 text-base font-medium tabular-nums"
         />
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs font-medium text-muted-foreground">{data.currency}</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-muted-foreground">{currencySymbol}</span>
       </div>
       <div className="flex flex-wrap gap-2" aria-label={t("form.quickAmountAria")}>
         {quickAmounts.map((option) => (
@@ -129,7 +137,7 @@ export function WithdrawalBreakdown({ controller }: { controller: WithdrawalCont
 
 export function WithdrawalForm({ controller }: { controller: WithdrawalController }) {
   const t = useTranslations("Withdraw");
-  const { data, selectedMethod, selectedMethodId, submitting, submitError, formEligible, formValid, setSelectedMethodId, requestConfirmation, formatCurrency } = controller;
+  const { data, selectedMethod, submitting, submitError, formEligible, formValid, requestConfirmation, formatCurrency } = controller;
   if (!data) return null;
 
   if (!data.payoutMethods.length) return null;
@@ -141,16 +149,15 @@ export function WithdrawalForm({ controller }: { controller: WithdrawalControlle
       </div>
       <form className="space-y-5 p-5 sm:p-6" onSubmit={(event) => { event.preventDefault(); requestConfirmation(); }}>
         <AmountInput controller={controller} />
-        <div className="grid gap-2">
-          <Label htmlFor="payout-method">{t("form.methodLabel")}</Label>
-          <Select value={selectedMethodId} onValueChange={setSelectedMethodId} disabled={submitting}>
-            <SelectTrigger id="payout-method" className="h-12 w-full"><SelectValue placeholder={t("form.methodPlaceholder")}>{selectedMethod ? `${selectedMethod.provider} ${selectedMethod.maskedAccount} · ${selectedMethod.accountHolder}` : undefined}</SelectValue></SelectTrigger>
-            <SelectContent>
-              {data.payoutMethods.map((method) => <SelectItem key={method.id} value={method.id}>{method.provider} {method.maskedAccount} · {method.accountHolder}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {selectedMethod ? <p className="text-xs text-muted-foreground">{selectedMethod.accountHolder} · {t("form.methodFee", { fee: formatCurrency(selectedMethod.withdrawFee) })}</p> : null}
-        </div>
+        {selectedMethod ? (
+          <div className="grid gap-2">
+            <Label>{t("form.methodLabel")}</Label>
+            <div className="rounded-xl border border-border bg-muted/[0.16] px-4 py-3">
+              <p className="text-sm font-medium">{selectedMethod.provider} {selectedMethod.maskedAccount}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{selectedMethod.accountHolder} · {t("form.methodFee", { fee: formatCurrency(selectedMethod.withdrawFee) })}</p>
+            </div>
+          </div>
+        ) : null}
         <div className="rounded-xl border border-border bg-muted/[0.18] p-4"><WithdrawalBreakdown controller={controller} /></div>
         {data.processingEstimate ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Clock3 className="size-4" />{t("form.processingEstimate", { time: data.processingEstimate })}</p> : null}
         {submitError ? <Alert variant="destructive"><AlertCircle /><AlertTitle>{t("errors.createTitle")}</AlertTitle><AlertDescription>{submitError}</AlertDescription></Alert> : null}

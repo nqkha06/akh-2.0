@@ -56,6 +56,7 @@ function settings(overrides: Partial<BusinessSettings> = {}) {
     backgroundVideosJson: "invalid",
     maintenanceMode: false,
     withdrawalsPaused: false,
+    requireWithdrawalTrafficSource: false,
     updatedById: null,
     createdAt: new Date("2026-08-08T00:00:00.000Z"),
     updatedAt: new Date("2026-08-08T01:00:00.000Z"),
@@ -67,6 +68,7 @@ describe("Business settings mapper and policy", () => {
   it("maps runtime numeric values and safely falls back for invalid JSON", () => {
     const runtime = mapRuntimeBusinessSettings(settings());
     assert.equal(runtime.memberFileMaxBytes, 100);
+    assert.equal(runtime.requireWithdrawalTrafficSource, false);
     assert.deepEqual(runtime.uploadAllowedMimeTypes, ["image/png"]);
     assert.deepEqual(runtime.backgroundImages.map(({ id }) => id), [
       "active",
@@ -76,6 +78,10 @@ describe("Business settings mapper and policy", () => {
     assert.deepEqual(parseStringArray("{}", ["fallback"]), ["fallback"]);
 
     const publicSettings = mapPublicBusinessSettings(runtime);
+    assert.equal(
+      publicSettings.operations.requireWithdrawalTrafficSource,
+      false,
+    );
     assert.deepEqual(
       publicSettings.presetLibrary.images.map(({ id }) => id),
       ["active"],

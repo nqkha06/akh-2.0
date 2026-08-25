@@ -47,10 +47,10 @@ export function useWithdrawalController() {
   const [pageError, setPageError] = useState("");
   const [historyError] = useState("");
   const [amountInput, setAmountInput] = useState("");
-  const [selectedMethodId, setSelectedMethodId] = useState("");
   const [estimate, setEstimate] = useState<WithdrawalEstimate>();
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [trafficSource, setTrafficSource] = useState("");
   const [successTransaction, setSuccessTransaction] = useState<WithdrawalTransaction>();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -68,7 +68,6 @@ export function useWithdrawalController() {
       setLoading(true);
       const response = await withdrawalDataSource.getDashboard();
       setData(response);
-      setSelectedMethodId(response.defaultMethodId ?? response.payoutMethods[0]?.id ?? "");
       setPageError("");
     } catch (error) {
       setPageError(error instanceof Error && error.message ? error.message : t("errors.tryAgainMessage"));
@@ -82,7 +81,8 @@ export function useWithdrawalController() {
   }, [load]);
 
   const amount = parseAmount(amountInput);
-  const selectedMethod = data?.payoutMethods.find((method) => method.id === selectedMethodId);
+  const selectedMethod = data?.payoutMethods[0];
+  const selectedMethodId = selectedMethod?.id ?? "";
   const formatCurrency = useCallback(
     (value: number) =>
       formatMemberCurrency(value, {
@@ -144,14 +144,6 @@ export function useWithdrawalController() {
     setSubmitError("");
   };
 
-  const selectMethod = (methodId: string) => {
-    if (submitting) return;
-    setSelectedMethodId(methodId);
-    setEstimate(undefined);
-    setEstimateLoading(false);
-    setSubmitError("");
-  };
-
   const requestConfirmation = () => {
     if (!formValid) return;
     if (!idempotencyKeyRef.current) {
@@ -167,6 +159,7 @@ export function useWithdrawalController() {
       amount,
       payoutMethodId: selectedMethodId,
       idempotencyKey: idempotencyKeyRef.current,
+      trafficSource: data.requireTrafficSource ? trafficSource.trim() : undefined,
     };
     try {
       setSubmitting(true);
@@ -181,6 +174,7 @@ export function useWithdrawalController() {
       setConfirmationOpen(false);
       setSuccessTransaction(transaction);
       setAmountInput("");
+      setTrafficSource("");
       setEstimate(undefined);
       idempotencyKeyRef.current = "";
     } catch (error) {
@@ -247,6 +241,7 @@ export function useWithdrawalController() {
     formEligible,
     formValid,
     confirmationOpen,
+    trafficSource,
     successTransaction,
     submitting,
     submitError,
@@ -261,9 +256,9 @@ export function useWithdrawalController() {
     retry: load,
     setAmount,
     setMaximumAmount,
-    setSelectedMethodId: selectMethod,
     requestConfirmation,
     setConfirmationOpen,
+    setTrafficSource,
     confirmWithdrawal,
     setSuccessTransaction,
     setDetailTransaction,

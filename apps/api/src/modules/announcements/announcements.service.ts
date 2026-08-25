@@ -6,7 +6,9 @@ import {
 import { Prisma, type Announcement } from "@prisma/client";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { LanguagesService } from "../languages/languages.service";
 import type {
+  AnnouncementTranslationDto,
   AnnouncementTargetRulesDto,
   CreateAnnouncementDto,
   ListAnnouncementsQueryDto,
@@ -20,6 +22,7 @@ type TargetRules = Pick<AnnouncementTargetRulesDto, "userIds" | "roles">;
 const adminInclude = {
   createdBy: { select: { id: true, name: true, email: true } },
   updatedBy: { select: { id: true, name: true, email: true } },
+  translations: { orderBy: { locale: "asc" as const } },
   users: {
     select: {
       seenAt: true,
@@ -33,12 +36,23 @@ const adminInclude = {
 
 type AdminAnnouncement = Prisma.AnnouncementGetPayload<{ include: typeof adminInclude }>;
 type MemberAnnouncement = Prisma.AnnouncementGetPayload<{
-  include: { users: true };
+  include: { users: true; translations: true };
 }>;
+
+type Translation = {
+  locale: string;
+  title: string;
+  summary?: string | null;
+  content: string;
+  actionLabel?: string | null;
+};
 
 @Injectable()
 export class AnnouncementsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly languagesService: LanguagesService,
+  ) {}
 
   async listForAdmin(query: ListAnnouncementsQueryDto) {
     const now = new Date();
@@ -60,9 +74,17 @@ export class AnnouncementsService {
         ...(query.search?.trim()
           ? [{
               OR: [
-                { title: { contains: query.search.trim() } },
                 { slug: { contains: query.search.trim() } },
-                { summary: { contains: query.search.trim() } },
+                {
+                  translations: {
+                    some: {
+                      OR: [
+                        { title: { contains: query.search.trim() } },
+                        { summary: { contains: query.search.trim() } },
+                      ],
+                    },
+                  },
+                },
               ],
             }]
           : []),
@@ -94,11 +116,12 @@ export class AnnouncementsService {
   }
 
   async create(adminId: number, dto: CreateAnnouncementDto) {
-    await this.validatePayload(dto);
-    const slug = await this.uniqueSlug(dto.slug || dto.title);
+    const defaultLocale = await this.validatePayload(dto);
+    const defaultTranslation = this.defaultTranslation(dto.translations, defaultLocale);
+    const slug = await this.uniqueSlug(dto.slug || defaultTranslation.title);
     const record = await this.prisma.announcement.create({
       data: {
-        ...this.dataFromDto(dto),
+        ...this.dataFromDto(dto, defaultTranslation),
         slug,
         status: "draft",
         createdById: adminId,
@@ -112,14 +135,15 @@ export class AnnouncementsService {
   async update(adminId: number, id: number, dto: UpdateAnnouncementDto) {
     const existing = await this.findRecord(id);
     const merged = this.mergeForValidation(existing, dto);
-    await this.validatePayload(merged);
+    const defaultLocale = await this.validatePayload(merged);
+    const defaultTranslation = this.defaultTranslation(merged.translations, defaultLocale);
     const slug = dto.slug && dto.slug !== existing.slug
       ? await this.uniqueSlug(dto.slug, id)
       : existing.slug;
     const record = await this.prisma.announcement.update({
       where: { id },
       data: {
-        ...this.dataFromDto(merged),
+        ...this.dataFromDto(merged, defaultTranslation, true),
         slug,
         status: existing.status,
         updatedById: adminId,
@@ -178,6 +202,15 @@ export class AnnouncementsService {
         endsAt: null,
         createdById: adminId,
         updatedById: adminId,
+        translations: {
+          create: existing.translations.map((translation) => ({
+            locale: translation.locale,
+            title: `${translation.title} (Bản sao)`,
+            summary: translation.summary,
+            content: translation.content,
+            actionLabel: translation.actionLabel,
+          })),
+        },
       },
       include: adminInclude,
     });
@@ -197,14 +230,15 @@ export class AnnouncementsService {
     return (await this.findForAdmin(id)).analytics;
   }
 
-  async listForMember(userId: number, query: ListMemberAnnouncementsQueryDto) {
+  async listForMember(userId: number, query: ListMemberAnnouncementsQueryDto, locale?: string) {
+    const defaultLocale = await this.languagesService.getDefaultLocale();
     const records = await this.eligibleForUser(userId, query.displayType);
     const items = records
       .filter((record) => !record.users[0]?.dismissedAt)
       .filter((record) => !query.unreadOnly || !record.users[0]?.readAt);
     const start = (query.page - 1) * query.perPage;
     return {
-      items: items.slice(start, start + query.perPage).map((record) => this.toMemberResponse(record)),
+      items: items.slice(start, start + query.perPage).map((record) => this.toMemberResponse(record, locale, defaultLocale)),
       pagination: {
         page: query.page,
         perPage: query.perPage,
@@ -221,25 +255,27 @@ export class AnnouncementsService {
     };
   }
 
-  async activeBanners(userId: number) {
+  async activeBanners(userId: number, locale?: string) {
+    const defaultLocale = await this.languagesService.getDefaultLocale();
     const records = await this.eligibleForUser(userId, "banner");
     return records
       .filter((record) => !record.users[0]?.dismissedAt)
-      .map((record) => this.toMemberResponse(record));
+      .map((record) => this.toMemberResponse(record, locale, defaultLocale));
   }
 
-  async activeModals(userId: number) {
+  async activeModals(userId: number, locale?: string) {
+    const defaultLocale = await this.languagesService.getDefaultLocale();
     const records = await this.eligibleForUser(userId, "modal");
     return records
       .filter((record) => !record.users[0]?.dismissedAt)
       .filter((record) => !record.requiresAcknowledgement || !record.users[0]?.acknowledgedAt)
-      .map((record) => this.toMemberResponse(record));
+      .map((record) => this.toMemberResponse(record, locale, defaultLocale));
   }
 
-  async findForMember(userId: number, id: number) {
+  async findForMember(userId: number, id: number, locale?: string) {
     const record = (await this.eligibleForUser(userId)).find((item) => item.id === id);
     if (!record) throw new NotFoundException("Không tìm thấy thông báo.");
-    return this.toMemberResponse(record);
+    return this.toMemberResponse(record, locale, await this.languagesService.getDefaultLocale());
   }
 
   async markSeen(userId: number, id: number) {
@@ -333,7 +369,10 @@ export class AnnouncementsService {
           { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
         ],
       },
-      include: { users: { where: { userId }, take: 1 } },
+      include: {
+        users: { where: { userId }, take: 1 },
+        translations: { orderBy: { locale: "asc" } },
+      },
       orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     });
     const roleKeys = new Set(user.roles.map(({ role }) => role.key));
@@ -364,8 +403,11 @@ export class AnnouncementsService {
   }
 
   private async validatePayload(dto: CreateAnnouncementDto) {
-    if (/<\/?[a-z][^>]*>/i.test(dto.content)) {
-      throw new BadRequestException("Nội dung không chấp nhận HTML tự do. Hãy dùng định dạng văn bản an toàn.");
+    await this.languagesService.assertTranslationLocales(dto.translations.map(({ locale }) => locale));
+    for (const translation of dto.translations) {
+      if (/<\/?[a-z][^>]*>/i.test(translation.content)) {
+        throw new BadRequestException("Nội dung không chấp nhận HTML tự do. Hãy dùng định dạng văn bản an toàn.");
+      }
     }
     if (dto.startsAt && dto.endsAt && new Date(dto.endsAt) <= new Date(dto.startsAt)) {
       throw new BadRequestException("Thời gian kết thúc phải sau thời gian bắt đầu.");
@@ -373,8 +415,11 @@ export class AnnouncementsService {
     if (dto.actionUrl && !this.isSafeActionUrl(dto.actionUrl)) {
       throw new BadRequestException("URL hành động phải là đường dẫn nội bộ hoặc HTTPS hợp lệ.");
     }
-    if (Boolean(dto.actionLabel?.trim()) !== Boolean(dto.actionUrl?.trim())) {
-      throw new BadRequestException("Nhãn và URL hành động phải được nhập cùng nhau.");
+    const hasActionUrl = Boolean(dto.actionUrl?.trim());
+    for (const translation of dto.translations) {
+      if (Boolean(translation.actionLabel?.trim()) !== hasActionUrl) {
+        throw new BadRequestException("Mỗi bản dịch phải có nhãn hành động khi URL hành động được nhập.");
+      }
     }
     if (dto.displayType === "modal" && !dto.isDismissible && !dto.requiresAcknowledgement) {
       throw new BadRequestException("Modal không cho phép đóng phải yêu cầu người dùng xác nhận.");
@@ -391,46 +436,76 @@ export class AnnouncementsService {
       const count = await this.prisma.role.count({ where: { key: { in: roles } } });
       if (count !== roles.length) throw new BadRequestException("Một hoặc nhiều role không tồn tại.");
     }
+    return this.languagesService.getDefaultLocale();
   }
 
-  private dataFromDto(dto: CreateAnnouncementDto) {
+  private dataFromDto(
+    dto: CreateAnnouncementDto,
+    defaultTranslation: Translation,
+    replaceTranslations = false,
+  ) {
     return {
-      title: dto.title.trim(),
-      summary: this.emptyToNull(dto.summary),
-      content: dto.content.trim(),
+      // Legacy columns are kept populated during the transition. Runtime reads
+      // use translations, so this is only a safe compatibility fallback.
+      title: defaultTranslation.title,
+      summary: this.emptyToNull(defaultTranslation.summary),
+      content: defaultTranslation.content,
       type: dto.type,
       priority: dto.priority,
       displayType: dto.displayType,
       targetType: dto.targetType,
       targetRulesJson: JSON.stringify(this.normalizeRules(dto.targetType, dto.targetRules)),
-      actionLabel: this.emptyToNull(dto.actionLabel),
+      actionLabel: this.emptyToNull(defaultTranslation.actionLabel),
       actionUrl: this.emptyToNull(dto.actionUrl),
       isDismissible: dto.isDismissible,
       requiresAcknowledgement: dto.requiresAcknowledgement,
       startsAt: dto.startsAt ? new Date(dto.startsAt) : null,
       endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
+      translations: {
+        ...(replaceTranslations ? { deleteMany: {} } : {}),
+        create: this.normalizeTranslations(dto.translations),
+      },
     };
   }
 
-  private mergeForValidation(existing: Announcement, dto: UpdateAnnouncementDto): CreateAnnouncementDto {
+  private mergeForValidation(existing: AdminAnnouncement, dto: UpdateAnnouncementDto): CreateAnnouncementDto {
     return {
-      title: dto.title ?? existing.title,
+      translations: dto.translations ?? existing.translations.map((translation) => ({
+        locale: translation.locale,
+        title: translation.title,
+        summary: translation.summary ?? undefined,
+        content: translation.content,
+        actionLabel: translation.actionLabel ?? undefined,
+      })),
       slug: dto.slug ?? existing.slug,
-      summary: dto.summary ?? existing.summary ?? undefined,
-      content: dto.content ?? existing.content,
       type: (dto.type ?? existing.type) as CreateAnnouncementDto["type"],
       priority: (dto.priority ?? existing.priority) as CreateAnnouncementDto["priority"],
       displayType: (dto.displayType ?? existing.displayType) as CreateAnnouncementDto["displayType"],
       status: (dto.status ?? existing.status) as CreateAnnouncementDto["status"],
       targetType: (dto.targetType ?? existing.targetType) as CreateAnnouncementDto["targetType"],
       targetRules: dto.targetRules ?? this.parseRules(existing.targetRulesJson),
-      actionLabel: dto.actionLabel ?? existing.actionLabel ?? undefined,
       actionUrl: dto.actionUrl ?? existing.actionUrl ?? undefined,
       isDismissible: dto.isDismissible ?? existing.isDismissible,
       requiresAcknowledgement: dto.requiresAcknowledgement ?? existing.requiresAcknowledgement,
       startsAt: dto.startsAt !== undefined ? dto.startsAt : existing.startsAt?.toISOString(),
       endsAt: dto.endsAt !== undefined ? dto.endsAt : existing.endsAt?.toISOString(),
     };
+  }
+
+  private normalizeTranslations(translations: AnnouncementTranslationDto[]): Translation[] {
+    return translations.map((translation) => ({
+      locale: translation.locale.trim(),
+      title: translation.title.trim(),
+      summary: this.emptyToNull(translation.summary) ?? undefined,
+      content: translation.content.trim(),
+      actionLabel: this.emptyToNull(translation.actionLabel) ?? undefined,
+    }));
+  }
+
+  private defaultTranslation(translations: AnnouncementTranslationDto[], defaultLocale: string): Translation {
+    const translation = this.normalizeTranslations(translations).find(({ locale }) => locale === defaultLocale);
+    if (!translation) throw new BadRequestException(`Thiếu bản dịch bắt buộc cho locale mặc định "${defaultLocale}".`);
+    return translation;
   }
 
   private normalizeRules(targetType: string, rules: TargetRules): TargetRules {
@@ -470,8 +545,14 @@ export class AnnouncementsService {
       clicked: record.users.filter(({ ctaClickedAt }) => ctaClickedAt).length,
     };
     const rateBase = analytics.eligible || 1;
+    const defaultLocale = await this.languagesService.getDefaultLocale();
+    const translation = this.selectTranslation(record.translations, defaultLocale, defaultLocale);
     return {
       ...record,
+      title: translation?.title ?? record.title,
+      summary: translation?.summary ?? record.summary,
+      content: translation?.content ?? record.content,
+      actionLabel: translation?.actionLabel ?? record.actionLabel,
       status: this.effectiveStatus(record),
       targetRules: rules,
       analytics: {
@@ -483,18 +564,20 @@ export class AnnouncementsService {
     };
   }
 
-  private toMemberResponse(record: MemberAnnouncement) {
+  private toMemberResponse(record: MemberAnnouncement, locale: string | undefined, defaultLocale: string) {
     const state = record.users[0];
+    const translation = this.selectTranslation(record.translations, locale, defaultLocale);
     return {
       id: record.id,
       slug: record.slug,
-      title: record.title,
-      summary: record.summary,
-      content: record.content,
+      locale: translation?.locale ?? defaultLocale,
+      title: translation?.title ?? record.title,
+      summary: translation?.summary ?? record.summary,
+      content: translation?.content ?? record.content,
       type: record.type,
       priority: record.priority,
       displayType: record.displayType,
-      actionLabel: record.actionLabel,
+      actionLabel: translation?.actionLabel ?? record.actionLabel,
       actionUrl: record.actionUrl,
       isDismissible: record.isDismissible,
       requiresAcknowledgement: record.requiresAcknowledgement,
@@ -510,6 +593,21 @@ export class AnnouncementsService {
         ctaClickedAt: state?.ctaClickedAt ?? null,
       },
     };
+  }
+
+  private selectTranslation<T extends Translation>(translations: T[], locale: string | undefined, defaultLocale: string) {
+    const requested = locale?.trim();
+    const candidates = [
+      requested,
+      requested?.split("-")[0],
+      defaultLocale,
+      defaultLocale.split("-")[0],
+    ].filter((value): value is string => Boolean(value));
+    for (const candidate of [...new Set(candidates)]) {
+      const translation = translations.find(({ locale: translationLocale }) => translationLocale === candidate);
+      if (translation) return translation;
+    }
+    return translations[0];
   }
 
   private async recipientCount(targetType: string, rules: TargetRules) {

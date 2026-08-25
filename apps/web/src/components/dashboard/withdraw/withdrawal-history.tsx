@@ -111,7 +111,7 @@ export function WithdrawalHistory({ controller }: { controller: WithdrawalContro
         <WithdrawalEmptyState filtered={filtersActive || data.transactions.length > 0} />
       ) : (
         <>
-          <div className="hidden overflow-x-auto lg:block">
+          <div className="overflow-x-auto">
             <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow className="h-11 bg-muted/[0.22] hover:bg-muted/[0.22]">
@@ -146,30 +146,6 @@ export function WithdrawalHistory({ controller }: { controller: WithdrawalContro
                 ))}
               </TableBody>
             </Table>
-          </div>
-          <div className="grid gap-3 p-4 lg:hidden">
-            {visibleTransactions.map((transaction) => (
-              <button
-                key={transaction.id}
-                type="button"
-                aria-label={t("history.viewTransactionAria", { id: transaction.id })}
-                className="rounded-xl border border-border bg-background p-4 text-left shadow-sm shadow-black/[0.02] transition-colors hover:border-primary/20 hover:bg-muted/[0.12]"
-                onClick={() => setDetailTransaction(transaction)}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/[0.08] text-primary"><ReceiptText className="size-4" /></span>
-                    <div className="min-w-0"><p className="truncate font-mono text-xs font-semibold">#{transaction.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDateTime(transaction.createdAt, locale)}</p></div>
-                  </div>
-                  <WithdrawalStatusBadge status={transaction.status} />
-                </div>
-                <div className="mt-4 flex items-end justify-between gap-3 border-t border-border/70 pt-3">
-                  <div className="min-w-0"><p className="truncate text-sm font-medium">{transaction.method.provider}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{transaction.method.maskedAccount}</p></div>
-                  <div className="shrink-0 text-right"><p className="text-[11px] text-muted-foreground">{t("history.columns.net")}</p><p className="mt-0.5 font-semibold tabular-nums">{formatCurrency(transaction.netAmount)}</p></div>
-                  <ChevronRight className="mb-0.5 size-4 shrink-0 text-muted-foreground" />
-                </div>
-              </button>
-            ))}
           </div>
           <footer className="border-t border-border px-4 py-3 sm:px-5">
             <TablePagination

@@ -33,6 +33,7 @@ type AnnouncementFilter = "all" | "unread" | "read";
 
 export function MemberAnnouncementsPage() {
   const t = useTranslations("Announcements");
+  const locale = useLocale();
   const { markRead, markAllRead, trackClick } = useAnnouncements();
   const [items, setItems] = React.useState<MemberAnnouncement[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -46,6 +47,7 @@ export function MemberAnnouncementsPage() {
       const result = await listMemberAnnouncements({
         displayType: "notification",
         perPage: 50,
+        locale,
       });
       setItems(result.items);
       const focusId = Number(
@@ -64,7 +66,7 @@ export function MemberAnnouncementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [locale, t]);
 
   React.useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);

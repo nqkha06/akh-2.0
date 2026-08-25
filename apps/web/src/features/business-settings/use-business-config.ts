@@ -13,7 +13,11 @@ import type { PublicBusinessConfig } from "./types";
 const fallback: PublicBusinessConfig = {
   version: 1,
   authentication: { registrationEnabled: true, googleLoginEnabled: true },
-  operations: { maintenanceMode: false, withdrawalsPaused: false },
+  operations: {
+    maintenanceMode: false,
+    withdrawalsPaused: false,
+    requireWithdrawalTrafficSource: false,
+  },
   uploads: {
     memberFileMaxBytes: DEFAULT_UPLOAD_LIMITS.memberFileMaxBytes,
     coverImageMaxBytes: DEFAULT_UPLOAD_LIMITS.coverImageMaxBytes,

@@ -84,11 +84,12 @@ export async function createMemberPaymentMethod(
 
 export async function updateMemberPaymentMethod(
   id: number,
+  paymentMethodId: number,
   details: Record<string, string>,
 ) {
   return request<UserPaymentMethod>(`/member/payment-methods/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ details }),
+    body: JSON.stringify({ paymentMethodId, details }),
   });
 }
 

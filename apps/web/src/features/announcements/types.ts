@@ -9,6 +9,14 @@ export type AnnouncementTargetRules = {
   roles?: string[];
 };
 
+export type AnnouncementTranslation = {
+  locale: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  actionLabel: string | null;
+};
+
 export type AnnouncementState = {
   seenAt: string | null;
   readAt: string | null;
@@ -20,6 +28,7 @@ export type AnnouncementState = {
 export type MemberAnnouncement = {
   id: number;
   slug: string;
+  locale: string;
   title: string;
   summary: string | null;
   content: string;
@@ -56,20 +65,24 @@ export type AdminAnnouncement = Omit<MemberAnnouncement, "state"> & {
   createdBy: { id: number; name: string; email: string } | null;
   updatedBy: { id: number; name: string; email: string } | null;
   updatedAt: string;
+  translations: AnnouncementTranslation[];
 };
 
 export type AnnouncementPayload = {
-  title: string;
+  translations: Array<{
+    locale: string;
+    title: string;
+    summary?: string;
+    content: string;
+    actionLabel?: string;
+  }>;
   slug?: string;
-  summary?: string;
-  content: string;
   type: AnnouncementType;
   priority: AnnouncementPriority;
   displayType: AnnouncementDisplay;
   status: AnnouncementStatus;
   targetType: AnnouncementTargetType;
   targetRules: AnnouncementTargetRules;
-  actionLabel?: string;
   actionUrl?: string;
   isDismissible: boolean;
   requiresAcknowledgement: boolean;

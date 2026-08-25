@@ -17,6 +17,8 @@ export type AuthenticatedUser = {
   emailVerifiedAt: Date | null;
   avatar: string | null;
   status: string;
+  createdAt: Date;
+  updatedAt: Date;
   role: string;
   roles: string[];
   permissions: string[];

@@ -1,5 +1,7 @@
 "use client";
 
+import type { AuthUser } from "@/features/auth/types";
+
 const authApiBase = "/api/backend/auth";
 
 export function loginAccount(payload: {
@@ -111,6 +113,27 @@ export async function changeAccountPassword(payload: {
     throw new AuthClientError(message, body?.code);
   }
   return response.json() as Promise<{ message: string }>;
+}
+
+export async function updateAccountProfile(payload: {
+  name: string;
+  avatar?: File;
+  removeAvatar?: boolean;
+}) {
+  const body = new FormData();
+  body.append("name", payload.name.trim());
+  if (payload.avatar) body.append("avatar", payload.avatar);
+  if (payload.removeAvatar) body.append("removeAvatar", "true");
+
+  const response = await fetch(`${authApiBase}/me`, {
+    method: "PATCH",
+    credentials: "include",
+    body,
+  });
+  if (!response.ok) {
+    throw new Error(await readApiError(response));
+  }
+  return response.json() as Promise<AuthUser>;
 }
 
 export async function logoutAccount() {
