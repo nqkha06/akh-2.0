@@ -54,6 +54,48 @@ export function buildStoredFileName(originalName: string) {
 
 type FileWithUsage = MemberFile & { _count?: { destinationLinks: number } };
 
+export type LinkAppearanceMediaKind = "cover" | "background";
+
+export function extractMemberPreviewFileId(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  try {
+    const path = new URL(value, "http://link4sub.internal").pathname;
+    const match =
+      /^\/(?:api\/backend\/)?member\/files\/(\d+)\/preview\/?$/.exec(path);
+    if (!match) return null;
+
+    const fileId = Number(match[1]);
+    return Number.isSafeInteger(fileId) && fileId > 0 ? fileId : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getLinkAppearanceMediaFileId(
+  appearanceJson: string,
+  kind: LinkAppearanceMediaKind,
+) {
+  try {
+    const appearance = JSON.parse(appearanceJson) as {
+      coverImageUrl?: unknown;
+      backgroundSettings?: {
+        backgroundMediaUrl?: unknown;
+        sameAsCoverImage?: unknown;
+      };
+    };
+    const background = appearance.backgroundSettings;
+    const value =
+      kind === "cover" || background?.sameAsCoverImage === true
+        ? appearance.coverImageUrl
+        : background?.backgroundMediaUrl;
+
+    return extractMemberPreviewFileId(value);
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class FilesService {
   private readonly uploadRoot: string;
@@ -257,6 +299,42 @@ export class FilesService {
     return {
       file: this.toResponse(file),
       stream: new StreamableFile(createReadStream(this.resolveStoragePath(file.storageKey))),
+    };
+  }
+
+  async previewLinkAppearanceMedia(
+    slug: string,
+    kind: LinkAppearanceMediaKind,
+  ) {
+    const link = await this.prisma.link.findFirst({
+      where: { slug, status: "active", deletedAt: null },
+      select: { appearanceJson: true },
+    });
+    if (!link) {
+      throw new NotFoundException("Không tìm thấy link.");
+    }
+
+    const fileId = getLinkAppearanceMediaFileId(link.appearanceJson, kind);
+    if (fileId === null) {
+      throw new NotFoundException("Không tìm thấy media công khai của link.");
+    }
+
+    const file = await this.prisma.memberFile.findFirst({
+      where: { id: fileId, deletedAt: null, status: "completed" },
+    });
+    if (
+      !file ||
+      (!file.mimeType.startsWith("image/") &&
+        !file.mimeType.startsWith("video/"))
+    ) {
+      throw new NotFoundException("Không tìm thấy media công khai của link.");
+    }
+
+    return {
+      file: this.toResponse(file),
+      stream: new StreamableFile(
+        createReadStream(this.resolveStoragePath(file.storageKey)),
+      ),
     };
   }
 

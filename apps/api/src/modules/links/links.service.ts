@@ -164,7 +164,7 @@ export class LinksService {
       throw new NotFoundException("Không tìm thấy link.");
     }
 
-    return this.toResponse(link);
+    return this.toPublicResponse(link);
   }
 
   async recordVisit(slug: string, visitor: LinkVisitorMetadata = {}) {
@@ -179,7 +179,7 @@ export class LinksService {
       }
 
       if (current.status.toLowerCase() !== "active") {
-        return this.toResponse(current);
+        return this.toPublicResponse(current);
       }
 
       const expiredByDate = Boolean(
@@ -190,7 +190,7 @@ export class LinksService {
       );
 
       if (expiredByDate || expiredByClicks) {
-        return { ...this.toResponse(current), status: "expired" };
+        return { ...this.toPublicResponse(current), status: "expired" };
       }
 
       const monetization = await this.resolveMonetizationRedirect(
@@ -208,7 +208,7 @@ export class LinksService {
       );
 
       return {
-        ...this.toResponse(current),
+        ...this.toPublicResponse(current),
         monetizationRedirectUrl: monetization?.targetUrl ?? null,
         visitToken: visitIntent.id,
       };
@@ -225,7 +225,7 @@ export class LinksService {
       if (!link || link.deletedAt) {
         throw new NotFoundException("Không tìm thấy link.");
       }
-      return this.toResponse(link);
+      return this.toPublicResponse(link);
     });
   }
 
@@ -618,6 +618,47 @@ export class LinksService {
       createdAt: link.createdAt,
       updatedAt: link.updatedAt,
     };
+  }
+
+  private toPublicResponse(link: LinkWithRelations) {
+    const response = this.toResponse(link);
+
+    return {
+      ...response,
+      coverImageUrl: this.toPublicAppearanceMediaUrl(
+        response.coverImageUrl,
+        link.slug,
+        "cover",
+      ),
+      backgroundSettings: {
+        ...response.backgroundSettings,
+        backgroundMediaUrl: this.toPublicAppearanceMediaUrl(
+          response.backgroundSettings.backgroundMediaUrl,
+          link.slug,
+          "background",
+        ),
+      },
+    };
+  }
+
+  private toPublicAppearanceMediaUrl(
+    value: string | null,
+    slug: string,
+    kind: "cover" | "background",
+  ) {
+    if (!value) return null;
+
+    try {
+      const path = new URL(value, "http://link4sub.internal").pathname;
+      const isOwnedPreview =
+        /^\/(?:api\/backend\/)?member\/files\/\d+\/preview\/?$/.test(path);
+
+      return isOwnedPreview
+        ? `/api/backend/files/link/${encodeURIComponent(slug)}/${kind}`
+        : value;
+    } catch {
+      return value;
+    }
   }
 
   private toFileDestinationUrl(link: LinkWithRelations) {

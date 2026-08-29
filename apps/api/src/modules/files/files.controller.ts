@@ -187,11 +187,47 @@ export class PublicFilesController {
     return result.stream;
   }
 
+  @Get("link/:slug/cover")
+  @Header("Cache-Control", "public, max-age=300")
+  async previewLinkCover(
+    @Param("slug") slug: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.filesService.previewLinkAppearanceMedia(slug, "cover");
+    this.setInlineHeaders(response, result.file);
+    return result.stream;
+  }
+
+  @Get("link/:slug/background")
+  @Header("Cache-Control", "public, max-age=300")
+  async previewLinkBackground(
+    @Param("slug") slug: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.filesService.previewLinkAppearanceMedia(
+      slug,
+      "background",
+    );
+    this.setInlineHeaders(response, result.file);
+    return result.stream;
+  }
+
   private setHeaders(response: Response, file: { mimeType: string; size: number; name: string }) {
     response.set({
       "Content-Type": file.mimeType,
       "Content-Length": file.size.toString(),
       "Content-Disposition": `attachment; filename="${encodeURIComponent(file.name)}"`,
+    });
+  }
+
+  private setInlineHeaders(
+    response: Response,
+    file: { mimeType: string; size: number; name: string },
+  ) {
+    response.set({
+      "Content-Type": file.mimeType,
+      "Content-Length": file.size.toString(),
+      "Content-Disposition": `inline; filename="${encodeURIComponent(file.name)}"`,
     });
   }
 }

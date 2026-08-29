@@ -1,0 +1,66 @@
+services:
+  wordpress-db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-link4sub_wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-link4sub}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-link4sub-local-only}
+      MYSQL_ROOT_PASSWORD: ${WORDPRESS_DB_ROOT_PASSWORD:-link4sub-root-local-only}
+    volumes:
+      - link4sub_wordpress_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:latest
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    ports:
+      - "${WORDPRESS_PORT:-3100}:80"
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-link4sub_wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-link4sub}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-link4sub-local-only}
+      LINK4SUB_API_BASE_URL: ${LINK4SUB_API_BASE_URL:-http://host.docker.internal:4000/api}
+      LINK4SUB_PUBLIC_API_BASE_URL: ${LINK4SUB_PUBLIC_API_BASE_URL:-http://localhost:4000/api}
+      LINK4SUB_APP_BASE_URL: ${LINK4SUB_APP_BASE_URL:-http://localhost:3000}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('LINK4SUB_API_BASE_URL', getenv('LINK4SUB_API_BASE_URL'));
+        define('LINK4SUB_PUBLIC_API_BASE_URL', getenv('LINK4SUB_PUBLIC_API_BASE_URL'));
+        define('LINK4SUB_APP_BASE_URL', getenv('LINK4SUB_APP_BASE_URL'));
+        define('LINK4SUB_BRAND_NAME', 'Link4Sub');
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./wordpress:/var/www/html
+      - ./infra/wordpress/wordpress.htaccess:/var/www/html/.htaccess:ro
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://localhost/wp-login.php') === false ? 1 : 0);\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wpcli:
+    image: wordpress:cli
+    profiles: ["tools"]
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-link4sub_wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-link4sub}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-link4sub-local-only}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./wordpress:/var/www/html
+    working_dir: /var/www/html
+
+volumes:
+  link4sub_wordpress_db:
