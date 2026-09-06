@@ -29,6 +29,8 @@ export class AdminLinksController {
   @Get()
   @Permissions("links.read")
   findAll(@Query() query: ListAdminLinksQueryDto) {
+      throw new Error('TEST SYSTEM ERROR - AdminLinksController.findAll');
+
     return this.adminLinksService.findAll(query);
   }
 

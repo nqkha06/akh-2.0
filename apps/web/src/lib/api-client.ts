@@ -37,6 +37,19 @@ export type LinkDto = {
   status: string;
   monetizationRedirectUrl?: string | null;
   visitToken?: string | null;
+  showConfig?: {
+    pageCount: number;
+  };
+  relatedLinks?: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    subtitle: string | null;
+    inputType: string;
+    coverImageUrl: string | null;
+    views: number;
+    createdAt: string;
+  }>;
   actions: LinkActionDto[];
   backgroundSettings: {
     selectedBackgroundId: string | null;

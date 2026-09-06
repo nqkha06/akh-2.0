@@ -8,11 +8,17 @@ import { Prisma } from "@prisma/client";
 import { randomInt } from "node:crypto";
 
 import { PrismaService } from "../../database/prisma/prisma.service";
-import type { MonetizationRouteDto } from "../monetization-levels/dto/monetization-level-config.dto";
+import type {
+  MonetizationAdDto,
+  MonetizationRouteDto,
+} from "../monetization-levels/dto/monetization-level-config.dto";
 import { CreateLinkDto } from "./dto/create-link.dto";
 import {
   buildVisitorRouteContext,
+  resolveMonetizationAds,
   resolveMonetizationRoute,
+  type MonetizationPageContext,
+  type VisitorRouteContext,
 } from "./monetization-route-resolver";
 import { UpdateLinkStatusDto } from "./dto/update-link-status.dto";
 import { LinkVisitAnalyticsService } from "./link-visit-analytics.service";
@@ -40,6 +46,7 @@ const publicVisitInclude = Prisma.validator<Prisma.LinkInclude>()({
           routesJson: true,
           ratesJson: true,
           metaDataJson: true,
+          adsJson: true,
         },
       },
     },
@@ -55,6 +62,7 @@ export type LinkVisitorMetadata = {
   userAgent?: string | null;
   ipAddress?: string | null;
   referrer?: string | null;
+  pageContext?: MonetizationPageContext;
 };
 
 export type ResolvedMonetization = {
@@ -84,6 +92,8 @@ type StoredAppearance = {
 
 @Injectable()
 export class LinksService {
+  private readonly monetizationAdsCache = new Map<string, MonetizationAdDto[]>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly visitAnalytics: LinkVisitAnalyticsService,
@@ -199,20 +209,114 @@ export class LinksService {
         visitor,
       );
       const context = buildVisitorRouteContext(visitor);
-      const visitIntent = await this.visitAnalytics.createIntent(
+      const adsResolution = await this.resolveAds(
         prisma,
         current,
-        monetization,
         visitor,
         context,
       );
+      const monetizationAds = adsResolution.ads;
+      const smartlink = monetizationAds.find(
+        (ad) =>
+          ad.format === "smartlink" &&
+          (ad.placement === "unlock_redirect" || ad.placement === "popunder"),
+      );
+      const effectiveMonetization = smartlink && adsResolution.level
+        ? {
+            targetUrl: smartlink.content.targetUrl ?? "",
+            levelId: adsResolution.level.id,
+            ratesJson: adsResolution.level.ratesJson,
+            metaDataJson: adsResolution.level.metaDataJson,
+          }
+        : adsResolution.hasSmartlinkInventory
+          ? null
+          : monetization;
+      const visitIntent = await this.visitAnalytics.createIntent(
+        prisma,
+        current,
+        effectiveMonetization,
+        visitor,
+        context,
+      );
+      const relatedLinks = await this.findRelatedPublicLinks(prisma, current);
 
       return {
         ...this.toPublicResponse(current),
+        relatedLinks,
+        showConfig: this.parseShowConfig(adsResolution.level?.metaDataJson),
+        // Direct routes and unlock Smartlinks have different responsibilities.
+        // The route sends the visitor to the configured renderer (for example
+        // WordPress); the Smartlink is returned in monetizationAds and is only
+        // used after the final destination click.
         monetizationRedirectUrl: monetization?.targetUrl ?? null,
+        monetizationAds: monetizationAds.map(({ id, format, placement, content }) => ({
+          id,
+          format,
+          placement,
+          content,
+        })),
         visitToken: visitIntent.id,
       };
     });
+  }
+
+  private async findRelatedPublicLinks(
+    prisma: Prisma.TransactionClient,
+    current: PublicVisitLink,
+  ) {
+    const candidates = await prisma.link.findMany({
+      where: {
+        userId: current.userId,
+        id: { not: current.id },
+        status: "active",
+        deletedAt: null,
+      },
+      orderBy: [{ views: "desc" }, { createdAt: "desc" }],
+      take: 12,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        subtitle: true,
+        destinationType: true,
+        appearanceJson: true,
+        expiresAt: true,
+        maxClicks: true,
+        views: true,
+        createdAt: true,
+      },
+    });
+    const now = Date.now();
+
+    return candidates
+      .filter((link) => {
+        const expiredByDate = Boolean(
+          link.expiresAt && link.expiresAt.getTime() <= now,
+        );
+        const expiredByClicks = Boolean(
+          link.maxClicks !== null && link.views >= link.maxClicks,
+        );
+        return !expiredByDate && !expiredByClicks;
+      })
+      .slice(0, 3)
+      .map((link) => {
+        const appearance = this.parseAppearance(link.appearanceJson);
+
+        return {
+          id: String(link.id),
+          slug: link.slug,
+          title: link.title,
+          subtitle: link.subtitle,
+          inputType: link.destinationType,
+          coverImageUrl: this.toPublicAppearanceMediaUrl(
+            appearance.coverImageUrl,
+            link.slug,
+            "cover",
+          ),
+          views: link.views,
+          createdAt: link.createdAt,
+        };
+      });
   }
 
   async completeVisit(slug: string, visitToken: string) {
@@ -687,6 +791,7 @@ export class LinksService {
           routesJson: true,
           ratesJson: true,
           metaDataJson: true,
+          adsJson: true,
         },
       });
     }
@@ -710,6 +815,54 @@ export class LinksService {
     };
   }
 
+  private async resolveAds(
+    prisma: Prisma.TransactionClient,
+    link: PublicVisitLink,
+    visitor: LinkVisitorMetadata,
+    context: VisitorRouteContext,
+  ) {
+    let level = link.user.monetizationLevel;
+    if (!level || level.status !== "published") {
+      level = await prisma.monetizationLevel.findFirst({
+        where: { isDefault: true, status: "published" },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          status: true,
+          routesJson: true,
+          ratesJson: true,
+          metaDataJson: true,
+          adsJson: true,
+        },
+      });
+    }
+    if (!level) return { ads: [], level: null, hasSmartlinkInventory: false };
+    const configuredAds = this.parseMonetizationAds(level.adsJson);
+    return {
+      ads: resolveMonetizationAds(
+        configuredAds,
+        { ...context, visitorKey: `${link.id}|${context.visitorKey}` },
+        {
+          ...visitor.pageContext,
+          selectionSeed: randomInt(0, 2_147_483_647),
+        },
+      ),
+      level,
+      hasSmartlinkInventory: configuredAds.some(
+        (ad) =>
+          ad.enabled &&
+          ad.format === "smartlink" &&
+          ad.placements.some(
+            (placement) =>
+              placement === "unlock_redirect" || placement === "popunder",
+          ) &&
+          (ad.content.smartlinks !== undefined
+            ? ad.content.smartlinks.some((smartlink) => smartlink.enabled)
+            : Boolean(ad.content.targetUrl)),
+      ),
+    };
+  }
+
   private parseMonetizationRoutes(value: string): MonetizationRouteDto[] {
     try {
       const routes = JSON.parse(value) as unknown;
@@ -723,6 +876,45 @@ export class LinksService {
       );
     } catch {
       return [];
+    }
+  }
+
+  private parseMonetizationAds(value: string): MonetizationAdDto[] {
+    const cached = this.monetizationAdsCache.get(value);
+    if (cached) return cached;
+    try {
+      const ads = JSON.parse(value) as unknown;
+      if (!Array.isArray(ads)) return [];
+      const parsed = ads.filter(
+        (ad): ad is MonetizationAdDto =>
+          typeof ad === "object" &&
+          ad !== null &&
+          typeof (ad as MonetizationAdDto).id === "string" &&
+          Array.isArray((ad as MonetizationAdDto).placements),
+      );
+      if (this.monetizationAdsCache.size >= 100) {
+        const oldest = this.monetizationAdsCache.keys().next().value;
+        if (oldest !== undefined) this.monetizationAdsCache.delete(oldest);
+      }
+      this.monetizationAdsCache.set(value, parsed);
+      return parsed;
+    } catch {
+      return [];
+    }
+  }
+
+  private parseShowConfig(value?: string | null) {
+    if (!value) return { pageCount: 1 };
+    try {
+      const parsed = JSON.parse(value) as { stepCount?: unknown };
+      const pageCount = Number(parsed?.stepCount);
+      return {
+        pageCount: Number.isInteger(pageCount)
+          ? Math.max(1, Math.min(20, pageCount))
+          : 1,
+      };
+    } catch {
+      return { pageCount: 1 };
     }
   }
 

@@ -8,28 +8,28 @@ datasource db {
 }
 
 model User {
-  id                       Int                       @id @default(autoincrement())
+  id                       Int                         @id @default(autoincrement())
   name                     String
-  email                    String                    @unique
-  emailVerifiedAt          DateTime?                 @map("email_verified_at")
-  passwordHash             String?                   @map("password")
+  email                    String                      @unique
+  emailVerifiedAt          DateTime?                   @map("email_verified_at")
+  passwordHash             String?                     @map("password")
   avatar                   String?
-  status                   String                    @default("active")
-  balance                  Decimal                   @default(0)
-  referralCode             String?                   @unique @map("referral_code")
-  referredById             Int?                      @map("referred_by")
-  tokenVersion             Int                       @default(0) @map("token_version")
-  monetizationLevelId      Int?                      @map("monetization_level_id")
-  loyaltyTierId            Int?                      @map("loyalty_tier_id")
-  loyaltyValidViews        Int                       @default(0) @map("loyalty_valid_views")
-  loyaltyWindowStartedAt   DateTime?                 @map("loyalty_window_started_at")
-  loyaltyWindowEndedAt     DateTime?                 @map("loyalty_window_ended_at")
-  loyaltyCalculatedAt      DateTime?                 @map("loyalty_calculated_at")
-  storageLimitBytes        BigInt?                   @map("storage_limit_bytes")
-  storageUsedBytes         BigInt                    @default(0) @map("storage_used_bytes")
-  storageReservedBytes     BigInt                    @default(0) @map("storage_reserved_bytes")
-  createdAt                DateTime                  @default(now()) @map("created_at")
-  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  status                   String                      @default("active")
+  balance                  Decimal                     @default(0)
+  referralCode             String?                     @unique @map("referral_code")
+  referredById             Int?                        @map("referred_by")
+  tokenVersion             Int                         @default(0) @map("token_version")
+  monetizationLevelId      Int?                        @map("monetization_level_id")
+  loyaltyTierId            Int?                        @map("loyalty_tier_id")
+  loyaltyValidViews        Int                         @default(0) @map("loyalty_valid_views")
+  loyaltyWindowStartedAt   DateTime?                   @map("loyalty_window_started_at")
+  loyaltyWindowEndedAt     DateTime?                   @map("loyalty_window_ended_at")
+  loyaltyCalculatedAt      DateTime?                   @map("loyalty_calculated_at")
+  storageLimitBytes        BigInt?                     @map("storage_limit_bytes")
+  storageUsedBytes         BigInt                      @default(0) @map("storage_used_bytes")
+  storageReservedBytes     BigInt                      @default(0) @map("storage_reserved_bytes")
+  createdAt                DateTime                    @default(now()) @map("created_at")
+  updatedAt                DateTime                    @updatedAt @map("updated_at")
   socialAccounts           SocialAccount[]
   authSessions             AuthSession[]
   passwordResetTokens      PasswordResetToken[]
@@ -40,42 +40,45 @@ model User {
   memberFileUploads        MemberFileUpload[]
   roles                    UserHasRole[]
   permissions              UserHasPermission[]
-  monetizationLevel        MonetizationLevel?        @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
-  loyaltyTier              LoyaltyTier?              @relation(fields: [loyaltyTierId], references: [id], onDelete: SetNull)
+  monetizationLevel        MonetizationLevel?          @relation(fields: [monetizationLevelId], references: [id], onDelete: Restrict)
+  loyaltyTier              LoyaltyTier?                @relation(fields: [loyaltyTierId], references: [id], onDelete: SetNull)
   paymentMethods           UserPaymentMethod[]
-  withdrawals              UserWithdrawal[]          @relation("MemberWithdrawals")
-  processedWithdrawals     UserWithdrawal[]          @relation("ProcessedWithdrawals")
-  referrer                 User?                     @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals                User[]                    @relation("UserReferrals")
-  commissionsReceived      Commission[]              @relation("CommissionRecipient")
-  commissionsGenerated     Commission[]              @relation("CommissionSource")
-  updatedWebsiteSettings   WebsiteSettings[]         @relation("WebsiteSettingsUpdatedBy")
-  updatedBusinessSettings  BusinessSettings[]        @relation("BusinessSettingsUpdatedBy")
-  uploadedAdminMedia       AdminMedia[]              @relation("AdminMediaUploadedBy")
-  createdAdminMediaFolders AdminMediaFolder[]        @relation("AdminMediaFolderCreatedBy")
-  createdWebsiteMenus      WebsiteMenu[]             @relation("WebsiteMenuCreatedBy")
-  updatedWebsiteMenus      WebsiteMenu[]             @relation("WebsiteMenuUpdatedBy")
-  updatedMenuLocations     WebsiteMenuLocation[]     @relation("WebsiteMenuLocationUpdatedBy")
-  supportTickets           SupportTicket[]           @relation("SupportTicketOwner")
-  assignedSupportTickets   SupportTicket[]           @relation("SupportTicketAssignee")
+  withdrawals              UserWithdrawal[]            @relation("MemberWithdrawals")
+  processedWithdrawals     UserWithdrawal[]            @relation("ProcessedWithdrawals")
+  referrer                 User?                       @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals                User[]                      @relation("UserReferrals")
+  commissionsReceived      Commission[]                @relation("CommissionRecipient")
+  commissionsGenerated     Commission[]                @relation("CommissionSource")
+  updatedWebsiteSettings   WebsiteSettings[]           @relation("WebsiteSettingsUpdatedBy")
+  updatedBusinessSettings  BusinessSettings[]          @relation("BusinessSettingsUpdatedBy")
+  uploadedAdminMedia       AdminMedia[]                @relation("AdminMediaUploadedBy")
+  createdAdminMediaFolders AdminMediaFolder[]          @relation("AdminMediaFolderCreatedBy")
+  createdWebsiteMenus      WebsiteMenu[]               @relation("WebsiteMenuCreatedBy")
+  updatedWebsiteMenus      WebsiteMenu[]               @relation("WebsiteMenuUpdatedBy")
+  updatedMenuLocations     WebsiteMenuLocation[]       @relation("WebsiteMenuLocationUpdatedBy")
+  supportTickets           SupportTicket[]             @relation("SupportTicketOwner")
+  assignedSupportTickets   SupportTicket[]             @relation("SupportTicketAssignee")
   supportMessages          SupportTicketMessage[]
   supportAttachments       SupportTicketAttachment[]
-  reviewedLinkReports      LinkReport[]              @relation("LinkReportReviewer")
+  reviewedLinkReports      LinkReport[]                @relation("LinkReportReviewer")
   meta                     UserMeta[]
   bioPages                 BioPage[]
   accessLogs               LinkAccessLog[]
-  accessLogReviews         AccessLogReview[]         @relation("AccessLogReviewedBy")
-  createdAnnouncements     Announcement[]            @relation("AnnouncementCreatedBy")
-  updatedAnnouncements     Announcement[]            @relation("AnnouncementUpdatedBy")
+  accessLogReviews         AccessLogReview[]           @relation("AccessLogReviewedBy")
+  createdAnnouncements     Announcement[]              @relation("AnnouncementCreatedBy")
+  updatedAnnouncements     Announcement[]              @relation("AnnouncementUpdatedBy")
   announcementStates       AnnouncementUser[]
-  updatedEmailSettings     EmailSettings[]           @relation("EmailSettingsUpdatedBy")
-  createdEmailSenders      EmailSender[]             @relation("EmailSenderCreatedBy")
-  updatedEmailSenders      EmailSender[]             @relation("EmailSenderUpdatedBy")
-  createdEmailTemplates    EmailTemplate[]           @relation("EmailTemplateCreatedBy")
-  updatedEmailTemplates    EmailTemplate[]           @relation("EmailTemplateUpdatedBy")
+  updatedEmailSettings     EmailSettings[]             @relation("EmailSettingsUpdatedBy")
+  createdEmailSenders      EmailSender[]               @relation("EmailSenderCreatedBy")
+  updatedEmailSenders      EmailSender[]               @relation("EmailSenderUpdatedBy")
+  createdEmailTemplates    EmailTemplate[]             @relation("EmailTemplateCreatedBy")
+  updatedEmailTemplates    EmailTemplate[]             @relation("EmailTemplateUpdatedBy")
   emailPreferences         UserEmailPreference[]
   emailMessages            EmailMessage[]
-  emailAuditLogs           AuditLog[]                @relation("AuditLogActor")
+  emailAuditLogs           AuditLog[]                  @relation("AuditLogActor")
+  systemLogs               SystemLog[]                 @relation("SystemLogUser")
+  adminSystemLogs          SystemLog[]                 @relation("SystemLogAdmin")
+  updatedLogRetentionRules SystemLogRetentionSetting[] @relation("SystemLogRetentionUpdatedBy")
 
   @@index([status])
   @@index([monetizationLevelId])
@@ -367,6 +370,7 @@ model MonetizationLevel {
   sortOrder    Int                            @default(0) @map("sort_order")
   routesJson   String                         @default("[]") @map("routes")
   ratesJson    String                         @default("[]") @map("rates")
+  adsJson      String                         @default("[]") @map("ads")
   metaDataJson String                         @default("{}") @map("meta_data")
   createdAt    DateTime                       @default(now()) @map("created_at")
   updatedAt    DateTime                       @updatedAt @map("updated_at")
@@ -881,31 +885,31 @@ model LinkReport {
 }
 
 model Announcement {
-  id                      Int                @id @default(autoincrement())
+  id                      Int                       @id @default(autoincrement())
   title                   String
-  slug                    String             @unique
+  slug                    String                    @unique
   summary                 String?
   content                 String
-  type                    String             @default("info")
-  priority                String             @default("normal")
-  displayType             String             @default("notification") @map("display_type")
-  status                  String             @default("draft")
-  targetType              String             @default("all") @map("target_type")
-  targetRulesJson         String             @default("{}") @map("target_rules")
-  actionLabel             String?            @map("action_label")
-  actionUrl               String?            @map("action_url")
-  isDismissible           Boolean            @default(true) @map("is_dismissible")
-  requiresAcknowledgement Boolean            @default(false) @map("requires_acknowledgement")
-  startsAt                DateTime?          @map("starts_at")
-  endsAt                  DateTime?          @map("ends_at")
-  publishedAt             DateTime?          @map("published_at")
-  createdById             Int?               @map("created_by")
-  updatedById             Int?               @map("updated_by")
-  createdAt               DateTime           @default(now()) @map("created_at")
-  updatedAt               DateTime           @updatedAt @map("updated_at")
-  deletedAt               DateTime?          @map("deleted_at")
-  createdBy               User?              @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy               User?              @relation("AnnouncementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  type                    String                    @default("info")
+  priority                String                    @default("normal")
+  displayType             String                    @default("notification") @map("display_type")
+  status                  String                    @default("draft")
+  targetType              String                    @default("all") @map("target_type")
+  targetRulesJson         String                    @default("{}") @map("target_rules")
+  actionLabel             String?                   @map("action_label")
+  actionUrl               String?                   @map("action_url")
+  isDismissible           Boolean                   @default(true) @map("is_dismissible")
+  requiresAcknowledgement Boolean                   @default(false) @map("requires_acknowledgement")
+  startsAt                DateTime?                 @map("starts_at")
+  endsAt                  DateTime?                 @map("ends_at")
+  publishedAt             DateTime?                 @map("published_at")
+  createdById             Int?                      @map("created_by")
+  updatedById             Int?                      @map("updated_by")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+  deletedAt               DateTime?                 @map("deleted_at")
+  createdBy               User?                     @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy               User?                     @relation("AnnouncementUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   translations            AnnouncementTranslation[]
   users                   AnnouncementUser[]
 
@@ -994,31 +998,31 @@ model WebsiteSettings {
 }
 
 model BusinessSettings {
-  id                         Int      @id @default(1)
-  version                    Int      @default(1)
-  registrationEnabled        Boolean  @default(true) @map("registration_enabled")
-  emailVerificationRequired  Boolean  @default(false) @map("email_verification_required")
-  googleLoginEnabled         Boolean  @default(true) @map("google_login_enabled")
-  baseCurrencyCode           String   @default("USD") @map("base_currency_code")
-  withdrawalCurrencyCode     String   @default("USD") @map("withdrawal_currency_code")
-  referralCommissionRate     Decimal  @default(5) @map("referral_commission_rate")
-  loyaltyWindowDays          Int      @default(7) @map("loyalty_window_days")
-  loyaltyHistoryDays         Int      @default(7) @map("loyalty_history_days")
-  memberFileMaxBytes         BigInt   @default(104857600) @map("member_file_max_bytes")
-  coverImageMaxBytes         BigInt   @default(10485760) @map("cover_image_max_bytes")
-  adminMediaMaxBytes         BigInt   @default(10485760) @map("admin_media_max_bytes")
-  supportAttachmentMaxBytes  BigInt   @default(5242880) @map("support_attachment_max_bytes")
-  memberStorageQuotaBytes    BigInt   @default(1073741824) @map("member_storage_quota_bytes")
-  uploadAllowedMimeTypesJson String   @default("[]") @map("upload_allowed_mime_types")
-  backgroundImagesJson       String   @default("[]") @map("background_images")
-  backgroundVideosJson       String   @default("[]") @map("background_videos")
-  maintenanceMode            Boolean  @default(false) @map("maintenance_mode")
-  withdrawalsPaused          Boolean  @default(false) @map("withdrawals_paused")
-  requireWithdrawalTrafficSource Boolean @default(false) @map("require_withdrawal_traffic_source")
-  updatedById                Int?     @map("updated_by_id")
-  createdAt                  DateTime @default(now()) @map("created_at")
-  updatedAt                  DateTime @updatedAt @map("updated_at")
-  updatedBy                  User?    @relation("BusinessSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id                             Int      @id @default(1)
+  version                        Int      @default(1)
+  registrationEnabled            Boolean  @default(true) @map("registration_enabled")
+  emailVerificationRequired      Boolean  @default(false) @map("email_verification_required")
+  googleLoginEnabled             Boolean  @default(true) @map("google_login_enabled")
+  baseCurrencyCode               String   @default("USD") @map("base_currency_code")
+  withdrawalCurrencyCode         String   @default("USD") @map("withdrawal_currency_code")
+  referralCommissionRate         Decimal  @default(5) @map("referral_commission_rate")
+  loyaltyWindowDays              Int      @default(7) @map("loyalty_window_days")
+  loyaltyHistoryDays             Int      @default(7) @map("loyalty_history_days")
+  memberFileMaxBytes             BigInt   @default(104857600) @map("member_file_max_bytes")
+  coverImageMaxBytes             BigInt   @default(10485760) @map("cover_image_max_bytes")
+  adminMediaMaxBytes             BigInt   @default(10485760) @map("admin_media_max_bytes")
+  supportAttachmentMaxBytes      BigInt   @default(5242880) @map("support_attachment_max_bytes")
+  memberStorageQuotaBytes        BigInt   @default(1073741824) @map("member_storage_quota_bytes")
+  uploadAllowedMimeTypesJson     String   @default("[]") @map("upload_allowed_mime_types")
+  backgroundImagesJson           String   @default("[]") @map("background_images")
+  backgroundVideosJson           String   @default("[]") @map("background_videos")
+  maintenanceMode                Boolean  @default(false) @map("maintenance_mode")
+  withdrawalsPaused              Boolean  @default(false) @map("withdrawals_paused")
+  requireWithdrawalTrafficSource Boolean  @default(false) @map("require_withdrawal_traffic_source")
+  updatedById                    Int?     @map("updated_by_id")
+  createdAt                      DateTime @default(now()) @map("created_at")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
+  updatedBy                      User?    @relation("BusinessSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@index([updatedById])
   @@map("business_settings")
@@ -1317,4 +1321,61 @@ model AuditLog {
   @@index([resourceType, resourceId, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+model SystemLogCategory {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("system_log_categories")
+}
+
+model SystemLogRetentionSetting {
+  id            Int      @id @default(autoincrement())
+  scope         String   @unique
+  retentionDays Int      @map("retention_days")
+  enabled       Boolean  @default(true)
+  updatedById   Int?     @map("updated_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedBy     User?    @relation("SystemLogRetentionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("system_log_retention_settings")
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String
+  category  String
+  context   String?
+  event     String?
+  message   String
+  metadata  Json?
+  userId    Int?     @map("user_id")
+  adminId   Int?     @map("admin_id")
+  requestId String?  @map("request_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  stack     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation("SystemLogUser", fields: [userId], references: [id], onDelete: SetNull)
+  admin     User?    @relation("SystemLogAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([level, createdAt])
+  @@index([category, createdAt])
+  @@index([context, createdAt])
+  @@index([event, createdAt])
+  @@index([requestId])
+  @@index([userId, createdAt])
+  @@index([adminId, createdAt])
+  @@map("system_logs")
 }

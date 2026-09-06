@@ -106,7 +106,12 @@ final class Link4Sub_Public_Controller
         }
 
         nocache_headers();
-        $link = $this->api->record_visit($slug);
+        $link = $this->api->record_visit($slug, array(
+            'siteKey' => (string) $this->settings->get('site_key', 'wordpress-main'),
+            'deliveryMode' => 'original',
+            'locale' => determine_locale(),
+            'placements' => array('unlock_redirect', 'popunder', 'stu_before', 'stu_after'),
+        ));
         if (is_wp_error($link)) {
             $status = (int) ($link->get_error_data()['status'] ?? 502);
             $this->render_status($status === 404 ? 'not_found' : 'api_error', $status);
@@ -143,14 +148,33 @@ final class Link4Sub_Public_Controller
             $visit_reference,
             $complete_url
         );
+        $unlock_smartlink = $this->prepare_unlock_smartlink(
+            $link['monetizationAds'] ?? array(),
+            $slug,
+            $visit_reference,
+            $complete_url
+        );
+        $popunder_smartlink = $this->prepare_popunder_smartlink(
+            $link['monetizationAds'] ?? array(),
+            $slug,
+            $visit_reference,
+            $complete_url
+        );
         unset($link['monetizationRedirectUrl']);
 
-        if ($monetization_url !== null) {
+        if ($unlock_smartlink === null && $popunder_smartlink === null && $monetization_url !== null) {
             wp_redirect($monetization_url, 302, 'Link4Sub');
             exit;
         }
 
-        $view = $this->prepare_view($link, $slug, $visit_reference, $complete_url);
+        $view = $this->prepare_view(
+            $link,
+            $slug,
+            $visit_reference,
+            $complete_url,
+            $unlock_smartlink,
+            $popunder_smartlink
+        );
         status_header(200);
         include LINK4SUB_PLUGIN_DIR . 'templates/public-link.php';
         exit;
@@ -195,7 +219,9 @@ final class Link4Sub_Public_Controller
         array $link,
         string $slug,
         ?string $visit_reference,
-        string $complete_url
+        string $complete_url,
+        ?array $unlock_smartlink = null,
+        ?array $popunder_smartlink = null
     ): array {
         $background = isset($link['backgroundSettings']) && is_array($link['backgroundSettings'])
             ? $link['backgroundSettings']
@@ -225,8 +251,25 @@ final class Link4Sub_Public_Controller
                 'action'   => $action_name,
                 'platform' => $platform,
                 'label'    => $this->action_label($action_name),
+                'label_key' => 'action_' . str_replace('-', '_', sanitize_key($action_name)),
                 'icon'     => $this->action_icon($action_name),
             );
+        }
+
+        $requested_page_count = isset($link['showConfig']['pageCount'])
+            ? (int) $link['showConfig']['pageCount']
+            : 1;
+        $page_count = max(1, min(20, $requested_page_count));
+        $page_count = min($page_count, max(1, count($actions)));
+        $base_size = intdiv(count($actions), $page_count);
+        $remainder = count($actions) % $page_count;
+        $offset = 0;
+        for ($page = 0; $page < $page_count; $page++) {
+            $page_size = $base_size + ($page < $remainder ? 1 : 0);
+            for ($position = 0; $position < $page_size; $position++) {
+                $actions[$offset + $position]['page'] = $page;
+            }
+            $offset += $page_size;
         }
 
         $same_as_cover = !empty($background['sameAsCoverImage']);
@@ -256,6 +299,7 @@ final class Link4Sub_Public_Controller
             ),
             'youtube_embed_url' => $background_type === 'youtube' ? $this->youtube_embed_url($background_url) : '',
             'actions'           => $actions,
+            'show_page_count'   => $page_count,
             'brand'             => (string) $this->settings->get('brand_name', 'Link4Sub'),
             'app_url'           => $this->api->app_base_url(),
             'visit_reference'   => $visit_reference,
@@ -263,7 +307,107 @@ final class Link4Sub_Public_Controller
             'route_prefix'      => (string) $this->settings->get('route_prefix', 'l'),
             'banner'            => $this->settings->banner_for_slug($slug),
             'appearance'        => $this->settings->appearance(),
+            'monetization_ads'  => $this->prepare_monetization_ads($link['monetizationAds'] ?? array()),
+            'unlock_smartlink'  => $unlock_smartlink,
+            'popunder_smartlink' => $popunder_smartlink,
+            'i18n'              => $this->settings->language_bundle(),
+            'recommendations'   => Link4Sub_Recommendations::from_api(
+                $link['relatedLinks'] ?? array(),
+                $slug,
+                (string) $this->settings->get('route_prefix', 'l')
+            ),
         );
+    }
+
+    public function prepare_unlock_smartlink(
+        $items,
+        string $slug,
+        ?string $reference,
+        string $complete_url
+    ): ?array {
+        return $this->prepare_smartlink(
+            $items,
+            'unlock_redirect',
+            $slug,
+            $reference,
+            $complete_url
+        );
+    }
+
+    public function prepare_popunder_smartlink(
+        $items,
+        string $slug,
+        ?string $reference,
+        string $complete_url
+    ): ?array {
+        return $this->prepare_smartlink(
+            $items,
+            'popunder',
+            $slug,
+            $reference,
+            $complete_url
+        );
+    }
+
+    private function prepare_smartlink(
+        $items,
+        string $placement,
+        string $slug,
+        ?string $reference,
+        string $complete_url
+    ): ?array {
+        if (!is_array($items)) return null;
+        foreach ($items as $item) {
+            if (!is_array($item) || ($item['format'] ?? null) !== 'smartlink' || ($item['placement'] ?? null) !== $placement) {
+                continue;
+            }
+            $content = isset($item['content']) && is_array($item['content']) ? $item['content'] : array();
+            $url = $this->monetization_redirect_url(
+                $content['targetUrl'] ?? null,
+                $slug,
+                $reference,
+                $complete_url
+            );
+            if ($url === null) return null;
+            return array(
+                'id' => sanitize_key((string) ($item['id'] ?? 'smartlink')),
+                'url' => $url,
+                'delay_seconds' => max(0, min(300, (int) ($content['redirectDelaySeconds'] ?? 5))),
+            );
+        }
+        return null;
+    }
+
+    private function prepare_monetization_ads($items): array
+    {
+        if (!is_array($items)) return array();
+        $result = array();
+        $placements = array('stu_before', 'stu_after', 'safe_overlay_top', 'safe_overlay_bottom');
+        foreach ($items as $item) {
+            if (!is_array($item)) continue;
+            $format = isset($item['format']) ? sanitize_key((string) $item['format']) : '';
+            $placement = isset($item['placement']) ? sanitize_key((string) $item['placement']) : '';
+            $content = isset($item['content']) && is_array($item['content']) ? $item['content'] : array();
+            if (!in_array($format, array('banner', 'script'), true) || !in_array($placement, $placements, true)) continue;
+            $normalized = array(
+                'id' => sanitize_key((string) ($item['id'] ?? '')),
+                'format' => $format,
+                'placement' => $placement,
+                'title' => sanitize_text_field((string) ($content['title'] ?? '')),
+                'description' => sanitize_textarea_field((string) ($content['description'] ?? '')),
+                'cta_label' => sanitize_text_field((string) ($content['ctaLabel'] ?? 'Tìm hiểu thêm')),
+                'new_tab' => !empty($content['newTab']),
+                'image_url' => esc_url_raw((string) ($content['imageUrl'] ?? ''), array('http', 'https')),
+                'click_url' => esc_url_raw((string) ($content['clickUrl'] ?? ''), array('http', 'https')),
+                'adapter' => sanitize_key((string) ($content['adapter'] ?? '')),
+                'script_url' => esc_url_raw((string) ($content['scriptUrl'] ?? ''), array('http', 'https')),
+                'zone_id' => sanitize_text_field((string) ($content['zoneId'] ?? '')),
+            );
+            if ($format === 'banner' && (!$normalized['image_url'] || !$normalized['click_url'])) continue;
+            if ($format === 'script' && ($normalized['adapter'] !== 'external-script-v1' || !$normalized['script_url'])) continue;
+            $result[$placement] = $normalized;
+        }
+        return $result;
     }
 
     private function render_status(string $kind, int $http_status): void
@@ -280,10 +424,13 @@ final class Link4Sub_Public_Controller
         exit;
     }
 
-    private function monetization_redirect_url($target, string $slug, ?string $reference, string $complete_url): ?string
+    public function monetization_redirect_url($target, string $slug, ?string $reference, string $complete_url): ?string
     {
         if (!is_string($target) || !$reference) {
             return null;
+        }
+        if (substr($target, -2) === '/.') {
+            $target = substr($target, 0, -1) . rawurlencode($slug);
         }
         $target = esc_url_raw($target, array('http', 'https'));
         if (!$target) {

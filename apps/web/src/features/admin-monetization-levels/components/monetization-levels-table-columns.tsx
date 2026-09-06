@@ -114,7 +114,7 @@ export function getMonetizationLevelsTableColumns({
     {
       id: "stepCount",
       accessorFn: (row) => row.metaData.stepCount,
-      header: "Bước",
+      header: "Page STU",
       cell: ({ row }) => (
         <span className="tabular-nums">{row.original.metaData.stepCount}</span>
       ),

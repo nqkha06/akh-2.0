@@ -59,6 +59,12 @@ final class Link4Sub_Admin_Settings
             array('link4sub-admin'),
             LINK4SUB_PLUGIN_VERSION
         );
+        wp_enqueue_style(
+            'link4sub-admin-languages',
+            LINK4SUB_PLUGIN_URL . 'assets/css/admin-languages.css',
+            array('link4sub-admin'),
+            LINK4SUB_PLUGIN_VERSION
+        );
         wp_enqueue_script(
             'link4sub-admin',
             LINK4SUB_PLUGIN_URL . 'assets/js/admin-settings.js',
@@ -83,7 +89,7 @@ final class Link4Sub_Admin_Settings
     {
         if (!current_user_can('manage_options')) return;
         $tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'general';
-        if (!in_array($tab, array('general', 'safe', 'banner', 'appearance'), true)) $tab = 'general';
+        if (!in_array($tab, array('general', 'safe', 'banner', 'appearance', 'languages'), true)) $tab = 'general';
         $values = $this->settings->all();
         ?>
         <div class="wrap l4s-admin">
@@ -100,7 +106,7 @@ final class Link4Sub_Admin_Settings
             <?php settings_errors(); ?>
             <nav class="l4s-admin-tabs" aria-label="Link4Sub settings">
                 <?php
-                $tabs = array('general' => 'Cấu hình chung', 'safe' => 'Kiểu hiển thị', 'banner' => 'Banner', 'appearance' => 'Appearance');
+                $tabs = array('general' => 'Cấu hình chung', 'safe' => 'Kiểu hiển thị', 'banner' => 'Banner', 'appearance' => 'Appearance', 'languages' => 'Ngôn ngữ');
                 foreach ($tabs as $key => $label) {
                     printf(
                         '<a class="%s" href="%s">%s</a>',
@@ -120,6 +126,7 @@ final class Link4Sub_Admin_Settings
                 if ($tab === 'safe') $this->render_safe($values);
                 if ($tab === 'banner') $this->render_banner($values);
                 if ($tab === 'appearance') $this->render_appearance($values);
+                if ($tab === 'languages') $this->render_languages();
                 ?>
                 <div class="l4s-admin-savebar">
                     <span>Thay đổi được áp dụng cho lượt tải trang tiếp theo.</span>
@@ -138,7 +145,7 @@ final class Link4Sub_Admin_Settings
                 <div class="l4s-card-heading"><div><span>KẾT NỐI</span><h2>Link4Sub Public API</h2><p>PHP gọi server-to-server; URL nội bộ không được đưa vào JavaScript.</p></div><span class="l4s-status-pill">Server-side</span></div>
                 <div class="l4s-fields l4s-fields-2">
                     <?php $this->url_field('api_base_url', 'API nội bộ', $v, 'Ví dụ: http://host.docker.internal:4000/api', 'Chỉ WordPress/PHP sử dụng.'); ?>
-                    <?php $this->url_field('public_api_base_url', 'Public media API', $v, 'Ví dụ: http://localhost:4000/api', 'Được dùng cho ảnh, video và download URL.'); ?>
+                    <?php $this->url_field('public_api_base_url', 'Public API cho trình duyệt', $v, 'Ví dụ: http://localhost:4000/api', 'Client loader dùng để lấy STU, ảnh và file. Origin WordPress phải có trong CORS của API.'); ?>
                     <?php $this->url_field('app_base_url', 'Link4Sub App URL', $v, 'Ví dụ: http://localhost:3000', 'Đích của logo, tạo link và báo cáo link.'); ?>
                     <label class="l4s-field"><span>Timeout API</span><div class="l4s-number"><input type="number" min="2" max="30" name="<?php echo esc_attr(Link4Sub_Settings::OPTION_NAME); ?>[request_timeout]" value="<?php echo esc_attr((string) $v['request_timeout']); ?>"><em>giây</em></div><small>Giới hạn từ 2–30 giây.</small></label>
                 </div>
@@ -146,6 +153,7 @@ final class Link4Sub_Admin_Settings
             <section class="l4s-admin-card">
                 <div class="l4s-card-heading"><div><span>NHẬN DIỆN</span><h2>Thương hiệu</h2><p>Tên hiển thị trên header và trang trạng thái.</p></div></div>
                 <label class="l4s-field"><span>Tên thương hiệu</span><input type="text" maxlength="80" name="<?php echo esc_attr(Link4Sub_Settings::OPTION_NAME); ?>[brand_name]" value="<?php echo esc_attr($v['brand_name']); ?>"></label>
+                <label class="l4s-field"><span>Site key</span><input type="text" maxlength="64" name="<?php echo esc_attr(Link4Sub_Settings::OPTION_NAME); ?>[site_key]" value="<?php echo esc_attr($v['site_key']); ?>"><small>Dùng để match targeting theo website, ví dụ <code>wordpress-main</code>.</small></label>
             </section>
             <section class="l4s-admin-card">
                 <div class="l4s-card-heading"><div><span>ROUTING</span><h2>Đường dẫn public</h2><p>Slug vẫn lấy động từ API, không hard-code từng link.</p></div></div>
@@ -253,7 +261,7 @@ final class Link4Sub_Admin_Settings
 
             <section class="l4s-admin-card">
                 <div class="l4s-card-heading"><div><span>FLOW</span><h2>Luồng thực thi</h2></div></div>
-                <ol class="l4s-flow-list"><li><b>1</b><span>Nhận alias từ <code>/safe/</code></span></li><li><b>2</b><span>Ký cookie HttpOnly và chọn bài publish</span></li><li><b>3</b><span>Redirect 302 tới permalink sạch</span></li><li><b>4</b><span>PHP gọi Public API, JS render STU</span></li></ol>
+                <ol class="l4s-flow-list"><li><b>1</b><span>Nhận alias từ <code>/safe/</code></span></li><li><b>2</b><span>Ký cookie HttpOnly và chọn bài publish</span></li><li><b>3</b><span>Redirect 302 tới permalink sạch</span></li><li><b>4</b><span>Bài viết render trước, JS gọi Public API và hydrate STU</span></li></ol>
             </section>
         </div>
         <?php
@@ -294,6 +302,36 @@ final class Link4Sub_Admin_Settings
                     <?php $this->toggle('appearance_compact_actions', 'Action dạng compact', $v); ?>
                 </div>
             </section>
+        </div>
+        <?php
+    }
+
+    private function render_languages(): void
+    {
+        $data = $this->settings->language_admin_data();
+        $payload_name = Link4Sub_Settings::OPTION_NAME . '[language_payload]';
+        ?>
+        <div class="l4s-language-admin" data-l4s-language-admin>
+            <section class="l4s-admin-card l4s-language-summary">
+                <div class="l4s-card-heading">
+                    <div><span>PLUGIN I18N</span><h2>Ngôn ngữ trang STU</h2><p>Tiếng Việt và English nằm trong source plugin. WordPress chỉ lưu phần chỉnh sửa và ngôn ngữ bổ sung.</p></div>
+                    <button type="button" class="button button-primary" data-l4s-language-add>+ Thêm ngôn ngữ</button>
+                </div>
+                <div class="l4s-language-stats"><span><b data-l4s-language-count>0</b> ngôn ngữ</span><span><b>2</b> bộ lang mặc định</span><span>Tối đa <b>20</b></span></div>
+            </section>
+            <div class="l4s-language-workspace">
+                <aside class="l4s-admin-card l4s-language-list-panel">
+                    <div class="l4s-language-list-heading"><strong>Danh sách</strong><small>Chọn để chỉnh sửa</small></div>
+                    <div class="l4s-language-list" data-l4s-language-list></div>
+                </aside>
+                <section class="l4s-admin-card l4s-language-editor" data-l4s-language-editor></section>
+            </div>
+            <input type="hidden" name="<?php echo esc_attr($payload_name); ?>" data-l4s-language-payload value="">
+            <script type="application/json" id="l4s-language-admin-data"><?php echo wp_json_encode(array(
+                'default' => $data['default'],
+                'languages' => $data['languages'],
+                'schema' => Link4Sub_I18n::text_schema(),
+            ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
         </div>
         <?php
     }

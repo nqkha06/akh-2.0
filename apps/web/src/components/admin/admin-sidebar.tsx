@@ -184,6 +184,12 @@ const data: { navMain: NavItem[] } = {
       icon: IconSettings,
       items: [
         {
+          title: "System Logs",
+          url: "/admin/system-logs",
+          icon: IconLogs,
+          permission: "system_logs.view",
+        },
+        {
           title: "Ngôn ngữ",
           url: "/admin/languages",
           icon: IconLanguage,

@@ -28,6 +28,7 @@ final class Link4Sub_Settings
                 : 'Link4Sub',
             'route_prefix' => 'l',
             'request_timeout' => 10,
+            'site_key' => 'wordpress-main',
 
             'delivery_mode' => 'original',
             'safe_route' => 'safe',
@@ -77,6 +78,8 @@ final class Link4Sub_Settings
             'appearance_show_header' => true,
             'appearance_show_footer' => true,
             'appearance_compact_actions' => false,
+
+            'language_config' => Link4Sub_I18n::default_config(),
         );
     }
 
@@ -119,6 +122,8 @@ final class Link4Sub_Settings
             $prefix = trim(preg_replace('/[^a-z0-9-]+/', '-', $prefix), '-');
             $current['route_prefix'] = $prefix !== '' ? substr($prefix, 0, 32) : 'l';
             $current['request_timeout'] = $this->integer($input['request_timeout'] ?? 10, 2, 30);
+            $site_key = sanitize_key((string) ($input['site_key'] ?? 'wordpress-main'));
+            $current['site_key'] = $site_key !== '' ? substr($site_key, 0, 64) : 'wordpress-main';
         }
 
         if ($tab === 'banner') {
@@ -176,6 +181,14 @@ final class Link4Sub_Settings
             $current['appearance_show_header'] = !empty($input['appearance_show_header']);
             $current['appearance_show_footer'] = !empty($input['appearance_show_footer']);
             $current['appearance_compact_actions'] = !empty($input['appearance_compact_actions']);
+        }
+
+        if ($tab === 'languages') {
+            $payload = $input['language_payload'] ?? null;
+            $decoded = is_string($payload) ? json_decode($payload, true) : $payload;
+            if (is_array($decoded) && isset($decoded['languages']) && is_array($decoded['languages'])) {
+                $current['language_config'] = Link4Sub_I18n::sanitize_payload($decoded);
+            }
         }
 
         return $current;
@@ -249,6 +262,18 @@ final class Link4Sub_Settings
             'show_footer' => (bool) $settings['appearance_show_footer'],
             'compact_actions' => (bool) $settings['appearance_compact_actions'],
         );
+    }
+
+    public function language_bundle(): array
+    {
+        $settings = $this->all();
+        return Link4Sub_I18n::public_bundle($settings['language_config'] ?? array());
+    }
+
+    public function language_admin_data(): array
+    {
+        $settings = $this->all();
+        return Link4Sub_I18n::effective($settings['language_config'] ?? array());
     }
 
     private function environment_default(string $key, string $fallback): string

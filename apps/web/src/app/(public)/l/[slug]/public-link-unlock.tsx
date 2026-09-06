@@ -41,6 +41,22 @@ import { cn } from "@/lib/utils";
 
 const ACTION_DELAY_SECONDS = 6;
 
+function splitActions<T>(actions: T[], requestedPageCount: number) {
+  const pageCount = Math.max(
+    1,
+    Math.min(requestedPageCount, Math.max(1, actions.length)),
+  );
+  const baseSize = Math.floor(actions.length / pageCount);
+  const remainder = actions.length % pageCount;
+  let offset = 0;
+  return Array.from({ length: pageCount }, (_, pageIndex) => {
+    const size = baseSize + (pageIndex < remainder ? 1 : 0);
+    const page = actions.slice(offset, offset + size);
+    offset += size;
+    return page;
+  });
+}
+
 // Compatibility fallback for links saved before backgroundMediaUrl was persisted.
 const backgroundImages = DEFAULT_BACKGROUND_IMAGE_PRESETS;
 
@@ -262,6 +278,24 @@ export function PublicLinkUnlock({
   const [youtubeMuted, setYoutubeMuted] =
     useState(true);
 
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const requestedPageCount = Math.max(
+    1,
+    Math.min(20, link.showConfig?.pageCount ?? 1),
+  );
+
+  const actionPages = useMemo(
+    () => splitActions(link.actions, requestedPageCount),
+    [link.actions, requestedPageCount],
+  );
+
+  const visibleActions = useMemo(
+    () => actionPages[currentPage] ?? actionPages[0] ?? [],
+    [actionPages, currentPage],
+  );
+  const isFinalPage = currentPage >= actionPages.length - 1;
+
   const actionIds = useMemo(
     () =>
       link.actions.map(
@@ -273,6 +307,15 @@ export function PublicLinkUnlock({
   const validActionIdSet = useMemo(
     () => new Set(actionIds),
     [actionIds],
+  );
+
+  const currentActionIds = useMemo(
+    () =>
+      visibleActions.map((action) => {
+        const originalIndex = link.actions.indexOf(action);
+        return action.id || String(Math.max(0, originalIndex));
+      }),
+    [link.actions, visibleActions],
   );
 
   const completedIdSet = useMemo(
@@ -340,17 +383,17 @@ export function PublicLinkUnlock({
 
   const completedCount = useMemo(
     () =>
-      actionIds.reduce(
+      currentActionIds.reduce(
         (total, id) =>
           completedIdSet.has(id)
             ? total + 1
             : total,
         0,
       ),
-    [actionIds, completedIdSet],
+    [currentActionIds, completedIdSet],
   );
 
-  const totalActions = actionIds.length;
+  const totalActions = currentActionIds.length;
 
   const unlocked =
     totalActions === 0 ||
@@ -640,8 +683,9 @@ export function PublicLinkUnlock({
 
           {/* Actions */}
           <div className="mt-6 space-y-2">
-            {link.actions.map((action, index) => {
-              const id = action.id || String(index);
+            {visibleActions.map((action) => {
+              const originalIndex = link.actions.indexOf(action);
+              const id = action.id || String(Math.max(0, originalIndex));
               const completed = completedIdSet.has(id);
               const loading = loadingIdSet.has(id);
 
@@ -670,7 +714,7 @@ export function PublicLinkUnlock({
                   rel="noopener noreferrer"
                   aria-busy={loading}
                   aria-disabled={loading || undefined}
-                  data-testid={`public-action-${index}`}
+                  data-testid={`public-action-${Math.max(0, originalIndex)}`}
                   onClick={(event) => {
                     if (loading) {
                       event.preventDefault();
@@ -738,6 +782,11 @@ export function PublicLinkUnlock({
                 <p className="text-sm text-slate-950 dark:text-[#f7f8f8]">
                   {unlocked ? t("readyTitle") : t("progressTitle")}
                 </p>
+                {actionPages.length > 1 ? (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-[#8a8f98]">
+                    Page {currentPage + 1}/{actionPages.length}
+                  </p>
+                ) : null}
               </div>
 
               <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-[#8a8f98]">
@@ -761,7 +810,32 @@ export function PublicLinkUnlock({
 
           {/* Destination */}
           <div className="mt-6">
-            {link.inputType === "snippet" ? (
+            {!isFinalPage ? (
+              <button
+                type="button"
+                disabled={!unlocked}
+                onClick={() => {
+                  if (!unlocked) return;
+                  setCurrentPage((page) => Math.min(page + 1, actionPages.length - 1));
+                }}
+                data-testid="unlock-cta"
+                className={[
+                  "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
+                  unlocked
+                    ? "bg-[#5e6ad2] text-white hover:bg-[#828fff]"
+                    : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-[#18191a] dark:text-[#62666d]",
+                ].join(" ")}
+              >
+                {unlocked ? (
+                  <ChevronsRight className="size-4" />
+                ) : (
+                  <LockKeyhole className="size-4" />
+                )}
+                {unlocked
+                  ? `Tiếp tục Page ${currentPage + 2}`
+                  : "Hoàn thành action của page này"}
+              </button>
+            ) : link.inputType === "snippet" ? (
               <>
                 <button
                   type="button"

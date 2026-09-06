@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Matches,
   Max,
@@ -15,6 +16,7 @@ import {
 
 import {
   MonetizationLevelTranslationDto,
+  MonetizationAdDto,
   MonetizationMetaDataDto,
   MonetizationRateDto,
   MonetizationRouteDto,
@@ -59,4 +61,11 @@ export class CreateMonetizationLevelDto {
   @ValidateNested({ each: true })
   @Type(() => MonetizationRateDto)
   rates!: MonetizationRateDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => MonetizationAdDto)
+  ads?: MonetizationAdDto[];
 }

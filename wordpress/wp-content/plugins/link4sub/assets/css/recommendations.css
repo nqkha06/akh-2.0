@@ -1,0 +1,210 @@
+.l4s-recommendations {
+  margin-top: 18px;
+  padding: 24px;
+  border: 1px solid var(--l4s-border, #e2e8f0);
+  border-radius: var(--l4s-safe-radius, var(--l4s-card-radius, 14px));
+  color: var(--l4s-text, #0f172a);
+  background: var(--l4s-surface, rgba(255, 255, 255, .96));
+  box-shadow: 0 18px 40px rgba(2, 6, 23, .06);
+}
+
+.l4s-recommendations-heading {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.l4s-recommendations-heading h2 {
+  margin: 0;
+  color: inherit;
+  font-size: 21px;
+  line-height: 1.25;
+  letter-spacing: -.03em;
+}
+
+.l4s-recommendations-heading p {
+  margin: 4px 0 0;
+  color: var(--l4s-muted, #64748b);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.l4s-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.l4s-recommendation-card {
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--l4s-border, #e2e8f0);
+  border-radius: max(7px, calc(var(--l4s-safe-radius, 14px) - 5px));
+  color: inherit;
+  background: var(--l4s-subtle, #f8fafc);
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.l4s-recommendation-card:hover {
+  border-color: color-mix(in srgb, var(--l4s-purple, var(--l4s-safe-accent, #5e6ad2)) 45%, var(--l4s-border, #e2e8f0));
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .09);
+  transform: translateY(-2px);
+}
+
+.l4s-recommendation-media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: block;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--l4s-purple, var(--l4s-safe-accent, #5e6ad2)) 16%, #f8fafc), #eef2ff);
+}
+
+.l4s-recommendation-media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform .25s ease;
+}
+
+.l4s-recommendation-card:hover .l4s-recommendation-media img {
+  transform: scale(1.025);
+}
+
+.l4s-recommendation-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--l4s-purple, var(--l4s-safe-accent, #5e6ad2)) 80%, #0f172a);
+  font-size: 38px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.l4s-recommendation-type {
+  position: absolute;
+  left: 9px;
+  bottom: 9px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(15, 23, 42, .72);
+  backdrop-filter: blur(6px);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.l4s-recommendation-copy {
+  min-width: 0;
+  padding: 12px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.l4s-recommendation-copy strong {
+  overflow: hidden;
+  display: -webkit-box;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.l4s-recommendation-copy small {
+  overflow: hidden;
+  margin-top: 6px;
+  display: -webkit-box;
+  color: var(--l4s-muted, #64748b);
+  font-size: 11px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.l4s-recommendation-footer {
+  margin-top: auto;
+  padding-top: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--l4s-muted, #64748b);
+  font-size: 11px;
+}
+
+.l4s-recommendation-footer b {
+  color: inherit;
+  font-weight: 650;
+}
+
+.l4s-recommendation-footer > span:first-child {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.l4s-recommendation-footer em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--l4s-purple, var(--l4s-safe-accent, #5e6ad2));
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.l4s-recommendation-footer i {
+  font-size: 14px;
+  font-style: normal;
+  transition: transform .18s ease;
+}
+
+.l4s-recommendation-card:hover .l4s-recommendation-footer i {
+  transform: translateX(2px);
+}
+
+.l4s-safe-overlay.is-dark .l4s-recommendations {
+  --l4s-border: #2b2d31;
+  --l4s-text: #f1f5f9;
+  --l4s-muted: #94a3b8;
+  --l4s-surface: var(--l4s-safe-surface-dark, #0f1011);
+  --l4s-subtle: #18191c;
+  border-color: #2b2d31;
+  background: var(--l4s-safe-surface-dark, rgba(15, 16, 17, .95));
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .l4s-recommendations {
+    padding: 16px;
+  }
+
+  .l4s-recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .l4s-recommendation-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .l4s-recommendation-media {
+    height: 100%;
+    min-height: 112px;
+    aspect-ratio: auto;
+  }
+
+  .l4s-recommendation-footer {
+    gap: 5px;
+    font-size: 10px;
+  }
+}

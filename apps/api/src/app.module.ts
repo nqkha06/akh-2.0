@@ -28,6 +28,9 @@ import { SiteSettingsModule } from "./modules/site-settings/site-settings.module
 import { StuAccessLogsModule } from "./modules/stu-access-logs/stu-access-logs.module";
 import { SnippetsModule } from "./modules/snippets/snippets.module";
 import { SupportModule } from "./modules/support/support.module";
+import { RequestContextModule } from "./common/request-context/request-context.module";
+import { SystemLogCleanupSchedulerModule } from "./modules/system-logs/queue/system-log-cleanup-scheduler.module";
+import { SystemLogsModule } from "./modules/system-logs/system-logs.module";
 import { VisitAggregationSchedulerModule } from "./modules/system-jobs/visit-aggregation-scheduler.module";
 import { LoyaltyRollupSchedulerModule } from "./modules/system-jobs/loyalty-rollup-scheduler.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -38,6 +41,8 @@ const visitAggregationScheduler =
   process.env.QUEUE_ENABLED === "false"
     ? []
     : [VisitAggregationSchedulerModule, LoyaltyRollupSchedulerModule];
+const systemLogScheduler =
+  process.env.QUEUE_ENABLED === "false" ? [] : [SystemLogCleanupSchedulerModule];
 
 @Module({
   imports: [
@@ -46,6 +51,7 @@ const visitAggregationScheduler =
       validate: validateEnvironment,
     }),
     PrismaModule,
+    RequestContextModule,
     AuditModule,
     AdminDashboardModule,
     AdminMediaModule,
@@ -68,9 +74,11 @@ const visitAggregationScheduler =
     ReferralsModule,
     SiteSettingsModule,
     StuAccessLogsModule,
+    SystemLogsModule,
     SnippetsModule,
     SupportModule,
     ...visitAggregationScheduler,
+    ...systemLogScheduler,
     UsersModule,
     WithdrawalsModule,
     WebsiteMenusModule,

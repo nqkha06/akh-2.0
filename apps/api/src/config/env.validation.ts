@@ -53,12 +53,14 @@ function validateQueueEnvironment(config: Record<string, unknown>) {
   optionalBoolean(config, "REDIS_TLS");
   optionalBoolean(config, "VISIT_AGGREGATION_DISABLED");
   optionalBoolean(config, "LOYALTY_ROLLUP_DISABLED");
+  optionalBoolean(config, "SYSTEM_LOG_CLEANUP_DISABLED");
   optionalCron(config, "LOYALTY_ROLLUP_CRON");
   optionalInteger(config, "REDIS_PORT", 1, 65_535);
   optionalInteger(config, "REDIS_DB", 0, 15);
   optionalInteger(config, "VISIT_AGGREGATION_INTERVAL_MS", 10_000, 86_400_000);
   optionalInteger(config, "VISIT_AGGREGATION_BATCH_SIZE", 100, 10_000);
   optionalInteger(config, "VISIT_AGGREGATION_MAX_BATCHES_PER_JOB", 1, 100);
+  optionalInteger(config, "SYSTEM_LOG_CLEANUP_INTERVAL_MS", 60_000, 2_592_000_000);
   optionalInteger(config, "SMTP_PORT", 1, 65_535);
   optionalInteger(config, "PASSWORD_RESET_TOKEN_TTL_MINUTES", 5, 1_440);
   optionalBoolean(config, "SMTP_SECURE");

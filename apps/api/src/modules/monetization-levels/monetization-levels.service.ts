@@ -11,6 +11,7 @@ import type { ListMonetizationLevelsQueryDto } from "./dto/list-monetization-lev
 import type {
   MonetizationRateDto,
   MonetizationRouteDto,
+  MonetizationAdDto,
 } from "./dto/monetization-level-config.dto";
 import type { UpdateMonetizationLevelDto } from "./dto/update-monetization-level.dto";
 import {
@@ -201,6 +202,7 @@ export class MonetizationLevelsService {
             sortOrder: dto.sortOrder,
             routesJson: this.serializeRoutes(dto.routes),
             ratesJson: JSON.stringify(dto.rates),
+            adsJson: JSON.stringify(dto.ads ?? []),
             metaDataJson: JSON.stringify(dto.metaData),
             translations: {
               create: dto.translations.map((translation) => ({
@@ -256,6 +258,9 @@ export class MonetizationLevelsService {
               : {}),
             ...(dto.rates !== undefined
               ? { ratesJson: JSON.stringify(dto.rates) }
+              : {}),
+            ...(dto.ads !== undefined
+              ? { adsJson: JSON.stringify(dto.ads) }
               : {}),
             ...(dto.metaData !== undefined
               ? { metaDataJson: JSON.stringify(dto.metaData) }
@@ -318,6 +323,7 @@ export class MonetizationLevelsService {
     if (dto.rates) {
       assertUniqueMonetizationRates(dto.rates);
     }
+    if (dto.ads) this.assertValidAds(dto.ads);
   }
 
   private toResponse(record: MonetizationLevelRecord, defaultLocale: string) {
@@ -342,6 +348,7 @@ export class MonetizationLevelsService {
       translations,
       routes: this.parseRoutes(record.routesJson),
       rates: this.parseJson(record.ratesJson, []),
+      ads: this.parseJson(record.adsJson, []),
       metaData: this.parseJson(record.metaDataJson, {
         version: 1,
         profitBps: 0,
@@ -422,5 +429,85 @@ export class MonetizationLevelsService {
         browserMode: route.browserMode === "exclude" ? "exclude" : "include",
       })),
     );
+  }
+
+  private assertValidAds(ads: MonetizationAdDto[]) {
+    const ids = new Set<string>();
+    const deliveryIds = new Set(ads.map((ad) => ad.id));
+    for (const ad of ads) {
+      if (ids.has(ad.id)) {
+        throw new BadRequestException(`ID quảng cáo bị trùng: ${ad.id}.`);
+      }
+      ids.add(ad.id);
+      if (ad.placements.length === 0) {
+        throw new BadRequestException(`Quảng cáo ${ad.id} cần ít nhất một placement.`);
+      }
+      if (
+        ad.format === "smartlink" &&
+        !ad.content.targetUrl &&
+        !ad.content.smartlinks?.length
+      ) {
+        throw new BadRequestException(
+          `Quảng cáo ${ad.id} cần ít nhất một Smartlink.`,
+        );
+      }
+      if (
+        ad.format === "smartlink" &&
+        (ad.placements.length !== 1 ||
+          (ad.placements[0] !== "unlock_redirect" &&
+            ad.placements[0] !== "popunder"))
+      ) {
+        throw new BadRequestException(
+          `Smartlink ${ad.id} chỉ hỗ trợ placement unlock_redirect hoặc popunder.`,
+        );
+      }
+      if (ad.format === "smartlink" && ad.content.smartlinks?.length) {
+        for (const smartlink of ad.content.smartlinks) {
+          if (deliveryIds.has(smartlink.id)) {
+            throw new BadRequestException(
+              `ID Smartlink bị trùng hoặc trùng ID quảng cáo: ${smartlink.id}.`,
+            );
+          }
+          deliveryIds.add(smartlink.id);
+          if (
+            smartlink.overrides?.startAt &&
+            smartlink.overrides.endAt &&
+            Date.parse(smartlink.overrides.endAt) <=
+              Date.parse(smartlink.overrides.startAt)
+          ) {
+            throw new BadRequestException(
+              `Smartlink ${smartlink.id} cần thời gian override kết thúc sau thời gian bắt đầu.`,
+            );
+          }
+        }
+      }
+      if (
+        ad.format === "smartlink" &&
+        ad.content.startAt &&
+        ad.content.endAt &&
+        Date.parse(ad.content.endAt) <= Date.parse(ad.content.startAt)
+      ) {
+        throw new BadRequestException(
+          `Smartlink ${ad.id} cần thời gian kết thúc sau thời gian bắt đầu.`,
+        );
+      }
+      if (
+        ad.format !== "smartlink" &&
+        ad.placements.some(
+          (placement) =>
+            placement === "unlock_redirect" || placement === "popunder",
+        )
+      ) {
+        throw new BadRequestException(
+          `Placement unlock_redirect và popunder chỉ dành cho Smartlink.`,
+        );
+      }
+      if (ad.format === "banner" && (!ad.content.imageUrl || !ad.content.clickUrl)) {
+        throw new BadRequestException(`Banner ${ad.id} cần Image URL và Click URL.`);
+      }
+      if (ad.format === "script" && (!ad.content.adapter || !ad.content.scriptUrl)) {
+        throw new BadRequestException(`Script ${ad.id} cần adapter và Script URL.`);
+      }
+    }
   }
 }

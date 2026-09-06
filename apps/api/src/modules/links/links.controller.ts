@@ -17,6 +17,7 @@ import type { Request } from "express";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CreateLinkDto } from "./dto/create-link.dto";
+import { RecordLinkVisitDto } from "./dto/record-link-visit.dto";
 import { UpdateLinkStatusDto } from "./dto/update-link-status.dto";
 import { LinksService } from "./links.service";
 
@@ -37,12 +38,17 @@ export class LinksController {
 
   @Post(":slug/visit")
   @HttpCode(200)
-  recordVisit(@Param("slug") slug: string, @Req() request: Request) {
+  recordVisit(
+    @Param("slug") slug: string,
+    @Req() request: Request,
+    @Body() context: RecordLinkVisitDto = {},
+  ) {
     return this.linksService.recordVisit(slug, {
       countryCode: request.get("x-visitor-country"),
       userAgent: request.get("user-agent"),
       ipAddress: request.get("x-visitor-ip") || request.ip,
       referrer: request.get("referer"),
+      pageContext: context,
     });
   }
 

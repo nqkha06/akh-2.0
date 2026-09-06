@@ -139,7 +139,14 @@ try {
   if (generateResult.code !== 0) {
     process.exitCode = stopping ? 0 : (generateResult.code ?? 1);
   } else if (!stopping) {
-    const watchResult = await runPnpm(["exec", "nest", "start", "--watch"]);
+    const watchResult = await runPnpm([
+      "exec",
+      "nest",
+      "start",
+      "--watch",
+      "--path",
+      "tsconfig.dev.json",
+    ]);
     process.exitCode = stopping ? 0 : (watchResult.code ?? 1);
   }
 } catch (error) {

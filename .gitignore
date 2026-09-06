@@ -3,6 +3,7 @@
 node_modules
 .next
 dist
+dist-dev
 apps/api/prisma/dev.db
 apps/api/prisma/dev.db-journal
 apps/api/prisma/auth-test-*.db

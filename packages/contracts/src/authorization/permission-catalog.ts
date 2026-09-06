@@ -486,6 +486,24 @@ export const permissionCatalog = [
     description: "Gửi email test qua provider đã cấu hình.",
     group: "emails",
   },
+  {
+    key: "system_logs.view",
+    name: "Xem system logs",
+    description: "Xem danh sách, thống kê và chi tiết system log.",
+    group: "system-logs",
+  },
+  {
+    key: "system_logs.delete",
+    name: "Xóa system logs",
+    description: "Xóa một hoặc nhiều system log và thực hiện cleanup thủ công.",
+    group: "system-logs",
+  },
+  {
+    key: "system_logs.manage_settings",
+    name: "Quản lý system log",
+    description: "Quản lý category và chính sách retention của system log.",
+    group: "system-logs",
+  },
 ] as const;
 
 export type PermissionDefinition = (typeof permissionCatalog)[number];

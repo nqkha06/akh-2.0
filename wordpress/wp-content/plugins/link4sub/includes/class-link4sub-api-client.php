@@ -6,6 +6,9 @@ if (!defined('ABSPATH')) {
 
 final class Link4Sub_API_Client
 {
+    private const SMARTLINK_HISTORY_COOKIE = 'link4sub_smartlink_history';
+    private const SMARTLINK_SESSION_COOKIE = 'link4sub_smartlink_session';
+
     private Link4Sub_Settings $settings;
 
     public function __construct(Link4Sub_Settings $settings)
@@ -13,12 +16,16 @@ final class Link4Sub_API_Client
         $this->settings = $settings;
     }
 
-    public function record_visit(string $slug)
+    public function record_visit(string $slug, array $page_context = array())
     {
+        if (!isset($page_context['adState'])) {
+            $page_context['adState'] = $this->smartlink_state();
+        }
         return $this->request(
             'POST',
             '/links/' . rawurlencode($slug) . '/visit',
-            $this->visitor_headers()
+            $this->visitor_headers(),
+            $page_context
         );
     }
 
@@ -118,10 +125,27 @@ final class Link4Sub_API_Client
             );
         }
 
+        if (isset($payload['relatedLinks']) && is_array($payload['relatedLinks'])) {
+            foreach ($payload['relatedLinks'] as $index => $related_link) {
+                if (!is_array($related_link)) {
+                    continue;
+                }
+                $related_slug = isset($related_link['slug']) && is_string($related_link['slug'])
+                    ? $related_link['slug']
+                    : '';
+                if (array_key_exists('coverImageUrl', $related_link)) {
+                    $payload['relatedLinks'][$index]['coverImageUrl'] = $this->public_url(
+                        $related_link['coverImageUrl'],
+                        $related_slug
+                    );
+                }
+            }
+        }
+
         return $payload;
     }
 
-    private function request(string $method, string $path, array $headers = array())
+    private function request(string $method, string $path, array $headers = array(), ?array $body = null)
     {
         $base_url = $this->api_base_url();
         if (!$this->is_http_url($base_url)) {
@@ -132,6 +156,7 @@ final class Link4Sub_API_Client
             );
         }
 
+        if ($body !== null) $headers['Content-Type'] = 'application/json';
         $response = wp_remote_request($base_url . $path, array(
             'method'      => $method,
             'timeout'     => (int) $this->settings->get('request_timeout', 10),
@@ -139,6 +164,7 @@ final class Link4Sub_API_Client
             'headers'     => array_merge(array(
                 'Accept' => 'application/json',
             ), $headers),
+            'body'        => $body !== null ? wp_json_encode($body) : null,
         ));
 
         if (is_wp_error($response)) {
@@ -217,6 +243,37 @@ final class Link4Sub_API_Client
         }
 
         return $headers;
+    }
+
+    private function smartlink_state(): array
+    {
+        $history = $this->read_state_cookie(self::SMARTLINK_HISTORY_COOKIE);
+        $session = $this->read_state_cookie(self::SMARTLINK_SESSION_COOKIE);
+        $ids = array_slice(array_values(array_unique(array_merge(array_keys($history), array_keys($session)))), 0, 10);
+        $result = array();
+        $minimum_timestamp = (int) floor(microtime(true) * 1000) - (31 * DAY_IN_SECONDS * 1000);
+
+        foreach ($ids as $id) {
+            if (!is_string($id) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/', $id)) continue;
+            $timestamps = isset($history[$id]) && is_array($history[$id]) ? $history[$id] : array();
+            $timestamps = array_slice(array_values(array_filter(array_map('intval', $timestamps), static fn($timestamp) => $timestamp >= $minimum_timestamp)), -20);
+            $session_count = isset($session[$id]) ? max(0, min(20, (int) $session[$id])) : 0;
+            $result[] = array(
+                'adId' => $id,
+                'timestamps' => $timestamps,
+                'sessionCount' => $session_count,
+            );
+        }
+
+        return $result;
+    }
+
+    private function read_state_cookie(string $name): array
+    {
+        if (!isset($_COOKIE[$name]) || !is_string($_COOKIE[$name])) return array();
+        $raw = substr((string) wp_unslash($_COOKIE[$name]), 0, 8_000);
+        $decoded = json_decode(rawurldecode($raw), true);
+        return is_array($decoded) ? $decoded : array();
     }
 
     private function server_value(array $keys): string

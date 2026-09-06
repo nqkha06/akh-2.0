@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Link4Sub Public Renderer
  * Description: Renders Link4Sub public STU links inside WordPress at /l/{slug}.
- * Version: 1.2.0
+ * Version: 1.13.0
  * Requires at least: 7.0
  * Requires PHP: 8.1
  * Author: Link4Sub
@@ -14,11 +14,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('LINK4SUB_PLUGIN_VERSION', '1.2.0');
+define('LINK4SUB_PLUGIN_VERSION', '1.13.0');
 define('LINK4SUB_PLUGIN_FILE', __FILE__);
 define('LINK4SUB_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('LINK4SUB_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+require_once LINK4SUB_PLUGIN_DIR . 'includes/class-link4sub-i18n.php';
+require_once LINK4SUB_PLUGIN_DIR . 'includes/class-link4sub-recommendations.php';
 require_once LINK4SUB_PLUGIN_DIR . 'includes/class-link4sub-settings.php';
 require_once LINK4SUB_PLUGIN_DIR . 'includes/class-link4sub-api-client.php';
 require_once LINK4SUB_PLUGIN_DIR . 'includes/class-link4sub-visit-store.php';

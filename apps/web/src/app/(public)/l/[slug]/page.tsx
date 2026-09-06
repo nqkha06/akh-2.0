@@ -91,7 +91,7 @@ function buildMonetizationRedirectUrl(
   origin: string,
 ) {
   try {
-    const redirectUrl = new URL(targetUrl);
+    const redirectUrl = new URL(resolveRouteSlug(targetUrl, slug));
     const dataUrl = new URL(
       `/api/public/links/${encodeURIComponent(slug)}`,
       origin,
@@ -105,4 +105,16 @@ function buildMonetizationRedirectUrl(
   } catch {
     return null;
   }
+}
+
+function resolveRouteSlug(targetUrl: string, slug: string) {
+  const encodedSlug = encodeURIComponent(slug);
+  const resolvedTarget = targetUrl.replace(
+    /\/\.(?=([?#]|$))/,
+    `/${encodedSlug}`,
+  );
+
+  // `/.` is the compact router placeholder used by the admin UI, e.g.
+  // http://localhost:3100/l/. -> http://localhost:3100/l/pkh4bd4t.
+  return new URL(resolvedTarget).toString();
 }

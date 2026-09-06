@@ -6,6 +6,86 @@ export type MonetizationDeviceType = "any" | "desktop" | "mobile" | "tablet";
 export type MonetizationRouteMatchMode = "include" | "exclude";
 export type MonetizationBrowserFamily =
   "any" | "chrome" | "safari" | "firefox" | "edge" | "other";
+export type MonetizationAdFormat = "smartlink" | "banner" | "script";
+export type MonetizationAdPlacement =
+  | "unlock_redirect"
+  | "popunder"
+  | "stu_before"
+  | "stu_after"
+  | "safe_overlay_top"
+  | "safe_overlay_bottom";
+export type MonetizationOperatingSystem =
+  | "any"
+  | "android"
+  | "ios"
+  | "windows"
+  | "macos"
+  | "linux"
+  | "other";
+export type MonetizationDeliveryMode = "any" | "original" | "random_post";
+
+export type MonetizationSmartlinkOverrides = {
+  redirectDelaySeconds?: number;
+  maxRedirectsPerSession?: number;
+  maxRedirectsPerVisitor?: number;
+  frequencyWindowHours?: number;
+  cooldownMinutes?: number;
+  startAt?: string;
+  endAt?: string;
+};
+
+export type MonetizationSmartlink = {
+  id: string;
+  url: string;
+  enabled: boolean;
+  weight: number;
+  sortOrder: number;
+  overrides?: MonetizationSmartlinkOverrides;
+};
+
+export type MonetizationAd = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  format: MonetizationAdFormat;
+  placements: MonetizationAdPlacement[];
+  priority: number;
+  weight: number;
+  targeting: {
+    countries: string[];
+    devices: MonetizationDeviceType[];
+    operatingSystems: MonetizationOperatingSystem[];
+    browsers: MonetizationBrowserFamily[];
+    deliveryModes: MonetizationDeliveryMode[];
+    niches: string[];
+    siteKeys: string[];
+    postTypes: string[];
+    categoryIds: number[];
+    locales: string[];
+  };
+  content: {
+    smartlinks?: MonetizationSmartlink[];
+    /** Legacy single-Smartlink payload; normalized by the editor and API resolver. */
+    targetUrl?: string;
+    redirectDelaySeconds?: number;
+    maxRedirectsPerSession?: number;
+    maxRedirectsPerVisitor?: number;
+    frequencyWindowHours?: number;
+    cooldownMinutes?: number;
+    startAt?: string;
+    endAt?: string;
+    imageUrl?: string;
+    clickUrl?: string;
+    title?: string;
+    description?: string;
+    ctaLabel?: string;
+    newTab?: boolean;
+    adapter?: string;
+    scriptUrl?: string;
+    zoneId?: string;
+    parameters?: Record<string, string | number | boolean>;
+  };
+};
 
 export type MonetizationLevelTranslation = {
   locale: string;
@@ -58,6 +138,7 @@ export type AdminMonetizationLevel = {
   translations: MonetizationLevelTranslation[];
   routes: MonetizationRoute[];
   rates: MonetizationRate[];
+  ads: MonetizationAd[];
   metaData: MonetizationLevelMetaData;
   usersCount: number;
   createdAt: string;

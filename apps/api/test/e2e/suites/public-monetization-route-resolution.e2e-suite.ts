@@ -71,6 +71,120 @@ describe("Public monetization route resolution E2E", () => {
     );
   });
 
+  it("returns only available public links from the same owner as related links", async () => {
+    const owner = await prisma.user.create({
+      data: {
+        name: "Related Links Owner",
+        email: "related-links-owner@example.com",
+      },
+    });
+    const otherOwner = await prisma.user.create({
+      data: {
+        name: "Other Related Links Owner",
+        email: "other-related-links-owner@example.com",
+      },
+    });
+    const current = await prisma.link.create({
+      data: {
+        userId: owner.id,
+        slug: "related-links-current",
+        title: "Current link",
+        destinationUrl: "https://example.com/current",
+      },
+    });
+    await prisma.link.createMany({
+      data: [
+        {
+          userId: owner.id,
+          slug: "related-links-visible",
+          title: "Visible related link",
+          subtitle: "From the same creator",
+          destinationType: "file",
+          destinationUrl: "https://example.com/visible",
+          appearanceJson: JSON.stringify({
+            coverImageUrl: "https://images.example.com/related.jpg",
+          }),
+          views: 12,
+        },
+        {
+          userId: owner.id,
+          slug: "related-links-expired",
+          title: "Expired related link",
+          destinationUrl: "https://example.com/expired",
+          expiresAt: new Date(Date.now() - 60_000),
+          views: 99,
+        },
+        {
+          userId: owner.id,
+          slug: "related-links-paused",
+          title: "Paused related link",
+          destinationUrl: "https://example.com/paused",
+          status: "paused",
+          views: 100,
+        },
+        {
+          userId: owner.id,
+          slug: "related-links-click-cap",
+          title: "Capped related link",
+          destinationUrl: "https://example.com/capped",
+          maxClicks: 25,
+          views: 25,
+        },
+        {
+          userId: otherOwner.id,
+          slug: "related-links-other-owner",
+          title: "Other creator link",
+          destinationUrl: "https://example.com/other",
+          views: 200,
+        },
+      ],
+    });
+
+    const response = await request(`/api/links/${current.slug}/visit`, {
+      method: "POST",
+      headers: { "User-Agent": "Mozilla/5.0 Chrome/124.0.0.0" },
+    });
+    assert.equal(response.status, 200);
+    const body = (await response.json()) as {
+      relatedLinks: Array<{
+        id: string;
+        slug: string;
+        title: string;
+        subtitle: string | null;
+        inputType: string;
+        coverImageUrl: string | null;
+        views: number;
+        createdAt: string;
+      }>;
+    };
+    assert.equal(body.relatedLinks.length, 1);
+    assert.deepEqual(
+      {
+        slug: body.relatedLinks[0]?.slug,
+        title: body.relatedLinks[0]?.title,
+        subtitle: body.relatedLinks[0]?.subtitle,
+        inputType: body.relatedLinks[0]?.inputType,
+        coverImageUrl: body.relatedLinks[0]?.coverImageUrl,
+        views: body.relatedLinks[0]?.views,
+      },
+      {
+        slug: "related-links-visible",
+        title: "Visible related link",
+        subtitle: "From the same creator",
+        inputType: "file",
+        coverImageUrl: "https://images.example.com/related.jpg",
+        views: 12,
+      },
+    );
+
+    await prisma.link.deleteMany({
+      where: { userId: { in: [owner.id, otherOwner.id] } },
+    });
+    await prisma.user.deleteMany({
+      where: { id: { in: [owner.id, otherOwner.id] } },
+    });
+  });
+
   it("resolves country, device and browser rules with priority and fallback", async () => {
     const level = await prisma.monetizationLevel.create({
       data: {
@@ -130,6 +244,17 @@ describe("Public monetization route resolution E2E", () => {
             enabled: true,
           },
         ]),
+        metaDataJson: JSON.stringify({
+          version: 1,
+          profitBps: 0,
+          stepCount: 2,
+          visitorExperience: {
+            popup: "none",
+            banner: "none",
+            interstitial: "none",
+            notification: "none",
+          },
+        }),
       },
     });
     const owner = await prisma.user.create({
@@ -166,6 +291,7 @@ describe("Public monetization route resolution E2E", () => {
       destinationUrl: string;
       monetizationRedirectUrl: string | null;
       visitToken: string;
+      showConfig: { pageCount: number };
     };
     assert.equal(
       vnMobileChromeBody.destinationUrl,
@@ -175,6 +301,7 @@ describe("Public monetization route resolution E2E", () => {
       vnMobileChromeBody.monetizationRedirectUrl,
       "https://example.com/vn-mobile-chrome",
     );
+    assert.equal(vnMobileChromeBody.showConfig.pageCount, 2);
 
     const usDesktopFirefox = await request(
       `/api/links/${link.slug}/visit`,
@@ -636,4 +763,3 @@ describe("Public monetization route resolution E2E", () => {
     await prisma.monetizationLevel.delete({ where: { id: level.id } });
   });
 });
-

@@ -126,6 +126,116 @@ describe("Admin monetization levels E2E", () => {
               enabled: true,
             },
           ],
+          ads: [
+            {
+              id: "banner-vn-android",
+              name: "Banner VN Android",
+              enabled: true,
+              format: "banner",
+              placements: ["safe_overlay_top"],
+              priority: 100,
+              weight: 100,
+              targeting: {
+                countries: ["VN"],
+                devices: ["mobile"],
+                operatingSystems: ["android"],
+                browsers: ["chrome"],
+                deliveryModes: ["random_post"],
+                niches: ["game"],
+                siteKeys: ["wordpress-main"],
+                postTypes: ["post"],
+                categoryIds: [7],
+                locales: ["vi-VN"],
+              },
+              content: {
+                imageUrl: "https://example.com/banner.webp",
+                clickUrl: "https://example.com/campaign",
+                ctaLabel: "Mở ngay",
+                newTab: true,
+              },
+            },
+            {
+              id: "smartlink-campaign",
+              name: "Smartlink campaign",
+              enabled: true,
+              format: "smartlink",
+              placements: ["unlock_redirect"],
+              priority: 90,
+              weight: 100,
+              targeting: {
+                countries: ["ALL"],
+                devices: ["any"],
+                operatingSystems: ["any"],
+                browsers: ["any"],
+                deliveryModes: ["any"],
+                niches: ["any"],
+                siteKeys: [],
+                postTypes: [],
+                categoryIds: [],
+                locales: [],
+              },
+              content: {
+                redirectDelaySeconds: 5,
+                maxRedirectsPerSession: 2,
+                maxRedirectsPerVisitor: 4,
+                frequencyWindowHours: 24,
+                cooldownMinutes: 10,
+                smartlinks: [
+                  {
+                    id: "smartlink-primary",
+                    url: "https://example.com/smartlink-primary",
+                    enabled: true,
+                    weight: 80,
+                    sortOrder: 0,
+                  },
+                  {
+                    id: "smartlink-secondary",
+                    url: "https://example.com/smartlink-secondary",
+                    enabled: true,
+                    weight: 20,
+                    sortOrder: 10,
+                    overrides: { cooldownMinutes: 30 },
+                  },
+                ],
+              },
+            },
+            {
+              id: "popunder-campaign",
+              name: "Popunder campaign",
+              enabled: true,
+              format: "smartlink",
+              placements: ["popunder"],
+              priority: 80,
+              weight: 100,
+              targeting: {
+                countries: ["ALL"],
+                devices: ["any"],
+                operatingSystems: ["any"],
+                browsers: ["any"],
+                deliveryModes: ["any"],
+                niches: ["any"],
+                siteKeys: [],
+                postTypes: [],
+                categoryIds: [],
+                locales: [],
+              },
+              content: {
+                maxRedirectsPerSession: 1,
+                maxRedirectsPerVisitor: 2,
+                frequencyWindowHours: 24,
+                cooldownMinutes: 30,
+                smartlinks: [
+                  {
+                    id: "popunder-primary",
+                    url: "https://example.com/popunder-primary",
+                    enabled: true,
+                    weight: 100,
+                    sortOrder: 0,
+                  },
+                ],
+              },
+            },
+          ],
           metaData: {
             version: 1,
             profitBps: 250,
@@ -152,6 +262,12 @@ describe("Admin monetization levels E2E", () => {
         browserMode: string;
       }>;
       rates: unknown[];
+      ads: Array<{
+        id: string;
+        format: string;
+        placements: string[];
+        content: { smartlinks?: Array<{ id: string; weight: number }> };
+      }>;
       metaData: { profitBps: number };
     };
     assert.equal(updated.routes.length, 1);
@@ -159,6 +275,13 @@ describe("Admin monetization levels E2E", () => {
     assert.equal(updated.routes[0]?.deviceMode, "exclude");
     assert.equal(updated.routes[0]?.browserMode, "exclude");
     assert.equal(updated.rates.length, 1);
+    assert.equal(updated.ads.length, 3);
+    assert.equal(updated.ads[0]?.id, "banner-vn-android");
+    assert.equal(updated.ads[0]?.format, "banner");
+    assert.equal(updated.ads[1]?.content.smartlinks?.length, 2);
+    assert.equal(updated.ads[1]?.content.smartlinks?.[0]?.weight, 80);
+    assert.deepEqual(updated.ads[2]?.placements, ["popunder"]);
+    assert.equal(updated.ads[2]?.content.smartlinks?.[0]?.id, "popunder-primary");
     assert.equal(updated.metaData.profitBps, 250);
 
     const invalidExcludedCountries = await request(
@@ -398,4 +521,3 @@ describe("Admin monetization levels E2E", () => {
     );
   });
 });
-

@@ -9,6 +9,7 @@ export const MONETIZATION_LEVEL_SUMMARY_SELECT = {
   status: true,
   routesJson: true,
   ratesJson: true,
+  adsJson: true,
   _count: { select: { users: true } },
 } satisfies Prisma.MonetizationLevelSelect;
 
